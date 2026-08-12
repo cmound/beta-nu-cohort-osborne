@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
   type CSSProperties,
+  type FormEvent,
   type ReactNode,
 } from 'react'
 import {
@@ -62,6 +63,48 @@ interface BirthdayDashboardItem {
 interface CohortValueDashboardItem {
   readonly name: string
   readonly description: string
+}
+
+type CohortTimeZone =
+  | 'Eastern'
+  | 'Central'
+  | 'Mountain'
+  | 'Arizona (MST)'
+  | 'Pacific'
+  | 'Alaska'
+  | 'Hawaii-Aleutian'
+
+interface CohortContactRecord {
+  readonly id: string
+  readonly name: string
+  readonly timeZone: CohortTimeZone
+  readonly phoneDigits: string
+  readonly email: string
+  readonly industry: string
+  readonly birthdayMonth: number | null
+  readonly birthdayDay: number | null
+  readonly dissertationInterest: string
+  readonly isMentor: boolean
+}
+
+interface CohortContactFormState {
+  readonly name: string
+  readonly timeZone: CohortTimeZone
+  readonly phoneDigits: string
+  readonly email: string
+  readonly industry: string
+  readonly birthdayInput: string
+  readonly dissertationInterest: string
+}
+
+interface CohortContactPageProps {
+  readonly contacts: readonly CohortContactRecord[]
+  readonly onAddContact: (contact: CohortContactRecord) => void
+}
+
+interface ParsedBirthday {
+  readonly month: number
+  readonly day: number
 }
 
 type AppBackgroundStyle = CSSProperties & {
@@ -217,6 +260,345 @@ const cohortValues: readonly CohortValueDashboardItem[] = [
       'Respond to change with flexibility while remaining focused on shared goals.',
   },
 ]
+
+const cohortTimeZoneOptions: readonly CohortTimeZone[] = [
+  'Eastern',
+  'Central',
+  'Mountain',
+  'Arizona (MST)',
+  'Pacific',
+  'Alaska',
+  'Hawaii-Aleutian',
+]
+
+const birthdayMonthLabels: readonly string[] = [
+  'Jan.',
+  'Feb.',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'Aug.',
+  'Sept.',
+  'Oct.',
+  'Nov.',
+  'Dec.',
+]
+
+const cohortContactsSeed: readonly CohortContactRecord[] = [
+  {
+    id: 'cheryl-marie-osborne',
+    name: 'Dr. Cheryl-Marie Osborne (Mentor)',
+    timeZone: 'Pacific',
+    phoneDigits: '7143431102',
+    email: 'cherylosborne909@gmail.com',
+    industry: 'NonProfit',
+    birthdayMonth: 8,
+    birthdayDay: 19,
+    dissertationInterest: 'N/A',
+    isMentor: true,
+  },
+  {
+    id: 'asa-jones-mcghee',
+    name: 'Asa Jones-McGhee',
+    timeZone: 'Pacific',
+    phoneDigits: '6619168400',
+    email: 'ajonesmc@mail.umassglobal.edu',
+    industry: 'NonProfit',
+    birthdayMonth: 11,
+    birthdayDay: 1,
+    dissertationInterest:
+      'Foster care and the mental health behind it.',
+    isMentor: false,
+  },
+  {
+    id: 'bashiyra-windley',
+    name: 'Bashiyra Windley',
+    timeZone: 'Eastern',
+    phoneDigits: '6466710752',
+    email: 'bwindley@mail.umassglobal.edu',
+    industry: 'Private Sector',
+    birthdayMonth: 9,
+    birthdayDay: 13,
+    dissertationInterest: '',
+    isMentor: false,
+  },
+  {
+    id: 'celia-cipres',
+    name: 'Celia Cipres',
+    timeZone: 'Pacific',
+    phoneDigits: '5107769005',
+    email: 'ccipres@mail.umassglobal.edu',
+    industry: 'Center Base',
+    birthdayMonth: 3,
+    birthdayDay: 18,
+    dissertationInterest:
+      'The importance of viewing teachers as a a profession and not babysitters in the ECE field ',
+    isMentor: false,
+  },
+  {
+    id: 'chris-mound',
+    name: 'Chris Mound',
+    timeZone: 'Pacific',
+    phoneDigits: '6616447084',
+    email: 'cmound@mail.umassglobal.edu',
+    industry: 'Private Sector',
+    birthdayMonth: 8,
+    birthdayDay: 13,
+    dissertationInterest:
+      'Leadership and organizational practices that support the career success and inclusion of veterans with disabilities.',
+    isMentor: false,
+  },
+  {
+    id: 'elanis-cruz',
+    name: 'Elanis Cruz',
+    timeZone: 'Pacific',
+    phoneDigits: '8313832340',
+    email: 'emagalla@mail.umassglobal.edu',
+    industry: 'Higher Education',
+    birthdayMonth: 3,
+    birthdayDay: 6,
+    dissertationInterest:
+      'Impacts on coronavirus on education or community involvement in school leadership',
+    isMentor: false,
+  },
+  {
+    id: 'jessica-jackson',
+    name: 'Jessica Jackson',
+    timeZone: 'Eastern',
+    phoneDigits: '9142824571',
+    email: 'jjacks47@mail.umassglobal.edu',
+    industry: 'Nonprofit',
+    birthdayMonth: 7,
+    birthdayDay: 7,
+    dissertationInterest:
+      'Reviewing the relationship between nonprofit executive leadership burnout and trauma-informed organizations',
+    isMentor: false,
+  },
+  {
+    id: 'jessica-leon',
+    name: 'Jessica Leon',
+    timeZone: 'Pacific',
+    phoneDigits: '5594038077',
+    email: 'jleon2@mail.umassglobal.edu',
+    industry: 'K-12 Education',
+    birthdayMonth: 2,
+    birthdayDay: 25,
+    dissertationInterest: '',
+    isMentor: false,
+  },
+  {
+    id: 'monica-romero',
+    name: 'Monica Romero',
+    timeZone: 'Pacific',
+    phoneDigits: '3239750108',
+    email: 'mromer27@mail.umassglobal.edu',
+    industry: 'Higher Education',
+    birthdayMonth: 6,
+    birthdayDay: 17,
+    dissertationInterest:
+      'Collaborative Leadership Strategies to Improve College Access and Housing Stability for Foster Youth Transitioning to Adulthood',
+    isMentor: false,
+  },
+  {
+    id: 'reynaldo-dulaney',
+    name: 'Reynaldo Dulaney',
+    timeZone: 'Pacific',
+    phoneDigits: '9518509029',
+    email: 'rdulaney@mail.umassglobal.edu',
+    industry: 'Private Sector',
+    birthdayMonth: 9,
+    birthdayDay: 30,
+    dissertationInterest:
+      'The missions of non profit organizations and the ethical responsibility of leadership',
+    isMentor: false,
+  },
+  {
+    id: 'sergiy-bryk',
+    name: 'Sergiy Bryk',
+    timeZone: 'Pacific',
+    phoneDigits: '9168372572',
+    email: 'sbryk@mail.umassglobal.edu',
+    industry: 'Higher Education',
+    birthdayMonth: 12,
+    birthdayDay: 10,
+    dissertationInterest:
+      'What is the relationship between senior pastors’ leadership, as experienced by staff and volunteers, and their intention to use AI tools for church tasks in U.S. congregations?',
+    isMentor: false,
+  },
+  {
+    id: 'tracy-rico',
+    name: 'Tracy Rico',
+    timeZone: 'Pacific',
+    phoneDigits: '3603206802',
+    email: 'trico1@mail.umassglobal.edu',
+    industry: 'Military',
+    birthdayMonth: null,
+    birthdayDay: null,
+    dissertationInterest:
+      "Veteran's transition from military to civlian sector, the barriers they face, and its effects",
+    isMentor: false,
+  },
+  {
+    id: 'trevor-desouza',
+    name: 'Trevor Desouza',
+    timeZone: 'Pacific',
+    phoneDigits: '3605096739',
+    email: 'tdesouza@mail.umassglobal.edu',
+    industry: 'Civil Servant',
+    birthdayMonth: null,
+    birthdayDay: null,
+    dissertationInterest: 'Lack of Diversity in Positions of Leadership',
+    isMentor: false,
+  },
+  {
+    id: 'victoria-vildosola',
+    name: 'Victoria Vildosola',
+    timeZone: 'Pacific',
+    phoneDigits: '9094132057',
+    email: 'vvildoso@mail.umassglobal.edu',
+    industry: 'Retail',
+    birthdayMonth: 5,
+    birthdayDay: 24,
+    dissertationInterest:
+      'Struggles women have with leadership roles within the retail sector',
+    isMentor: false,
+  },
+]
+
+function createEmptyContactForm(): CohortContactFormState {
+  return {
+    name: '',
+    timeZone: 'Pacific',
+    phoneDigits: '',
+    email: '',
+    industry: '',
+    birthdayInput: '',
+    dissertationInterest: '',
+  }
+}
+
+function isCohortTimeZone(value: string): value is CohortTimeZone {
+  return cohortTimeZoneOptions.some((timeZone) => timeZone === value)
+}
+
+function sanitizePhoneDigits(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 10)
+}
+
+function formatPhoneNumber(phoneDigits: string): string {
+  const digits = sanitizePhoneDigits(phoneDigits)
+
+  if (digits.length !== 10) {
+    return digits
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+function normalizeCohortEmail(value: string): string {
+  const trimmedValue = value.trim().toLowerCase()
+
+  if (!trimmedValue) {
+    return ''
+  }
+
+  if (trimmedValue.includes('@')) {
+    return trimmedValue
+  }
+
+  return `${trimmedValue}@mail.umassglobal.edu`
+}
+
+function parseBirthdayInput(value: string): ParsedBirthday | null {
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return null
+  }
+
+  const separatedParts = trimmedValue
+    .split(/\D+/)
+    .filter((part) => part.length > 0)
+
+  let month: number
+  let day: number
+
+  if (separatedParts.length >= 2) {
+    const monthPart = separatedParts[0]
+    const dayPart = separatedParts[1]
+
+    if (!monthPart || !dayPart) {
+      return null
+    }
+
+    month = Number(monthPart)
+    day = Number(dayPart)
+  } else {
+    const digits = trimmedValue.replace(/\D/g, '')
+
+    if (digits.length < 3) {
+      return null
+    }
+
+    const twoDigitMonth = Number(digits.slice(0, 2))
+
+    if (digits.length >= 4 && twoDigitMonth >= 1 && twoDigitMonth <= 12) {
+      month = twoDigitMonth
+      day = Number(digits.slice(2, 4))
+    } else {
+      month = Number(digits.slice(0, 1))
+      day = Number(digits.slice(1, 3))
+    }
+  }
+
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    return null
+  }
+
+  const daysInMonth = new Date(Date.UTC(2000, month, 0)).getUTCDate()
+
+  if (!Number.isInteger(day) || day < 1 || day > daysInMonth) {
+    return null
+  }
+
+  return {
+    month,
+    day,
+  }
+}
+
+function formatBirthday(
+  birthdayMonth: number | null,
+  birthdayDay: number | null,
+): string {
+  if (birthdayMonth === null || birthdayDay === null) {
+    return ''
+  }
+
+  const monthLabel = birthdayMonthLabels[birthdayMonth - 1]
+
+  if (!monthLabel) {
+    return ''
+  }
+
+  return `${monthLabel} ${birthdayDay}`
+}
+
+function sortCohortContacts(
+  contacts: readonly CohortContactRecord[],
+): CohortContactRecord[] {
+  return [...contacts].sort((firstContact, secondContact) => {
+    if (firstContact.isMentor !== secondContact.isMentor) {
+      return firstContact.isMentor ? -1 : 1
+    }
+
+    return firstContact.name.localeCompare(secondContact.name, 'en-US', {
+      sensitivity: 'base',
+    })
+  })
+}
 
 function calculateProgramProgress(currentDate: Date): number {
   const currentTime = currentDate.getTime()
@@ -405,9 +787,8 @@ function DashboardPage() {
         </article>
 
         <article
-          className={`dashboard-info-card birthday-card${
-            nextBirthdayDashboard?.isToday ? ' birthday-card-today' : ''
-          }`}
+          className={`dashboard-info-card birthday-card${nextBirthdayDashboard?.isToday ? ' birthday-card-today' : ''
+            }`}
         >
           <p className="dashboard-card-label">Birthday Board</p>
 
@@ -470,12 +851,353 @@ function DashboardPage() {
   )
 }
 
-function CohortContactPage() {
+function CohortContactPage({
+  contacts,
+  onAddContact,
+}: CohortContactPageProps) {
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false)
+  const [newContact, setNewContact] = useState(createEmptyContactForm)
+  const [formError, setFormError] = useState('')
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
+
+  const sortedContacts = sortCohortContacts(contacts)
+
+  function openAddContactModal(): void {
+    setNewContact(createEmptyContactForm())
+    setFormError('')
+    setIsAddContactOpen(true)
+  }
+
+  function closeAddContactModal(): void {
+    setNewContact(createEmptyContactForm())
+    setFormError('')
+    setIsAddContactOpen(false)
+  }
+
+  function completeEmailAddress(): void {
+    setNewContact((currentContact) => ({
+      ...currentContact,
+      email: normalizeCohortEmail(currentContact.email),
+    }))
+  }
+
+  async function copyEmailAddress(email: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(email)
+      setCopiedEmail(email)
+    } catch {
+      setCopiedEmail(null)
+    }
+  }
+
+  function handleAddContact(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault()
+
+    const normalizedName = newContact.name.trim()
+    const normalizedEmail = normalizeCohortEmail(newContact.email)
+    const normalizedIndustry = newContact.industry.trim()
+    const normalizedDissertationInterest =
+      newContact.dissertationInterest.trim()
+    const parsedBirthday = parseBirthdayInput(newContact.birthdayInput)
+
+    if (!normalizedName) {
+      setFormError('Name is required.')
+      return
+    }
+
+    if (newContact.phoneDigits.length !== 10) {
+      setFormError('Phone Number must contain exactly 10 digits.')
+      return
+    }
+
+    if (
+      !normalizedEmail ||
+      !normalizedEmail.includes('@') ||
+      !normalizedEmail.includes('.')
+    ) {
+      setFormError('Enter a valid email address.')
+      return
+    }
+
+    if (newContact.birthdayInput.trim() && !parsedBirthday) {
+      setFormError(
+        'Birthday must use a valid month and day, such as 813, 0813, or 8/13.',
+      )
+      return
+    }
+
+    const contact: CohortContactRecord = {
+      id: crypto.randomUUID(),
+      name: normalizedName,
+      timeZone: newContact.timeZone,
+      phoneDigits: newContact.phoneDigits,
+      email: normalizedEmail,
+      industry: normalizedIndustry,
+      birthdayMonth: parsedBirthday?.month ?? null,
+      birthdayDay: parsedBirthday?.day ?? null,
+      dissertationInterest: normalizedDissertationInterest,
+      isMentor: false,
+    }
+
+    onAddContact(contact)
+    closeAddContactModal()
+  }
+
   return (
     <section className="page-shell">
       <header className="dashboard-page-heading cohort-contacts-page-heading">
         <h1>Beta Nu Cohort Contacts</h1>
       </header>
+
+      <div className="contacts-toolbar">
+        <button
+          type="button"
+          className="add-contact-button"
+          onClick={openAddContactModal}
+        >
+          + Add Contact
+        </button>
+
+        <div className="contacts-total-count">
+          Total Count = <strong>{contacts.length}</strong>
+        </div>
+      </div>
+
+      <div className="contacts-table-frame">
+        <table className="contacts-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Time Zone</th>
+              <th>Phone Number</th>
+              <th>Email</th>
+              <th>Industry</th>
+              <th>Birthday</th>
+              <th>Dissertation Interest</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {sortedContacts.map((contact) => (
+              <tr key={contact.id}>
+                <td className={contact.isMentor ? 'contact-mentor-name' : ''}>
+                  {contact.name}
+                </td>
+                <td>{contact.timeZone}</td>
+                <td>{formatPhoneNumber(contact.phoneDigits)}</td>
+                <td>
+                  <div className="contact-email-cell">
+                    <button
+                      type="button"
+                      className="contact-email-link"
+                      title="Copy email address"
+                      onClick={() => void copyEmailAddress(contact.email)}
+                    >
+                      {contact.email}
+                    </button>
+
+                    {copiedEmail === contact.email && (
+                      <span className="contact-email-copied">Copied</span>
+                    )}
+                  </div>
+                </td>
+                <td>{contact.industry || '—'}</td>
+                <td>
+                  {formatBirthday(
+                    contact.birthdayMonth,
+                    contact.birthdayDay,
+                  ) || '—'}
+                </td>
+                <td>{contact.dissertationInterest || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {isAddContactOpen && (
+        <div className="contact-modal-backdrop">
+          <section
+            className="contact-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-contact-title"
+          >
+            <header className="contact-modal-header">
+              <h2 id="add-contact-title">Add New Contact to Cohort</h2>
+
+              <button
+                type="button"
+                className="contact-modal-close"
+                onClick={closeAddContactModal}
+                aria-label="Close Add Contact window"
+              >
+                ×
+              </button>
+            </header>
+
+            <form
+              className="contact-form"
+              onSubmit={handleAddContact}
+            >
+              <div className="contact-form-grid">
+                <label className="contact-form-field">
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    value={newContact.name}
+                    onChange={(event) =>
+                      setNewContact((currentContact) => ({
+                        ...currentContact,
+                        name: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="contact-form-field">
+                  <span>Time Zone</span>
+                  <select
+                    value={newContact.timeZone}
+                    onChange={(event) => {
+                      const selectedTimeZone = event.target.value
+
+                      if (isCohortTimeZone(selectedTimeZone)) {
+                        setNewContact((currentContact) => ({
+                          ...currentContact,
+                          timeZone: selectedTimeZone,
+                        }))
+                      }
+                    }}
+                  >
+                    {cohortTimeZoneOptions.map((timeZone) => (
+                      <option key={timeZone} value={timeZone}>
+                        {timeZone}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="contact-form-field">
+                  <span>Phone Number</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={newContact.phoneDigits}
+                    placeholder="5551234567"
+                    onChange={(event) =>
+                      setNewContact((currentContact) => ({
+                        ...currentContact,
+                        phoneDigits: sanitizePhoneDigits(event.target.value),
+                      }))
+                    }
+                  />
+                  <small>
+                    Enter 10 digits. The table will display
+                    (555) 123-4567.
+                  </small>
+                </label>
+
+                <label className="contact-form-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={newContact.email}
+                    placeholder="sample.name"
+                    onBlur={completeEmailAddress}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        completeEmailAddress()
+                      }
+                    }}
+                    onChange={(event) =>
+                      setNewContact((currentContact) => ({
+                        ...currentContact,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
+                  <small>
+                    Example: entering sample.name becomes
+                    sample.name@mail.umassglobal.edu.
+                  </small>
+                </label>
+
+                <label className="contact-form-field">
+                  <span>Industry</span>
+                  <input
+                    type="text"
+                    value={newContact.industry}
+                    onChange={(event) =>
+                      setNewContact((currentContact) => ({
+                        ...currentContact,
+                        industry: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="contact-form-field">
+                  <span>Birthday</span>
+                  <input
+                    type="text"
+                    value={newContact.birthdayInput}
+                    placeholder="813 or 8/13"
+                    onChange={(event) =>
+                      setNewContact((currentContact) => ({
+                        ...currentContact,
+                        birthdayInput: event.target.value,
+                      }))
+                    }
+                  />
+                  <small>
+                    Enter MDD, MMDD, M/DD, MM/DD, or include a year.
+                    The year will not be displayed.
+                  </small>
+                </label>
+
+                <label className="contact-form-field contact-form-field-wide">
+                  <span>Dissertation Interest</span>
+                  <textarea
+                    rows={4}
+                    value={newContact.dissertationInterest}
+                    onChange={(event) =>
+                      setNewContact((currentContact) => ({
+                        ...currentContact,
+                        dissertationInterest: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              {formError && (
+                <p className="contact-form-error" role="alert">
+                  {formError}
+                </p>
+              )}
+
+              <div className="contact-modal-actions">
+                <button
+                  type="button"
+                  className="contact-cancel-button"
+                  onClick={closeAddContactModal}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="contact-save-button"
+                >
+                  Add Contact
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </section>
   )
 }
@@ -531,6 +1253,15 @@ function CoursePage() {
 function App() {
   const [coursesOpen, setCoursesOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [contacts, setContacts] =
+    useState<readonly CohortContactRecord[]>(cohortContactsSeed)
+
+  function addCohortContact(contact: CohortContactRecord): void {
+    setContacts((currentContacts) => [
+      ...currentContacts,
+      contact,
+    ])
+  }
 
   return (
     <div
@@ -638,7 +1369,12 @@ function App() {
 
             <Route
               path="/cohort-contact"
-              element={<CohortContactPage />}
+              element={
+                <CohortContactPage
+                  contacts={contacts}
+                  onAddContact={addCohortContact}
+                />
+              }
             />
 
             <Route
