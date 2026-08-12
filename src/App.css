@@ -396,6 +396,12 @@
   line-height: 1.4;
 }
 
+.cohort-dates-former-note-bottom {
+  max-width: none;
+  width: 100%;
+  margin-top: 12px;
+}
+
 .cohort-dates-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 470px;
@@ -437,7 +443,7 @@
   padding: 8px 7px;
   color: #111827;
   background: var(--umass-gold);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.15;
 }
@@ -525,7 +531,7 @@
   color: #111827;
   background: #ffffff;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
 }

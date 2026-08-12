@@ -1851,12 +1851,6 @@ function CohortDatesRolesPage({
             }
           />
         </label>
-
-        <div className="cohort-dates-former-note">
-          Patrick J. Harris is retained for historical accuracy.
-          Assignments after July 26, 2026 are flagged in red and
-          excluded from role totals until reassigned.
-        </div>
       </div>
 
       <datalist id="cohort-role-name-options">
@@ -1882,7 +1876,7 @@ function CohortDatesRolesPage({
                   <th>Facilitator</th>
                   <th>Community Builder</th>
                   <th>Recorder</th>
-                  <th>Time Keeper</th>
+                  <th>Timekeeper</th>
                   <th>Process Observer</th>
                 </tr>
               </thead>
@@ -2011,6 +2005,12 @@ function CohortDatesRolesPage({
             </table>
           </div>
         </aside>
+      </div>
+
+      <div className="cohort-dates-former-note cohort-dates-former-note-bottom">
+        Patrick J. Harris is retained for historical accuracy.
+        Assignments after July 26, 2026 are flagged in red and
+        excluded from role totals until reassigned.
       </div>
     </section>
   )
