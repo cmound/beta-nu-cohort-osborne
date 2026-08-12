@@ -49,6 +49,14 @@ const navigationItems: readonly NavigationItem[] = [
     label: 'Groups - Assigned by Member',
     path: '/groups-assigned-by-member',
   },
+  {
+    label: 'Beta Nu Fall Icons',
+    path: '/beta-nu-fall-icons',
+  },
+  {
+    label: 'Shared Files',
+    path: '/shared-files',
+  },
 ]
 
 const courses: readonly CourseNavigationItem[] = [
@@ -77,7 +85,7 @@ const appBackgroundStyle: AppBackgroundStyle = {
   '--bnf-background-image': `url("${import.meta.env.BASE_URL}bnf-webpage-background.png")`,
 }
 
-const sealIconSrc = `${import.meta.env.BASE_URL}favicon-48x48.png`
+const sidebarHeaderBannerSrc = `${import.meta.env.BASE_URL}sidebar-header-banner.png`
 
 function PageShell({
   title,
@@ -100,7 +108,19 @@ function PageShell({
 
 function DashboardPage() {
   return (
-    <PageShell title="Beta Nu Cohort Dashboard">
+    <section className="page-shell">
+      <header className="dashboard-page-heading">
+        <h1>Beta Nu Cohort Dashboard</h1>
+
+        <span className="dashboard-chair-name">
+          Dr. Cheryl-Marie Osborne
+        </span>
+
+        <span className="dashboard-program-name">
+          Ed.D. Organizational Leadership
+        </span>
+      </header>
+
       <div className="dashboard-summary-grid">
         <article className="summary-card">
           <span className="summary-card-number">01</span>
@@ -159,7 +179,7 @@ function DashboardPage() {
           </p>
         </div>
       </div>
-    </PageShell>
+    </section>
   )
 }
 
@@ -251,28 +271,41 @@ function CoursePage() {
 }
 
 function App() {
-  const [coursesOpen, setCoursesOpen] = useState(true)
+  const [coursesOpen, setCoursesOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   return (
-    <div className="bnf-app" style={appBackgroundStyle}>
-      <aside className="sidebar">
-        <div className="sidebar-brand">
+    <div
+      className={`bnf-app ${sidebarCollapsed ? 'bnf-app-sidebar-collapsed' : ''
+        }`}
+      style={appBackgroundStyle}
+    >
+      <aside
+        className={`sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''
+          }`}
+      >
+        <div className="sidebar-header">
           <img
-            src={sealIconSrc}
-            className="sidebar-seal"
-            width="48"
-            height="48"
-            alt="Beta Nu Fall seal"
+            src={sidebarHeaderBannerSrc}
+            className="sidebar-header-banner"
+            alt="Beta Nu Fall Cohort Hub, Ed.D. Organizational Leadership"
           />
 
-          <div className="sidebar-brand-copy">
-            <span className="sidebar-brand-name">Beta Nu Fall</span>
-            <span className="sidebar-brand-title">Cohort Hub</span>
-          </div>
-        </div>
-
-        <div className="sidebar-program">
-          Ed.D. Organizational Leadership
+          <button
+            type="button"
+            className="sidebar-collapse-button"
+            onClick={() =>
+              setSidebarCollapsed((isCollapsed) => !isCollapsed)
+            }
+            aria-label={
+              sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+            }
+            title={
+              sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+            }
+          >
+            {sidebarCollapsed ? '+' : '−'}
+          </button>
         </div>
 
         <div className="sidebar-divider" />
@@ -302,9 +335,8 @@ function App() {
               <span className="nav-marker nav-marker-courses" aria-hidden="true" />
               <span>Courses</span>
               <span
-                className={`nav-chevron ${
-                  coursesOpen ? 'nav-chevron-open' : ''
-                }`}
+                className={`nav-chevron ${coursesOpen ? 'nav-chevron-open' : ''
+                  }`}
                 aria-hidden="true"
               >
                 ▾
@@ -327,34 +359,25 @@ function App() {
                     <span>{course.code}</span>
                   </NavLink>
                 ))}
+
+                <NavLink
+                  to="/template-eddp-7xx"
+                  className={({ isActive }) =>
+                    isActive
+                      ? 'course-nav-link course-nav-link-active'
+                      : 'course-nav-link'
+                  }
+                >
+                  <span className="course-nav-dot" aria-hidden="true" />
+                  <span>Template EDDP 7XX</span>
+                </NavLink>
               </div>
             )}
           </div>
-
-          <NavLink
-            to="/template-eddp-7xx"
-            className={({ isActive }) =>
-              isActive ? 'nav-link nav-link-active' : 'nav-link'
-            }
-          >
-            <span className="nav-marker" aria-hidden="true" />
-            <span>Template EDDP 7XX</span>
-          </NavLink>
         </nav>
       </aside>
 
       <div className="app-main">
-        <header className="topbar">
-          <div>
-            <span className="topbar-title">Beta Nu Fall Cohort Hub</span>
-            <span className="topbar-subtitle">Osborne Cohort</span>
-          </div>
-
-          <span className="topbar-program">
-            Ed.D. Organizational Leadership
-          </span>
-        </header>
-
         <main className="page-content">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
@@ -460,6 +483,26 @@ function App() {
                 <PlaceholderPage
                   title="Groups - Assigned by Member"
                   description="Course group assignments and member participation will be organized here."
+                />
+              }
+            />
+
+            <Route
+              path="/beta-nu-fall-icons"
+              element={
+                <PlaceholderPage
+                  title="Beta Nu Fall Icons"
+                  description="Beta Nu Fall seals, Zoom wallpapers, Word document tips, and related cohort branding resources will be organized here."
+                />
+              }
+            />
+
+            <Route
+              path="/shared-files"
+              element={
+                <PlaceholderPage
+                  title="Shared Files"
+                  description="Shared cohort documents and resources will be organized here."
                 />
               }
             />
