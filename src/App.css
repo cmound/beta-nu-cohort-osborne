@@ -232,13 +232,10 @@
 .nav-chevron {
   margin-left: auto;
   color: var(--silver-300);
-  font-size: 14px;
-  transform: rotate(-90deg);
-  transition: transform 0.15s ease;
-}
-
-.nav-chevron-open {
-  transform: rotate(0deg);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .course-nav {
@@ -338,7 +335,7 @@
 .dashboard-page-heading h1 {
   margin: 0;
   color: var(--umass-gold);
-  font-size: 21px;
+  font-size: 23px;
   font-weight: 900;
   line-height: 1.15;
   letter-spacing: 0.15px;
@@ -346,9 +343,9 @@
 
 .dashboard-chair-name {
   color: var(--white);
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.2;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.15;
   text-align: center;
   white-space: nowrap;
 }
@@ -356,10 +353,10 @@
 .dashboard-program-name {
   justify-self: end;
   color: var(--silver-300);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: 0.35px;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: 0.15px;
   text-align: right;
   white-space: nowrap;
 }

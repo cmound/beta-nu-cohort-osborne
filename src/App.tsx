@@ -40,7 +40,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Attendance', path: '/attendance' },
   { label: 'Norms', path: '/norms' },
   { label: 'Values and Vision', path: '/values-vision' },
-  { label: 'Purpose & Research ?', path: '/purpose-research' },
+  { label: 'Purpose & Research', path: '/purpose-research' },
   { label: 'Data Survey', path: '/data-survey' },
   { label: 'TLSI Dates', path: '/tlsi-dates' },
   { label: 'Book List', path: '/book-list' },
@@ -334,12 +334,8 @@ function App() {
             >
               <span className="nav-marker nav-marker-courses" aria-hidden="true" />
               <span>Courses</span>
-              <span
-                className={`nav-chevron ${coursesOpen ? 'nav-chevron-open' : ''
-                  }`}
-                aria-hidden="true"
-              >
-                ▾
+              <span className="nav-chevron" aria-hidden="true">
+                {coursesOpen ? '[-]' : '[+]'}
               </span>
             </button>
 
@@ -431,7 +427,7 @@ function App() {
               path="/purpose-research"
               element={
                 <PlaceholderPage
-                  title="Purpose & Research ?"
+                  title="Purpose & Research"
                   description="Purpose statements, research questions, and dissertation development information will be organized here."
                 />
               }
