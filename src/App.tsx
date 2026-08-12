@@ -1202,6 +1202,27 @@ function CohortContactPage({
   )
 }
 
+function CohortSectionPlaceholderPage({
+  title,
+  description,
+}: PlaceholderPageProps) {
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>{title}</h1>
+      </header>
+
+      <div className="content-panel">
+        <div className="placeholder-content">
+          <p className="panel-eyebrow">Page Structure Created</p>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function PlaceholderPage({
   title,
   description,
@@ -1380,8 +1401,8 @@ function App() {
             <Route
               path="/cohort-dates-roles"
               element={
-                <PlaceholderPage
-                  title="Cohort Dates & Roles"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Dates & Roles"
                   description="Cohort meeting dates, assignments, and rotating meeting responsibilities will be organized here."
                 />
               }
@@ -1390,8 +1411,8 @@ function App() {
             <Route
               path="/attendance"
               element={
-                <PlaceholderPage
-                  title="Attendance"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Attendance"
                   description="Cohort meeting attendance and participation records will be maintained here."
                 />
               }
@@ -1400,8 +1421,8 @@ function App() {
             <Route
               path="/norms"
               element={
-                <PlaceholderPage
-                  title="Norms"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Norms"
                   description="The cohort's agreed expectations, communication standards, and shared norms will be maintained here."
                 />
               }
@@ -1410,8 +1431,8 @@ function App() {
             <Route
               path="/values-vision"
               element={
-                <PlaceholderPage
-                  title="Values and Vision"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Values and Vision"
                   description="The cohort's shared values, accountability commitments, and vision statement will be organized here."
                 />
               }
@@ -1420,8 +1441,8 @@ function App() {
             <Route
               path="/purpose-research"
               element={
-                <PlaceholderPage
-                  title="Purpose & Research"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Purpose & Research"
                   description="Purpose statements, research questions, and dissertation development information will be organized here."
                 />
               }
@@ -1430,8 +1451,8 @@ function App() {
             <Route
               path="/data-survey"
               element={
-                <PlaceholderPage
-                  title="Data Survey"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Data Survey"
                   description="Cohort survey information and related shared data will be organized here."
                 />
               }
@@ -1440,8 +1461,8 @@ function App() {
             <Route
               path="/tlsi-dates"
               element={
-                <PlaceholderPage
-                  title="TLSI Dates"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort TLSI Dates"
                   description="TLSI milestones, dates, responsibilities, and related reminders will be organized here."
                 />
               }
@@ -1450,8 +1471,8 @@ function App() {
             <Route
               path="/book-list"
               element={
-                <PlaceholderPage
-                  title="Book List"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Book List"
                   description="Required and recommended books and course resources will be maintained here."
                 />
               }
@@ -1460,8 +1481,8 @@ function App() {
             <Route
               path="/transfer-courses"
               element={
-                <PlaceholderPage
-                  title="Transfer Courses"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Transfer Courses"
                   description="Approved transfer courses and cohort member transfer-credit information will be organized here."
                 />
               }
@@ -1470,8 +1491,8 @@ function App() {
             <Route
               path="/groups-assigned-by-member"
               element={
-                <PlaceholderPage
-                  title="Groups - Assigned by Member"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Groups - Assigned by Member"
                   description="Course group assignments and member participation will be organized here."
                 />
               }
@@ -1480,8 +1501,8 @@ function App() {
             <Route
               path="/beta-nu-fall-icons"
               element={
-                <PlaceholderPage
-                  title="Beta Nu Fall Icons"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Beta Nu Fall Icons"
                   description="Beta Nu Fall seals, Zoom wallpapers, Word document tips, and related cohort branding resources will be organized here."
                 />
               }
@@ -1490,8 +1511,8 @@ function App() {
             <Route
               path="/shared-files"
               element={
-                <PlaceholderPage
-                  title="Shared Files"
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Shared Files"
                   description="Shared cohort documents and resources will be organized here."
                 />
               }
