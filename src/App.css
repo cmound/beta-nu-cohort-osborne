@@ -341,6 +341,10 @@
   letter-spacing: 0.15px;
 }
 
+.cohort-contacts-page-heading {
+  grid-template-columns: 1fr;
+}
+
 .dashboard-chair-name {
   color: var(--white);
   font-size: 23px;
@@ -392,6 +396,445 @@
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: 0.15px;
+}
+
+.dashboard-primary-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(275px, 0.9fr)
+    minmax(420px, 1.35fr)
+    minmax(410px, 1.3fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.dashboard-secondary-grid {
+  display: grid;
+  grid-template-columns: minmax(700px, 2.3fr) minmax(290px, 0.8fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.dashboard-info-card {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  border-top: 4px solid var(--umass-blue);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.16);
+}
+
+.dashboard-date-card,
+.dashboard-progress-card,
+.dashboard-classes-card {
+  min-height: 178px;
+  padding: 16px;
+}
+
+.dashboard-card-label {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.dashboard-card-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-card-heading-row > strong {
+  color: var(--umass-blue);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dashboard-current-date {
+  margin: 18px 0 12px;
+  color: var(--umass-navy);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.dashboard-time-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dashboard-time-list span {
+  color: #334155;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.program-progress-track {
+  position: relative;
+  height: 18px;
+  margin: 25px 0 15px;
+  overflow: hidden;
+  border: 1px solid #8fa4b8;
+  border-radius: 999px;
+  background: #dce4eb;
+}
+
+.program-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(
+      90deg,
+      var(--umass-navy) 0%,
+      var(--umass-blue) 72%,
+      var(--umass-gold) 100%
+    );
+}
+
+.program-progress-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.program-progress-dates > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.program-progress-dates > div:last-child {
+  text-align: right;
+}
+
+.program-progress-current {
+  text-align: center;
+}
+
+.program-progress-dates span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+.program-progress-dates strong {
+  color: #172033;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.active-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.active-course-item {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 1px solid #b7c4d1;
+  border-left: 4px solid var(--umass-blue);
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.active-course-item span {
+  color: var(--umass-blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.active-course-item strong {
+  color: #172033;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.dashboard-meeting-card {
+  min-height: 300px;
+}
+
+.dashboard-meeting-card > .dashboard-card-heading-row {
+  min-height: 45px;
+  padding: 8px 14px;
+  background:
+    linear-gradient(
+      180deg,
+      #eef3f7 0%,
+      #dde5ec 100%
+    );
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.meeting-status {
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 94, 184, 0.35);
+  border-radius: 999px;
+  color: var(--umass-blue);
+  background: rgba(0, 94, 184, 0.08);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.meeting-details {
+  padding: 14px;
+}
+
+.meeting-details h2 {
+  margin: 0 0 12px;
+  color: var(--umass-navy);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.meeting-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.meeting-time-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid #c2ccd6;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.meeting-time-grid span {
+  color: var(--umass-blue);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.meeting-time-grid strong {
+  color: #172033;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.meeting-zoom-link {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--umass-blue);
+  border-radius: 4px;
+  color: #ffffff;
+  background: var(--umass-blue);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.meeting-zoom-link:hover {
+  background: #004b93;
+}
+
+.meeting-zoom-link:focus-visible {
+  outline: 2px solid var(--umass-gold);
+  outline-offset: 2px;
+}
+
+.meeting-role-table-wrap {
+  padding: 0 14px 14px;
+}
+
+.meeting-role-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.meeting-role-table th,
+.meeting-role-table td {
+  border: 1px solid #aab5c3;
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.meeting-role-table th {
+  color: #ffffff;
+  background: var(--umass-navy);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.meeting-role-table td:first-child {
+  width: 34%;
+  color: var(--umass-blue);
+  font-weight: 800;
+}
+
+.birthday-card {
+  min-height: 300px;
+  padding: 16px;
+}
+
+.birthday-card-today {
+  border-color: #c69214;
+  border-top-color: #c69214;
+  background: #fff200;
+}
+
+.birthday-card-today .dashboard-card-label,
+.birthday-card-today .birthday-status,
+.birthday-card-today h2,
+.birthday-card-today strong,
+.birthday-card-today p {
+  color: #111827;
+}
+
+.birthday-content,
+.birthday-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 215px;
+  text-align: center;
+}
+
+.birthday-status {
+  margin-bottom: 8px;
+  color: var(--umass-blue);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.birthday-content h2 {
+  margin: 0 0 5px;
+  color: var(--umass-navy);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.birthday-content > strong {
+  color: var(--umass-blue);
+  font-size: 15px;
+}
+
+.birthday-content p {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.birthday-empty-state strong {
+  color: var(--umass-navy);
+  font-size: 14px;
+}
+
+.birthday-empty-state p {
+  max-width: 235px;
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.dashboard-vision-values {
+  overflow: hidden;
+  border: 1px solid var(--umass-gold);
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(11, 31, 59, 0.98),
+      rgba(3, 18, 36, 0.98)
+    );
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-vision-section,
+.dashboard-values-section {
+  padding: 14px 22px;
+}
+
+.dashboard-values-section {
+  border-top: 1px solid rgba(198, 146, 20, 0.72);
+}
+
+.vision-title-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.vision-title-row span {
+  height: 1px;
+  background: var(--umass-gold);
+}
+
+.vision-title-row h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.dashboard-vision-section > p {
+  max-width: 1020px;
+  margin: 8px auto 0;
+  color: #f8fafc;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.dashboard-values-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 10px;
+}
+
+.dashboard-value-item {
+  min-height: 70px;
+  padding: 8px 12px;
+  border-right: 1px solid rgba(198, 146, 20, 0.48);
+}
+
+.dashboard-value-item:last-child {
+  border-right: none;
+}
+
+.dashboard-value-item strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--umass-gold);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dashboard-value-item span {
+  color: #e2e8f0;
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .dashboard-summary-grid {

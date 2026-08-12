@@ -1,4 +1,9 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react'
 import {
   Navigate,
   NavLink,
@@ -29,13 +34,43 @@ interface PlaceholderPageProps {
   readonly description: string
 }
 
+interface ActiveCourseDashboardItem {
+  readonly code: string
+  readonly title: string
+}
+
+interface MeetingRoleDashboardItem {
+  readonly role: string
+  readonly member: string
+}
+
+interface UpcomingMeetingDashboardItem {
+  readonly date: string
+  readonly pacificTime: string
+  readonly easternTime: string
+  readonly zoomUrl: string
+  readonly roles: readonly MeetingRoleDashboardItem[]
+}
+
+interface BirthdayDashboardItem {
+  readonly name: string
+  readonly dateLabel: string
+  readonly daysAwayLabel: string
+  readonly isToday: boolean
+}
+
+interface CohortValueDashboardItem {
+  readonly name: string
+  readonly description: string
+}
+
 type AppBackgroundStyle = CSSProperties & {
   '--bnf-background-image': string
 }
 
 const navigationItems: readonly NavigationItem[] = [
   { label: 'Dashboard', path: '/' },
-  { label: 'Cohort Contact', path: '/cohort-contact' },
+  { label: 'Cohort Contacts', path: '/cohort-contact' },
   { label: 'Cohort Dates & Roles', path: '/cohort-dates-roles' },
   { label: 'Attendance', path: '/attendance' },
   { label: 'Norms', path: '/norms' },
@@ -87,6 +122,119 @@ const appBackgroundStyle: AppBackgroundStyle = {
 
 const sidebarHeaderBannerSrc = `${import.meta.env.BASE_URL}sidebar-header-banner.png`
 
+const PROGRAM_START_DATE = Date.UTC(2025, 7, 25)
+const PROGRAM_END_DATE = Date.UTC(2027, 5, 27)
+
+const pacificDateFormatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'America/Los_Angeles',
+})
+
+const pacificTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'America/Los_Angeles',
+  timeZoneName: 'short',
+})
+
+const easternTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'America/New_York',
+  timeZoneName: 'short',
+})
+
+const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
+  {
+    code: 'EDDP 781',
+    title: 'Developing the Dissertation, Chapter I',
+  },
+  {
+    code: 'EDDP 720',
+    title: 'Creativity, Innovation and Sustainable Change',
+  },
+]
+
+const upcomingMeetingDashboard: UpcomingMeetingDashboardItem = {
+  date: 'Sunday, August 23, 2026',
+  pacificTime: '1:30 PM – 5:30 PM PDT',
+  easternTime: '4:30 PM – 8:30 PM EDT',
+  zoomUrl: 'https://umassglobal.zoom.us/my/drcmo',
+  roles: [
+    {
+      role: 'Facilitator',
+      member: 'Chris Mound',
+    },
+    {
+      role: 'Community Builder',
+      member: 'Victoria Vildosola',
+    },
+    {
+      role: 'Timekeeper',
+      member: 'Jessica Jackson',
+    },
+    {
+      role: 'Process Observer',
+      member: 'Sergiy Bryk',
+    },
+  ],
+}
+
+const nextBirthdayDashboard: BirthdayDashboardItem | null = null
+
+const cohortVision =
+  'The vision of Beta Nu is to build an inclusive and empowering community that inspires personal and professional growth through creativity, courage, and authenticity, while practicing transformational leadership grounded in ethical action, empathy, accountability, and a strong sense of belonging.'
+
+const cohortValues: readonly CohortValueDashboardItem[] = [
+  {
+    name: 'Respect',
+    description:
+      'Listen to others, honor differences, and treat people with dignity.',
+  },
+  {
+    name: 'Commitment',
+    description:
+      'Show up prepared, remain engaged, and follow through on responsibilities.',
+  },
+  {
+    name: 'Communication',
+    description:
+      'Share information clearly, honestly, and in a timely manner.',
+  },
+  {
+    name: 'Accountability',
+    description:
+      'Own actions, results, and missed commitments.',
+  },
+  {
+    name: 'Adaptability',
+    description:
+      'Respond to change with flexibility while remaining focused on shared goals.',
+  },
+]
+
+function calculateProgramProgress(currentDate: Date): number {
+  const currentTime = currentDate.getTime()
+  const totalDuration = PROGRAM_END_DATE - PROGRAM_START_DATE
+
+  if (currentTime <= PROGRAM_START_DATE) {
+    return 0
+  }
+
+  if (currentTime >= PROGRAM_END_DATE) {
+    return 100
+  }
+
+  return Math.round(
+    ((currentTime - PROGRAM_START_DATE) / totalDuration) * 100,
+  )
+}
+
 function PageShell({
   title,
   children,
@@ -107,6 +255,20 @@ function PageShell({
 }
 
 function DashboardPage() {
+  const [currentDate, setCurrentDate] = useState(() => new Date())
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setCurrentDate(new Date())
+    }, 60_000)
+
+    return () => {
+      window.clearInterval(timerId)
+    }
+  }, [])
+
+  const programProgress = calculateProgramProgress(currentDate)
+
   return (
     <section className="page-shell">
       <header className="dashboard-page-heading">
@@ -121,104 +283,200 @@ function DashboardPage() {
         </span>
       </header>
 
-      <div className="dashboard-summary-grid">
-        <article className="summary-card">
-          <span className="summary-card-number">01</span>
-          <h2>Cohort Directory</h2>
-          <p>
-            Centralized roster, contact information, dissertation interests,
-            and cohort member details.
-          </p>
-        </article>
+      <div className="dashboard-primary-grid">
+        <article className="dashboard-info-card dashboard-date-card">
+          <p className="dashboard-card-label">Today's Date & Time</p>
 
-        <article className="summary-card">
-          <span className="summary-card-number">02</span>
-          <h2>Meetings & Roles</h2>
-          <p>
-            Cohort meeting dates, rotating responsibilities, facilitators,
-            recorders, and assigned roles.
+          <p className="dashboard-current-date">
+            {pacificDateFormatter.format(currentDate)}
           </p>
-        </article>
 
-        <article className="summary-card">
-          <span className="summary-card-number">03</span>
-          <h2>Attendance</h2>
-          <p>
-            Central location for cohort meeting attendance and participation
-            tracking.
-          </p>
-        </article>
-
-        <article className="summary-card">
-          <span className="summary-card-number">19</span>
-          <h2>Course Pages</h2>
-          <p>
-            Individual course workspaces organized under one expandable
-            Courses navigation section.
-          </p>
-        </article>
-      </div>
-
-      <div className="content-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="panel-eyebrow">Foundation</p>
-            <h2>Cohort Hub Structure</h2>
+          <div className="dashboard-time-list">
+            <span>{pacificTimeFormatter.format(currentDate)}</span>
+            <span>{easternTimeFormatter.format(currentDate)}</span>
           </div>
-        </div>
+        </article>
 
-        <div className="dashboard-intro">
-          <p>
-            The Beta Nu Fall Cohort Hub provides one organized location for
-            cohort information, meetings, attendance, research development,
-            course tracking, and shared resources.
-          </p>
-          <p>
-            Individual page content will be migrated and redesigned from the
-            existing cohort Google Sheets as each section is developed.
-          </p>
-        </div>
+        <article className="dashboard-info-card dashboard-progress-card">
+          <div className="dashboard-card-heading-row">
+            <p className="dashboard-card-label">Program Progress</p>
+            <strong>{programProgress}%</strong>
+          </div>
+
+          <div
+            className="program-progress-track"
+            role="progressbar"
+            aria-label="Beta Nu program timeline progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={programProgress}
+          >
+            <div
+              className="program-progress-fill"
+              style={{ width: `${programProgress}%` }}
+            />
+          </div>
+
+          <div className="program-progress-dates">
+            <div>
+              <span>Program Start</span>
+              <strong>August 25, 2025</strong>
+            </div>
+
+            <div className="program-progress-current">
+              <span>Current Progress</span>
+              <strong>{programProgress}% Complete</strong>
+            </div>
+
+            <div>
+              <span>Projected End</span>
+              <strong>June 27, 2027</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="dashboard-info-card dashboard-classes-card">
+          <div className="dashboard-card-heading-row">
+            <p className="dashboard-card-label">Active Classes</p>
+            <strong>{activeCoursesDashboard.length} Active</strong>
+          </div>
+
+          <div className="active-course-list">
+            {activeCoursesDashboard.map((course) => (
+              <div className="active-course-item" key={course.code}>
+                <span>{course.code}</span>
+                <strong>{course.title}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
       </div>
-    </section>
+
+      <div className="dashboard-secondary-grid">
+        <article className="dashboard-info-card dashboard-meeting-card">
+          <div className="dashboard-card-heading-row">
+            <p className="dashboard-card-label">Upcoming Cohort Meeting</p>
+            <span className="meeting-status">Next Meeting</span>
+          </div>
+
+          <div className="meeting-details">
+            <h2>{upcomingMeetingDashboard.date}</h2>
+
+            <div className="meeting-time-grid">
+              <div>
+                <span>Pacific</span>
+                <strong>{upcomingMeetingDashboard.pacificTime}</strong>
+              </div>
+
+              <div>
+                <span>Eastern</span>
+                <strong>{upcomingMeetingDashboard.easternTime}</strong>
+              </div>
+            </div>
+
+            <a
+              className="meeting-zoom-link"
+              href={upcomingMeetingDashboard.zoomUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Zoom Meeting
+            </a>
+          </div>
+
+          <div className="meeting-role-table-wrap">
+            <table className="meeting-role-table">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Assigned Member</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingMeetingDashboard.roles.map((meetingRole) => (
+                  <tr key={meetingRole.role}>
+                    <td>{meetingRole.role}</td>
+                    <td>{meetingRole.member}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article
+          className={`dashboard-info-card birthday-card${
+            nextBirthdayDashboard?.isToday ? ' birthday-card-today' : ''
+          }`}
+        >
+          <p className="dashboard-card-label">Birthday Board</p>
+
+          {nextBirthdayDashboard ? (
+            <div className="birthday-content">
+              <span className="birthday-status">
+                {nextBirthdayDashboard.isToday
+                  ? "Today's Birthday"
+                  : 'Next Birthday'}
+              </span>
+
+              <h2>{nextBirthdayDashboard.name}</h2>
+              <strong>{nextBirthdayDashboard.dateLabel}</strong>
+              <p>
+                {nextBirthdayDashboard.isToday
+                  ? 'Happy Birthday!'
+                  : nextBirthdayDashboard.daysAwayLabel}
+              </p>
+            </div>
+          ) : (
+            <div className="birthday-empty-state">
+              <strong>Birthday data will appear here.</strong>
+              <p>
+                Upcoming birthdays will populate from the Cohort Contact page.
+              </p>
+            </div>
+          )}
+        </article>
+      </div>
+
+      <article className="dashboard-vision-values">
+        <section className="dashboard-vision-section">
+          <div className="vision-title-row">
+            <span />
+            <h2>Our Vision</h2>
+            <span />
+          </div>
+
+          <p>{cohortVision}</p>
+        </section>
+
+        <section className="dashboard-values-section">
+          <div className="vision-title-row">
+            <span />
+            <h2>Our Values</h2>
+            <span />
+          </div>
+
+          <div className="dashboard-values-list">
+            {cohortValues.map((value) => (
+              <div className="dashboard-value-item" key={value.name}>
+                <strong>{value.name}:</strong>
+                <span>{value.description}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </article>
+    </section >
   )
 }
 
 function CohortContactPage() {
   return (
-    <PageShell title="Cohort Contact">
-      <div className="content-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="panel-eyebrow">Cohort Directory</p>
-            <h2>Beta Nu Fall Roster</h2>
-          </div>
-        </div>
-
-        <div className="table-frame">
-          <table className="cohort-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Time Zone</th>
-                <th>Phone Number</th>
-                <th>Email</th>
-                <th>Industry</th>
-                <th>Birthday</th>
-                <th>Dissertation Interest</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="table-empty-state" colSpan={7}>
-                  Cohort roster data will be added when the shared data model
-                  is established.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </PageShell>
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Contacts</h1>
+      </header>
+    </section>
   )
 }
 
