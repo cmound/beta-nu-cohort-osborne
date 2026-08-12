@@ -102,6 +102,53 @@ interface CohortContactPageProps {
   readonly onAddContact: (contact: CohortContactRecord) => void
 }
 
+type CohortProgramYear = 'Year 1' | 'Year 2'
+
+type CohortMeetingRoleField =
+  | 'facilitator'
+  | 'communityBuilder'
+  | 'recorder'
+  | 'timeKeeper'
+  | 'processObserver'
+
+interface CohortMeetingRecord {
+  readonly id: string
+  readonly year: CohortProgramYear
+  readonly date: string
+  readonly term: string
+  readonly meetingNumber: string
+  readonly facilitator: string
+  readonly communityBuilder: string
+  readonly recorder: string
+  readonly timeKeeper: string
+  readonly processObserver: string
+}
+
+interface CohortDatesRolesPageProps {
+  readonly contacts: readonly CohortContactRecord[]
+  readonly meetings: readonly CohortMeetingRecord[]
+  readonly onUpdateRole: (
+    meetingId: string,
+    roleField: CohortMeetingRoleField,
+    value: string,
+  ) => void
+}
+
+interface FormerCohortMemberRecord {
+  readonly name: string
+  readonly inactiveAfterDate: string
+}
+
+interface CohortRoleSummaryRecord {
+  readonly name: string
+  readonly facilitator: number
+  readonly communityBuilder: number
+  readonly recorder: number
+  readonly timeKeeper: number
+  readonly processObserver: number
+  readonly total: number
+}
+
 interface ParsedBirthday {
   readonly month: number
   readonly day: number
@@ -190,6 +237,21 @@ const easternTimeFormatter = new Intl.DateTimeFormat('en-US', {
   hour12: true,
   timeZone: 'America/New_York',
   timeZoneName: 'short',
+})
+
+const pacificDateKeyFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'America/Los_Angeles',
+})
+
+const cohortMeetingDateFormatter = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
 })
 
 const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
@@ -467,6 +529,304 @@ const cohortContactsSeed: readonly CohortContactRecord[] = [
   },
 ]
 
+const formerCohortMembers: readonly FormerCohortMemberRecord[] = [
+  {
+    name: 'Patrick J. Harris',
+    inactiveAfterDate: '2026-07-26',
+  },
+]
+
+const cohortMeetingsSeed: readonly CohortMeetingRecord[] = [
+  {
+    id: 'meeting-2025-09-21',
+    year: 'Year 1',
+    date: '2025-09-21',
+    term: 'Fall I 2025',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Dr. CMO',
+    communityBuilder: 'Jessica Jackson',
+    recorder: 'Elanis Cruz',
+    timeKeeper: 'Patrick J. Harris',
+    processObserver: 'Tracy Rico',
+  },
+  {
+    id: 'meeting-2025-10-12',
+    year: 'Year 1',
+    date: '2025-10-12',
+    term: 'Fall I 2025',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Patrick J. Harris',
+    communityBuilder: 'Reynaldo Dulaney',
+    recorder: 'Tracy Rico',
+    timeKeeper: 'Asa Jones-McGhee',
+    processObserver: 'Jessica Jackson',
+  },
+  {
+    id: 'meeting-2025-11-16',
+    year: 'Year 1',
+    date: '2025-11-16',
+    term: 'Fall II 2025',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Jessica Leon',
+    communityBuilder: 'Victoria Vildosola',
+    recorder: 'Sergiy Bryk',
+    timeKeeper: 'Reynaldo Dulaney',
+    processObserver: 'Elanis Cruz',
+  },
+  {
+    id: 'meeting-2025-12-07',
+    year: 'Year 1',
+    date: '2025-12-07',
+    term: 'Fall II 2025',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Monica Romero',
+    communityBuilder: 'Tracy Rico',
+    recorder: 'Jessica Leon',
+    timeKeeper: 'Victoria Vildosola',
+    processObserver: 'Celia Cipres',
+  },
+  {
+    id: 'meeting-2026-02-01',
+    year: 'Year 1',
+    date: '2026-02-01',
+    term: 'Spring I 2026',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Bashiyra Windley',
+    communityBuilder: 'Chris Mound',
+    recorder: 'Celia Cipres',
+    timeKeeper: 'Monica Romero',
+    processObserver: 'Asa Jones-McGhee',
+  },
+  {
+    id: 'meeting-2026-03-01',
+    year: 'Year 1',
+    date: '2026-03-01',
+    term: 'Spring I 2026',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Jessica Jackson',
+    communityBuilder: 'Bashiyra Windley',
+    recorder: 'Asa Jones-McGhee',
+    timeKeeper: 'Tracy Rico',
+    processObserver: 'Chris Mound',
+  },
+  {
+    id: 'meeting-2026-03-29',
+    year: 'Year 1',
+    date: '2026-03-29',
+    term: 'Spring II 2026',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Tracy Rico',
+    communityBuilder: 'Celia Cipres',
+    recorder: 'Bashiyra Windley',
+    timeKeeper: 'Elanis Cruz',
+    processObserver: 'Victoria Vildosola',
+  },
+  {
+    id: 'meeting-2026-04-19',
+    year: 'Year 1',
+    date: '2026-04-19',
+    term: 'Spring II 2026',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Reynaldo Dulaney',
+    communityBuilder: 'Victoria Vildosola',
+    recorder: 'Jessica Jackson',
+    timeKeeper: 'Sergiy Bryk',
+    processObserver: 'Elanis Cruz',
+  },
+  {
+    id: 'meeting-2026-05-31',
+    year: 'Year 1',
+    date: '2026-05-31',
+    term: 'Summer I 2026',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Celia Cipres',
+    communityBuilder: 'Sergiy Bryk',
+    recorder: 'Bashiyra Windley',
+    timeKeeper: 'Chris Mound',
+    processObserver: 'Elanis Cruz',
+  },
+  {
+    id: 'meeting-2026-06-14',
+    year: 'Year 1',
+    date: '2026-06-14',
+    term: 'Summer I 2026',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Jessica Leon',
+    communityBuilder: 'Chris Mound',
+    recorder: 'Tracy Rico',
+    timeKeeper: 'Victoria Vildosola',
+    processObserver: 'Jessica Jackson',
+  },
+  {
+    id: 'meeting-2026-07-26',
+    year: 'Year 1',
+    date: '2026-07-26',
+    term: 'Summer II 2026',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Chris Mound',
+    communityBuilder: 'Victoria Vildosola',
+    recorder: 'Reynaldo Dulaney',
+    timeKeeper: 'Jessica Jackson',
+    processObserver: 'Sergiy Bryk',
+  },
+  {
+    id: 'meeting-2026-08-23',
+    year: 'Year 1',
+    date: '2026-08-23',
+    term: 'Summer II 2026',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Victoria Vildosola',
+    communityBuilder: 'Jessica Jackson',
+    recorder: 'Sergiy Bryk',
+    timeKeeper: 'Tracy Rico',
+    processObserver: 'Monica Romero',
+  },
+  {
+    id: 'meeting-2026-09-20',
+    year: 'Year 2',
+    date: '2026-09-20',
+    term: 'Fall I 2026',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Sergiy Bryk',
+    communityBuilder: 'Celia Cipres',
+    recorder: 'Chris Mound',
+    timeKeeper: 'Victoria Vildosola',
+    processObserver: '',
+  },
+  {
+    id: 'meeting-2026-10-18',
+    year: 'Year 2',
+    date: '2026-10-18',
+    term: 'Fall I 2026',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Jessica Jackson',
+    communityBuilder: 'Victoria Vildosola',
+    recorder: 'Tracy Rico',
+    timeKeeper: 'Monica Romero',
+    processObserver: 'Jessica Leon',
+  },
+  {
+    id: 'meeting-2026-11-15',
+    year: 'Year 2',
+    date: '2026-11-15',
+    term: 'Fall II 2026',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Jessica Leon',
+    communityBuilder: 'Tracy Rico',
+    recorder: 'Victoria Vildosola',
+    timeKeeper: 'Reynaldo Dulaney',
+    processObserver: 'Bashiyra Windley',
+  },
+  {
+    id: 'meeting-2026-12-13',
+    year: 'Year 2',
+    date: '2026-12-13',
+    term: 'Fall II 2026',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Elanis Cruz',
+    communityBuilder: 'Bashiyra Windley',
+    recorder: 'Asa Jones-McGhee',
+    timeKeeper: '',
+    processObserver: 'Chris Mound',
+  },
+  {
+    id: 'meeting-2027-01-31',
+    year: 'Year 2',
+    date: '2027-01-31',
+    term: 'Spring I 2027',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Chris Mound',
+    communityBuilder: 'Jessica Jackson',
+    recorder: 'Reynaldo Dulaney',
+    timeKeeper: 'Tracy Rico',
+    processObserver: 'Sergiy Bryk',
+  },
+  {
+    id: 'meeting-2027-02-21',
+    year: 'Year 2',
+    date: '2027-02-21',
+    term: 'Spring I 2027',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Asa Jones-McGhee',
+    communityBuilder: 'Jessica Leon',
+    recorder: 'Chris Mound',
+    timeKeeper: 'Bashiyra Windley',
+    processObserver: 'Reynaldo Dulaney',
+  },
+  {
+    id: 'meeting-2027-03-21',
+    year: 'Year 2',
+    date: '2027-03-21',
+    term: 'Spring II 2027',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Tracy Rico',
+    communityBuilder: 'Asa Jones-McGhee',
+    recorder: 'Patrick J. Harris',
+    timeKeeper: 'Chris Mound',
+    processObserver: 'Celia Cipres',
+  },
+  {
+    id: 'meeting-2027-04-11',
+    year: 'Year 2',
+    date: '2027-04-11',
+    term: 'Spring II 2027',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Celia Cipres',
+    communityBuilder: 'Sergiy Bryk',
+    recorder: 'Bashiyra Windley',
+    timeKeeper: 'Elanis Cruz',
+    processObserver: 'Tracy Rico',
+  },
+  {
+    id: 'meeting-2027-05-23',
+    year: 'Year 2',
+    date: '2027-05-23',
+    term: 'Summer I 2027',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Bashiyra Windley',
+    communityBuilder: 'Elanis Cruz',
+    recorder: '',
+    timeKeeper: 'Asa Jones-McGhee',
+    processObserver: 'Patrick J. Harris',
+  },
+  {
+    id: 'meeting-2027-06-13',
+    year: 'Year 2',
+    date: '2027-06-13',
+    term: 'Summer I 2027',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Celia Cipres',
+    communityBuilder: 'Monica Romero',
+    recorder: 'Jessica Jackson',
+    timeKeeper: 'Patrick J. Harris',
+    processObserver: 'Asa Jones-McGhee',
+  },
+  {
+    id: 'meeting-2027-07-11',
+    year: 'Year 2',
+    date: '2027-07-11',
+    term: 'Summer II 2027',
+    meetingNumber: 'Cohort Meeting 1',
+    facilitator: 'Monica Romero',
+    communityBuilder: 'Reynaldo Dulaney',
+    recorder: '',
+    timeKeeper: 'Celia Cipres',
+    processObserver: 'Jessica Jackson',
+  },
+  {
+    id: 'meeting-2027-08-01',
+    year: 'Year 2',
+    date: '2027-08-01',
+    term: 'Summer II 2027',
+    meetingNumber: 'Cohort Meeting 2',
+    facilitator: 'Patrick J. Harris',
+    communityBuilder: 'Chris Mound',
+    recorder: '',
+    timeKeeper: 'Sergiy Bryk',
+    processObserver: 'Elanis Cruz',
+  },
+]
+
 function createEmptyContactForm(): CohortContactFormState {
   return {
     name: '',
@@ -597,6 +957,205 @@ function sortCohortContacts(
     return firstContact.name.localeCompare(secondContact.name, 'en-US', {
       sensitivity: 'base',
     })
+  })
+}
+
+function normalizeRoleParticipantName(value: string): string {
+  const normalizedValue = value.trim().toLocaleLowerCase('en-US')
+
+  if (normalizedValue === 'patrick harris') {
+    return 'patrick j. harris'
+  }
+
+  if (
+    normalizedValue === 'dr. cmo' ||
+    normalizedValue === 'dr. cheryl-marie osborne'
+  ) {
+    return 'dr. cheryl-marie osborne (mentor)'
+  }
+
+  return normalizedValue
+}
+
+function getPacificDateKey(currentDate: Date): string {
+  const dateParts = pacificDateKeyFormatter.formatToParts(currentDate)
+
+  const year = dateParts.find((part) => part.type === 'year')?.value
+  const month = dateParts.find((part) => part.type === 'month')?.value
+  const day = dateParts.find((part) => part.type === 'day')?.value
+
+  if (!year || !month || !day) {
+    return currentDate.toISOString().slice(0, 10)
+  }
+
+  return `${year}-${month}-${day}`
+}
+
+function formatCohortMeetingDate(date: string): string {
+  return cohortMeetingDateFormatter.format(
+    new Date(`${date}T12:00:00Z`),
+  )
+}
+
+function getRoleNameOptions(
+  contacts: readonly CohortContactRecord[],
+): string[] {
+  const names = [
+    ...contacts.map((contact) => contact.name),
+    ...formerCohortMembers.map((member) => member.name),
+  ]
+
+  return [...new Set(names)].sort((firstName, secondName) =>
+    firstName.localeCompare(secondName, 'en-US', {
+      sensitivity: 'base',
+    }),
+  )
+}
+
+function isFormerMemberAssignmentInvalid(
+  meetingDate: string,
+  value: string,
+): boolean {
+  const normalizedValue = normalizeRoleParticipantName(value)
+
+  return formerCohortMembers.some(
+    (member) =>
+      normalizeRoleParticipantName(member.name) === normalizedValue &&
+      meetingDate > member.inactiveAfterDate,
+  )
+}
+
+function doesRoleMatchSearch(
+  value: string,
+  searchValue: string,
+): boolean {
+  const normalizedSearch = searchValue
+    .trim()
+    .toLocaleLowerCase('en-US')
+
+  if (!normalizedSearch) {
+    return false
+  }
+
+  return value
+    .trim()
+    .toLocaleLowerCase('en-US')
+    .includes(normalizedSearch)
+}
+
+function isCountableRoleAssignment(
+  meeting: CohortMeetingRecord,
+  roleValue: string,
+  participantName: string,
+): boolean {
+  if (!roleValue.trim()) {
+    return false
+  }
+
+  if (isFormerMemberAssignmentInvalid(meeting.date, roleValue)) {
+    return false
+  }
+
+  return (
+    normalizeRoleParticipantName(roleValue) ===
+    normalizeRoleParticipantName(participantName)
+  )
+}
+
+function buildCohortRoleSummary(
+  meetings: readonly CohortMeetingRecord[],
+  contacts: readonly CohortContactRecord[],
+): CohortRoleSummaryRecord[] {
+  const mentorNames = new Set(
+    contacts
+      .filter((contact) => contact.isMentor)
+      .map((contact) => normalizeRoleParticipantName(contact.name)),
+  )
+
+  const participantNames = getRoleNameOptions(contacts)
+    .filter(
+      (name) =>
+        !mentorNames.has(normalizeRoleParticipantName(name)),
+    )
+    .sort((firstName, secondName) =>
+      firstName.localeCompare(secondName, 'en-US', {
+        sensitivity: 'base',
+      }),
+    )
+
+  return participantNames.map((name) => {
+    let facilitator = 0
+    let communityBuilder = 0
+    let recorder = 0
+    let timeKeeper = 0
+    let processObserver = 0
+
+    for (const meeting of meetings) {
+      if (
+        isCountableRoleAssignment(
+          meeting,
+          meeting.facilitator,
+          name,
+        )
+      ) {
+        facilitator += 1
+      }
+
+      if (
+        isCountableRoleAssignment(
+          meeting,
+          meeting.communityBuilder,
+          name,
+        )
+      ) {
+        communityBuilder += 1
+      }
+
+      if (
+        isCountableRoleAssignment(
+          meeting,
+          meeting.recorder,
+          name,
+        )
+      ) {
+        recorder += 1
+      }
+
+      if (
+        isCountableRoleAssignment(
+          meeting,
+          meeting.timeKeeper,
+          name,
+        )
+      ) {
+        timeKeeper += 1
+      }
+
+      if (
+        isCountableRoleAssignment(
+          meeting,
+          meeting.processObserver,
+          name,
+        )
+      ) {
+        processObserver += 1
+      }
+    }
+
+    return {
+      name,
+      facilitator,
+      communityBuilder,
+      recorder,
+      timeKeeper,
+      processObserver,
+      total:
+        facilitator +
+        communityBuilder +
+        recorder +
+        timeKeeper +
+        processObserver,
+    }
   })
 }
 
@@ -1202,6 +1761,261 @@ function CohortContactPage({
   )
 }
 
+function CohortDatesRolesPage({
+  contacts,
+  meetings,
+  onUpdateRole,
+}: CohortDatesRolesPageProps) {
+  const [nameSearch, setNameSearch] = useState('')
+  const [currentDate, setCurrentDate] = useState(() => new Date())
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setCurrentDate(new Date())
+    }, 60_000)
+
+    return () => {
+      window.clearInterval(timerId)
+    }
+  }, [])
+
+  const currentPacificDate = getPacificDateKey(currentDate)
+  const roleNameOptions = getRoleNameOptions(contacts)
+  const roleSummary = buildCohortRoleSummary(meetings, contacts)
+
+  function renderRoleCell(
+    meeting: CohortMeetingRecord,
+    roleField: CohortMeetingRoleField,
+    value: string,
+  ): ReactNode {
+    const isBlank = value.trim().length === 0
+    const isInactive = isFormerMemberAssignmentInvalid(
+      meeting.date,
+      value,
+    )
+    const isSearchMatch = doesRoleMatchSearch(value, nameSearch)
+
+    const className = [
+      'cohort-meeting-role-input',
+      isBlank ? 'cohort-meeting-role-input-empty' : '',
+      isInactive ? 'cohort-meeting-role-input-inactive' : '',
+      isSearchMatch ? 'cohort-meeting-role-input-search-match' : '',
+    ]
+      .filter((classItem) => classItem.length > 0)
+      .join(' ')
+
+    let title = value || 'Role unassigned'
+
+    if (isInactive) {
+      title =
+        'Patrick J. Harris left the cohort after July 26, 2026. Reassign this role.'
+    }
+
+    return (
+      <td className="cohort-meeting-role-cell">
+        <input
+          type="text"
+          list="cohort-role-name-options"
+          className={className}
+          value={value}
+          title={title}
+          onChange={(event) =>
+            onUpdateRole(
+              meeting.id,
+              roleField,
+              event.target.value,
+            )
+          }
+        />
+      </td>
+    )
+  }
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Dates & Roles</h1>
+      </header>
+
+      <div className="cohort-dates-toolbar">
+        <label className="cohort-dates-search">
+          <span>Name Search</span>
+
+          <input
+            type="text"
+            list="cohort-role-name-options"
+            value={nameSearch}
+            placeholder="Start typing a cohort member name"
+            onChange={(event) =>
+              setNameSearch(event.target.value)
+            }
+          />
+        </label>
+
+        <div className="cohort-dates-former-note">
+          Patrick J. Harris is retained for historical accuracy.
+          Assignments after July 26, 2026 are flagged in red and
+          excluded from role totals until reassigned.
+        </div>
+      </div>
+
+      <datalist id="cohort-role-name-options">
+        {roleNameOptions.map((name) => (
+          <option key={name} value={name}>
+            {name === 'Patrick J. Harris'
+              ? 'Former cohort member'
+              : name}
+          </option>
+        ))}
+      </datalist>
+
+      <div className="cohort-dates-layout">
+        <section className="cohort-meetings-panel">
+          <div className="cohort-meetings-table-frame">
+            <table className="cohort-meetings-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Date</th>
+                  <th>Term</th>
+                  <th>Meeting #</th>
+                  <th>Facilitator</th>
+                  <th>Community Builder</th>
+                  <th>Recorder</th>
+                  <th>Time Keeper</th>
+                  <th>Process Observer</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {meetings.map((meeting, index) => {
+                  const previousMeeting =
+                    index > 0 ? meetings[index - 1] : undefined
+
+                  const isYearTwoStart =
+                    meeting.year === 'Year 2' &&
+                    previousMeeting?.year === 'Year 1'
+
+                  const isPast =
+                    meeting.date < currentPacificDate
+
+                  const rowClassName = [
+                    isPast
+                      ? 'cohort-meeting-row-past'
+                      : '',
+                    isYearTwoStart
+                      ? 'cohort-meeting-year-two-start'
+                      : '',
+                  ]
+                    .filter(
+                      (classItem) => classItem.length > 0,
+                    )
+                    .join(' ')
+
+                  return (
+                    <tr
+                      key={meeting.id}
+                      className={rowClassName}
+                    >
+                      <td>{meeting.year}</td>
+                      <td>
+                        {formatCohortMeetingDate(
+                          meeting.date,
+                        )}
+                      </td>
+                      <td>{meeting.term}</td>
+                      <td>{meeting.meetingNumber}</td>
+
+                      {renderRoleCell(
+                        meeting,
+                        'facilitator',
+                        meeting.facilitator,
+                      )}
+
+                      {renderRoleCell(
+                        meeting,
+                        'communityBuilder',
+                        meeting.communityBuilder,
+                      )}
+
+                      {renderRoleCell(
+                        meeting,
+                        'recorder',
+                        meeting.recorder,
+                      )}
+
+                      {renderRoleCell(
+                        meeting,
+                        'timeKeeper',
+                        meeting.timeKeeper,
+                      )}
+
+                      {renderRoleCell(
+                        meeting,
+                        'processObserver',
+                        meeting.processObserver,
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside className="cohort-role-summary-panel">
+          <div className="cohort-role-summary-heading">
+            <h2>Role Assignment Summary</h2>
+            <p>
+              Valid historical and scheduled assignments
+            </p>
+          </div>
+
+          <div className="cohort-role-summary-table-frame">
+            <table className="cohort-role-summary-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Facilitator</th>
+                  <th>Community Builder</th>
+                  <th>Recorder</th>
+                  <th>Time Keeper</th>
+                  <th>Process Observer</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {roleSummary.map((summary) => (
+                  <tr
+                    key={summary.name}
+                    className={
+                      doesRoleMatchSearch(
+                        summary.name,
+                        nameSearch,
+                      )
+                        ? 'cohort-role-summary-row-search-match'
+                        : undefined
+                    }
+                  >
+                    <td>{summary.name}</td>
+                    <td>{summary.facilitator}</td>
+                    <td>{summary.communityBuilder}</td>
+                    <td>{summary.recorder}</td>
+                    <td>{summary.timeKeeper}</td>
+                    <td>{summary.processObserver}</td>
+                    <td>{summary.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -1274,14 +2088,64 @@ function CoursePage() {
 function App() {
   const [coursesOpen, setCoursesOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
   const [contacts, setContacts] =
     useState<readonly CohortContactRecord[]>(cohortContactsSeed)
+
+  const [cohortMeetings, setCohortMeetings] =
+    useState<readonly CohortMeetingRecord[]>(cohortMeetingsSeed)
 
   function addCohortContact(contact: CohortContactRecord): void {
     setContacts((currentContacts) => [
       ...currentContacts,
       contact,
     ])
+  }
+
+  function updateCohortMeetingRole(
+    meetingId: string,
+    roleField: CohortMeetingRoleField,
+    value: string,
+  ): void {
+    setCohortMeetings((currentMeetings) =>
+      currentMeetings.map((meeting) => {
+        if (meeting.id !== meetingId) {
+          return meeting
+        }
+
+        switch (roleField) {
+          case 'facilitator':
+            return {
+              ...meeting,
+              facilitator: value,
+            }
+
+          case 'communityBuilder':
+            return {
+              ...meeting,
+              communityBuilder: value,
+            }
+
+          case 'recorder':
+            return {
+              ...meeting,
+              recorder: value,
+            }
+
+          case 'timeKeeper':
+            return {
+              ...meeting,
+              timeKeeper: value,
+            }
+
+          case 'processObserver':
+            return {
+              ...meeting,
+              processObserver: value,
+            }
+        }
+      }),
+    )
   }
 
   return (
@@ -1401,9 +2265,10 @@ function App() {
             <Route
               path="/cohort-dates-roles"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Dates & Roles"
-                  description="Cohort meeting dates, assignments, and rotating meeting responsibilities will be organized here."
+                <CohortDatesRolesPage
+                  contacts={contacts}
+                  meetings={cohortMeetings}
+                  onUpdateRole={updateCohortMeetingRole}
                 />
               }
             />
