@@ -97,9 +97,26 @@ interface CohortContactFormState {
   readonly dissertationInterest: string
 }
 
+type CohortContactStatus = 'Active' | 'Inactive'
+
+type CohortContactStatusState = Record<string, CohortContactStatus>
+
+type CohortContactUpdate = Partial<
+  Omit<CohortContactRecord, 'id' | 'isMentor'>
+>
+
 interface CohortContactPageProps {
   readonly contacts: readonly CohortContactRecord[]
+  readonly contactStatuses: Readonly<CohortContactStatusState>
   readonly onAddContact: (contact: CohortContactRecord) => void
+  readonly onUpdateContact: (
+    contactId: string,
+    updates: CohortContactUpdate,
+  ) => void
+  readonly onUpdateStatus: (
+    contactId: string,
+    status: CohortContactStatus,
+  ) => void
 }
 
 type CohortAttendanceMark = '' | 'X' | 'A'
@@ -158,7 +175,15 @@ interface CohortDatesRolesPageProps {
 }
 
 interface FormerCohortMemberRecord {
+  readonly id: string
   readonly name: string
+  readonly timeZone: CohortTimeZone
+  readonly phoneNumber: string
+  readonly email: string
+  readonly industry: string
+  readonly birthdayMonth: number | null
+  readonly birthdayDay: number | null
+  readonly dissertationInterest: string
   readonly inactiveAfterDate: string
 }
 
@@ -558,9 +583,35 @@ const cohortContactsSeed: readonly CohortContactRecord[] = [
   },
 ]
 
+function createCohortContactStatusSeed(
+  contacts: readonly CohortContactRecord[],
+): CohortContactStatusState {
+  const statuses: CohortContactStatusState = {}
+
+  for (const contact of contacts) {
+    if (!contact.isMentor) {
+      statuses[contact.id] = 'Active'
+    }
+  }
+
+  return statuses
+}
+
+const cohortContactStatusSeed =
+  createCohortContactStatusSeed(cohortContactsSeed)
+
 const formerCohortMembers: readonly FormerCohortMemberRecord[] = [
   {
+    id: 'patrick-j-harris',
     name: 'Patrick J. Harris',
+    timeZone: 'Pacific',
+    phoneNumber: 'Email Please',
+    email: 'pharri10@mail.umassglobal.edu',
+    industry: 'K-12 Education/Music Education',
+    birthdayMonth: 7,
+    birthdayDay: 31,
+    dissertationInterest:
+      'Building High-Performance Music Programs: Applying Performance Psychology to Develop Organizational Leadership and Resilience in Student Musicians from Lower Socioeconomic Communities.',
     inactiveAfterDate: '2026-07-26',
   },
 ]
@@ -1655,14 +1706,39 @@ function DashboardPage() {
 
 function CohortContactPage({
   contacts,
+  contactStatuses,
   onAddContact,
+  onUpdateContact,
+  onUpdateStatus,
 }: CohortContactPageProps) {
   const [isAddContactOpen, setIsAddContactOpen] = useState(false)
   const [newContact, setNewContact] = useState(createEmptyContactForm)
   const [formError, setFormError] = useState('')
-  const [copiedEmail, setCopiedEmail] = useState<string | null>(null)
 
   const sortedContacts = sortCohortContacts(contacts)
+
+  const activeContacts = sortedContacts.filter(
+    (contact) =>
+      contact.isMentor ||
+      (contactStatuses[contact.id] ?? 'Active') === 'Active',
+  )
+
+  const inactiveContacts = sortedContacts.filter(
+    (contact) =>
+      !contact.isMentor &&
+      (contactStatuses[contact.id] ?? 'Active') === 'Inactive',
+  )
+
+  const inactiveContactNames = [
+    ...new Set([
+      ...formerCohortMembers.map((member) => member.name),
+      ...inactiveContacts.map((contact) => contact.name),
+    ]),
+  ].sort((firstName, secondName) =>
+    firstName.localeCompare(secondName, 'en-US', {
+      sensitivity: 'base',
+    }),
+  )
 
   function openAddContactModal(): void {
     setNewContact(createEmptyContactForm())
@@ -1683,13 +1759,11 @@ function CohortContactPage({
     }))
   }
 
-  async function copyEmailAddress(email: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(email)
-      setCopiedEmail(email)
-    } catch {
-      setCopiedEmail(null)
-    }
+  function resizeContactTextarea(
+    textarea: HTMLTextAreaElement,
+  ): void {
+    textarea.style.height = 'auto'
+    textarea.style.height = `${textarea.scrollHeight}px`
   }
 
   function handleAddContact(event: FormEvent<HTMLFormElement>): void {
@@ -1776,46 +1850,316 @@ function CohortContactPage({
               <th>Industry</th>
               <th>Birthday</th>
               <th>Dissertation Interest</th>
+              <th>Status</th>
             </tr>
           </thead>
 
           <tbody>
-            {sortedContacts.map((contact) => (
-              <tr key={contact.id}>
-                <td className={contact.isMentor ? 'contact-mentor-name' : ''}>
-                  {contact.name}
-                </td>
-                <td>{contact.timeZone}</td>
-                <td>{formatPhoneNumber(contact.phoneDigits)}</td>
-                <td>
-                  <div className="contact-email-cell">
-                    <button
-                      type="button"
-                      className="contact-email-link"
-                      title="Copy email address"
-                      onClick={() => void copyEmailAddress(contact.email)}
-                    >
-                      {contact.email}
-                    </button>
+            {activeContacts.map((contact) => {
+              const contactStatus =
+                contactStatuses[contact.id] ?? 'Active'
 
-                    {copiedEmail === contact.email && (
-                      <span className="contact-email-copied">Copied</span>
+              return (
+                <tr key={contact.id}>
+                  <td
+                    className={
+                      contact.isMentor
+                        ? 'contact-mentor-name'
+                        : undefined
+                    }
+                  >
+                    <input
+                      type="text"
+                      className="contact-cell-input"
+                      defaultValue={contact.name}
+                      aria-label={`${contact.name} name`}
+                      onBlur={(event) => {
+                        const nextName =
+                          event.currentTarget.value.trim()
+
+                        if (!nextName) {
+                          event.currentTarget.value = contact.name
+                          return
+                        }
+
+                        event.currentTarget.value = nextName
+
+                        if (nextName !== contact.name) {
+                          onUpdateContact(contact.id, {
+                            name: nextName,
+                          })
+                        }
+                      }}
+                    />
+                  </td>
+
+                  <td>
+                    <select
+                      className="contact-cell-select"
+                      value={contact.timeZone}
+                      aria-label={`${contact.name} time zone`}
+                      onChange={(event) => {
+                        const nextTimeZone = event.target.value
+
+                        if (!isCohortTimeZone(nextTimeZone)) {
+                          return
+                        }
+
+                        onUpdateContact(contact.id, {
+                          timeZone: nextTimeZone,
+                        })
+                      }}
+                    >
+                      {cohortTimeZoneOptions.map((timeZone) => (
+                        <option key={timeZone} value={timeZone}>
+                          {timeZone}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      inputMode="tel"
+                      className="contact-cell-input"
+                      defaultValue={formatPhoneNumber(
+                        contact.phoneDigits,
+                      )}
+                      aria-label={`${contact.name} phone number`}
+                      onBlur={(event) => {
+                        const phoneDigits = sanitizePhoneDigits(
+                          event.currentTarget.value,
+                        )
+
+                        if (phoneDigits.length !== 10) {
+                          event.currentTarget.value =
+                            formatPhoneNumber(contact.phoneDigits)
+                          return
+                        }
+
+                        event.currentTarget.value =
+                          formatPhoneNumber(phoneDigits)
+
+                        if (phoneDigits !== contact.phoneDigits) {
+                          onUpdateContact(contact.id, {
+                            phoneDigits,
+                          })
+                        }
+                      }}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="email"
+                      className="contact-cell-input contact-email-input"
+                      defaultValue={contact.email}
+                      aria-label={`${contact.name} email address`}
+                      onBlur={(event) => {
+                        const normalizedEmail =
+                          normalizeCohortEmail(
+                            event.currentTarget.value,
+                          )
+
+                        if (
+                          !normalizedEmail ||
+                          !normalizedEmail.includes('@') ||
+                          !normalizedEmail.includes('.')
+                        ) {
+                          event.currentTarget.value =
+                            contact.email
+                          return
+                        }
+
+                        event.currentTarget.value =
+                          normalizedEmail
+
+                        if (normalizedEmail !== contact.email) {
+                          onUpdateContact(contact.id, {
+                            email: normalizedEmail,
+                          })
+                        }
+                      }}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      className="contact-cell-input"
+                      defaultValue={contact.industry}
+                      aria-label={`${contact.name} industry`}
+                      onBlur={(event) => {
+                        const nextIndustry =
+                          event.currentTarget.value.trim()
+
+                        event.currentTarget.value = nextIndustry
+
+                        if (nextIndustry !== contact.industry) {
+                          onUpdateContact(contact.id, {
+                            industry: nextIndustry,
+                          })
+                        }
+                      }}
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="text"
+                      className="contact-cell-input"
+                      defaultValue={formatBirthday(
+                        contact.birthdayMonth,
+                        contact.birthdayDay,
+                      )}
+                      placeholder="M/DD"
+                      aria-label={`${contact.name} birthday`}
+                      onBlur={(event) => {
+                        const birthdayValue =
+                          event.currentTarget.value.trim()
+
+                        const currentBirthday = formatBirthday(
+                          contact.birthdayMonth,
+                          contact.birthdayDay,
+                        )
+
+                        if (!birthdayValue) {
+                          event.currentTarget.value = ''
+
+                          if (
+                            contact.birthdayMonth !== null ||
+                            contact.birthdayDay !== null
+                          ) {
+                            onUpdateContact(contact.id, {
+                              birthdayMonth: null,
+                              birthdayDay: null,
+                            })
+                          }
+
+                          return
+                        }
+
+                        if (birthdayValue === currentBirthday) {
+                          return
+                        }
+
+                        const parsedBirthday =
+                          parseBirthdayInput(birthdayValue)
+
+                        if (!parsedBirthday) {
+                          event.currentTarget.value =
+                            currentBirthday
+                          return
+                        }
+
+                        event.currentTarget.value =
+                          formatBirthday(
+                            parsedBirthday.month,
+                            parsedBirthday.day,
+                          )
+
+                        onUpdateContact(contact.id, {
+                          birthdayMonth: parsedBirthday.month,
+                          birthdayDay: parsedBirthday.day,
+                        })
+                      }}
+                    />
+                  </td>
+
+                  <td>
+                    <textarea
+                      className="contact-cell-textarea"
+                      rows={1}
+                      defaultValue={contact.dissertationInterest}
+                      aria-label={`${contact.name} dissertation interest`}
+                      ref={(textarea) => {
+                        if (textarea !== null) {
+                          resizeContactTextarea(textarea)
+                        }
+                      }}
+                      onInput={(event) => {
+                        resizeContactTextarea(event.currentTarget)
+                      }}
+                      onBlur={(event) => {
+                        const nextInterest =
+                          event.currentTarget.value.trim()
+
+                        event.currentTarget.value = nextInterest
+                        resizeContactTextarea(event.currentTarget)
+
+                        if (
+                          nextInterest !==
+                          contact.dissertationInterest
+                        ) {
+                          onUpdateContact(contact.id, {
+                            dissertationInterest: nextInterest,
+                          })
+                        }
+                      }}
+                    />
+                  </td>
+
+                  <td className="contact-status-cell">
+                    {contact.isMentor ? (
+                      <span className="contact-status-mentor">
+                        —
+                      </span>
+                    ) : (
+                      <select
+                        className="contact-status-select"
+                        value={contactStatus}
+                        aria-label={`${contact.name} status`}
+                        onChange={(event) => {
+                          const nextStatus =
+                            event.target.value
+
+                          if (
+                            nextStatus !== 'Active' &&
+                            nextStatus !== 'Inactive'
+                          ) {
+                            return
+                          }
+
+                          onUpdateStatus(
+                            contact.id,
+                            nextStatus,
+                          )
+                        }}
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
                     )}
-                  </div>
-                </td>
-                <td>{contact.industry || '—'}</td>
-                <td>
-                  {formatBirthday(
-                    contact.birthdayMonth,
-                    contact.birthdayDay,
-                  ) || '—'}
-                </td>
-                <td>{contact.dissertationInterest || '—'}</td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
+
+      <section
+        className="contacts-inactive-section"
+        aria-labelledby="inactive-contacts-title"
+      >
+        <div className="contacts-inactive-heading">
+          <h2 id="inactive-contacts-title">Inactive</h2>
+          <span>{inactiveContactNames.length}</span>
+        </div>
+
+        {inactiveContactNames.length === 0 ? (
+          <p className="contacts-inactive-empty">
+            No inactive cohort members.
+          </p>
+        ) : (
+          <ul className="contacts-inactive-list">
+            {inactiveContactNames.map((contactName) => (
+              <li key={contactName}>{contactName}</li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {isAddContactOpen && (
         <div className="contact-modal-backdrop">
@@ -2828,8 +3172,8 @@ function CohortAttendancePage({
                     <td
                       key={meeting.id}
                       className={`attendance-mark-cell${meeting.id === nextUpcomingMeetingId
-                          ? ' attendance-upcoming-meeting-cell'
-                          : ''
+                        ? ' attendance-upcoming-meeting-cell'
+                        : ''
                         }`}
                     >
                       <input
@@ -2953,6 +3297,9 @@ function App() {
   const [contacts, setContacts] =
     useState<readonly CohortContactRecord[]>(cohortContactsSeed)
 
+  const [contactStatuses, setContactStatuses] =
+    useState<CohortContactStatusState>(cohortContactStatusSeed)
+
   const [cohortMeetings, setCohortMeetings] =
     useState<readonly CohortMeetingRecord[]>(cohortMeetingsSeed)
 
@@ -2964,6 +3311,81 @@ function App() {
       ...currentContacts,
       contact,
     ])
+
+    if (!contact.isMentor) {
+      setContactStatuses((currentStatuses) => ({
+        ...currentStatuses,
+        [contact.id]: 'Active',
+      }))
+    }
+  }
+
+  function updateCohortContact(
+    contactId: string,
+    updates: CohortContactUpdate,
+  ): void {
+    const existingContact = contacts.find(
+      (contact) => contact.id === contactId,
+    )
+
+    if (!existingContact) {
+      return
+    }
+
+    const previousName = existingContact.name
+    const nextName = updates.name
+
+    setContacts((currentContacts) =>
+      currentContacts.map((contact) =>
+        contact.id === contactId
+          ? {
+            ...contact,
+            ...updates,
+          }
+          : contact,
+      ),
+    )
+
+    if (
+      nextName !== undefined &&
+      nextName !== previousName
+    ) {
+      setCohortMeetings((currentMeetings) =>
+        currentMeetings.map((meeting) => ({
+          ...meeting,
+          facilitator:
+            meeting.facilitator === previousName
+              ? nextName
+              : meeting.facilitator,
+          communityBuilder:
+            meeting.communityBuilder === previousName
+              ? nextName
+              : meeting.communityBuilder,
+          recorder:
+            meeting.recorder === previousName
+              ? nextName
+              : meeting.recorder,
+          timeKeeper:
+            meeting.timeKeeper === previousName
+              ? nextName
+              : meeting.timeKeeper,
+          processObserver:
+            meeting.processObserver === previousName
+              ? nextName
+              : meeting.processObserver,
+        })),
+      )
+    }
+  }
+
+  function updateCohortContactStatus(
+    contactId: string,
+    status: CohortContactStatus,
+  ): void {
+    setContactStatuses((currentStatuses) => ({
+      ...currentStatuses,
+      [contactId]: status,
+    }))
   }
 
   function updateCohortAttendance(
@@ -3163,7 +3585,10 @@ function App() {
               element={
                 <CohortContactPage
                   contacts={contacts}
+                  contactStatuses={contactStatuses}
                   onAddContact={addCohortContact}
+                  onUpdateContact={updateCohortContact}
+                  onUpdateStatus={updateCohortContactStatus}
                 />
               }
             />
