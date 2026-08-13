@@ -63,6 +63,7 @@ interface BirthdayDashboardItem {
 interface CohortValueDashboardItem {
   readonly name: string
   readonly description: string
+  readonly imageFileName: string
 }
 
 type CohortTimeZone =
@@ -345,26 +346,31 @@ const cohortValues: readonly CohortValueDashboardItem[] = [
     name: 'Respect',
     description:
       'Listen to others, honor differences, and treat people with dignity.',
+    imageFileName: 'respect-handshake.png',
   },
   {
     name: 'Commitment',
     description:
       'Show up prepared, remain engaged, and follow through on responsibilities.',
+    imageFileName: 'commitment.png',
   },
   {
     name: 'Communication',
     description:
       'Share information clearly, honestly, and in a timely manner.',
+    imageFileName: 'communication.png',
   },
   {
     name: 'Accountability',
     description:
       'Own actions, results, and missed commitments.',
+    imageFileName: 'accountability.png',
   },
   {
     name: 'Adaptability',
     description:
       'Respond to change with flexibility while remaining focused on shared goals.',
+    imageFileName: 'adaptability.png',
   },
 ]
 
@@ -3626,6 +3632,79 @@ function CohortNormsPage() {
   )
 }
 
+function CohortValuesVisionPage() {
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Values and Vision</h1>
+      </header>
+
+      <div className="cohort-values-vision-stage">
+        <section
+          className="cohort-vision-feature"
+          aria-labelledby="cohort-vision-title"
+        >
+          <div className="cohort-values-section-title">
+            <span aria-hidden="true" />
+            <h2 id="cohort-vision-title">Vision</h2>
+            <span aria-hidden="true" />
+          </div>
+
+          <p className="cohort-vision-statement">
+            {cohortVision}
+          </p>
+        </section>
+
+        <section
+          className="cohort-values-feature"
+          aria-labelledby="cohort-values-title"
+        >
+          <div className="cohort-values-section-title">
+            <span aria-hidden="true" />
+            <h2 id="cohort-values-title">Values</h2>
+            <span aria-hidden="true" />
+          </div>
+
+          <div className="cohort-values-list">
+            {cohortValues.map((value) => (
+              <article
+                className="cohort-value-row"
+                key={value.name}
+              >
+                <div
+                  className="cohort-value-icon"
+                  aria-hidden="true"
+                >
+                  <img
+                    src={`${import.meta.env.BASE_URL}${value.imageFileName}`}
+                    alt=""
+                    className="cohort-value-image"
+                  />
+                </div>
+
+                <span
+                  className="cohort-value-divider"
+                  aria-hidden="true"
+                />
+
+                <div className="cohort-value-line">
+                  <span className="cohort-value-name">
+                    {value.name}:
+                  </span>
+
+                  <span className="cohort-value-text">
+                    {value.description}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -4029,12 +4108,7 @@ function App() {
 
             <Route
               path="/values-vision"
-              element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Values and Vision"
-                  description="The cohort's shared values, accountability commitments, and vision statement will be organized here."
-                />
-              }
+              element={<CohortValuesVisionPage />}
             />
 
             <Route
