@@ -404,7 +404,7 @@
 
 .cohort-dates-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 470px;
+  grid-template-columns: minmax(0, 1fr) 450px;
   gap: 14px;
   align-items: start;
 }
@@ -428,7 +428,7 @@
   table-layout: fixed;
   color: #111827;
   background: #ffffff;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .cohort-meetings-table th,
@@ -440,23 +440,37 @@
 }
 
 .cohort-meetings-table th {
-  padding: 8px 7px;
+  padding: 6px 7px;
+  height: 30px;
+  border-bottom: 2px solid var(--umass-navy);
   color: #111827;
-  background: var(--umass-gold);
+  background: #A97800;
   font-size: 12px;
   font-weight: 900;
   line-height: 1.15;
+  vertical-align: bottom;
+  text-align: left;
+}
+
+/* QC warning: same person assigned to multiple roles in one meeting */
+.cohort-meeting-role-input.cohort-meeting-role-input-duplicate {
+  color: #FFFF00;
+  background: #C00000;
+  font-weight: 900;
 }
 
 .cohort-meetings-table td {
-  padding: 7px;
+  height: 29px;
+  padding: 4px 7px;
   color: #111827;
   background: #ffffff;
+  font-size: 12px;
   font-weight: 400;
+  line-height: 1.15;
 }
 
 .cohort-meetings-table th:nth-child(1) {
-  width: 70px;
+  width: 50px;
 }
 
 .cohort-meetings-table th:nth-child(2) {
@@ -464,31 +478,40 @@
 }
 
 .cohort-meetings-table th:nth-child(3) {
-  width: 95px;
+  width: 105px;
 }
 
 .cohort-meetings-table th:nth-child(4) {
-  width: 110px;
+  width: 120px;
 }
 
 .cohort-meetings-table th:nth-child(5) {
-  width: 145px;
+  width: 126px;
 }
 
 .cohort-meetings-table th:nth-child(6) {
-  width: 160px;
+  width: 126px;
 }
 
 .cohort-meetings-table th:nth-child(7) {
-  width: 140px;
+  width: 126px;
 }
 
 .cohort-meetings-table th:nth-child(8) {
-  width: 140px;
+  width: 126px;
 }
 
 .cohort-meetings-table th:nth-child(9) {
-  width: 155px;
+  width: 126px;
+}
+
+.cohort-meetings-table th:nth-child(2),
+.cohort-meetings-table td:nth-child(2),
+.cohort-meetings-table th:nth-child(3),
+.cohort-meetings-table td:nth-child(3),
+.cohort-meetings-table th:nth-child(4),
+.cohort-meetings-table td:nth-child(4) {
+  white-space: nowrap;
 }
 
 /* Thick divider between Meeting # and Facilitator */
@@ -519,13 +542,24 @@
   text-decoration: line-through;
 }
 
+/* Next upcoming cohort meeting */
+.cohort-meeting-row-upcoming > td {
+  color: #111827;
+  font-weight: 900;
+}
+
+.cohort-meeting-row-upcoming .cohort-meeting-role-input {
+  color: #111827;
+  font-weight: 900;
+}
+
 .cohort-meeting-role-input {
   width: 100%;
-  min-height: 34px;
+  min-height: 28px;
   box-sizing: border-box;
   display: block;
   margin: 0;
-  padding: 7px 7px;
+  padding: 4px 7px;
   border: 0;
   border-radius: 0;
   color: #111827;
@@ -533,7 +567,7 @@
   font-family: inherit;
   font-size: 12px;
   font-weight: 400;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .cohort-meeting-role-input:focus {
@@ -543,16 +577,16 @@
   outline-offset: -2px;
 }
 
-/* Blank role cells remain red until text is entered */
+/* Blank role cells remain gray until text is entered */
 .cohort-meeting-role-input-empty {
   color: #ffffff;
-  background: #c00000;
+  background: #37474F;
 }
 
-/* Patrick assignments after departure */
+/* Patrick J. Harris assignments after departure */
 .cohort-meeting-role-input-inactive {
-  color: #ffffff;
-  background: #c00000;
+  color: #000000;
+  background: #FF8C00;
   font-weight: 400;
 }
 
@@ -571,7 +605,16 @@
   text-decoration: line-through;
 }
 
+/* QC warning: same person assigned to multiple roles in one meeting */
+.cohort-meeting-role-input.cohort-meeting-role-input-duplicate {
+  color: #FFFF00;
+  background: #BD2031;
+  font-weight: 900;
+}
+
 .cohort-role-summary-panel {
+  position: relative;
+  top: -35px;
   min-width: 0;
   overflow: hidden;
   border: 1px solid #7f8c9d;
@@ -580,9 +623,15 @@
 }
 
 .cohort-role-summary-heading {
-  padding: 10px 12px;
+  min-height: 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 6px 10px;
   border-bottom: 1px solid #7f8c9d;
   background: var(--umass-navy);
+  white-space: nowrap;
 }
 
 .cohort-role-summary-heading h2 {
@@ -590,32 +639,36 @@
   color: var(--umass-gold);
   font-size: 14px;
   font-weight: 900;
+  line-height: 1.15;
 }
 
 .cohort-role-summary-heading p {
-  margin: 3px 0 0;
+  margin: 0;
   color: #cbd5e1;
   font-size: 9px;
-  line-height: 1.3;
+  font-weight: 400;
+  line-height: 1.15;
 }
 
 .cohort-role-summary-table-frame {
-  overflow-x: auto;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .cohort-role-summary-table {
   width: 100%;
-  min-width: 460px;
+  min-width: 0;
   border-collapse: collapse;
   table-layout: fixed;
   color: #111827;
   background: #ffffff;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .cohort-role-summary-table th,
 .cohort-role-summary-table td {
-  padding: 7px 5px;
+  box-sizing: border-box;
+  padding: 4px 3px;
   border: 1px solid #8d99a8;
   color: #111827;
   background: #ffffff;
@@ -623,16 +676,71 @@
   vertical-align: middle;
 }
 
+.cohort-role-summary-table tbody td {
+  height: 29px;
+}
+
 .cohort-role-summary-table th {
-  font-size: 8px;
+  height: 30px;
+  padding: 6px 3px 5px;
+  border-bottom: 2px solid var(--umass-navy);
+  color: #111827;
+  background: #A97800;
+  font-size: 9px;
   font-weight: 900;
   line-height: 1.15;
+  vertical-align: bottom;
+  text-align: center;
+}
+
+/* Name */
+.cohort-role-summary-table th:nth-child(1) {
+  width: 28%;
+}
+
+/* Facilitator */
+.cohort-role-summary-table th:nth-child(2) {
+  width: 12%;
+}
+
+/* Community Builder */
+.cohort-role-summary-table th:nth-child(3) {
+  width: 14%;
+}
+
+/* Recorder */
+.cohort-role-summary-table th:nth-child(4) {
+  width: 11%;
+}
+
+/* Time Keeper */
+.cohort-role-summary-table th:nth-child(5) {
+  width: 11%;
+}
+
+/* Process Observer */
+.cohort-role-summary-table th:nth-child(6) {
+  width: 15%;
+}
+
+/* Total */
+.cohort-role-summary-table th:nth-child(7) {
+  width: 9%;
+}
+
+/* Divider between Process Observer and Total */
+.cohort-role-summary-table th:nth-child(7),
+.cohort-role-summary-table td:nth-child(7) {
+  border-left: 2px solid var(--umass-navy);
 }
 
 .cohort-role-summary-table th:first-child,
 .cohort-role-summary-table td:first-child {
-  width: 135px;
   text-align: left;
+}
+
+.cohort-role-summary-table th:first-child {
+  vertical-align: bottom;
 }
 
 .cohort-role-summary-table td {
@@ -641,6 +749,25 @@
 
 .cohort-role-summary-table td:last-child {
   font-weight: 900;
+}
+
+.cohort-role-summary-totals-row td {
+  border-top: 2px solid var(--umass-navy);
+  color: #111827;
+  background: #ffffff;
+  font-weight: 900;
+}
+
+.cohort-role-summary-totals-row td:first-child {
+  text-align: left;
+}
+
+.cohort-role-summary-totals-row td:not(:first-child) {
+  text-align: center;
+}
+
+.cohort-role-summary-former-member-name {
+  font-style: italic;
 }
 
 .cohort-role-summary-row-search-match td {
