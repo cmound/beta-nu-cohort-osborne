@@ -346,11 +346,19 @@
 }
 
 .cohort-dates-toolbar {
+  width: calc(100% - 464px);
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: flex-start;
+  gap: 10px;
   margin-bottom: 12px;
+}
+
+.cohort-dates-toolbar-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 10px;
 }
 
 .cohort-dates-search {
@@ -381,6 +389,204 @@
 .cohort-dates-search input:focus {
   outline: 2px solid rgba(0, 94, 184, 0.4);
   border-color: var(--umass-blue);
+}
+
+.cohort-add-meeting-button {
+  height: 36px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 1px solid #d7a91f;
+  border-radius: 5px;
+  color: #f8fafc;
+  background:
+    linear-gradient(
+      180deg,
+      #17365d 0%,
+      #0b2444 42%,
+      #06182f 74%,
+      #031024 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.38),
+    0 4px 8px rgba(0, 0, 0, 0.38);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cohort-add-meeting-button > span {
+  color: #ffd200;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cohort-add-meeting-button:hover {
+  transform: translateY(-1px);
+  border-color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #1c477a 0%,
+      #0d315b 45%,
+      #071c37 76%,
+      #031024 100%
+    );
+}
+
+.cohort-add-meeting-button:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.42),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.cohort-add-meeting-button:focus-visible {
+  outline: 2px solid #ffd200;
+  outline-offset: 2px;
+}
+
+.cohort-meeting-stats {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.cohort-delete-meeting-button {
+  height: 36px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 13px;
+  border: 1px solid #EF5350;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #EF5350 0%,
+      #C62828 42%,
+      #A31515 72%,
+      #8B0000 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -3px 0 #5A0000,
+    0 4px 8px rgba(0, 0, 0, 0.38);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: default;
+}
+
+.cohort-delete-meeting-button > span {
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.cohort-delete-meeting-button:hover {
+  border-color: #ff7774;
+  background:
+    linear-gradient(
+      180deg,
+      #ff6663 0%,
+      #d32f2f 42%,
+      #ad1515 72%,
+      #8B0000 100%
+    );
+  transform: translateY(-1px);
+}
+
+.cohort-delete-meeting-button:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 5px rgba(90, 0, 0, 0.65),
+    0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.cohort-delete-meeting-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.cohort-meeting-stat-card {
+  min-width: 160px;
+  min-height: 58px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border: 1px solid var(--umass-gold);
+  border-radius: 6px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #17365d 0%,
+      #0b2444 42%,
+      #06182f 75%,
+      #031024 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.4),
+    0 4px 9px rgba(0, 0, 0, 0.38);
+}
+
+.cohort-meeting-stat-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #b9c9da;
+  border-radius: 5px;
+  color: #ffffff;
+  background: rgba(4, 20, 42, 0.92);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.cohort-meeting-stat-svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+}
+
+.cohort-meeting-stat-card > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.cohort-meeting-stat-card > div > span {
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.cohort-meeting-stat-card strong {
+  margin-top: 2px;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .cohort-dates-former-note {
@@ -773,6 +979,164 @@
 .cohort-role-summary-row-search-match td {
   background: #fff200;
   font-weight: 900;
+}
+
+.meeting-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 30px;
+  background: rgba(2, 9, 20, 0.76);
+}
+
+.meeting-modal {
+  width: 650px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  border: 1px solid #7f8c9d;
+  border-radius: 7px;
+  background: #f8fafc;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.46);
+}
+
+.meeting-modal-header {
+  min-height: 54px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #7f8c9d;
+  background: var(--umass-navy);
+}
+
+.meeting-modal-header h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.meeting-modal-close {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: var(--umass-navy);
+  background: #ffffff;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.meeting-form {
+  padding: 18px;
+}
+
+.meeting-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.meeting-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.meeting-form-field > span {
+  color: var(--umass-navy);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.meeting-form-field input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 8px 9px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #111827;
+  background: #ffffff;
+  font-size: 12px;
+}
+
+.meeting-form-field input:focus {
+  outline: 2px solid rgba(0, 94, 184, 0.35);
+  border-color: var(--umass-blue);
+}
+
+.meeting-form-field small {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.meeting-form-error {
+  margin: 14px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--umass-maroon);
+  border-radius: 4px;
+  color: var(--umass-maroon);
+  background: #fff5f5;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.meeting-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.meeting-cancel-button,
+.meeting-save-button {
+  min-width: 105px;
+  min-height: 36px;
+  padding: 7px 13px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.meeting-cancel-button {
+  border: 1px solid #94a3b8;
+  color: var(--umass-navy);
+  background: #ffffff;
+}
+
+.meeting-save-button {
+  border: 1px solid #004b93;
+  color: #ffffff;
+  background: var(--umass-blue);
+}
+
+.meeting-cancel-button:hover {
+  background: #eef2f6;
+}
+
+.meeting-save-button:hover {
+  background: #004b93;
+}
+
+.meeting-cancel-button:focus-visible,
+.meeting-save-button:focus-visible,
+.meeting-modal-close:focus-visible {
+  outline: 2px solid var(--umass-gold);
+  outline-offset: 2px;
 }
 
 .contacts-toolbar {

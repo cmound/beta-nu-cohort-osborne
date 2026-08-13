@@ -124,9 +124,17 @@ interface CohortMeetingRecord {
   readonly processObserver: string
 }
 
+interface CohortMeetingFormState {
+  readonly date: string
+  readonly term: string
+  readonly calendarYear: string
+  readonly meetingNumber: string
+}
+
 interface CohortDatesRolesPageProps {
   readonly contacts: readonly CohortContactRecord[]
   readonly meetings: readonly CohortMeetingRecord[]
+  readonly onAddMeeting: (meeting: CohortMeetingRecord) => void
   readonly onUpdateRole: (
     meetingId: string,
     roleField: CohortMeetingRoleField,
@@ -246,11 +254,8 @@ const pacificDateKeyFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/Los_Angeles',
 })
 
-const cohortMeetingDateFormatter = new Intl.DateTimeFormat('en-US', {
+const cohortMeetingWeekdayFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
   timeZone: 'UTC',
 })
 
@@ -332,6 +337,15 @@ const cohortTimeZoneOptions: readonly CohortTimeZone[] = [
   'Alaska',
   'Hawaii-Aleutian',
 ]
+
+const cohortTermOptions: readonly string[] = [
+  'Spring',
+  'Summer',
+  'Fall',
+  'Winter',
+]
+
+const COHORT_YEAR_TWO_START_DATE = '2026-08-24'
 
 const birthdayMonthLabels: readonly string[] = [
   'Jan.',
@@ -839,6 +853,91 @@ function createEmptyContactForm(): CohortContactFormState {
   }
 }
 
+function createEmptyMeetingForm(): CohortMeetingFormState {
+  return {
+    date: '',
+    term: '',
+    calendarYear: '',
+    meetingNumber: '',
+  }
+}
+
+function sanitizeMeetingYear(value: string): string {
+  return value.replace(/\D/g, '').slice(0, 4)
+}
+
+function buildCohortMeetingTerm(
+  termInput: string,
+  calendarYear: string,
+): string {
+  const normalizedTerm = termInput
+    .trim()
+    .replace(/\s+\d{4}$/, '')
+    .replace(/\s+/g, ' ')
+
+  const normalizedYear = sanitizeMeetingYear(calendarYear)
+
+  if (!normalizedTerm || normalizedYear.length !== 4) {
+    return ''
+  }
+
+  return `${normalizedTerm} ${normalizedYear}`
+}
+
+function normalizeCohortMeetingNumber(value: string): string {
+  const normalizedValue = value.trim()
+
+  if (!normalizedValue) {
+    return ''
+  }
+
+  if (/^\d+$/.test(normalizedValue)) {
+    return `Cohort Meeting ${Number(normalizedValue)}`
+  }
+
+  return normalizedValue
+}
+
+function getNextCohortMeetingLabel(
+  meetings: readonly CohortMeetingRecord[],
+  term: string,
+): string {
+  let highestMeetingNumber = 0
+
+  for (const meeting of meetings) {
+    if (
+      meeting.term.localeCompare(term, 'en-US', {
+        sensitivity: 'base',
+      }) !== 0
+    ) {
+      continue
+    }
+
+    const match = /^Cohort Meeting\s+(\d+)$/i.exec(
+      meeting.meetingNumber.trim(),
+    )
+
+    if (!match?.[1]) {
+      continue
+    }
+
+    highestMeetingNumber = Math.max(
+      highestMeetingNumber,
+      Number(match[1]),
+    )
+  }
+
+  return `Cohort Meeting ${highestMeetingNumber + 1}`
+}
+
+function getCohortProgramYear(
+  meetingDate: string,
+): CohortProgramYear {
+  return meetingDate < COHORT_YEAR_TWO_START_DATE
+    ? 'Year 1'
+    : 'Year 2'
+}
+
 function isCohortTimeZone(value: string): value is CohortTimeZone {
   return cohortTimeZoneOptions.some((timeZone) => timeZone === value)
 }
@@ -992,9 +1091,15 @@ function getPacificDateKey(currentDate: Date): string {
 }
 
 function formatCohortMeetingDate(date: string): string {
-  return cohortMeetingDateFormatter.format(
-    new Date(`${date}T12:00:00Z`),
-  )
+  const meetingDate = new Date(`${date}T12:00:00Z`)
+  const monthLabel =
+    birthdayMonthLabels[meetingDate.getUTCMonth()]
+
+  if (!monthLabel) {
+    return date
+  }
+
+  return `${cohortMeetingWeekdayFormatter.format(meetingDate)}, ${monthLabel} ${meetingDate.getUTCDate()}, ${meetingDate.getUTCFullYear()}`
 }
 
 function getRoleNameOptions(
@@ -1041,6 +1146,32 @@ function doesRoleMatchSearch(
     .trim()
     .toLocaleLowerCase('en-US')
     .includes(normalizedSearch)
+}
+
+function isDuplicateMeetingRoleAssignment(
+  meeting: CohortMeetingRecord,
+  value: string,
+): boolean {
+  const normalizedValue = normalizeRoleParticipantName(value)
+
+  if (!normalizedValue) {
+    return false
+  }
+
+  const meetingRoleValues = [
+    meeting.facilitator,
+    meeting.communityBuilder,
+    meeting.recorder,
+    meeting.timeKeeper,
+    meeting.processObserver,
+  ]
+
+  const matchingRoleCount = meetingRoleValues.filter(
+    (roleValue) =>
+      normalizeRoleParticipantName(roleValue) === normalizedValue,
+  ).length
+
+  return matchingRoleCount > 1
 }
 
 function isCountableRoleAssignment(
@@ -1764,10 +1895,14 @@ function CohortContactPage({
 function CohortDatesRolesPage({
   contacts,
   meetings,
+  onAddMeeting,
   onUpdateRole,
 }: CohortDatesRolesPageProps) {
   const [nameSearch, setNameSearch] = useState('')
   const [currentDate, setCurrentDate] = useState(() => new Date())
+  const [isAddMeetingOpen, setIsAddMeetingOpen] = useState(false)
+  const [newMeeting, setNewMeeting] = useState(createEmptyMeetingForm)
+  const [meetingFormError, setMeetingFormError] = useState('')
 
   useEffect(() => {
     const timerId = window.setInterval(() => {
@@ -1780,8 +1915,107 @@ function CohortDatesRolesPage({
   }, [])
 
   const currentPacificDate = getPacificDateKey(currentDate)
+
+  const totalMeetings = meetings.length
+
+  const meetingsCompleted = meetings.filter(
+    (meeting) => meeting.date < currentPacificDate,
+  ).length
+
+  const percentCompleted =
+    totalMeetings === 0
+      ? 0
+      : Math.round((meetingsCompleted / totalMeetings) * 100)
+
+  const nextUpcomingMeetingId =
+    meetings.find((meeting) => meeting.date >= currentPacificDate)?.id ?? null
+
+  const newMeetingTerm = buildCohortMeetingTerm(
+    newMeeting.term,
+    newMeeting.calendarYear,
+  )
+
+  const suggestedMeetingLabel = newMeetingTerm
+    ? getNextCohortMeetingLabel(meetings, newMeetingTerm)
+    : ''
+
   const roleNameOptions = getRoleNameOptions(contacts)
   const roleSummary = buildCohortRoleSummary(meetings, contacts)
+
+  const roleSummaryTotals = roleSummary.reduce(
+    (totals, summary) => ({
+      facilitator: totals.facilitator + summary.facilitator,
+      communityBuilder:
+        totals.communityBuilder + summary.communityBuilder,
+      recorder: totals.recorder + summary.recorder,
+      timeKeeper: totals.timeKeeper + summary.timeKeeper,
+      processObserver:
+        totals.processObserver + summary.processObserver,
+      total: totals.total + summary.total,
+    }),
+    {
+      facilitator: 0,
+      communityBuilder: 0,
+      recorder: 0,
+      timeKeeper: 0,
+      processObserver: 0,
+      total: 0,
+    },
+  )
+
+  function openAddMeetingModal(): void {
+    setNewMeeting(createEmptyMeetingForm())
+    setMeetingFormError('')
+    setIsAddMeetingOpen(true)
+  }
+
+  function closeAddMeetingModal(): void {
+    setNewMeeting(createEmptyMeetingForm())
+    setMeetingFormError('')
+    setIsAddMeetingOpen(false)
+  }
+
+  function handleAddMeeting(
+    event: FormEvent<HTMLFormElement>,
+  ): void {
+    event.preventDefault()
+
+    const normalizedDate = newMeeting.date.trim()
+    const normalizedTerm = buildCohortMeetingTerm(
+      newMeeting.term,
+      newMeeting.calendarYear,
+    )
+    const normalizedMeetingNumber =
+      normalizeCohortMeetingNumber(newMeeting.meetingNumber)
+
+    if (!normalizedDate) {
+      setMeetingFormError('Meeting Date is required.')
+      return
+    }
+
+    if (!normalizedTerm) {
+      setMeetingFormError(
+        'Enter a Term and a four-digit Year.',
+      )
+      return
+    }
+
+    const meeting: CohortMeetingRecord = {
+      id: crypto.randomUUID(),
+      year: getCohortProgramYear(normalizedDate),
+      date: normalizedDate,
+      term: normalizedTerm,
+      meetingNumber: normalizedMeetingNumber,
+      facilitator: '',
+      communityBuilder: '',
+      recorder: '',
+      timeKeeper: '',
+      processObserver: '',
+    }
+
+    onAddMeeting(meeting)
+    closeAddMeetingModal()
+  }
 
   function renderRoleCell(
     meeting: CohortMeetingRecord,
@@ -1794,19 +2028,27 @@ function CohortDatesRolesPage({
       value,
     )
     const isSearchMatch = doesRoleMatchSearch(value, nameSearch)
+    const isDuplicate = isDuplicateMeetingRoleAssignment(
+      meeting,
+      value,
+    )
 
     const className = [
       'cohort-meeting-role-input',
       isBlank ? 'cohort-meeting-role-input-empty' : '',
       isInactive ? 'cohort-meeting-role-input-inactive' : '',
       isSearchMatch ? 'cohort-meeting-role-input-search-match' : '',
+      isDuplicate ? 'cohort-meeting-role-input-duplicate' : '',
     ]
       .filter((classItem) => classItem.length > 0)
       .join(' ')
 
     let title = value || 'Role unassigned'
 
-    if (isInactive) {
+    if (isDuplicate) {
+      title =
+        'QC warning: This person is assigned to more than one role for this cohort meeting.'
+    } else if (isInactive) {
       title =
         'Patrick J. Harris left the cohort after July 26, 2026. Reassign this role.'
     }
@@ -1838,19 +2080,195 @@ function CohortDatesRolesPage({
       </header>
 
       <div className="cohort-dates-toolbar">
-        <label className="cohort-dates-search">
-          <span>Name Search</span>
+        <div className="cohort-dates-toolbar-controls">
+          <label className="cohort-dates-search">
+            <span>Name Search</span>
 
-          <input
-            type="text"
-            list="cohort-role-name-options"
-            value={nameSearch}
-            placeholder="Start typing a cohort member name"
-            onChange={(event) =>
-              setNameSearch(event.target.value)
-            }
-          />
-        </label>
+            <input
+              type="text"
+              list="cohort-role-name-options"
+              value={nameSearch}
+              placeholder="Start typing a cohort member name"
+              onChange={(event) =>
+                setNameSearch(event.target.value)
+              }
+            />
+          </label>
+
+          <button
+            type="button"
+            className="cohort-add-meeting-button"
+            onClick={openAddMeetingModal}
+          >
+            <span aria-hidden="true">+</span>
+            Add Meeting
+          </button>
+
+          <button
+            type="button"
+            className="cohort-delete-meeting-button"
+            aria-disabled="true"
+            title="Delete behavior will be enabled after the meeting-selection workflow is defined."
+          >
+            <span aria-hidden="true">🗑️</span>
+            Delete
+          </button>
+        </div>
+
+        <div className="cohort-meeting-stats">
+          <article className="cohort-meeting-stat-card">
+            <span
+              className="cohort-meeting-stat-icon"
+              aria-hidden="true"
+            >
+              <svg
+                className="cohort-meeting-stat-svg"
+                viewBox="0 0 24 24"
+                focusable="false"
+              >
+                <rect
+                  x="3"
+                  y="5"
+                  width="18"
+                  height="16"
+                  rx="3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M7 3v4M17 3v4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M3 9h18"
+                  fill="none"
+                  stroke="#C69214"
+                  strokeWidth="2"
+                />
+                <rect
+                  x="8.5"
+                  y="12"
+                  width="7"
+                  height="6"
+                  rx="1"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+                <path
+                  d="M12 13.4v3.2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+
+            <div>
+              <span>Total Meetings</span>
+              <strong>{totalMeetings}</strong>
+            </div>
+          </article>
+
+          <article className="cohort-meeting-stat-card">
+            <span
+              className="cohort-meeting-stat-icon"
+              aria-hidden="true"
+            >
+              <svg
+                className="cohort-meeting-stat-svg"
+                viewBox="0 0 24 24"
+                focusable="false"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                />
+                <path
+                  d="M7.5 12.2l3 3.1 6.2-6.6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+
+            <div>
+              <span>Meetings Completed</span>
+              <strong>{meetingsCompleted}</strong>
+            </div>
+          </article>
+
+          <article className="cohort-meeting-stat-card">
+            <span
+              className="cohort-meeting-stat-icon"
+              aria-hidden="true"
+            >
+              <svg
+                className="cohort-meeting-stat-svg"
+                viewBox="0 0 24 24"
+                focusable="false"
+              >
+                <rect
+                  x="3"
+                  y="15"
+                  width="3.5"
+                  height="6"
+                  rx="0.8"
+                  fill="currentColor"
+                />
+                <rect
+                  x="9"
+                  y="11"
+                  width="3.5"
+                  height="10"
+                  rx="0.8"
+                  fill="currentColor"
+                />
+                <rect
+                  x="15"
+                  y="7"
+                  width="3.5"
+                  height="14"
+                  rx="0.8"
+                  fill="currentColor"
+                />
+                <path
+                  d="M4.5 12.5l5-4 4 1.5 6-6"
+                  fill="none"
+                  stroke="#C69214"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M16.5 4H20v3.5"
+                  fill="none"
+                  stroke="#C69214"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+
+            <div>
+              <span>Percent Completed</span>
+              <strong>{percentCompleted}%</strong>
+            </div>
+          </article>
+        </div>
       </div>
 
       <datalist id="cohort-role-name-options">
@@ -1860,6 +2278,12 @@ function CohortDatesRolesPage({
               ? 'Former cohort member'
               : name}
           </option>
+        ))}
+      </datalist>
+
+      <datalist id="cohort-term-options">
+        {cohortTermOptions.map((term) => (
+          <option key={term} value={term} />
         ))}
       </datalist>
 
@@ -1893,9 +2317,15 @@ function CohortDatesRolesPage({
                   const isPast =
                     meeting.date < currentPacificDate
 
+                  const isUpcoming =
+                    meeting.id === nextUpcomingMeetingId
+
                   const rowClassName = [
                     isPast
                       ? 'cohort-meeting-row-past'
+                      : '',
+                    isUpcoming
+                      ? 'cohort-meeting-row-upcoming'
                       : '',
                     isYearTwoStart
                       ? 'cohort-meeting-year-two-start'
@@ -1992,7 +2422,15 @@ function CohortDatesRolesPage({
                         : undefined
                     }
                   >
-                    <td>{summary.name}</td>
+                    <td
+                      className={
+                        summary.name === 'Patrick J. Harris'
+                          ? 'cohort-role-summary-former-member-name'
+                          : undefined
+                      }
+                    >
+                      {summary.name}
+                    </td>
                     <td>{summary.facilitator}</td>
                     <td>{summary.communityBuilder}</td>
                     <td>{summary.recorder}</td>
@@ -2002,6 +2440,18 @@ function CohortDatesRolesPage({
                   </tr>
                 ))}
               </tbody>
+
+              <tfoot>
+                <tr className="cohort-role-summary-totals-row">
+                  <td>TOTALS</td>
+                  <td>{roleSummaryTotals.facilitator}</td>
+                  <td>{roleSummaryTotals.communityBuilder}</td>
+                  <td>{roleSummaryTotals.recorder}</td>
+                  <td>{roleSummaryTotals.timeKeeper}</td>
+                  <td>{roleSummaryTotals.processObserver}</td>
+                  <td>{roleSummaryTotals.total}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </aside>
@@ -2009,9 +2459,158 @@ function CohortDatesRolesPage({
 
       <div className="cohort-dates-former-note cohort-dates-former-note-bottom">
         Patrick J. Harris is retained for historical accuracy.
-        Assignments after July 26, 2026 are flagged in red and
+        Assignments after July 26, 2026 are flagged in orange and
         excluded from role totals until reassigned.
       </div>
+
+      {isAddMeetingOpen && (
+        <div className="meeting-modal-backdrop">
+          <section
+            className="meeting-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-meeting-title"
+          >
+            <header className="meeting-modal-header">
+              <h2 id="add-meeting-title">
+                Add Cohort Meeting
+              </h2>
+
+              <button
+                type="button"
+                className="meeting-modal-close"
+                onClick={closeAddMeetingModal}
+                aria-label="Close Add Cohort Meeting window"
+              >
+                ×
+              </button>
+            </header>
+
+            <form
+              className="meeting-form"
+              onSubmit={handleAddMeeting}
+            >
+              <div className="meeting-form-grid">
+                <label className="meeting-form-field">
+                  <span>Meeting Date</span>
+
+                  <input
+                    type="date"
+                    value={newMeeting.date}
+                    onChange={(event) =>
+                      setNewMeeting((currentMeeting) => ({
+                        ...currentMeeting,
+                        date: event.target.value,
+                      }))
+                    }
+                  />
+
+                  <small>
+                    Select or enter the meeting date. The table
+                    will apply the standard display format.
+                  </small>
+                </label>
+
+                <label className="meeting-form-field">
+                  <span>Term</span>
+
+                  <input
+                    type="text"
+                    list="cohort-term-options"
+                    value={newMeeting.term}
+                    placeholder="Example: Summer II"
+                    onChange={(event) =>
+                      setNewMeeting((currentMeeting) => ({
+                        ...currentMeeting,
+                        term: event.target.value,
+                      }))
+                    }
+                  />
+
+                  <small>
+                    Start typing Spring, Summer, Fall, or Winter.
+                    You may add I or II when needed.
+                  </small>
+                </label>
+
+                <label className="meeting-form-field">
+                  <span>Year</span>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={newMeeting.calendarYear}
+                    placeholder="YYYY"
+                    onChange={(event) =>
+                      setNewMeeting((currentMeeting) => ({
+                        ...currentMeeting,
+                        calendarYear:
+                          sanitizeMeetingYear(event.target.value),
+                      }))
+                    }
+                  />
+
+                  <small>
+                    Enter the four-digit calendar year.
+                  </small>
+                </label>
+
+                <label className="meeting-form-field">
+                  <span>Cohort Meeting</span>
+
+                  <input
+                    type="text"
+                    value={newMeeting.meetingNumber}
+                    placeholder={
+                      suggestedMeetingLabel ||
+                      'Example: 1 or Special Meeting'
+                    }
+                    onChange={(event) =>
+                      setNewMeeting((currentMeeting) => ({
+                        ...currentMeeting,
+                        meetingNumber: event.target.value,
+                      }))
+                    }
+                  />
+
+                  <small>
+                    Entering 1 becomes Cohort Meeting 1.
+                    Custom text is preserved. Leave blank if this
+                    field should remain blank.
+                    {suggestedMeetingLabel
+                      ? ` Suggested: ${suggestedMeetingLabel}.`
+                      : ''}
+                  </small>
+                </label>
+              </div>
+
+              {meetingFormError && (
+                <p className="meeting-form-error" role="alert">
+                  {meetingFormError}
+                </p>
+              )}
+
+              <div className="meeting-modal-actions">
+                <button
+                  type="button"
+                  className="meeting-cancel-button"
+                  onClick={closeAddMeetingModal}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="meeting-save-button"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </section>
   )
 }
@@ -2100,6 +2699,32 @@ function App() {
       ...currentContacts,
       contact,
     ])
+  }
+
+  function addCohortMeeting(
+    meeting: CohortMeetingRecord,
+  ): void {
+    setCohortMeetings((currentMeetings) =>
+      [...currentMeetings, meeting].sort(
+        (firstMeeting, secondMeeting) => {
+          const dateComparison =
+            firstMeeting.date.localeCompare(secondMeeting.date)
+
+          if (dateComparison !== 0) {
+            return dateComparison
+          }
+
+          return firstMeeting.meetingNumber.localeCompare(
+            secondMeeting.meetingNumber,
+            'en-US',
+            {
+              numeric: true,
+              sensitivity: 'base',
+            },
+          )
+        },
+      ),
+    )
   }
 
   function updateCohortMeetingRole(
@@ -2268,6 +2893,7 @@ function App() {
                 <CohortDatesRolesPage
                   contacts={contacts}
                   meetings={cohortMeetings}
+                  onAddMeeting={addCohortMeeting}
                   onUpdateRole={updateCohortMeetingRole}
                 />
               }
