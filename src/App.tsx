@@ -3221,6 +3221,411 @@ function CohortAttendancePage({
   )
 }
 
+function CohortNormsPage() {
+  type CohortNormSectionKey =
+    | 'development'
+    | 'about'
+    | 'sample'
+    | 'participation'
+    | 'communication'
+    | 'support'
+    | 'meeting'
+    | 'accountability'
+
+  interface CohortNormsContent {
+    readonly development: string
+    readonly about: string
+    readonly sample: string
+    readonly participation: string
+    readonly communication: string
+    readonly support: string
+    readonly meeting: string
+    readonly accountability: string
+  }
+
+  const initialNormsContent: CohortNormsContent = {
+    development:
+      "As part of our first two cohort meetings, we will develop Norms to guide our time together. Below is a description of what a norm is, followed by a few samples. Prior to Cohort #1, please take a few minutes to add norms that you would like our cohort to consider. From there, we will discuss ideas, combine like concepts and finalize our cohort's norms.",
+    about: [
+      'Norms are expectations for behaviors that are widely accepted by people within an organization.',
+      'Norms govern how we behave.',
+      'Norms can be productive or unproductive.',
+      'Can be formal or informal.',
+      'Should be clear.',
+      'Norms are powerful for prevention and intervention.',
+      'Should be revisited frequently.',
+    ].join('\n'),
+    sample: [
+      'We will embrace and value creativity and new ideas.',
+      'We will have clear roles and responsibilities.',
+      'We will be accountable to established goals.',
+      'We will be constructive and positive in communication.',
+      'We will assume good intent.',
+    ].join('\n'),
+    participation: [
+      'Step up, step back',
+      'Participate with purpose',
+      'Be Present and Engaged',
+      'Arrive with a challenge, leave with a commitment.',
+      'Support with positive encouragement',
+    ].join('\n'),
+    communication: [
+      'Story stays, learning goes',
+      'Assume good intent, tend to impact',
+      'Respond in a timely manner (48 hours) to preserve relationships',
+      'Cohort Members will respond to all communication within 48 hours',
+      'Communicate to the team if going to be late',
+      'Reach out individually if you want to discuss a norm with a cohort member',
+    ].join('\n'),
+    support: [
+      "Commit to making other people's jobs easier",
+      "Don't suffer in silence; ask for help.",
+      'Community ownership on norm implementation/reinforcement',
+    ].join('\n'),
+    meeting: [
+      'Precheck all technology is working before Cohort Meetings',
+      'Be on time',
+      'Be in a quiet environment (especially when speaking on the mic)',
+    ].join('\n'),
+    accountability:
+      'Revisit at each meeting - facilitator',
+  }
+
+  const [normsContent, setNormsContent] =
+    useState<CohortNormsContent>(initialNormsContent)
+
+  const [editingSection, setEditingSection] =
+    useState<CohortNormSectionKey | null>(null)
+
+  const [draftValue, setDraftValue] = useState('')
+
+  function getNormLines(value: string): string[] {
+    return value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+  }
+
+  function startEditingSection(
+    section: CohortNormSectionKey,
+  ): void {
+    setDraftValue(normsContent[section])
+    setEditingSection(section)
+  }
+
+  function saveEditingSection(): void {
+    if (editingSection === null) {
+      return
+    }
+
+    setNormsContent((currentContent) => ({
+      ...currentContent,
+      [editingSection]: draftValue,
+    }))
+
+    setEditingSection(null)
+    setDraftValue('')
+  }
+
+  function cancelEditingSection(): void {
+    setEditingSection(null)
+    setDraftValue('')
+  }
+
+  function renderEditableSection(
+    section: CohortNormSectionKey,
+    label: string,
+    displayContent: ReactNode,
+    rows: number,
+    isList = true,
+  ): ReactNode {
+    if (editingSection === section) {
+      return (
+        <div className="cohort-norms-editor">
+          <textarea
+            autoFocus
+            rows={rows}
+            value={draftValue}
+            aria-label={`Edit ${label}`}
+            onChange={(event) =>
+              setDraftValue(event.target.value)
+            }
+            onKeyDown={(event) => {
+              if (event.ctrlKey && event.key === 'Enter') {
+                event.preventDefault()
+                saveEditingSection()
+              }
+
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                cancelEditingSection()
+              }
+            }}
+          />
+
+          <div className="cohort-norms-editor-footer">
+            <span>
+              {isList
+                ? 'Enter one item per line.'
+                : 'Edit the section text.'}
+            </span>
+
+            <div className="cohort-norms-editor-actions">
+              <button
+                type="button"
+                className="cohort-norms-cancel-button"
+                onClick={cancelEditingSection}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="cohort-norms-save-button"
+                onClick={saveEditingSection}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div
+        className="cohort-norms-editable-area"
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit ${label}`}
+        title={`Click to edit ${label}`}
+        onClick={() => startEditingSection(section)}
+        onKeyDown={(event) => {
+          if (
+            event.key === 'Enter' ||
+            event.key === ' '
+          ) {
+            event.preventDefault()
+            startEditingSection(section)
+          }
+        }}
+      >
+        {displayContent}
+
+        <span className="cohort-norms-edit-hint">
+          Edit
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Norms</h1>
+      </header>
+
+      <section
+        className="cohort-norms-development"
+        aria-labelledby="norms-development-title"
+      >
+        <h2 id="norms-development-title">
+          Norms Development Process
+        </h2>
+
+        {renderEditableSection(
+          'development',
+          'Norms Development Process',
+          <p>{normsContent.development}</p>,
+          5,
+          false,
+        )}
+      </section>
+
+      <div className="cohort-norms-reference-grid">
+        <section
+          className="cohort-norms-reference-card"
+          aria-labelledby="about-norms-title"
+        >
+          <header className="cohort-norms-card-heading">
+            <h2 id="about-norms-title">About Norms</h2>
+          </header>
+
+          <div className="cohort-norms-reference-content">
+            {renderEditableSection(
+              'about',
+              'About Norms',
+              <ul>
+                {getNormLines(normsContent.about).map(
+                  (norm, index) => (
+                    <li key={`${norm}-${index}`}>
+                      {norm}
+                    </li>
+                  ),
+                )}
+              </ul>,
+              8,
+            )}
+          </div>
+        </section>
+
+        <section
+          className="cohort-norms-reference-card"
+          aria-labelledby="sample-norms-title"
+        >
+          <header className="cohort-norms-card-heading">
+            <h2 id="sample-norms-title">Sample Norms</h2>
+          </header>
+
+          <div className="cohort-norms-reference-content">
+            {renderEditableSection(
+              'sample',
+              'Sample Norms',
+              <ol>
+                {getNormLines(normsContent.sample).map(
+                  (norm, index) => (
+                    <li key={`${norm}-${index}`}>
+                      {norm}
+                    </li>
+                  ),
+                )}
+              </ol>,
+              7,
+            )}
+          </div>
+        </section>
+      </div>
+
+      <section
+        className="cohort-norms-main-section"
+        aria-labelledby="beta-nu-norms-title"
+      >
+        <header className="cohort-norms-main-heading">
+          <div>
+            <h2 id="beta-nu-norms-title">
+              Our Beta Nu Norms
+            </h2>
+            <p>
+              Initial cohort inputs organized by theme
+            </p>
+          </div>
+        </header>
+
+        <div className="cohort-norms-card-grid">
+          <article className="cohort-norm-card">
+            <header>
+              <h3>Participation &amp; Engagement</h3>
+            </header>
+
+            {renderEditableSection(
+              'participation',
+              'Participation and Engagement',
+              <ul>
+                {getNormLines(
+                  normsContent.participation,
+                ).map((norm, index) => (
+                  <li key={`${norm}-${index}`}>
+                    {norm}
+                  </li>
+                ))}
+              </ul>,
+              7,
+            )}
+          </article>
+
+          <article className="cohort-norm-card">
+            <header>
+              <h3>
+                Communication &amp; Relationships
+              </h3>
+            </header>
+
+            {renderEditableSection(
+              'communication',
+              'Communication and Relationships',
+              <ul>
+                {getNormLines(
+                  normsContent.communication,
+                ).map((norm, index) => (
+                  <li key={`${norm}-${index}`}>
+                    {norm}
+                  </li>
+                ))}
+              </ul>,
+              8,
+            )}
+          </article>
+
+          <article className="cohort-norm-card">
+            <header>
+              <h3>
+                Support &amp; Shared Responsibility
+              </h3>
+            </header>
+
+            {renderEditableSection(
+              'support',
+              'Support and Shared Responsibility',
+              <ul>
+                {getNormLines(
+                  normsContent.support,
+                ).map((norm, index) => (
+                  <li key={`${norm}-${index}`}>
+                    {norm}
+                  </li>
+                ))}
+              </ul>,
+              6,
+            )}
+          </article>
+
+          <article className="cohort-norm-card cohort-norm-card-meeting">
+            <header>
+              <h3>Meeting Readiness</h3>
+            </header>
+
+            {renderEditableSection(
+              'meeting',
+              'Meeting Readiness',
+              <ul>
+                {getNormLines(
+                  normsContent.meeting,
+                ).map((norm, index) => (
+                  <li key={`${norm}-${index}`}>
+                    {norm}
+                  </li>
+                ))}
+              </ul>,
+              6,
+            )}
+          </article>
+
+          <article className="cohort-norm-card">
+            <header>
+              <h3>Accountability</h3>
+            </header>
+
+            {renderEditableSection(
+              'accountability',
+              'Accountability',
+              <ul>
+                {getNormLines(
+                  normsContent.accountability,
+                ).map((norm, index) => (
+                  <li key={`${norm}-${index}`}>
+                    {norm}
+                  </li>
+                ))}
+              </ul>,
+              4,
+            )}
+          </article>
+        </div>
+      </section>
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -3619,12 +4024,7 @@ function App() {
 
             <Route
               path="/norms"
-              element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Norms"
-                  description="The cohort's agreed expectations, communication standards, and shared norms will be maintained here."
-                />
-              }
+              element={<CohortNormsPage />}
             />
 
             <Route

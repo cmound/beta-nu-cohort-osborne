@@ -1198,7 +1198,7 @@
 
 .contacts-table {
   width: 100%;
-  min-width: 1380px;
+  min-width: 1475px;
   border-collapse: collapse;
   table-layout: fixed;
   color: #111827;
@@ -1208,10 +1208,23 @@
 
 .contacts-table th,
 .contacts-table td {
-  padding: 8px 9px;
   border: 1px solid #8d99a8;
   vertical-align: middle;
   text-align: left;
+}
+
+.contacts-table th {
+  padding: 8px 9px;
+}
+
+.contacts-table td {
+  padding: 0;
+}
+
+.contacts-table td:focus-within {
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 0 0 2px #005EB8;
 }
 
 .contacts-table th {
@@ -1253,6 +1266,10 @@
 
 .contacts-table th:nth-child(7) {
   width: auto;
+}
+
+.contacts-table th:nth-child(8) {
+  width: 95px;
 }
 
 /* =========================================================
@@ -1431,34 +1448,405 @@
   font-weight: 900;
 }
 
-.contact-mentor-name {
-  font-weight: 900 !important;
+/* =========================================================
+   Beta Nu Cohort Norms
+   ========================================================= */
+
+.cohort-norms-development {
+  box-sizing: border-box;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #7f8c9d;
+  border-left: 4px solid var(--umass-gold);
+  border-radius: 5px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(11, 31, 59, 0.98),
+      rgba(3, 18, 36, 0.98)
+    );
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.2);
 }
 
-.contact-email-cell {
+.cohort-norms-development h2 {
+  margin: 0 0 7px;
+  color: var(--umass-gold);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.cohort-norms-development p {
+  max-width: 1320px;
+  margin: 0;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.cohort-norms-reference-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.cohort-norms-reference-card {
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 5px;
+  background: #ffffff;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.16);
+}
+
+.cohort-norms-card-heading {
+  min-height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #7f8c9d;
+  background: var(--umass-navy);
+}
+
+.cohort-norms-card-heading h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.cohort-norms-reference-content {
+  padding: 12px 16px 13px;
+}
+
+.cohort-norms-reference-content ul,
+.cohort-norms-reference-content ol {
+  margin: 0;
+  padding-left: 21px;
+  color: #111827;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.cohort-norms-reference-content li + li {
+  margin-top: 5px;
+}
+
+.cohort-norms-main-section {
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 5px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.cohort-norms-main-heading {
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 8px 13px;
+  border-bottom: 1px solid #7f8c9d;
+  background: var(--umass-navy);
+}
+
+.cohort-norms-main-heading h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.cohort-norms-main-heading p {
+  margin: 3px 0 0;
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cohort-norms-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+  background: #eef2f6;
+}
+
+.cohort-norm-card {
+  overflow: hidden;
+  border: 1px solid #8d99a8;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.cohort-norm-card header {
+  min-height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-bottom: 1px solid #8d99a8;
+  background:
+    linear-gradient(
+      180deg,
+      #123f63 0%,
+      #082a46 100%
+    );
+}
+
+.cohort-norm-card h3 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.cohort-norm-card ul {
+  margin: 0;
+  padding: 11px 14px 12px 29px;
+  color: #111827;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.cohort-norm-card li + li {
+  margin-top: 5px;
+}
+
+.cohort-norm-card-meeting {
+  grid-column: span 2;
+}
+
+/* Click-to-edit behavior for Norms page */
+.cohort-norms-editable-area {
+  position: relative;
+  min-height: 100%;
+  cursor: text;
+  transition:
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+
+.cohort-norms-editable-area:hover {
+  box-shadow: inset 0 0 0 2px rgba(0, 94, 184, 0.55);
+}
+
+.cohort-norms-editable-area:focus-visible {
+  outline: 2px solid var(--umass-blue);
+  outline-offset: -2px;
+}
+
+.cohort-norms-development
+  .cohort-norms-editable-area:hover {
+  box-shadow: inset 0 0 0 2px rgba(244, 197, 66, 0.72);
+}
+
+.cohort-norms-edit-hint {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  z-index: 2;
+  padding: 2px 6px;
+  border: 1px solid #94a3b8;
+  border-radius: 3px;
+  color: var(--umass-navy);
+  background: rgba(255, 255, 255, 0.96);
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.cohort-norms-editable-area:hover
+  .cohort-norms-edit-hint,
+.cohort-norms-editable-area:focus-visible
+  .cohort-norms-edit-hint {
+  opacity: 1;
+}
+
+.cohort-norms-editor {
+  box-sizing: border-box;
+  padding: 9px;
+  box-shadow: inset 0 0 0 2px var(--umass-blue);
+  background: #eef2f6;
+}
+
+.cohort-norms-development
+  .cohort-norms-editor {
+  margin-top: 2px;
+  background: #eef2f6;
+}
+
+.cohort-norms-editor textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 9px;
+  border: 1px solid #7f8c9d;
+  border-radius: 3px;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.cohort-norms-editor textarea:focus {
+  border-color: var(--umass-blue);
+  box-shadow: inset 0 0 0 1px var(--umass-blue);
+}
+
+.cohort-norms-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 7px;
+}
+
+.cohort-norms-editor-footer > span {
+  color: #475569;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.cohort-norms-editor-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.contact-email-link {
-  padding: 0;
-  border: 0;
-  color: #005EB8;
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  text-decoration: underline;
+.cohort-norms-cancel-button,
+.cohort-norms-save-button {
+  min-width: 62px;
+  min-height: 27px;
+  box-sizing: border-box;
+  padding: 4px 9px;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
   cursor: pointer;
 }
 
-.contact-email-link:hover {
-  color: #003f7d;
+.cohort-norms-cancel-button {
+  border: 1px solid #94a3b8;
+  color: var(--umass-navy);
+  background: #ffffff;
 }
 
-.contact-email-link:focus-visible {
+.cohort-norms-save-button {
+  border: 1px solid #004b93;
+  color: #ffffff;
+  background: var(--umass-blue);
+}
+
+.cohort-norms-cancel-button:hover {
+  background: #e2e8f0;
+}
+
+.cohort-norms-save-button:hover {
+  background: #004b93;
+}
+
+.cohort-norms-cancel-button:focus-visible,
+.cohort-norms-save-button:focus-visible {
   outline: 2px solid var(--umass-gold);
   outline-offset: 2px;
+}
+
+.contact-mentor-name {
+  font-weight: 900 !important;
+}
+
+.contact-cell-input,
+.contact-cell-select,
+.contact-cell-textarea,
+.contact-status-select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #111827;
+  background: transparent;
+  font: inherit;
+}
+
+.contact-cell-input,
+.contact-cell-select,
+.contact-status-select {
+  min-height: 46px;
+  padding: 8px 9px;
+}
+
+.contact-cell-textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 8px 9px;
+  overflow: hidden;
+  resize: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.4;
+}
+
+.contact-cell-input:hover,
+.contact-cell-select:hover,
+.contact-cell-textarea:hover,
+.contact-status-select:hover {
+  background: #f8fafc;
+}
+
+.contact-cell-input:focus,
+.contact-cell-select:focus,
+.contact-cell-textarea:focus,
+.contact-status-select:focus {
+  outline: 0;
+  background: #ffffff;
+}
+
+.contact-mentor-name .contact-cell-input {
+  font-weight: 900;
+}
+
+.contact-status-cell {
+  text-align: center !important;
+}
+
+.contact-status-select {
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.contact-status-mentor {
+  display: block;
+  color: #64748b;
+  font-weight: 700;
+  text-align: center;
+}
+
+.contact-email-input {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: #005EB8;
+  text-decoration: underline;
 }
 
 .contact-email-copied {
@@ -1470,6 +1858,68 @@
   font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.contacts-inactive-section {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.contacts-inactive-heading {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-bottom: 1px solid #8d99a8;
+  background: var(--umass-navy);
+}
+
+.contacts-inactive-heading h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.contacts-inactive-heading span {
+  min-width: 22px;
+  padding: 2px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.contacts-inactive-empty {
+  margin: 0;
+  padding: 10px 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.contacts-inactive-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contacts-inactive-list li {
+  padding: 8px 12px;
+  border-bottom: 1px solid #cbd5e1;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.contacts-inactive-list li:last-child {
+  border-bottom: 0;
 }
 
 .contact-modal-backdrop {
