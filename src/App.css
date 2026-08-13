@@ -1255,6 +1255,182 @@
   width: auto;
 }
 
+/* =========================================================
+   Beta Nu Cohort Attendance
+   ========================================================= */
+
+.attendance-key {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 10px;
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.attendance-key strong {
+  color: var(--umass-gold);
+  font-weight: 900;
+}
+
+.attendance-table-frame {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #7f8c9d;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.attendance-table {
+  width: max-content;
+  min-width: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #111827;
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.attendance-table th,
+.attendance-table td {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #8d99a8;
+  vertical-align: middle;
+}
+
+.attendance-table th {
+  color: #111827;
+  background: #A97800;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.attendance-table th.attendance-meeting-column-next {
+  color: #0000FF;
+  background: #FFFF00;
+  font-weight: 900;
+  border-left: 2px solid var(--umass-navy) !important;
+  border-right: 2px solid var(--umass-navy) !important;
+}
+
+.attendance-upcoming-meeting-cell {
+  border-left: 2px solid var(--umass-navy) !important;
+  border-right: 2px solid var(--umass-navy) !important;
+}
+
+.attendance-name-column {
+  position: sticky;
+  left: 0;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  padding: 6px 9px !important;
+  border-right: 0 !important;
+  text-align: left;
+  background: #ffffff;
+  background-clip: padding-box;
+  box-shadow: inset -2px 0 0 var(--umass-navy);
+}
+
+.attendance-table thead .attendance-name-column {
+  z-index: 4;
+  background: #A97800;
+}
+
+.attendance-table tbody .attendance-name-column {
+  z-index: 2;
+}
+
+.attendance-mentor-name {
+  font-weight: 900;
+}
+
+.attendance-meeting-column {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+  padding: 4px 6px !important;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.attendance-meeting-code,
+.attendance-meeting-date {
+  display: block;
+}
+
+.attendance-meeting-code {
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.attendance-meeting-date {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.attendance-mark-cell {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+  background: #ffffff;
+}
+
+.attendance-mark-input {
+  width: 100%;
+  height: 31px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.attendance-mark-input:focus {
+  box-shadow: inset 0 0 0 2px var(--umass-blue);
+}
+
+.attendance-mark-present {
+  color: #111827;
+  background: #ffffff;
+}
+
+.attendance-mark-absent {
+  color: #9C0006;
+  background: #FFC7CE;
+}
+
+.attendance-count-summary {
+  display: flex;
+  gap: 24px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  border: 1px solid #7f8c9d;
+  border-radius: 4px;
+  color: #111827;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.attendance-count-summary strong {
+  font-weight: 900;
+}
+
 .contact-mentor-name {
   font-weight: 900 !important;
 }

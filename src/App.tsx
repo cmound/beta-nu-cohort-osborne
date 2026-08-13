@@ -102,6 +102,21 @@ interface CohortContactPageProps {
   readonly onAddContact: (contact: CohortContactRecord) => void
 }
 
+type CohortAttendanceMark = '' | 'X' | 'A'
+
+type CohortAttendanceState = Record<string, CohortAttendanceMark>
+
+interface CohortAttendancePageProps {
+  readonly contacts: readonly CohortContactRecord[]
+  readonly meetings: readonly CohortMeetingRecord[]
+  readonly attendance: CohortAttendanceState
+  readonly onUpdateAttendance: (
+    contactId: string,
+    meetingId: string,
+    mark: CohortAttendanceMark,
+  ) => void
+}
+
 type CohortProgramYear = 'Year 1' | 'Year 2'
 
 type CohortMeetingRoleField =
@@ -841,6 +856,33 @@ const cohortMeetingsSeed: readonly CohortMeetingRecord[] = [
   },
 ]
 
+function createCohortAttendanceSeed(): CohortAttendanceState {
+  const attendance: CohortAttendanceState = {}
+
+  for (const contact of cohortContactsSeed) {
+    attendance[
+      getAttendanceKey(
+        contact.id,
+        'meeting-2025-09-21',
+      )
+    ] =
+      contact.id === 'asa-jones-mcghee'
+        ? 'A'
+        : 'X'
+
+    attendance[
+      getAttendanceKey(
+        contact.id,
+        'meeting-2025-10-12',
+      )
+    ] = 'X'
+  }
+
+  return attendance
+}
+
+const cohortAttendanceSeed = createCohortAttendanceSeed()
+
 function createEmptyContactForm(): CohortContactFormState {
   return {
     name: '',
@@ -1057,6 +1099,76 @@ function sortCohortContacts(
       sensitivity: 'base',
     })
   })
+}
+
+function getAttendanceKey(
+  contactId: string,
+  meetingId: string,
+): string {
+  return `${contactId}::${meetingId}`
+}
+
+function normalizeAttendanceMark(
+  value: string,
+): CohortAttendanceMark {
+  const normalizedValue = value.trim().toUpperCase()
+
+  if (normalizedValue === 'X') {
+    return 'X'
+  }
+
+  if (normalizedValue === 'A') {
+    return 'A'
+  }
+
+  return ''
+}
+
+function getAttendanceMeetingCode(
+  meeting: CohortMeetingRecord,
+): string {
+  const yearCode = meeting.year === 'Year 1' ? 'Y1' : 'Y2'
+
+  const termParts = meeting.term.split(' ')
+  const season = termParts[0] ?? ''
+  const termSequence = termParts[1] ?? ''
+
+  let seasonCode = season
+
+  switch (season) {
+    case 'Fall':
+      seasonCode = 'F'
+      break
+
+    case 'Spring':
+      seasonCode = 'S'
+      break
+
+    case 'Summer':
+      seasonCode = 'SU'
+      break
+
+    case 'Winter':
+      seasonCode = 'W'
+      break
+  }
+
+  const sequenceCode =
+    termSequence === 'I'
+      ? '1'
+      : termSequence === 'II'
+        ? '2'
+        : ''
+
+  const meetingMatch = /^Cohort Meeting\s+(\d+)$/i.exec(
+    meeting.meetingNumber.trim(),
+  )
+
+  const meetingCode = meetingMatch?.[1]
+    ? `C${meetingMatch[1]}`
+    : meeting.meetingNumber.trim() || '—'
+
+  return `${yearCode}, ${seasonCode}${sequenceCode}, ${meetingCode}`
 }
 
 function normalizeRoleParticipantName(value: string): string {
@@ -2615,6 +2727,156 @@ function CohortDatesRolesPage({
   )
 }
 
+function CohortAttendancePage({
+  contacts,
+  meetings,
+  attendance,
+  onUpdateAttendance,
+}: CohortAttendancePageProps) {
+  const [currentDate, setCurrentDate] = useState(() => new Date())
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => {
+      setCurrentDate(new Date())
+    }, 60_000)
+
+    return () => {
+      window.clearInterval(timerId)
+    }
+  }, [])
+
+  const currentPacificDate = getPacificDateKey(currentDate)
+
+  const nextUpcomingMeetingId =
+    meetings.find(
+      (meeting) => meeting.date >= currentPacificDate,
+    )?.id ?? null
+
+  const sortedContacts = sortCohortContacts(contacts)
+
+  const studentCount = contacts.filter(
+    (contact) => !contact.isMentor,
+  ).length
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Attendance</h1>
+      </header>
+
+      <div className="attendance-key">
+        <span>
+          <strong>X</strong> = Attended
+        </span>
+
+        <span>
+          <strong>A</strong> = Absent
+        </span>
+      </div>
+
+      <div className="attendance-table-frame">
+        <table className="attendance-table">
+          <thead>
+            <tr>
+              <th className="attendance-name-column">
+                Name
+              </th>
+
+              {meetings.map((meeting) => (
+                <th
+                  key={meeting.id}
+                  className={`attendance-meeting-column${meeting.id === nextUpcomingMeetingId
+                    ? ' attendance-meeting-column-next'
+                    : ''
+                    }`}
+                  title={`${formatCohortMeetingDate(meeting.date)} | ${meeting.term} | ${meeting.meetingNumber || 'Meeting number not entered'}`}
+                >
+                  <span className="attendance-meeting-code">
+                    {getAttendanceMeetingCode(meeting)}
+                  </span>
+
+                  <span className="attendance-meeting-date">
+                    {formatCohortMeetingDate(meeting.date)}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {sortedContacts.map((contact) => (
+              <tr key={contact.id}>
+                <td
+                  className={`attendance-name-column${contact.isMentor
+                    ? ' attendance-mentor-name'
+                    : ''
+                    }`}
+                >
+                  {contact.name}
+                </td>
+
+                {meetings.map((meeting) => {
+                  const attendanceKey = getAttendanceKey(
+                    contact.id,
+                    meeting.id,
+                  )
+
+                  const attendanceMark =
+                    attendance[attendanceKey] ?? ''
+
+                  return (
+                    <td
+                      key={meeting.id}
+                      className={`attendance-mark-cell${meeting.id === nextUpcomingMeetingId
+                          ? ' attendance-upcoming-meeting-cell'
+                          : ''
+                        }`}
+                    >
+                      <input
+                        type="text"
+                        maxLength={1}
+                        className={`attendance-mark-input${attendanceMark === 'A'
+                          ? ' attendance-mark-absent'
+                          : attendanceMark === 'X'
+                            ? ' attendance-mark-present'
+                            : ''
+                          }`}
+                        value={attendanceMark}
+                        aria-label={`${contact.name}, ${formatCohortMeetingDate(meeting.date)} attendance`}
+                        title="Enter X for attended or A for absent"
+                        onChange={(event) =>
+                          onUpdateAttendance(
+                            contact.id,
+                            meeting.id,
+                            normalizeAttendanceMark(
+                              event.target.value,
+                            ),
+                          )
+                        }
+                      />
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="attendance-count-summary">
+        <span>
+          Students = <strong>{studentCount}</strong>
+        </span>
+
+        <span>
+          Total with Dr. CMO ={' '}
+          <strong>{contacts.length}</strong>
+        </span>
+      </div>
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -2694,11 +2956,30 @@ function App() {
   const [cohortMeetings, setCohortMeetings] =
     useState<readonly CohortMeetingRecord[]>(cohortMeetingsSeed)
 
+  const [cohortAttendance, setCohortAttendance] =
+    useState<CohortAttendanceState>(cohortAttendanceSeed)
+
   function addCohortContact(contact: CohortContactRecord): void {
     setContacts((currentContacts) => [
       ...currentContacts,
       contact,
     ])
+  }
+
+  function updateCohortAttendance(
+    contactId: string,
+    meetingId: string,
+    mark: CohortAttendanceMark,
+  ): void {
+    const attendanceKey = getAttendanceKey(
+      contactId,
+      meetingId,
+    )
+
+    setCohortAttendance((currentAttendance) => ({
+      ...currentAttendance,
+      [attendanceKey]: mark,
+    }))
   }
 
   function addCohortMeeting(
@@ -2902,9 +3183,11 @@ function App() {
             <Route
               path="/attendance"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Attendance"
-                  description="Cohort meeting attendance and participation records will be maintained here."
+                <CohortAttendancePage
+                  contacts={contacts}
+                  meetings={cohortMeetings}
+                  attendance={cohortAttendance}
+                  onUpdateAttendance={updateCohortAttendance}
                 />
               }
             />
