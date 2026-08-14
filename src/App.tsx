@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -171,6 +172,87 @@ interface CohortDatesRolesPageProps {
   readonly onUpdateRole: (
     meetingId: string,
     roleField: CohortMeetingRoleField,
+    value: string,
+  ) => void
+}
+
+interface CohortPurposeResearchRecord {
+  readonly id: string
+  readonly developmentNote: string
+  readonly memberName: string
+  readonly purposeStatement: string
+  readonly researchQuestion1: string
+  readonly researchQuestion2: string
+  readonly researchQuestion3: string
+  readonly researchQuestion4: string
+  readonly researchQuestion5: string
+  readonly cmoThoughts: string
+  readonly additionalResearchNotes: string
+}
+
+type CohortPurposeResearchField = Exclude<
+  keyof CohortPurposeResearchRecord,
+  'id'
+>
+
+type PurposeResearchTextAlign =
+  | 'left'
+  | 'center'
+  | 'right'
+
+type PurposeResearchVerticalAlign =
+  | 'top'
+  | 'center'
+  | 'bottom'
+
+type PurposeResearchFreezeMode =
+  | 'none'
+  | 'panes'
+  | 'top-row'
+  | 'first-column'
+
+interface PurposeResearchCellFormat {
+  readonly fontFamily: string
+  readonly fontSize: number
+  readonly bold: boolean
+  readonly italic: boolean
+  readonly underline: boolean
+  readonly bordered: boolean
+  readonly fillColor: string
+  readonly fontColor: string
+  readonly textAlign: PurposeResearchTextAlign
+  readonly verticalAlign: PurposeResearchVerticalAlign
+  readonly indentLevel: number
+  readonly wrapText: boolean
+}
+
+interface PurposeResearchSelectedCell {
+  readonly recordId: string
+  readonly field: CohortPurposeResearchField
+}
+
+interface PurposeResearchContextMenuState {
+  readonly recordId: string | null
+  readonly field: CohortPurposeResearchField | null
+  readonly x: number
+  readonly y: number
+}
+
+interface PurposeResearchColumnDefinition {
+  readonly field: CohortPurposeResearchField
+  readonly label: string
+  readonly defaultWidth: number
+}
+
+interface CohortPurposeResearchPageProps {
+  readonly contacts: readonly CohortContactRecord[]
+  readonly records: readonly CohortPurposeResearchRecord[]
+  readonly onAddRecord: () => void
+  readonly onInsertRecordAfter: (recordId: string) => void
+  readonly onDeleteRecord: (recordId: string) => void
+  readonly onUpdateRecord: (
+    recordId: string,
+    field: CohortPurposeResearchField,
     value: string,
   ) => void
 }
@@ -390,6 +472,97 @@ const cohortTermOptions: readonly string[] = [
   'Fall',
   'Winter',
 ]
+
+const purposeResearchColumns:
+  readonly PurposeResearchColumnDefinition[] = [
+    {
+      field: 'developmentNote',
+      label: 'Update / Direction',
+      defaultWidth: 170,
+    },
+    {
+      field: 'memberName',
+      label: 'Your Name',
+      defaultWidth: 190,
+    },
+    {
+      field: 'purposeStatement',
+      label: 'Purpose Statement',
+      defaultWidth: 390,
+    },
+    {
+      field: 'researchQuestion1',
+      label: 'Research Question 1',
+      defaultWidth: 310,
+    },
+    {
+      field: 'researchQuestion2',
+      label: 'Research Question 2',
+      defaultWidth: 310,
+    },
+    {
+      field: 'researchQuestion3',
+      label: 'Research Question 3',
+      defaultWidth: 310,
+    },
+    {
+      field: 'researchQuestion4',
+      label: 'Research Question 4',
+      defaultWidth: 310,
+    },
+    {
+      field: 'researchQuestion5',
+      label: 'Research Question 5',
+      defaultWidth: 310,
+    },
+    {
+      field: 'cmoThoughts',
+      label: "Dr. CMO's Thoughts / Feedback",
+      defaultWidth: 390,
+    },
+    {
+      field: 'additionalResearchNotes',
+      label: 'Additional Research Notes',
+      defaultWidth: 360,
+    },
+  ]
+
+const purposeResearchFontOptions: readonly string[] = [
+  'Arial',
+  'Calibri',
+  'Georgia',
+  'Times New Roman',
+  'Verdana',
+]
+
+const purposeResearchFontSizeOptions:
+  readonly number[] = [
+    8,
+    9,
+    10,
+    11,
+    12,
+    14,
+    16,
+    18,
+    20,
+  ]
+
+const defaultPurposeResearchCellFormat:
+  PurposeResearchCellFormat = {
+  fontFamily: 'Arial',
+  fontSize: 10,
+  bold: false,
+  italic: false,
+  underline: false,
+  bordered: false,
+  fillColor: 'transparent',
+  fontColor: '#111827',
+  textAlign: 'left',
+  verticalAlign: 'top',
+  indentLevel: 0,
+  wrapText: true,
+}
 
 const COHORT_YEAR_TWO_START_DATE = '2026-08-24'
 
@@ -940,6 +1113,556 @@ function createCohortAttendanceSeed(): CohortAttendanceState {
 
 const cohortAttendanceSeed = createCohortAttendanceSeed()
 
+const purposeResearchSeed: readonly CohortPurposeResearchRecord[] = [
+  {
+    id: 'purpose-research-source-row-3',
+    developmentNote: ``,
+    memberName: `Asa Jones-McGhee`,
+    purposeStatement: `The purpose of this research aims at explore the perceptions of families who have gone through the child removal process using the foster care system.and how they perceive and explain it to be a legal kidnapping                   This study is aimed at investigating the general impacts of child removal associated with foster care on the trauma at a community level, especially how such experiences influence intergenerational trust in governmental agencies.`,
+    researchQuestion1: `What is the experience of families that have undergone foster care-related child removal, and what makes their description show such acts as legal kidnapping?`,
+    researchQuestion2: `What connects foster care-associated child removal to the emergence of trauma in communities, and how is the resultant trauma mediated to affect intergenerational trust in governmental agencies?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `The population you explain has some barriers that should be considered.  1)  Because these are protected classes, the IRB process is much harder. 2)  Will the folks who had their kids taken away want to particpiate?  In addition, your current purpose and RQ has some bias when you speak about "legal kidnapping"  What's clear to me is you want to study something related to the foster care system.  I recommend you start by scanning dissertations tied to the foster care system to see if anything catches your eye.  Keep scanning until you find 2-3 dissertations that really excite you. Then we can connect again to develop next steps. Chapter 5 of a dissertation outlines recommendations for future research. This might help you.`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-4',
+    developmentNote: `Final - exploring the perceptions of former foster youth between ages of 18-25 to explore their perceptions on how microsystem disruption impacted their mental heatlh.... Chair = Dr. Dennell Smith`,
+    memberName: `Asa Jones-McGhee`,
+    purposeStatement: `Title: Beyond Aging Out and Left to Navigate Alone: Former Foster Youth’s Lived Experiences of Mental Health and Support During the Transition to Adulthood                                                                                                        The purpose of this phenomenological study is to explore how former foster youth between the ages of 18 and 25 describe the impact that microsystems disruptions from Bronfenbrenner’s Ecological Systems model had on their mental health outcomes during their transitions to adulthood.`,
+    researchQuestion1: `1. How do former foster youth between the ages of 18–25 describe the impact that microsystems disruptions to their families had on their mental health outcomes during their transitions to adulthood.`,
+    researchQuestion2: `How do former foster youth between the ages of 18–25 describe the impact that microsystems disruptions to their schools had on their mental health outcomes during their transitions to adulthood.`,
+    researchQuestion3: `How do former foster youth between the ages of 18–25 describe the impact that microsystems disruptions to their peer groups had on their mental health outcomes during their transitions to adulthood.`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `Title: Beyond Aging Out and Left to Navigate Alone: Former Foster Youth’s Lived Experiences of Mental Health and Support During the Transition to Adulthood`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-5',
+    developmentNote: `Updates for 10.11`,
+    memberName: `Asa Jones-McGhee`,
+    purposeStatement: ``,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `Drop legal kidnapping.  Question you want to answer?  Different dynamics. Bias - AA families lose children and social workers act inapprorpiately.  Wealthy families can keep children.  Disparities between rich and poor. Or AA vs. Non-AA. Impact on child.  Mental Health part. Wants to explore the perceptions of kids removed from biological parents to determine the impact on their mental health.  Case study.  Seek a model.`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-6',
+    developmentNote: `2.24 narrowed chair list and purpose and RQs.`,
+    memberName: `Victoria Vildosola`,
+    purposeStatement: ``,
+    researchQuestion1: `How do grit and access to mentorship programs influence women’s ability to break through the glass ceiling in retail leadership?`,
+    researchQuestion2: `To what extent do mentorship opportunities enhance women’s perceptions of self-efficacy and career progression in retail leadership roles?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `This is a good start.  Grit is a good conceptual model and makes it easy to structure a study. When you start to layer in mentorship, it gets a little fuzzy. DId you find a study you are immulating?  In your mind, are you colelcting qual or quant data?  Are you wanting to explore formal mentorship programs or infromal mentorship?  What level of retail leadership are you thinking about? My instinct is to focus on grit and ditch mentorship (or visa versa). Unless you want to explore the relationship between formal mentorship (or informal) and grit scores?  This may already exist.  I think the key is connecting the two. Measure Grit, interview those with high and low scores to dig futher into mentorship experiences?`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-7',
+    developmentNote: `Updates for 11.10
+interest, practice, purpose, and hope`,
+    memberName: `Victoria Vildosola`,
+    purposeStatement: `The purpose of this mixed-methods study is to examine the grit levels of women in store director roles in the grocery indsutry in the Inland Empire and to describe how women in leadership positions in the grocery industry in the Inland Empire describe the role of grit in their career advancement.`,
+    researchQuestion1: `Quantitive- 1. What are the grit levels of women in leadership positions in the grocery industry in the Inland Empire?  NOTE:  Survey`,
+    researchQuestion2: `Qualitative- 2. How do women in leadership positions in the grocery indsutry in the Inland Empire describe the role of grit in their career advancement?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-8',
+    developmentNote: `updated 5-28 Chair- Dr. Stepahine Herrera`,
+    memberName: `Victoria Vildosola`,
+    purposeStatement: `The purpose of this phenomological study is to explore how female store directors in the retail industry, in the Inland Empire describe their lived experiences of grit in their career advancement through the lens of Duckworth's Theory of Grit.`,
+    researchQuestion1: `1. How do female store directors in the retail industry in the Inland Empire describe the role of interest in their career advancement?`,
+    researchQuestion2: `2.  . How do female store directors in the retail industry in the Inland Empire describe the role of practice in their career advancement?`,
+    researchQuestion3: `How do female store directors in the retail industry in the Inland Empire describe the role of purpose in their career advancement?`,
+    researchQuestion4: `4. How do female store directors in the retail industry in the Inland Empire describe the role of hope in their career advancement?`,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-9',
+    developmentNote: `Thematic - Final Decision. Dr. Peterson is lead on thematic. Chair George Sziraki`,
+    memberName: `Bashiyra Windley`,
+    purposeStatement: `The purpose of this exploratory phenomenological study was to explore and describe the strategies exemplary middle managers in corporate financial services organizations use to motivate employees in hybrid work environments through the motivational elements of autonomy, mastery, and purpose identified by Daniel H. Pink (2009). A further purpose was to identify which strategies these exemplary leaders perceived as having the greatest impact on employee motivation.`,
+    researchQuestion1: `What strategies do exemplary middle managers in corporate financial services organizations use
+to motivate employees in hybrid work environments based on Daniel H. Pink's (2009) essential
+elements: autonomy, mastery, and purpose.`,
+    researchQuestion2: `How do exemplary middle managers in corporate financial services organizations use autonomy to motivate employees in hybrid work environments?`,
+    researchQuestion3: `How do exemplary middle managers in corporate financial services organizations use
+mastery to motivate employees in hybrid work environments?`,
+    researchQuestion4: `How do exemplary middle managers in corporate financial services organizations use
+purpose to motivate employees in hybrid work environments?`,
+    researchQuestion5: ``,
+    cmoThoughts: `What strategies do exemplary middle managers in corporate financial services organizations perceive as being the most impactful in motivating people within a hybrid
+environment?`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-10',
+    developmentNote: `Updates for 10.11`,
+    memberName: `Bashiyra Windley`,
+    purposeStatement: `strategies exemplary middle managers in corporate financial services organizations use to`,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-11',
+    developmentNote: `Patrick J. Harris Note: I am prepred to do whatever work I need to do for my IRB. This is a study will be and must be meaning for me as I will be deeply connected to the study. I am prepared to jump through what hoops I need to as needed.`,
+    memberName: `Patrick J. Harris`,
+    purposeStatement: `motivate employees in hybrid work environments through the motivational elements of`,
+    researchQuestion1: `Qualitative Research Questions
+● What social, educational, and environmental factors contribute to the confidence levels of
+student musicians from low-SES schools?
+● How do access to resources, quality of instruction, and peer interactions shape their
+musical achievement in competitive and collaborative environments?`,
+    researchQuestion2: `Quantitative Research Questions
+● To what extent do levels of self-efficacy and performance anxiety differ between student
+musicians from low-SES and affluent schools?
+● How strongly are access to resources and teacher support statistically correlated with
+reported confidence and achievement outcomes among student musicians?`,
+    researchQuestion3: `Mixed-Methods Integration Question
+● How do the qualitative perceptions of student musicians from low-SES schools explain or
+expand upon the quantitative patterns of confidence, self-efficacy, and achievement
+observed in competitive and collaborative contexts?`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `Patrick, There is a lot in here, whcih makes for a complicated and long dissertation. That's ok, if that's what you want. Just know it results in extra work. I was tracking you until I got to the quant part and you indicate you want to compare low-ses and affluent schools.  Your purpose statement does not indicate you are comparing two different groups. The correlation piece is interesting. It will require you to quantify the factors you want to correlate. Keep in mind, in a correlation study, you have to have variables that are bi-directional (go up and down).  This is a solid start, you may want to start researching instruments to measure self-confidence, self-efficacy and achievement.  I see you crossed it all out.  This is ok but I do think there is enough in here to scope a study that is meaningful and achievable. Maybe a 1:1 chat with myself or your instructor?`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-12',
+    developmentNote: `UPDATED Patrick J. Harris Note: I am prepred to do whatever work I need to do for my IRB. This is a study will be and must be meaning for me as I will be deeply connected to the study. I am prepared to jump through what hoops I need to as needed.`,
+    memberName: `Patrick J. Harris`,
+    purposeStatement: `autonomy, mastery, and purpose identified by Daniel H. Pink (2009). A further purpose was to`,
+    researchQuestion1: `How do student musicians in a low-SES high school marching band perceive the social, educational, and environmental conditions that influence their confidence?`,
+    researchQuestion2: `How do students describe the ways that access to resources, quality of instruction, and peer interactions shape their musical achievement within the marching band?`,
+    researchQuestion3: `How do student performers narrate their sense of identity and belonging when engaging in competitive and collaborative marching band contexts alongside peers from more affluent schools?`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `Deconstructing this. Qual study.  Delimitations = HS students from low SES schools, who participate in the Marching Band.  You want to examine student perceptions about how their marching band experience influenced, if at all, their confidence, achievmeent (what type), and sense of belonging?  Questions:  you note both compeottive and collaborative performance.  Does this mean students will have participated in both? If not, do you plan to compare them?  If not, this seems like a distraction in the purpose statement. This prior to here gets me to the items in red.   From this, here is what I would recommend as a purpose statement, assuming you don't plan to use both competitive and collaborative performance as a delimitation.  The purpose of this qualitative, narrative study is to explore the perceptions of high school marching band students enrolled at low socioeconomic status (SES) schools to determine how their marching band experience influenced, if at all, their confidence, academic achievement and sense of belonging.    When I get to this purple section, you start to introduce new variables, such as social, education and environmetnal conditions, plus musical identities, sense of self, peer involvement. This muddies the water, in my opinion.  You can certainly explore social, educational and environmental conditions but you would have to define these, typically from the literature.  If you decide this is really your interest and you have something you are working with, I recommend you send me that instrument or conceptual framework. In the first RQ, you root into the social, educational and environmental and then root into confidence. This is not aligned with the purpose.e  Prior comment in purple applies here too.  Then in RQ 2, you introduce more variables, such as access to resources, quality of instruction, and peer interactions.  Green somewhat aligns with the first part of the purpose, but you now introduce identity, and switch to affluent schools.  We can explore any variables you want. Easiest way to shape this is to see if there is some framework that shows how music education shares certain factors in a student (or any cocurricular activities), then we can use the same variables.  Let's chat. Feels like you are moving in the right direction. Next steps are to narrow on variables and get to crisp alignment.  Also, there is some bias iny our work here. Be mindful. It's common, but we try to make you mindful.  You assume that marching band participation influences confidence, achievement, sense of belonging.... Don't be discouraged by this feebdack, this is a normal part of the process and important and the good news is you have a viable concept to build off of.`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-13',
+    developmentNote: `10.11 Update`,
+    memberName: `Patrick J. Harris`,
+    purposeStatement: `identify which strategies these exemplary leaders perceived as having the greatest impact on`,
+    researchQuestion1: `How do high school band students from a low-SES school perceive their confidence as developed through participation in their band experience?`,
+    researchQuestion2: `How do students perceive their motivation in relation to their band experiences in concert and marching ensembles?`,
+    researchQuestion3: `How do students perceive their sense of belonging and connection within their band community and in broader performance settings, such as competitions or collaborative events?`,
+    researchQuestion4: `Achievable Study
+Clear delimitations: One low-SES high school, band students (marching + concert).
+Balanced lens: Educational (motivation/achievement) and psychological (confidence/belonging).
+Student-centered: Grounded in lived experiences, not assumed effects.
+Manageable scope: Narrative interviews, focus groups, or reflections can provide rich data in 1–2 years.`,
+    researchQuestion5: ``,
+    cmoThoughts: `Purpose:  Seems like progress, well done. Do you want to explore confidence, sense of achievement and belonging through particiaption in ensemble or how these three items are shaped by their ensemble experience?  The part I changed to red starts to create mis-alignment.  The two theories will be your foundational theories. Some purpose statements may weave them in, but not as an after thought. Where the misalignment really starts to me, is when you speak to motivation, competence and connection.  And when you shift from Ensemble to Marching band (and I realize they are connected).  I encourage you to use the frist sentence in your purpose and   build it out.  Then get rid of the rest.  You are so close, I encourage you to narrow down a bit and ensure it has strong alignment. From there, I think your purpose and RQs will be tight. Normally I would edit these for you, but we first need to understand if you are seeking to examine how particpation in ensamble shapes confidence, sense of achievement, and belonging.    I also wonder if you should do a mixed-methods, only because there are instruments for some of these.... Look at my example below. Notice how tight it is in alignment.`,
+    additionalResearchNotes: `Expectancy Value = is about motivation.  Self-Determination is also about motivation....`,
+  },
+  {
+    id: 'purpose-research-source-row-14',
+    developmentNote: ``,
+    memberName: `Patrick J. Harris`,
+    purposeStatement: `employee motivation.`,
+    researchQuestion1: `How do high school students from a low-SES schools pereceive their participation in band influences their confidence,`,
+    researchQuestion2: `How do high school students from a low-SES schools pereceive their participation in band influences their motivation.`,
+    researchQuestion3: `How do high school students from a low-SES schools pereceive their participation in band influences their sense of belonging.`,
+    researchQuestion4: `Methodology - Qual Study - Interviews    phenomenological research`,
+    researchQuestion5: ``,
+    cmoThoughts: `Population:  High School students who participate in band.   Target - High School Juniors and Seniors who participate in band in Riverside and San Bernardino County Population and Sample 15-20 High School Junior or Seniors who particpate in ban in Riverside and San Bernardino counties.   
+Clear delimitations: One low-SES high school, high band students , junior and seniors, and Riverside or San Bernardino counties.
+Balanced lens: Educational (motivation/achievement) and psychological (confidence/belonging).
+Student-centered: Grounded in lived experiences, not assumed effects.
+Manageable scope: Narrative interviews, focus groups, or reflections can provide rich data in 1–2 years.`,
+    additionalResearchNotes: `This study is to draw upon Expectancy-Value Theory and Self-Determination Theory, this study seeks to understand how students construct meaning around motivation, competence, and connection within both concert and marching band settings. The plan is to center student narratives, the research aims to illuminate how educational and psychological factors intersect to shape their musical growth, identity, and sense of belonging.  Next Step:  Look for a dissertation from UMass on Confidence and look at the chapter II to identify key authors.  Look for disssertation from UMass on Motivation and look at the chapter II to identify key authors.  Look for a dissertation from UMass on Sensse of Belonging.  Look for a Umass dissertation on cocurricular involvement or music education and how it influences the social pieces of a student's development....`,
+  },
+  {
+    id: 'purpose-research-source-row-15',
+    developmentNote: `Final - Dr. Guzman as chair`,
+    memberName: `Patrick J. Harris`,
+    purposeStatement: `Working Title: Unveiling Black Musical Excellence: Narrative Inquiry into Identity, Confidence, and Belonging Among Black High School Band Directors within Their State Music Education Associations. The purpose of this qualitative narrative study is to explore how Black high school band directors working in low socioeconomic status (SES) school describe and interpret their participation in state music educator association activities, including marching band competitions and concert band festivals, and how these experiences influence their professional confidence, motivation, and sense of belonging as leaders within music education.`,
+    researchQuestion1: `How do Black high school band directors working in low socioeconomic status (SES) schools describe their experiences participating in state music educator association activities, such as marching band competitions and concert festivals, and the ways these experiences influence their professional confidence? Bandura’s Self-Efficacy Theory`,
+    researchQuestion2: `How do Black high school band directors working in low socioeconomic status (SES) schools narrate how their participation in state music educator associations influences their professional motivation and commitment to their work as music educators and leaders? Self-Determination Theory (Deci & Ryan)`,
+    researchQuestion3: `How do Black high school band directors teaching in low socioeconomic status (SES) schools describe their sense of belonging within state music educator associations, and how participation in competitions and festivals shapes that sense of belonging as leaders within music education? Strayhorn’s Sense of Belonging Theory`,
+    researchQuestion4: `Methodology - Qual Study - Interviews    phenomenological research`,
+    researchQuestion5: ``,
+    cmoThoughts: `Population: Black high school band directors who are currently teaching in low socioeconomic status (SES) public high schools and who have participated in state music educator association activities, specifically marching band competitions and/or concert band festivals. Participants will be practicing music educators serving as the primary director of a high school band program and will have direct experience engaging with these state-level professional and competitive music education structures.
+Clear Delimitations: Professional Role Delimitation
+The study is limited to current or former high school band directors who are now teaching at the collegiate level. Participants must have experience serving as the primary director of a high school band program prior to or concurrent with their collegiate teaching role. Individuals who have not directed a high school band or who transitioned exclusively into non-teaching or non-academic roles are excluded.
+
+Racial Identity Delimitation
+Participation is limited to educators who self-identify as Black. This delimitation is intentional and central to examining how race intersects with leadership identity, professional confidence, motivation, and organizational participation within music education.
+
+Career Experience Delimitation
+The study focuses on the experiences of current and former high school band directors, including those who continue to direct at the high school level and those who have transitioned into collegiate teaching roles. Participants’ experiences are examined as they relate to their leadership roles within high school band programs, regardless of current professional appointment.
+
+Contextual Delimitation (School Setting)
+The study is confined to experiences that occurred while participants were directing bands in low socioeconomic status (SES) public high schools, including those who are currently directing in such settings and those reflecting on prior experiences in low-SES schools. Experiences from higher-SES or private school contexts are excluded.
+
+Organizational Delimitation
+The scope of the study is limited to participation in state music educator associations, specifically through marching band competitions and concert band festivals. Other professional experiences, such as national associations, collegiate-level adjudication, clinics, honor ensembles, or conferences, are outside the scope of this study.
+
+Methodological Delimitation
+This study employs a qualitative narrative research design and does not seek to establish causal relationships or produce statistically generalizable findings. Data are derived from participants’ narrated experiences and meaning-making processes.
+
+Geographic Delimitation
+The study includes Black band directors from multiple states across the United States. While participants represent diverse geographic regions, the study does not aim to provide a comprehensive or nationally representative account of all Black high school band directors’ experiences.`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-16',
+    developmentNote: `Final. Chair - Dr. Osborne`,
+    memberName: `Jessica Jackson`,
+    purposeStatement: `The purpose of this Delphi study was to identify the characteristics, requirements, and experiences that Chief Program Officers (CPOs) perceived as essential for success in a nonprofit, multi-site manager role, through the ONET Database Content Model.
+The study further sought to identify what characteristics, requirements, and experiences CPOs perceived as most important for success during a team member’s first year in a multi-site manager role and the strategies they recommended to support the development of those characteristics, requirements, and experiences.`,
+    researchQuestion1: `Round 1
+What characteristics, requirements, and experiences do Chief Program Officers perceive as essential for success in a nonprofit, multi-site manager role?`,
+    researchQuestion2: `Round 2
+Which characteristics, requirements, and experiences perceived as essential for success in a nonprofit, multi-site manager role during Round 1 do CPOs identify as most important for success during a team member’s first year in a multi-site manager role.`,
+    researchQuestion3: `Round 3
+What strategies do CPOs recommend to support the development of the characteristics, requirements, and experiences identified as most important for success during a team member’s first year in a multi-site manager role.`,
+    researchQuestion4: `Three Groups: Program Executive Leadership who supervise the multi-site, multi-sites themselves, program directors who report in.`,
+    researchQuestion5: ``,
+    cmoThoughts: `1) What competencies are identified by Sr. Executive Program Leaders as essential to success for a multi-site managers of after school programs. 2)  What competencies are identified by multi-site managers of after school programs as essential to success in a multi-site managers of after school programs. 3) What competencies are identified by direct reports of multi-site program managers of after school programs as essential to success in a multi-site managers of after school programs.4)  How do the competencies identified by Sr. Executive Program Leaders, Multi-Site Managers and Direct reports differ?  5)  How do the competencies identified by Senior Executive Program Leaders, Multi-Site Maagers and Direct reports align?`,
+    additionalResearchNotes: `The purpose of this XX (qual or mixed methods for now) study was to identify the competencies essential for success for multi-site managers of after school programs, through the lens of Senior Executive Program leaders, multi-site managers, and direct reports of multi-site program managers.  The secondary purpose is to explore how the competencies identified by Sr. Executive Program Leaders, Multi-Site Managers and Direct reports differ and align.  Middle managers`,
+  },
+  {
+    id: 'purpose-research-source-row-17',
+    developmentNote: ``,
+    memberName: `Reynaldo Dulaney`,
+    purposeStatement: `The study further sought to identify what characteristics, requirements, and experiences CPOs perceived as most important for success during a team member’s first year in a multi-site manager role and the strategies they recommended to support the development of those characteristics, requirements, and experiences.`,
+    researchQuestion1: `What are the experiences of the leaders of nonprofit organizations regarding ethical responsibility to the organization based on its purpose?`,
+    researchQuestion2: `What are leadership perspectives regarding unethical behavior and how nonprofit organizations may be perceived in terms of social responsibility?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `How will you identify the "unethical behaviors".   Social Responsilbity of a nonprofit, unethical behaviors (misuse of funds, ). Be clear of your bias.  Is there a framework of social responsibility?  Looking at Orgs with dismissed leaders, interview current leadership..... What is the impact to restore trust with. Is word the "social responsilbity" a distraction (keep in mind it will result in a lot of writing in chapter II)?  Is conceptual framework "instituional betrayal"?  Jennifer DeLaRosa.is about to publish a dissertation close to this space (pending library submission). Can you look at her chapter II and find a foundation theory to build around?`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-18',
+    developmentNote: `1.27.26 Update`,
+    memberName: `Reynaldo Dulaney`,
+    purposeStatement: ``,
+    researchQuestion1: `How do entry-level employees in nonprofit organizations perceive that ethical breaches by senior leadership impacted their abilities to carry out their organization's mission?`,
+    researchQuestion2: `How do mid-level employees in nonprofit organizations perceive that ethical breaches by senior leadership impacted their abilities to carry out their organization's mission?`,
+    researchQuestion3: `How do senior-level employees in nonprofit organizations perceive that ethical breaches by senior leadership impacted their abilities to carry out thier organization's mission?`,
+    researchQuestion4: `How do entry-level employees describe the social harms that emerged when leadership integrity was compromised`,
+    researchQuestion5: ``,
+    cmoThoughts: `How do mid-level employees describe the social harms that emerged when leadership integrity was compromised`,
+    additionalResearchNotes: `How do senior-level employees describe the social harms that emerged when leadership integrity was compromised
+
+, providing a deeper context for how unethical behavior shapes the nonprofit mission.`,
+  },
+  {
+    id: 'purpose-research-source-row-19',
+    developmentNote: ``,
+    memberName: `Sergiy Bryk`,
+    purposeStatement: `Purpose Statement 1
+The purpose of this study is to assess church staff and volunteers’ attitudes toward the use of AI tools for church tasks in U.S. congregations.
+Purpose Statement 2
+The purpose of this study is to examine the relationship between senior pastors’ transformational leadership, as experienced by staff and volunteers, and their’ intention to use AI tools for church tasks in U.S. congregations.`,
+    researchQuestion1: `What are church staff and volunteers’ attitudes toward the use of AI tools for church tasks in U.S. congregations?`,
+    researchQuestion2: `What is the relationship between senior pastors’ transformational leadership, as experienced by staff and volunteers, and their intention to use AI tools for church tasks in U.S. congregations?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `Barna survey (2024) - majority of senior pastors use AI extensively.  Does the use of AI... do what?   Keep in mind you don't have to root into transformational leadership. You could look at trust, respect, other variables within leadership. Is there anything out there that studies Pastoral staff and AI already? (doubtful in my mind). How about pulling up a level. Can you find a study taht looks at Pastor and technology? Could it be expanded to include AI?  Do you have a hypothesis in your head?  Are you evaluating does it dimenish trust?`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-20',
+    developmentNote: `Rey Updated (April TBD,  2026)`,
+    memberName: `Reynaldo Dulaney`,
+    purposeStatement: ``,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-21',
+    developmentNote: `1.25
+Sergiy to dive into literature`,
+    memberName: `Sergiy Bryk`,
+    purposeStatement: `The purpose of this exploratory phenomenological study was to identify and describe the strategies used by exemplary leaders to motivate people within their organizations based on the three essential elements of motivation identified by Daniel H. Pink (2009); autonomy, mastery and purpose.  A further purpose was to identify the strategies the exemplary leaders perceived as having the most impact on motivation.`,
+    researchQuestion1: `What strategies do exemplary leaders use to motivate people based on Daniel H. Pinks (2009) essential elements; autonomy, mastery and purpose.`,
+    researchQuestion2: `How do exemplary leaders motivate through autonomy?`,
+    researchQuestion3: `How do exemplary leaders create leadership presence through mastery?`,
+    researchQuestion4: `How do exemplary leaders create leadership presence through purpose?`,
+    researchQuestion5: ``,
+    cmoThoughts: `What strategies do exemplary leaders perceive as being the most impactful in motivating people in their organization?`,
+    additionalResearchNotes: `Conducting interviews, asking open-ended questions concerning organizational opportuniteis,
+
+How does a perceived betrayal in leadership integrity influence an employee’s connection to the organization's mission?
+
+In what ways do staff members navigate the social and cultural mistrust that occur within a nonprofit organization following an ethical failure by leadership?`,
+  },
+  {
+    id: 'purpose-research-source-row-22',
+    developmentNote: `10.11 Update`,
+    memberName: `Sergiy Bryk`,
+    purposeStatement: `The purpose of this case study is to determine how the use of AI tools by Sr. Pastors to write biblical messages impacts the confidence congregation members have in their sr. pastors.`,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-23',
+    developmentNote: `1.28.26 Update`,
+    memberName: `Tracy Rico`,
+    purposeStatement: `The purpose of this phenomenological study is to explore the lived experiences of military veterans as they transition into the civilian sector and to identify differences in reintegration success between veterans who completed one enlistment term and those who retired after 20 years of service.`,
+    researchQuestion1: `What are the perceived differences in reintegration success between veterans who completed one enlistment term and veterans who retired after 20 years of service?`,
+    researchQuestion2: `In what ways do the two distinct groups describe their perceived differences as it relates to their personal, professional, and social lives?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-24',
+    developmentNote: `Original sheet name: Elanis Cruz (Magallan)`,
+    memberName: `Elanis Cruz`,
+    purposeStatement: `The purpose of this qualitative research is to describe the leadership practices that principals or staff perceive as most effective to facilitate the smooth transition for students in K-12 schools.`,
+    researchQuestion1: `What leadership practices can be shown to principals and staff to work with students who have difficult time with learning?`,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `What type of transition?  Verbally, you say... Understand where students come from when they have issues?  Pre and post covid.... What level of K-12 do you want to narrow into (elementary, middle, high).  Have you looked at dissertations on restorative practices?  Are you wanting to narrow to a) learning challenges, b) behavioral, or c) special ed?  I recognize those are often related.  Michele Lenertz did a dissertation on restorative practices. Derek King researched the relationship between behavioral issues and grades in core subjects.`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-25',
+    developmentNote: `10.11. Update`,
+    memberName: ``,
+    purposeStatement: `The purpose of this quan study is to explore how latino/a community college students living on-campus perceive their residential life experiences influneced their sense of belonging, engagement with the institution, and persistence toward degree completion.`,
+    researchQuestion1: `Hold - How do community college students living on-campus housing describe and interpret their sense of belonging within residential environments intentionally connected to academic advising, mental health services, and basic needs support?`,
+    researchQuestion2: `Hold - How do students residing in on-campus housing describe their engagement with academic, social, and support services within integrated residential environments?`,
+    researchQuestion3: `Hold - How do students living in on-campus housing perceive the influence of integrated residential support services on their persistence toward degree completion?`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-26',
+    developmentNote: `2.17.2026`,
+    memberName: ``,
+    purposeStatement: `The purpose of this quantitative study is to examine the relationship between residence in on-campus housing integrated with student support services and community college students’ levels of belonging, engagement, and persistence toward degree completion.`,
+    researchQuestion1: `What is the relationship between microsystem disruptions within integrated on-campus housing environments and reported levels of institutional belonging among community college students ages 18–25?`,
+    researchQuestion2: `To what extent do microsystem disruptions within integrated on-campus housing environments predict levels of academic and institutional engagement among community college students ages 18–25?`,
+    researchQuestion3: `Is there a statistically significant relationship between microsystem disruptions within integrated on-campus housing environments and persistence toward degree completion among community college students ages 18–25?`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-27',
+    developmentNote: `Thematic - Dr. Petersen`,
+    memberName: ``,
+    purposeStatement: `The purpose of this exploratory phenomenological study was to identify and describe the strategies used by exemplary leaders to motivate people within their organizations based on the three essential elements of motivation identified by Daniel H. Pink (2009); autonomy, mastery and purpose.  A further purpose was to identify the strategies the exemplary leaders perceived as having the most impact on motivation.`,
+    researchQuestion1: `What strategies do exemplary leaders use to motivate people based on Daniel H. Pinks (2009) essential elements; autonomy, mastery and purpose.`,
+    researchQuestion2: `How do exemplary leaders motivate through autonomy?`,
+    researchQuestion3: `How do exemplary leaders create leadership presence through mastery?`,
+    researchQuestion4: `How do exemplary leaders create leadership presence through purpose?`,
+    researchQuestion5: ``,
+    cmoThoughts: `What strategies do exemplary leaders perceive as being the most impactful in motivating people in their organization?`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-28',
+    developmentNote: `2.21 update`,
+    memberName: `Elanis Cruz`,
+    purposeStatement: `The purpose of this quantitative study is to examine if their is a relationship between lowrider cultural identity (as measured by a Likert scale) and a sense of belonging among college students who participate in lowrider culture.`,
+    researchQuestion1: `The purpose of this qualitative study is to explore how students who participate in low rider culture perceive their participation in low rider activities influences their sense of belonging.`,
+    researchQuestion2: `How do students who participate in low rider culture perceive their participation in low rider activities influences their sense of belonging.`,
+    researchQuestion3: `Literature, more literature :)`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-29',
+    developmentNote: `2.21 update`,
+    memberName: `Chris Mound`,
+    purposeStatement: `psychological safety through the lens of post-9/11 veterans with disabilities, particularly those with PTSD, and how they experience transformational leadership in civilian organizational settings. I`,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: `How do transformational leadership approaches differ when managing integrated teams that include veterans with disabilities, and what practices best support retention and well-being?`,
+    researchQuestion5: ``,
+    cmoThoughts: `Through the lens of "who"? – Veteran and Upper Management… Focus immediate assignments on Psychological Safety, this will ensure what you are doing feeds into longer work. Could you interview veterans who have successfully transitions about what helps and hinders, through a Delphi methodology… working towards a set of best practices? The alumni I recommended you connect with is Kim Mitchell. She’s on the Facebook page for UMass Ed.D. Sadly, I don’t have her email. If you can’t get her via FB, please email Dr. Ryder to connect you two.`,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-30',
+    developmentNote: `3.5 update`,
+    memberName: `Chris Mound`,
+    purposeStatement: `The purpose of this qualitative study is to explore military veterans’ experiences with transformational leadership behaviors in civilian organizational settings and their perceptions of psychological safety within complex institutions, including higher education.`,
+    researchQuestion1: ``,
+    researchQuestion2: `The purpose of this qualitative study is to explore the perceptions of disabled military veterans’ employed in private sector settings to identify how they experience psychological safety within their workplace settings, using the Academy of Brain Leadership's SAFETY Model.`,
+    researchQuestion3: `Primary RQ:  What are the perceptions of disabled miltary veterans employed in the private sector on how they experience psychological safety in their workplace?`,
+    researchQuestion4: `Sub 1:  What are the perceptions of disabled miltary veterans employed in the private sector on how they experience Security in their workplace?`,
+    researchQuestion5: ``,
+    cmoThoughts: `Sub 2:  What are the perceptions of disabled miltary veterans employed in the private sector on how they experience Autonomy in their workplace?`,
+    additionalResearchNotes: `Sub 3:  What are the perceptions of disabled miltary veterans employed in the private sector on how they experience Fairness in their workplace?
+
+Sub 4:  What are the perceptions of disabled miltary veterans employed in the private sector on how they experience Esteem in their workplace?
+
+Sub 5:  What are the perceptions of disabled miltary veterans employed in the private sector on how they experience Trust in their workplace?
+
+Methodology:`,
+  },
+  {
+    id: 'purpose-research-source-row-31',
+    developmentNote: `2/1/26`,
+    memberName: `Celia Cipres`,
+    purposeStatement: `The purpose of this study is to explore preschool teachers' perceptions of the current curriculum and framework strategies used with dual language learners in state funded California preschool classrooms.`,
+    researchQuestion1: `1.What are preschool teachers' perceptions of current curriculum strategies used with dual language learners?`,
+    researchQuestion2: `2.What are spreschool teachers' perceptions of current framework strategies used with dual language learners?`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-32',
+    developmentNote: ``,
+    memberName: `Jessica Leon`,
+    purposeStatement: `The purpose of the proposed study is to identify which instructional approach is most effective in supporting student learning: Cognitively Guided Instruction or Direct Instruction through a comprehensive review of literature. The review of literature will provide analysis into the strengths and limitations of both instructional approaches, allowing conclusions to  be drawn about which instructional approach is most effective.`,
+    researchQuestion1: `How does Cognitively Guided Instruction impact students’ conceptual understanding of mathematical concepts compared to Direct Instruction ?`,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `This is interesting because we don't generally see a meta-analysis of literature as a study.  Have you discussed this with your research instructor?  When I look at your Research Question, it's clear that you want to compare two different instructional models.  Through the eyes of expert teachers?  What level of insturction do you want to focus in on. For now, as you have to do research, I would focus on the two different instructional models. Have you researched dissertations with the instructional model as a key word? That might help focus you a bit more.`,
+    additionalResearchNotes: `Shift on Morale, might be result of PLCC and collaborative practives. Examine effective collaborative practices... Mixed methods?  Could look at sites with collaborative practices`,
+  },
+  {
+    id: 'purpose-research-source-row-33',
+    developmentNote: `2.24 Update`,
+    memberName: `Jessica Leon`,
+    purposeStatement: `Effective collaborative practices in professional learning communities`,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-34',
+    developmentNote: `Original sheet name: Monica`,
+    memberName: `Monica Romero`,
+    purposeStatement: `The primary purpose of this initiative is to develop and promote evidence-based leadership approaches that expand access to college and vocational training for foster youth while establishing preventative frameworks to reduce homelessness. By leveraging cross-sector collaboration between child welfare services, educational institutions, and community-based organizations, we aim to create sustainable, youth-centered solutions that prioritize long-term stability and self-sufficiency.`,
+    researchQuestion1: `What role do high school counselors and school leaders play in preparing foster youth for higher education?`,
+    researchQuestion2: `How effective are pre-college mentorship and academic support services in increasing college enrollment and retention among foster youth?`,
+    researchQuestion3: `On Housing Stability:How does access to transitional housing impact the academic success and employment readiness of foster youth post-18?`,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-35',
+    developmentNote: `10.11 Update`,
+    memberName: `Monica Romero`,
+    purposeStatement: ``,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-36',
+    developmentNote: `Original sheet name: Trevor`,
+    memberName: `Trevor Desouza`,
+    purposeStatement: `Topic: How much of an impediment to minority leadership are the following: Work-place cultures that have not rejected but condoned systemic non-inclusive practices, biased promotion, hiring and recruiting processes, opportunity and resource restrictions, which has fortified a non-hiring and recruiting processes, opportunity and resource restrictions, which has fortified a non-minority hierarchy. Factors such as residential and educational segregation, microaggression, implicit and unconscious biases, informal networks limited to same stature individuals, lack of mentorship at workplaces, schools, and communities for minoritized groups, leading to lack of`,
+    researchQuestion1: `How much of an impediment to minority leadership are the following: Work-place cultures that have not rejected but condoned systemic non-inclusive practices, biased promotion, hiring and recruiting processes, opportunity and resource restrictions, which has fortified a non-hiring and recruiting processes, opportunity and resource restrictions,`,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: `Super interesting.  There's a lot packed in here, which makes for a hard and long chapter II.  I strongly recommend you narrow. A few questions to help you narrow. 1)  Do you want to do quantative data (survey) or qual (interviews)?  What population do you want to work with?  (business, education, military, etc.). DId you find a dissertation you are working around?`,
+    additionalResearchNotes: `10.20 update. Trevor to start scanning literature around barriers to promotions in military environments for under-represented populations. Aim is to find the gap in the literature, what "don't we know". He will reach out to Dr. CMO when he has narrowed to a gap and a conceptual framework to build aroound.  @Trevor`,
+  },
+  {
+    id: 'purpose-research-source-row-37',
+    developmentNote: ``,
+    memberName: `Trevor Desouza`,
+    purposeStatement: `mentorship at workplaces, schools, and communities for minoritized groups, leading to lack of mentorship at workplaces, schools, and communities for minoritized groups, leading to lack of self-motivation, restricted ambition.`,
+    researchQuestion1: ``,
+    researchQuestion2: ``,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-38',
+    developmentNote: `Chair = Dr. Dennell Smith
+Monica - focus on school. meeting with SW to understand the process to ensure they aren't falling through the cracks.`,
+    memberName: `Monica Romero`,
+    purposeStatement: `The pupose of this phenonomolical study is to describe what social workers perceive are the circumstnaces that prevent former foster youth from participating in programs designed to cure housing insecurity in California.`,
+    researchQuestion1: `Research Question 1 - What do social workers preceive are the circumstnaces that prevent former foster youth from partiipcating in programs designed to cure housing insecurity in California.`,
+    researchQuestion2: `Next steps:  Scan dissertations from the last five years using key words:  Foster Care + Housing, Foster Care + Housing Stability, Transitional Age Youth + Housing, Transitional Age Youth + Housing Instability, Transitional Age Youth + Homelessness, Foster Care + Homelessness (and in all of these, add California). Gap in the research that you can fill.  Meet with Dr. CMO in three weeks from 1.28`,
+    researchQuestion3: ``,
+    researchQuestion4: ``,
+    researchQuestion5: ``,
+    cmoThoughts: ``,
+    additionalResearchNotes: ``,
+  },
+  {
+    id: 'purpose-research-source-row-39',
+    developmentNote: `Thematic - Dr. Petersen`,
+    memberName: ``,
+    purposeStatement: `The purpose of this exploratory phenomenological study was to identify and describe the strategies used by exemplary leaders to motivate people within their organizations based on the three essential elements of motivation identified by Daniel H. Pink (2009); autonomy, mastery and purpose.  A further purpose was to identify the strategies the exemplary leaders perceived as having the most impact on motivation.`,
+    researchQuestion1: `What strategies do exemplary leaders use to motivate people based on Daniel H. Pinks (2009) essential elements; autonomy, mastery and purpose.`,
+    researchQuestion2: `How do exemplary leaders motivate through autonomy?`,
+    researchQuestion3: `How do exemplary leaders create leadership presence through mastery?`,
+    researchQuestion4: `How do exemplary leaders create leadership presence through purpose?`,
+    researchQuestion5: ``,
+    cmoThoughts: `What strategies do exemplary leaders perceive as being the most impactful in motivating people in their organization?`,
+    additionalResearchNotes: ``,
+  },
+]
+
 function createEmptyContactForm(): CohortContactFormState {
   return {
     name: '',
@@ -958,6 +1681,22 @@ function createEmptyMeetingForm(): CohortMeetingFormState {
     term: '',
     calendarYear: '',
     meetingNumber: '',
+  }
+}
+
+function createEmptyPurposeResearchRecord(): CohortPurposeResearchRecord {
+  return {
+    id: crypto.randomUUID(),
+    developmentNote: '',
+    memberName: '',
+    purposeStatement: '',
+    researchQuestion1: '',
+    researchQuestion2: '',
+    researchQuestion3: '',
+    researchQuestion4: '',
+    researchQuestion5: '',
+    cmoThoughts: '',
+    additionalResearchNotes: '',
   }
 }
 
@@ -3705,6 +4444,2008 @@ function CohortValuesVisionPage() {
   )
 }
 
+function CohortPurposeResearchPage({
+  contacts,
+  records,
+  onAddRecord,
+  onInsertRecordAfter,
+  onDeleteRecord,
+  onUpdateRecord,
+}: CohortPurposeResearchPageProps) {
+  const [nameSearch, setNameSearch] = useState('')
+
+  const [selectedCell, setSelectedCell] =
+    useState<PurposeResearchSelectedCell | null>(null)
+
+  const [selectionAnchor, setSelectionAnchor] =
+    useState<PurposeResearchSelectedCell | null>(null)
+
+  const [selectionFocus, setSelectionFocus] =
+    useState<PurposeResearchSelectedCell | null>(null)
+
+  const [isRangeSelecting, setIsRangeSelecting] =
+    useState(false)
+
+  const [cellFormats, setCellFormats] =
+    useState<
+      Partial<
+        Record<string, PurposeResearchCellFormat>
+      >
+    >({})
+
+  const [columnWidths, setColumnWidths] =
+    useState<
+      Partial<
+        Record<CohortPurposeResearchField, number>
+      >
+    >({})
+
+  const [rowHeights, setRowHeights] =
+    useState<Partial<Record<string, number>>>({})
+
+  const [hiddenColumns, setHiddenColumns] =
+    useState<readonly CohortPurposeResearchField[]>([])
+
+  const [freezeMode, setFreezeMode] =
+    useState<PurposeResearchFreezeMode>('none')
+
+  const [contextMenu, setContextMenu] =
+    useState<PurposeResearchContextMenuState | null>(
+      null,
+    )
+
+  const [clipboardText, setClipboardText] =
+    useState<string | null>(null)
+
+  const purposeResearchTableFrameRef =
+    useRef<HTMLDivElement | null>(null)
+
+  const rangePointerPositionRef =
+    useRef<{
+      readonly x: number
+      readonly y: number
+    } | null>(null)
+
+  useEffect(() => {
+    function stopRangeSelection(): void {
+      setIsRangeSelecting(false)
+      rangePointerPositionRef.current = null
+    }
+
+    window.addEventListener(
+      'pointerup',
+      stopRangeSelection,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'pointerup',
+        stopRangeSelection,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isRangeSelecting) {
+      return
+    }
+
+    const edgeThreshold = 48
+    const maximumScrollStep = 24
+    let animationFrameId = 0
+
+    function trackRangePointer(
+      event: PointerEvent,
+    ): void {
+      rangePointerPositionRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+      }
+    }
+
+    function continueRangeAutoScroll(): void {
+      const tableFrame =
+        purposeResearchTableFrameRef.current
+
+      const pointerPosition =
+        rangePointerPositionRef.current
+
+      if (
+        tableFrame !== null &&
+        pointerPosition !== null
+      ) {
+        const frameBounds =
+          tableFrame.getBoundingClientRect()
+
+        let horizontalScrollStep = 0
+
+        if (
+          pointerPosition.x >=
+          frameBounds.right - edgeThreshold
+        ) {
+          const edgeDistance = Math.min(
+            edgeThreshold,
+            Math.max(
+              0,
+              pointerPosition.x -
+                (frameBounds.right -
+                  edgeThreshold),
+            ),
+          )
+
+          horizontalScrollStep = Math.max(
+            4,
+            Math.ceil(
+              (edgeDistance / edgeThreshold) *
+                maximumScrollStep,
+            ),
+          )
+        } else if (
+          pointerPosition.x <=
+          frameBounds.left + edgeThreshold
+        ) {
+          const edgeDistance = Math.min(
+            edgeThreshold,
+            Math.max(
+              0,
+              frameBounds.left +
+                edgeThreshold -
+                pointerPosition.x,
+            ),
+          )
+
+          horizontalScrollStep = -Math.max(
+            4,
+            Math.ceil(
+              (edgeDistance / edgeThreshold) *
+                maximumScrollStep,
+            ),
+          )
+        }
+
+        if (horizontalScrollStep !== 0) {
+          const maximumScrollLeft =
+            tableFrame.scrollWidth -
+            tableFrame.clientWidth
+
+          tableFrame.scrollLeft = Math.max(
+            0,
+            Math.min(
+              maximumScrollLeft,
+              tableFrame.scrollLeft +
+                horizontalScrollStep,
+            ),
+          )
+
+          const probeX = Math.max(
+            frameBounds.left + 8,
+            Math.min(
+              frameBounds.right - 18,
+              pointerPosition.x,
+            ),
+          )
+
+          const probeY = Math.max(
+            frameBounds.top + 8,
+            Math.min(
+              frameBounds.bottom - 18,
+              pointerPosition.y,
+            ),
+          )
+
+          const targetElement =
+            document.elementFromPoint(
+              probeX,
+              probeY,
+            )
+
+          const tableCell =
+            targetElement?.closest(
+              'td[data-record-id][data-field]',
+            )
+
+          if (
+            tableCell instanceof
+            HTMLTableCellElement
+          ) {
+            const recordId =
+              tableCell.dataset.recordId
+
+            const fieldValue =
+              tableCell.dataset.field
+
+            const matchingColumn =
+              purposeResearchColumns.find(
+                (column) =>
+                  column.field === fieldValue,
+              )
+
+            if (
+              recordId &&
+              matchingColumn
+            ) {
+              const nextCell = {
+                recordId,
+                field: matchingColumn.field,
+              }
+
+              setSelectionFocus(
+                (currentFocus) =>
+                  currentFocus?.recordId ===
+                    nextCell.recordId &&
+                  currentFocus.field ===
+                    nextCell.field
+                    ? currentFocus
+                    : nextCell,
+              )
+
+              setSelectedCell(
+                (currentCell) =>
+                  currentCell?.recordId ===
+                    nextCell.recordId &&
+                  currentCell.field ===
+                    nextCell.field
+                    ? currentCell
+                    : nextCell,
+              )
+            }
+          }
+        }
+      }
+
+      animationFrameId =
+        window.requestAnimationFrame(
+          continueRangeAutoScroll,
+        )
+    }
+
+    window.addEventListener(
+      'pointermove',
+      trackRangePointer,
+    )
+
+    animationFrameId =
+      window.requestAnimationFrame(
+        continueRangeAutoScroll,
+      )
+
+    return () => {
+      window.removeEventListener(
+        'pointermove',
+        trackRangePointer,
+      )
+
+      window.cancelAnimationFrame(
+        animationFrameId,
+      )
+    }
+  }, [isRangeSelecting])
+
+  const memberNames = [
+    ...new Set([
+      ...contacts
+        .filter((contact) => !contact.isMentor)
+        .map((contact) => contact.name),
+      ...formerCohortMembers.map((member) => member.name),
+    ]),
+  ].sort((firstName, secondName) =>
+    firstName.localeCompare(secondName, 'en-US', {
+      sensitivity: 'base',
+    }),
+  )
+
+  const normalizedSearch = nameSearch
+    .trim()
+    .toLocaleLowerCase('en-US')
+
+  const visibleRecords = normalizedSearch
+    ? records.filter((record) =>
+      record.memberName
+        .toLocaleLowerCase('en-US')
+        .includes(normalizedSearch),
+    )
+    : records
+
+  const visibleColumns = purposeResearchColumns.filter(
+    (column) =>
+      !hiddenColumns.includes(column.field),
+  )
+
+  const tableWidth =
+    46 +
+    visibleColumns.reduce(
+      (totalWidth, column) =>
+        totalWidth +
+        (columnWidths[column.field] ??
+          column.defaultWidth),
+      0,
+    )
+
+  function isPurposeResearchField(
+    value: string,
+  ): value is CohortPurposeResearchField {
+    return purposeResearchColumns.some(
+      (column) => column.field === value,
+    )
+  }
+
+  function getSelectedCells():
+    PurposeResearchSelectedCell[] {
+    if (
+      selectionAnchor === null ||
+      selectionFocus === null
+    ) {
+      return selectedCell === null
+        ? []
+        : [selectedCell]
+    }
+
+    const anchorRowIndex =
+      visibleRecords.findIndex(
+        (record) =>
+          record.id === selectionAnchor.recordId,
+      )
+
+    const focusRowIndex =
+      visibleRecords.findIndex(
+        (record) =>
+          record.id === selectionFocus.recordId,
+      )
+
+    const anchorColumnIndex =
+      visibleColumns.findIndex(
+        (column) =>
+          column.field === selectionAnchor.field,
+      )
+
+    const focusColumnIndex =
+      visibleColumns.findIndex(
+        (column) =>
+          column.field === selectionFocus.field,
+      )
+
+    if (
+      anchorRowIndex < 0 ||
+      focusRowIndex < 0 ||
+      anchorColumnIndex < 0 ||
+      focusColumnIndex < 0
+    ) {
+      return selectedCell === null
+        ? []
+        : [selectedCell]
+    }
+
+    const firstRowIndex = Math.min(
+      anchorRowIndex,
+      focusRowIndex,
+    )
+
+    const lastRowIndex = Math.max(
+      anchorRowIndex,
+      focusRowIndex,
+    )
+
+    const firstColumnIndex = Math.min(
+      anchorColumnIndex,
+      focusColumnIndex,
+    )
+
+    const lastColumnIndex = Math.max(
+      anchorColumnIndex,
+      focusColumnIndex,
+    )
+
+    const selectedCells:
+      PurposeResearchSelectedCell[] = []
+
+    for (
+      let rowIndex = firstRowIndex;
+      rowIndex <= lastRowIndex;
+      rowIndex += 1
+    ) {
+      const record = visibleRecords[rowIndex]
+
+      if (!record) {
+        continue
+      }
+
+      for (
+        let columnIndex = firstColumnIndex;
+        columnIndex <= lastColumnIndex;
+        columnIndex += 1
+      ) {
+        const column =
+          visibleColumns[columnIndex]
+
+        if (!column) {
+          continue
+        }
+
+        selectedCells.push({
+          recordId: record.id,
+          field: column.field,
+        })
+      }
+    }
+
+    return selectedCells
+  }
+
+  function isCellInSelection(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): boolean {
+    return getSelectedCells().some(
+      (cell) =>
+        cell.recordId === recordId &&
+        cell.field === field,
+    )
+  }
+
+  function beginCellRangeSelection(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): void {
+    const cell = {
+      recordId,
+      field,
+    }
+
+    setSelectedCell(cell)
+    setSelectionAnchor(cell)
+    setSelectionFocus(cell)
+    setIsRangeSelecting(true)
+  }
+
+  function extendCellRangeSelection(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): void {
+    if (!isRangeSelecting) {
+      return
+    }
+
+    const cell = {
+      recordId,
+      field,
+    }
+
+    setSelectionFocus(cell)
+    setSelectedCell(cell)
+  }
+
+  function getCellKey(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): string {
+    return `${recordId}::${field}`
+  }
+
+  function getCellFormat(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): PurposeResearchCellFormat {
+    return (
+      cellFormats[getCellKey(recordId, field)] ??
+      defaultPurposeResearchCellFormat
+    )
+  }
+
+  const selectedFormat =
+    selectedCell === null
+      ? defaultPurposeResearchCellFormat
+      : getCellFormat(
+        selectedCell.recordId,
+        selectedCell.field,
+      )
+
+  function updateSelectedCellFormat(
+    updates: Partial<PurposeResearchCellFormat>,
+  ): void {
+    const selectedCells = getSelectedCells()
+
+    if (selectedCells.length === 0) {
+      return
+    }
+
+    setCellFormats((currentFormats) => {
+      const nextFormats = {
+        ...currentFormats,
+      }
+
+      for (const cell of selectedCells) {
+        const cellKey = getCellKey(
+          cell.recordId,
+          cell.field,
+        )
+
+        nextFormats[cellKey] = {
+          ...(currentFormats[cellKey] ??
+            defaultPurposeResearchCellFormat),
+          ...updates,
+        }
+      }
+
+      return nextFormats
+    })
+  }
+
+  function getCellStyle(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): CSSProperties {
+    const format = getCellFormat(recordId, field)
+
+    const verticalAlignment =
+      format.verticalAlign === 'top'
+        ? 'start'
+        : format.verticalAlign === 'center'
+          ? 'center'
+          : 'end'
+
+    const indentPixels =
+      format.indentLevel * 16
+
+    return {
+      fontFamily: format.fontFamily,
+      fontSize: `${format.fontSize}px`,
+      fontWeight: format.bold ? 900 : 400,
+      fontStyle: format.italic
+        ? 'italic'
+        : 'normal',
+      textDecoration: format.underline
+        ? 'underline'
+        : 'none',
+      color: format.fontColor,
+      backgroundColor: format.fillColor,
+      textAlign: format.textAlign,
+      alignContent: verticalAlignment,
+      paddingLeft: `${8 +
+        (format.textAlign === 'right'
+          ? 0
+          : indentPixels)
+        }px`,
+      paddingRight: `${8 +
+        (format.textAlign === 'right'
+          ? indentPixels
+          : 0)
+        }px`,
+      whiteSpace: format.wrapText
+        ? 'pre-wrap'
+        : 'pre',
+      overflowWrap: format.wrapText
+        ? 'anywhere'
+        : 'normal',
+      boxShadow: format.bordered
+        ? 'inset 0 0 0 2px #0B1F3B'
+        : undefined,
+    }
+  }
+
+  function getRecordValue(
+    recordId: string,
+    field: CohortPurposeResearchField,
+  ): string {
+    const record = records.find(
+      (item) => item.id === recordId,
+    )
+
+    return record?.[field] ?? ''
+  }
+
+  function openContextMenu(
+    recordId: string | null,
+    field: CohortPurposeResearchField | null,
+    x: number,
+    y: number,
+  ): void {
+    if (recordId !== null && field !== null) {
+      setSelectedCell({
+        recordId,
+        field,
+      })
+    }
+
+    setContextMenu({
+      recordId,
+      field,
+      x,
+      y,
+    })
+  }
+
+  function copyContextCell(): void {
+    if (
+      contextMenu?.recordId === null ||
+      contextMenu?.recordId === undefined ||
+      contextMenu.field === null
+    ) {
+      return
+    }
+
+    const value = getRecordValue(
+      contextMenu.recordId,
+      contextMenu.field,
+    )
+
+    setClipboardText(value)
+
+    if (navigator.clipboard) {
+      void navigator.clipboard
+        .writeText(value)
+        .catch(() => undefined)
+    }
+
+    setContextMenu(null)
+  }
+
+  function cutContextCell(): void {
+    if (
+      contextMenu?.recordId === null ||
+      contextMenu?.recordId === undefined ||
+      contextMenu.field === null
+    ) {
+      return
+    }
+
+    const value = getRecordValue(
+      contextMenu.recordId,
+      contextMenu.field,
+    )
+
+    setClipboardText(value)
+
+    if (navigator.clipboard) {
+      void navigator.clipboard
+        .writeText(value)
+        .catch(() => undefined)
+    }
+
+    onUpdateRecord(
+      contextMenu.recordId,
+      contextMenu.field,
+      '',
+    )
+
+    setContextMenu(null)
+  }
+
+  async function pasteContextCell(): Promise<void> {
+    if (
+      contextMenu?.recordId === null ||
+      contextMenu?.recordId === undefined ||
+      contextMenu.field === null
+    ) {
+      return
+    }
+
+    let valueToPaste = clipboardText
+
+    if (
+      valueToPaste === null &&
+      navigator.clipboard
+    ) {
+      try {
+        valueToPaste =
+          await navigator.clipboard.readText()
+      } catch {
+        valueToPaste = null
+      }
+    }
+
+    if (valueToPaste === null) {
+      return
+    }
+
+    if (
+      contextMenu.field === 'memberName' &&
+      valueToPaste.length > 0 &&
+      !memberNames.includes(valueToPaste)
+    ) {
+      return
+    }
+
+    onUpdateRecord(
+      contextMenu.recordId,
+      contextMenu.field,
+      valueToPaste,
+    )
+
+    setContextMenu(null)
+  }
+
+  function clearContextCell(): void {
+    if (
+      contextMenu?.recordId === null ||
+      contextMenu?.recordId === undefined ||
+      contextMenu.field === null
+    ) {
+      return
+    }
+
+    onUpdateRecord(
+      contextMenu.recordId,
+      contextMenu.field,
+      '',
+    )
+
+    setContextMenu(null)
+  }
+
+  function insertContextRow(): void {
+    if (
+      contextMenu?.recordId === null ||
+      contextMenu?.recordId === undefined
+    ) {
+      return
+    }
+
+    setNameSearch('')
+    onInsertRecordAfter(contextMenu.recordId)
+    setContextMenu(null)
+  }
+
+  function deleteContextRow(): void {
+    if (
+      contextMenu?.recordId === null ||
+      contextMenu?.recordId === undefined
+    ) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Delete this Purpose & Research row? This cannot be undone during the current session.',
+    )
+
+    if (!confirmed) {
+      setContextMenu(null)
+      return
+    }
+
+    if (
+      selectedCell?.recordId ===
+      contextMenu.recordId
+    ) {
+      setSelectedCell(null)
+    }
+
+    onDeleteRecord(contextMenu.recordId)
+    setContextMenu(null)
+  }
+
+  function changeContextColumnWidth(): void {
+    const contextField = contextMenu?.field
+
+    if (contextField === null || contextField === undefined) {
+      return
+    }
+
+    const column = purposeResearchColumns.find(
+      (item) =>
+        item.field === contextField,
+    )
+
+    if (!column) {
+      return
+    }
+
+    const currentWidth =
+      columnWidths[column.field] ??
+      column.defaultWidth
+
+    const response = window.prompt(
+      'Column width in pixels:',
+      String(currentWidth),
+    )
+
+    if (response === null) {
+      setContextMenu(null)
+      return
+    }
+
+    const nextWidth = Number(response)
+
+    if (
+      !Number.isFinite(nextWidth) ||
+      nextWidth < 80 ||
+      nextWidth > 800
+    ) {
+      window.alert(
+        'Enter a column width between 80 and 800 pixels.',
+      )
+      return
+    }
+
+    setColumnWidths((currentWidths) => ({
+      ...currentWidths,
+      [column.field]: Math.round(nextWidth),
+    }))
+
+    setContextMenu(null)
+  }
+
+  function hideContextColumn(): void {
+    const contextField = contextMenu?.field
+
+    if (contextField === null || contextField === undefined) {
+      return
+    }
+
+    setHiddenColumns((currentColumns) =>
+      currentColumns.includes(contextField)
+        ? currentColumns
+        : [...currentColumns, contextField],
+    )
+
+    if (
+      selectedCell?.field === contextField
+    ) {
+      setSelectedCell(null)
+    }
+
+    setContextMenu(null)
+  }
+
+  function unhideAllColumns(): void {
+    setHiddenColumns([])
+    setContextMenu(null)
+  }
+
+  function showFormatControls(): void {
+    setContextMenu(null)
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(
+          'purpose-research-format-toolbar',
+        )
+        ?.focus()
+    })
+  }
+
+  function startColumnResize(
+    field: CohortPurposeResearchField,
+    startX: number,
+    startWidth: number,
+  ): void {
+    function handlePointerMove(
+      event: PointerEvent,
+    ): void {
+      const nextWidth = Math.max(
+        80,
+        Math.min(
+          800,
+          startWidth +
+          (event.clientX - startX),
+        ),
+      )
+
+      setColumnWidths((currentWidths) => ({
+        ...currentWidths,
+        [field]: nextWidth,
+      }))
+    }
+
+    function stopPointerResize(): void {
+      window.removeEventListener(
+        'pointermove',
+        handlePointerMove,
+      )
+
+      window.removeEventListener(
+        'pointerup',
+        stopPointerResize,
+      )
+    }
+
+    window.addEventListener(
+      'pointermove',
+      handlePointerMove,
+    )
+
+    window.addEventListener(
+      'pointerup',
+      stopPointerResize,
+    )
+  }
+
+  function startRowResize(
+    recordId: string,
+    startY: number,
+    startHeight: number,
+  ): void {
+    function handlePointerMove(
+      event: PointerEvent,
+    ): void {
+      const nextHeight = Math.max(
+        42,
+        Math.min(
+          600,
+          startHeight +
+          (event.clientY - startY),
+        ),
+      )
+
+      setRowHeights((currentHeights) => ({
+        ...currentHeights,
+        [recordId]: nextHeight,
+      }))
+    }
+
+    function stopPointerResize(): void {
+      window.removeEventListener(
+        'pointermove',
+        handlePointerMove,
+      )
+
+      window.removeEventListener(
+        'pointerup',
+        stopPointerResize,
+      )
+    }
+
+    window.addEventListener(
+      'pointermove',
+      handlePointerMove,
+    )
+
+    window.addEventListener(
+      'pointerup',
+      stopPointerResize,
+    )
+  }
+
+  function renderResearchCell(
+    record: CohortPurposeResearchRecord,
+    column: PurposeResearchColumnDefinition,
+    rowHeight: number,
+  ): ReactNode {
+    const field = column.field
+
+    const cellClassName = [
+      'purpose-research-data-cell',
+      `purpose-research-column-${field}`,
+      field === 'developmentNote'
+        ? 'purpose-research-update-cell'
+        : '',
+      field === 'memberName'
+        ? 'purpose-research-name-cell'
+        : '',
+      field === 'cmoThoughts'
+        ? 'purpose-research-cmo-cell'
+        : '',
+      isCellInSelection(record.id, field)
+        ? 'purpose-research-cell-selected'
+        : '',
+    ]
+      .filter((className) => className.length > 0)
+      .join(' ')
+
+    const cellFormat = getCellFormat(
+      record.id,
+      field,
+    )
+
+    if (field === 'memberName') {
+      return (
+        <td
+          key={field}
+          className={cellClassName}
+          data-record-id={record.id}
+          data-field={field}
+          onPointerDown={(event) => {
+            if (event.button !== 0) {
+              return
+            }
+
+            beginCellRangeSelection(
+              record.id,
+              field,
+            )
+          }}
+          onContextMenu={(event) => {
+            event.preventDefault()
+
+            openContextMenu(
+              record.id,
+              field,
+              event.clientX,
+              event.clientY,
+            )
+          }}
+        >
+          <select
+            className="purpose-research-name-select"
+            style={{
+              ...getCellStyle(
+                record.id,
+                field,
+              ),
+              height: `${rowHeight}px`,
+            }}
+            value={record.memberName}
+            aria-label="Cohort member name"
+            onFocus={() =>
+              setSelectedCell({
+                recordId: record.id,
+                field,
+              })
+            }
+            onChange={(event) =>
+              onUpdateRecord(
+                record.id,
+                field,
+                event.target.value,
+              )
+            }
+          >
+            <option value="">
+              Select member
+            </option>
+
+            {memberNames.map((name) => (
+              <option key={name} value={name}>
+                {name === 'Patrick J. Harris'
+                  ? 'Patrick J. Harris (Former)'
+                  : name}
+              </option>
+            ))}
+          </select>
+        </td>
+      )
+    }
+
+    return (
+      <td
+        key={field}
+        className={cellClassName}
+        data-record-id={record.id}
+        data-field={field}
+        onPointerDown={(event) => {
+          if (event.button !== 0) {
+            return
+          }
+
+          beginCellRangeSelection(
+            record.id,
+            field,
+          )
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault()
+
+          openContextMenu(
+            record.id,
+            field,
+            event.clientX,
+            event.clientY,
+          )
+        }}
+      >
+        <textarea
+          className="purpose-research-cell-textarea"
+          rows={4}
+          wrap={
+            cellFormat.wrapText
+              ? 'soft'
+              : 'off'
+          }
+          spellCheck
+          style={{
+            ...getCellStyle(
+              record.id,
+              field,
+            ),
+            height: `${rowHeight}px`,
+          }}
+          value={record[field]}
+          aria-label={`${record.memberName || 'Unassigned record'} ${column.label}`}
+          onFocus={() =>
+            setSelectedCell({
+              recordId: record.id,
+              field,
+            })
+          }
+          onChange={(event) =>
+            onUpdateRecord(
+              record.id,
+              field,
+              event.target.value,
+            )
+          }
+        />
+      </td>
+    )
+  }
+
+  const contextHasCell =
+    contextMenu?.recordId !== null &&
+    contextMenu?.recordId !== undefined &&
+    contextMenu.field !== null
+
+  const contextHasRow =
+    contextMenu?.recordId !== null &&
+    contextMenu?.recordId !== undefined
+
+  const contextHasColumn =
+    contextMenu?.field !== null &&
+    contextMenu?.field !== undefined
+
+  const freezeClassName =
+    freezeMode === 'none'
+      ? ''
+      : ` purpose-research-freeze-${freezeMode}`
+
+  return (
+    <section
+      className="page-shell"
+      onClick={() => setContextMenu(null)}
+    >
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Purpose &amp; Research</h1>
+      </header>
+
+      <section
+        className="purpose-research-intro"
+        aria-labelledby="purpose-research-workspace-title"
+      >
+        <div className="purpose-research-intro-heading">
+          <h2 id="purpose-research-workspace-title">
+            Purpose &amp; Research Developmental Workspace
+          </h2>
+
+          <span>Developmental, Not Final Record</span>
+        </div>
+
+        <p>
+          Provides a shared workspace for cohort members to
+          record and refine dissertation purpose statements and
+          research questions as their studies develop.
+        </p>
+
+        <ul>
+          <li>
+            Capture evolving dissertation ideas, purpose
+            statements, and multiple research questions.
+          </li>
+          <li>
+            Use this page as a developmental workspace rather
+            than a final or formally approved dissertation
+            record.
+          </li>
+          <li>
+            Retain Dr. CMO&apos;s thoughts and feedback alongside
+            evolving study ideas.
+          </li>
+          <li>
+            Track changes in dissertation direction and prepare
+            for conversations about narrowing or strengthening
+            the study.
+          </li>
+        </ul>
+      </section>
+
+      <div className="purpose-research-toolbar">
+        <label className="purpose-research-search">
+          <span>Name Search</span>
+
+          <input
+            type="text"
+            list="purpose-research-name-search-options"
+            value={nameSearch}
+            placeholder="Start typing a cohort member name"
+            onChange={(event) =>
+              setNameSearch(event.target.value)
+            }
+          />
+        </label>
+
+        <button
+          type="button"
+          className="purpose-research-add-button"
+          onClick={() => {
+            setNameSearch('')
+            onAddRecord()
+          }}
+        >
+          <span aria-hidden="true">+</span>
+          Add Development Update
+        </button>
+
+        <div className="purpose-research-entry-count">
+          <span>Total Entries</span>
+          <strong>{records.length}</strong>
+
+          {normalizedSearch && (
+            <small>
+              Showing {visibleRecords.length}
+            </small>
+          )}
+        </div>
+      </div>
+
+      <datalist id="purpose-research-name-search-options">
+        {memberNames.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+
+      <section
+        className="purpose-research-table-panel"
+        aria-labelledby="purpose-research-table-title"
+      >
+        <header className="purpose-research-table-heading">
+          <div>
+            <h2 id="purpose-research-table-title">
+              Dissertation Development History
+            </h2>
+
+            <p>
+              Add a new entry when a purpose statement,
+              research question, study direction, or mentor
+              recommendation changes.
+            </p>
+          </div>
+        </header>
+
+        <div
+          id="purpose-research-format-toolbar"
+          className="purpose-research-format-toolbar"
+          tabIndex={-1}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <select
+            value={selectedFormat.fontFamily}
+            disabled={selectedCell === null}
+            aria-label="Font type"
+            onChange={(event) =>
+              updateSelectedCellFormat({
+                fontFamily: event.target.value,
+              })
+            }
+          >
+            {purposeResearchFontOptions.map(
+              (fontFamily) => (
+                <option
+                  key={fontFamily}
+                  value={fontFamily}
+                >
+                  {fontFamily}
+                </option>
+              ),
+            )}
+          </select>
+
+          <select
+            className="purpose-research-font-size"
+            value={selectedFormat.fontSize}
+            disabled={selectedCell === null}
+            aria-label="Font size"
+            onChange={(event) =>
+              updateSelectedCellFormat({
+                fontSize: Number(
+                  event.target.value,
+                ),
+              })
+            }
+          >
+            {purposeResearchFontSizeOptions.map(
+              (fontSize) => (
+                <option
+                  key={fontSize}
+                  value={fontSize}
+                >
+                  {fontSize}
+                </option>
+              ),
+            )}
+          </select>
+
+          <span className="purpose-research-toolbar-divider" />
+
+          <button
+            type="button"
+            className={
+              selectedFormat.bold
+                ? 'purpose-research-format-active'
+                : undefined
+            }
+            disabled={selectedCell === null}
+            title="Bold"
+            onClick={() =>
+              updateSelectedCellFormat({
+                bold: !selectedFormat.bold,
+              })
+            }
+          >
+            B
+          </button>
+
+          <button
+            type="button"
+            className={
+              selectedFormat.italic
+                ? 'purpose-research-format-active'
+                : undefined
+            }
+            disabled={selectedCell === null}
+            title="Italic"
+            onClick={() =>
+              updateSelectedCellFormat({
+                italic: !selectedFormat.italic,
+              })
+            }
+          >
+            <em>I</em>
+          </button>
+
+          <button
+            type="button"
+            className={
+              selectedFormat.underline
+                ? 'purpose-research-format-active'
+                : undefined
+            }
+            disabled={selectedCell === null}
+            title="Underline"
+            onClick={() =>
+              updateSelectedCellFormat({
+                underline:
+                  !selectedFormat.underline,
+              })
+            }
+          >
+            <u>U</u>
+          </button>
+
+          <button
+            type="button"
+            className={
+              selectedFormat.bordered
+                ? 'purpose-research-format-active'
+                : undefined
+            }
+            disabled={selectedCell === null}
+            title="Cell Border"
+            onClick={() =>
+              updateSelectedCellFormat({
+                bordered:
+                  !selectedFormat.bordered,
+              })
+            }
+          >
+            ▦
+          </button>
+
+          <label
+            className="purpose-research-color-control"
+            title="Fill Color"
+          >
+            <span>Fill</span>
+            <input
+              type="color"
+              disabled={selectedCell === null}
+              value={
+                selectedFormat.fillColor ===
+                  'transparent'
+                  ? '#ffffff'
+                  : selectedFormat.fillColor
+              }
+              onChange={(event) =>
+                updateSelectedCellFormat({
+                  fillColor:
+                    event.target.value,
+                })
+              }
+            />
+          </label>
+
+          <label
+            className="purpose-research-color-control"
+            title="Font Color"
+          >
+            <span>A</span>
+            <input
+              type="color"
+              disabled={selectedCell === null}
+              value={selectedFormat.fontColor}
+              onChange={(event) =>
+                updateSelectedCellFormat({
+                  fontColor:
+                    event.target.value,
+                })
+              }
+            />
+          </label>
+
+          <span className="purpose-research-toolbar-divider" />
+
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'top'
+                ? ' purpose-research-format-active'
+                : ''
+              }`}
+            disabled={selectedCell === null}
+            title="Top Align"
+            onClick={() =>
+              updateSelectedCellFormat({
+                verticalAlign: 'top',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 4H20M4 8H16M4 12H12" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'center'
+                ? ' purpose-research-format-active'
+                : ''
+              }`}
+            disabled={selectedCell === null}
+            title="Center Align Vertically"
+            onClick={() =>
+              updateSelectedCellFormat({
+                verticalAlign: 'center',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 7H20M4 11H16M4 15H12" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'bottom'
+                ? ' purpose-research-format-active'
+                : ''
+              }`}
+            disabled={selectedCell === null}
+            title="Bottom Align"
+            onClick={() =>
+              updateSelectedCellFormat({
+                verticalAlign: 'bottom',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 12H12M4 16H16M4 20H20" />
+            </svg>
+          </button>
+
+          <span className="purpose-research-toolbar-divider" />
+
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.textAlign === 'left'
+                ? ' purpose-research-format-active'
+                : ''
+              }`}
+            disabled={selectedCell === null}
+            title="Align Left"
+            onClick={() =>
+              updateSelectedCellFormat({
+                textAlign: 'left',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 5H20M4 9H15M4 13H20M4 17H13" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.textAlign === 'center'
+                ? ' purpose-research-format-active'
+                : ''
+              }`}
+            disabled={selectedCell === null}
+            title="Center Align Horizontally"
+            onClick={() =>
+              updateSelectedCellFormat({
+                textAlign: 'center',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 5H20M7 9H17M4 13H20M8 17H16" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.textAlign === 'right'
+                ? ' purpose-research-format-active'
+                : ''
+              }`}
+            disabled={selectedCell === null}
+            title="Align Right"
+            onClick={() =>
+              updateSelectedCellFormat({
+                textAlign: 'right',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 5H20M9 9H20M4 13H20M11 17H20" />
+            </svg>
+          </button>
+
+          <span className="purpose-research-toolbar-divider" />
+
+          <button
+            type="button"
+            className="purpose-research-alignment-button"
+            disabled={
+              selectedCell === null ||
+              selectedFormat.indentLevel === 0
+            }
+            title="Decrease Indent"
+            onClick={() =>
+              updateSelectedCellFormat({
+                indentLevel: Math.max(
+                  0,
+                  selectedFormat.indentLevel - 1,
+                ),
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M10 5H20M10 9H20M10 13H20M10 17H20" />
+              <path d="M7 9L3 12L7 15" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className="purpose-research-alignment-button"
+            disabled={
+              selectedCell === null ||
+              selectedFormat.indentLevel >= 8
+            }
+            title="Increase Indent"
+            onClick={() =>
+              updateSelectedCellFormat({
+                indentLevel: Math.min(
+                  8,
+                  selectedFormat.indentLevel + 1,
+                ),
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-alignment-icon"
+              aria-hidden="true"
+            >
+              <path d="M10 5H20M10 9H20M10 13H20M10 17H20" />
+              <path d="M3 9L7 12L3 15" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={
+              selectedFormat.wrapText
+                ? 'purpose-research-format-active'
+                : undefined
+            }
+            disabled={selectedCell === null}
+            title="Wrap Text"
+            onClick={() =>
+              updateSelectedCellFormat({
+                wrapText:
+                  !selectedFormat.wrapText,
+              })
+            }
+          >
+            Wrap Text
+          </button>
+
+          <button
+            type="button"
+            disabled
+            title="True Merge & Center will be enabled after multi-cell selection is added."
+          >
+            Merge &amp; Center
+          </button>
+
+          <span className="purpose-research-toolbar-divider" />
+
+          <details className="purpose-research-freeze-menu">
+            <summary>Freeze Panes</summary>
+
+            <div>
+              <button
+                type="button"
+                onClick={() =>
+                  setFreezeMode('panes')
+                }
+              >
+                Freeze Panes
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFreezeMode('none')
+                }
+              >
+                Unfreeze Panes
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFreezeMode('top-row')
+                }
+              >
+                Freeze Top Row
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFreezeMode(
+                    'first-column',
+                  )
+                }
+              >
+                Freeze First Column
+              </button>
+            </div>
+          </details>
+        </div>
+
+        <div
+          ref={purposeResearchTableFrameRef}
+          className={`purpose-research-table-frame${freezeClassName}${
+            isRangeSelecting
+              ? ' purpose-research-range-selecting'
+              : ''
+          }`}
+          onPointerMove={(event) => {
+            if (
+              !isRangeSelecting ||
+              (event.buttons & 1) === 0
+            ) {
+              return
+            }
+
+            const targetElement =
+              document.elementFromPoint(
+                event.clientX,
+                event.clientY,
+              )
+
+            const tableCell =
+              targetElement?.closest(
+                'td[data-record-id][data-field]',
+              )
+
+            if (
+              !(tableCell instanceof HTMLTableCellElement)
+            ) {
+              return
+            }
+
+            const recordId =
+              tableCell.dataset.recordId
+
+            const fieldValue =
+              tableCell.dataset.field
+
+            if (
+              !recordId ||
+              !fieldValue ||
+              !isPurposeResearchField(fieldValue)
+            ) {
+              return
+            }
+
+            event.preventDefault()
+
+            extendCellRangeSelection(
+              recordId,
+              fieldValue,
+            )
+          }}
+          onScroll={() => setContextMenu(null)}
+        >
+          <table
+            className="purpose-research-table"
+            style={{
+              width: `${tableWidth}px`,
+            }}
+          >
+            <colgroup>
+              <col style={{ width: '46px' }} />
+
+              {visibleColumns.map((column) => (
+                <col
+                  key={column.field}
+                  style={{
+                    width: `${columnWidths[column.field] ??
+                      column.defaultWidth
+                      }px`,
+                  }}
+                />
+              ))}
+            </colgroup>
+
+            <thead>
+              <tr>
+                <th className="purpose-research-row-number-header">
+                  #
+                </th>
+
+                {visibleColumns.map((column) => {
+                  const columnWidth =
+                    columnWidths[column.field] ??
+                    column.defaultWidth
+
+                  return (
+                    <th
+                      key={column.field}
+                      className={`purpose-research-column-header purpose-research-column-${column.field}`}
+                      onContextMenu={(event) => {
+                        event.preventDefault()
+
+                        openContextMenu(
+                          null,
+                          column.field,
+                          event.clientX,
+                          event.clientY,
+                        )
+                      }}
+                    >
+                      <span>
+                        {column.label}
+                      </span>
+
+                      <span
+                        className="purpose-research-column-resize-handle"
+                        title="Drag to resize column"
+                        onPointerDown={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+
+                          startColumnResize(
+                            column.field,
+                            event.clientX,
+                            columnWidth,
+                          )
+                        }}
+                      />
+                    </th>
+                  )
+                })}
+              </tr>
+            </thead>
+
+            <tbody>
+              {visibleRecords.length === 0 ? (
+                <tr>
+                  <td
+                    className="purpose-research-empty-state"
+                    colSpan={
+                      visibleColumns.length + 1
+                    }
+                  >
+                    {normalizedSearch
+                      ? 'No development entries match the current name search.'
+                      : 'No development entries have been added yet. Select Add Development Update to begin.'}
+                  </td>
+                </tr>
+              ) : (
+                visibleRecords.map((record) => {
+                  const rowHeight =
+                    rowHeights[record.id] ?? 110
+
+                  const rowNumber =
+                    records.findIndex(
+                      (item) =>
+                        item.id === record.id,
+                    ) + 1
+
+                  return (
+                    <tr key={record.id}>
+                      <th
+                        scope="row"
+                        className="purpose-research-row-number-cell"
+                        style={{
+                          height: `${rowHeight}px`,
+                        }}
+                        onContextMenu={(event) => {
+                          event.preventDefault()
+
+                          openContextMenu(
+                            record.id,
+                            null,
+                            event.clientX,
+                            event.clientY,
+                          )
+                        }}
+                      >
+                        {rowNumber}
+
+                        <span
+                          className="purpose-research-row-resize-handle"
+                          title="Drag to resize row"
+                          onPointerDown={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+
+                            startRowResize(
+                              record.id,
+                              event.clientY,
+                              rowHeight,
+                            )
+                          }}
+                        />
+                      </th>
+
+                      {visibleColumns.map(
+                        (column) =>
+                          renderResearchCell(
+                            record,
+                            column,
+                            rowHeight,
+                          ),
+                      )}
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p className="purpose-research-history-note">
+        Create a new development entry when the study changes
+        substantially. This preserves earlier thinking instead of
+        overwriting the dissertation&apos;s developmental history.
+      </p>
+
+      {contextMenu && (
+        <div
+          className="purpose-research-context-menu"
+          style={{
+            left: `${contextMenu.x}px`,
+            top: `${contextMenu.y}px`,
+          }}
+          role="menu"
+          onClick={(event) =>
+            event.stopPropagation()
+          }
+        >
+          <button
+            type="button"
+            disabled={!contextHasCell}
+            onClick={cutContextCell}
+          >
+            Cut
+          </button>
+
+          <button
+            type="button"
+            disabled={!contextHasCell}
+            onClick={copyContextCell}
+          >
+            Copy
+          </button>
+
+          <button
+            type="button"
+            disabled={!contextHasCell}
+            onClick={() => {
+              void pasteContextCell()
+            }}
+          >
+            Paste
+          </button>
+
+          <span />
+
+          <button
+            type="button"
+            disabled={!contextHasRow}
+            onClick={insertContextRow}
+          >
+            Insert
+          </button>
+
+          <button
+            type="button"
+            disabled={!contextHasRow}
+            onClick={deleteContextRow}
+          >
+            Delete
+          </button>
+
+          <button
+            type="button"
+            disabled={!contextHasCell}
+            onClick={clearContextCell}
+          >
+            Clear Contents
+          </button>
+
+          <span />
+
+          <button
+            type="button"
+            disabled={!contextHasCell}
+            onClick={showFormatControls}
+          >
+            Format Cells
+          </button>
+
+          <button
+            type="button"
+            disabled={!contextHasColumn}
+            onClick={changeContextColumnWidth}
+          >
+            Column Width
+          </button>
+
+          <button
+            type="button"
+            disabled={!contextHasColumn}
+            onClick={hideContextColumn}
+          >
+            Hide
+          </button>
+
+          <button
+            type="button"
+            disabled={
+              hiddenColumns.length === 0
+            }
+            onClick={unhideAllColumns}
+          >
+            Unhide
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -3789,6 +6530,11 @@ function App() {
 
   const [cohortAttendance, setCohortAttendance] =
     useState<CohortAttendanceState>(cohortAttendanceSeed)
+
+  const [purposeResearchRecords, setPurposeResearchRecords] =
+    useState<readonly CohortPurposeResearchRecord[]>(
+      purposeResearchSeed,
+    )
 
   function addCohortContact(contact: CohortContactRecord): void {
     setContacts((currentContacts) => [
@@ -3886,6 +6632,72 @@ function App() {
       ...currentAttendance,
       [attendanceKey]: mark,
     }))
+  }
+
+  function addPurposeResearchRecord(): void {
+    setPurposeResearchRecords((currentRecords) => [
+      ...currentRecords,
+      createEmptyPurposeResearchRecord(),
+    ])
+  }
+
+  function insertPurposeResearchRecordAfter(
+    recordId: string,
+  ): void {
+    setPurposeResearchRecords((currentRecords) => {
+      const recordIndex =
+        currentRecords.findIndex(
+          (record) => record.id === recordId,
+        )
+
+      const newRecord =
+        createEmptyPurposeResearchRecord()
+
+      if (recordIndex < 0) {
+        return [
+          ...currentRecords,
+          newRecord,
+        ]
+      }
+
+      return [
+        ...currentRecords.slice(
+          0,
+          recordIndex + 1,
+        ),
+        newRecord,
+        ...currentRecords.slice(
+          recordIndex + 1,
+        ),
+      ]
+    })
+  }
+
+  function deletePurposeResearchRecord(
+    recordId: string,
+  ): void {
+    setPurposeResearchRecords((currentRecords) =>
+      currentRecords.filter(
+        (record) => record.id !== recordId,
+      ),
+    )
+  }
+
+  function updatePurposeResearchRecord(
+    recordId: string,
+    field: CohortPurposeResearchField,
+    value: string,
+  ): void {
+    setPurposeResearchRecords((currentRecords) =>
+      currentRecords.map((record) =>
+        record.id === recordId
+          ? {
+            ...record,
+            [field]: value,
+          }
+          : record,
+      ),
+    )
   }
 
   function addCohortMeeting(
@@ -4114,9 +6926,19 @@ function App() {
             <Route
               path="/purpose-research"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Purpose & Research"
-                  description="Purpose statements, research questions, and dissertation development information will be organized here."
+                <CohortPurposeResearchPage
+                  contacts={contacts}
+                  records={purposeResearchRecords}
+                  onAddRecord={addPurposeResearchRecord}
+                  onInsertRecordAfter={
+                    insertPurposeResearchRecordAfter
+                  }
+                  onDeleteRecord={
+                    deletePurposeResearchRecord
+                  }
+                  onUpdateRecord={
+                    updatePurposeResearchRecord
+                  }
                 />
               }
             />
