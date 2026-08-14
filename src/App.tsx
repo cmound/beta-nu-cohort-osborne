@@ -199,11 +199,17 @@ type PurposeResearchTextAlign =
   | 'left'
   | 'center'
   | 'right'
+  | 'justify'
 
 type PurposeResearchVerticalAlign =
   | 'top'
   | 'center'
   | 'bottom'
+
+type PurposeResearchListStyle =
+  | 'none'
+  | 'bulleted'
+  | 'numbered'
 
 interface PurposeResearchCellFormat {
   readonly fontFamily: string
@@ -217,6 +223,7 @@ interface PurposeResearchCellFormat {
   readonly textAlign: PurposeResearchTextAlign
   readonly verticalAlign: PurposeResearchVerticalAlign
   readonly indentLevel: number
+  readonly listStyle: PurposeResearchListStyle
   readonly wrapText: boolean
 }
 
@@ -555,6 +562,7 @@ const defaultPurposeResearchCellFormat:
   textAlign: 'left',
   verticalAlign: 'top',
   indentLevel: 0,
+  listStyle: 'none',
   wrapText: true,
 }
 
@@ -4448,6 +4456,11 @@ function CohortPurposeResearchPage({
 }: CohortPurposeResearchPageProps) {
   const [nameSearch, setNameSearch] = useState('')
 
+  const [
+    isDevelopmentWorkspaceExpanded,
+    setIsDevelopmentWorkspaceExpanded,
+  ] = useState(false)
+
   const [selectedCell, setSelectedCell] =
     useState<PurposeResearchSelectedCell | null>(null)
 
@@ -4927,6 +4940,54 @@ function CohortPurposeResearchPage({
     )
   }
 
+  function isEntirePurposeResearchTableSelected(): boolean {
+    if (
+      visibleRecords.length === 0 ||
+      visibleColumns.length === 0
+    ) {
+      return false
+    }
+
+    return (
+      getSelectedCells().length ===
+      visibleRecords.length * visibleColumns.length
+    )
+  }
+
+  function selectEntirePurposeResearchTable(): void {
+    const firstRecord = visibleRecords[0]
+    const lastRecord =
+      visibleRecords[visibleRecords.length - 1]
+
+    const firstColumn = visibleColumns[0]
+    const lastColumn =
+      visibleColumns[visibleColumns.length - 1]
+
+    if (
+      firstRecord === undefined ||
+      lastRecord === undefined ||
+      firstColumn === undefined ||
+      lastColumn === undefined
+    ) {
+      return
+    }
+
+    const firstCell: PurposeResearchSelectedCell = {
+      recordId: firstRecord.id,
+      field: firstColumn.field,
+    }
+
+    const lastCell: PurposeResearchSelectedCell = {
+      recordId: lastRecord.id,
+      field: lastColumn.field,
+    }
+
+    setSelectedCell(firstCell)
+    setSelectionAnchor(firstCell)
+    setSelectionFocus(lastCell)
+    setIsRangeSelecting(false)
+  }
+
   function beginCellRangeSelection(
     recordId: string,
     field: CohortPurposeResearchField,
@@ -5142,6 +5203,11 @@ function CohortPurposeResearchPage({
         selectedCell.field,
       )
 
+  const hasSelectedTextCells =
+    getSelectedCells().some(
+      (cell) => cell.field !== 'memberName',
+    )
+
   function updateSelectedCellFormat(
     updates: Partial<PurposeResearchCellFormat>,
   ): void {
@@ -5166,6 +5232,186 @@ function CohortPurposeResearchPage({
           ...(currentFormats[cellKey] ??
             defaultPurposeResearchCellFormat),
           ...updates,
+        }
+      }
+
+      return nextFormats
+    })
+  }
+
+  function removePurposeResearchListPrefix(
+    value: string,
+  ): string {
+    return value.replace(
+      /^(?:\s*•\s+|\s*\d+\.\s+)/,
+      '',
+    )
+  }
+
+  function formatPurposeResearchListValue(
+    value: string,
+    listStyle: PurposeResearchListStyle,
+  ): string {
+    const lines = value
+      .split(/\r?\n/)
+      .map(removePurposeResearchListPrefix)
+
+    if (listStyle === 'none') {
+      return lines.join('\n')
+    }
+
+    if (listStyle === 'bulleted') {
+      return lines
+        .map((line) =>
+          line.trim().length === 0
+            ? ''
+            : `• ${line}`,
+        )
+        .join('\n')
+    }
+
+    let listNumber = 0
+
+    return lines
+      .map((line) => {
+        if (line.trim().length === 0) {
+          return ''
+        }
+
+        listNumber += 1
+
+        return `${listNumber}. ${line}`
+      })
+      .join('\n')
+  }
+
+  function toggleSelectedCellListStyle(
+    listStyle: Exclude<
+      PurposeResearchListStyle,
+      'none'
+    >,
+  ): void {
+    const selectedTextCells =
+      getSelectedCells().filter(
+        (cell) => cell.field !== 'memberName',
+      )
+
+    if (selectedTextCells.length === 0) {
+      return
+    }
+
+    const shouldRemoveList =
+      selectedTextCells.every(
+        (cell) =>
+          getCellFormat(
+            cell.recordId,
+            cell.field,
+          ).listStyle === listStyle,
+      )
+
+    const nextListStyle:
+      PurposeResearchListStyle =
+      shouldRemoveList
+        ? 'none'
+        : listStyle
+
+    for (const cell of selectedTextCells) {
+      const currentValue = getRecordValue(
+        cell.recordId,
+        cell.field,
+      )
+
+      const nextValue =
+        formatPurposeResearchListValue(
+          currentValue,
+          nextListStyle,
+        )
+
+      if (nextValue !== currentValue) {
+        onUpdateRecord(
+          cell.recordId,
+          cell.field,
+          nextValue,
+        )
+      }
+    }
+
+    setCellFormats((currentFormats) => {
+      const nextFormats = {
+        ...currentFormats,
+      }
+
+      for (const cell of selectedTextCells) {
+        const cellKey = getCellKey(
+          cell.recordId,
+          cell.field,
+        )
+
+        nextFormats[cellKey] = {
+          ...(currentFormats[cellKey] ??
+            defaultPurposeResearchCellFormat),
+          listStyle: nextListStyle,
+        }
+      }
+
+      return nextFormats
+    })
+  }
+
+  function clearSelectedCellFormatting(): void {
+    const selectedCells = getSelectedCells()
+
+    if (selectedCells.length === 0) {
+      return
+    }
+
+    for (const cell of selectedCells) {
+      if (cell.field === 'memberName') {
+        continue
+      }
+
+      const currentFormat = getCellFormat(
+        cell.recordId,
+        cell.field,
+      )
+
+      if (currentFormat.listStyle === 'none') {
+        continue
+      }
+
+      const currentValue = getRecordValue(
+        cell.recordId,
+        cell.field,
+      )
+
+      const nextValue =
+        formatPurposeResearchListValue(
+          currentValue,
+          'none',
+        )
+
+      if (nextValue !== currentValue) {
+        onUpdateRecord(
+          cell.recordId,
+          cell.field,
+          nextValue,
+        )
+      }
+    }
+
+    setCellFormats((currentFormats) => {
+      const nextFormats = {
+        ...currentFormats,
+      }
+
+      for (const cell of selectedCells) {
+        nextFormats[
+          getCellKey(
+            cell.recordId,
+            cell.field,
+          )
+        ] = {
+          ...defaultPurposeResearchCellFormat,
         }
       }
 
@@ -5506,6 +5752,192 @@ function CohortPurposeResearchPage({
     })
   }
 
+  function getPurposeResearchAutoFitColumnWidth(
+    column: PurposeResearchColumnDefinition,
+  ): number {
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+
+    if (context === null) {
+      return column.defaultWidth
+    }
+
+    const minimumWidth =
+      column.field === 'memberName'
+        ? 140
+        : column.field === 'developmentNote'
+          ? 130
+          : 150
+
+    context.font = '900 12px Arial'
+
+    let measuredWidth =
+      context.measureText(column.label).width + 28
+
+    for (const record of visibleRecords) {
+      const format = getCellFormat(
+        record.id,
+        column.field,
+      )
+
+      const fontFamily =
+        format.fontFamily.includes(' ')
+          ? `"${format.fontFamily}"`
+          : format.fontFamily
+
+      context.font = `${format.italic ? 'italic ' : ''
+        }${format.bold ? '900' : '400'} ${format.fontSize
+        }px ${fontFamily}`
+
+      const textLines =
+        record[column.field].split(/\r?\n/)
+
+      for (const textLine of textLines) {
+        measuredWidth = Math.max(
+          measuredWidth,
+          context.measureText(
+            textLine || ' ',
+          ).width + 24,
+        )
+      }
+    }
+
+    return Math.round(
+      Math.max(
+        minimumWidth,
+        Math.min(
+          column.defaultWidth,
+          measuredWidth,
+        ),
+      ),
+    )
+  }
+
+  function autoFitPurposeResearchColumn(
+    field: CohortPurposeResearchField,
+  ): void {
+    const column = visibleColumns.find(
+      (visibleColumn) =>
+        visibleColumn.field === field,
+    )
+
+    if (column === undefined) {
+      return
+    }
+
+    const nextWidth =
+      getPurposeResearchAutoFitColumnWidth(
+        column,
+      )
+
+    setColumnWidths((currentWidths) => ({
+      ...currentWidths,
+      [field]: nextWidth,
+    }))
+  }
+
+  function autoFitAllPurposeResearchColumns(): void {
+    const nextWidths: Partial<
+      Record<CohortPurposeResearchField, number>
+    > = {}
+
+    for (const column of visibleColumns) {
+      nextWidths[column.field] =
+        getPurposeResearchAutoFitColumnWidth(
+          column,
+        )
+    }
+
+    setColumnWidths((currentWidths) => ({
+      ...currentWidths,
+      ...nextWidths,
+    }))
+  }
+
+  function getPurposeResearchAutoFitRowHeight(
+    recordId: string,
+  ): number {
+    const tableFrame =
+      purposeResearchTableFrameRef.current
+
+    if (tableFrame === null) {
+      return rowHeights[recordId] ?? 110
+    }
+
+    const tableRows =
+      tableFrame.querySelectorAll<HTMLTableRowElement>(
+        'tbody tr[data-record-id]',
+      )
+
+    const tableRow = Array.from(tableRows).find(
+      (row) =>
+        row.dataset.recordId === recordId,
+    )
+
+    if (tableRow === undefined) {
+      return rowHeights[recordId] ?? 110
+    }
+
+    const textareas =
+      tableRow.querySelectorAll<HTMLTextAreaElement>(
+        '.purpose-research-cell-textarea',
+      )
+
+    let nextHeight = 42
+
+    for (const textarea of textareas) {
+      const previousHeight =
+        textarea.style.height
+
+      textarea.style.height = '0px'
+
+      nextHeight = Math.max(
+        nextHeight,
+        textarea.scrollHeight + 2,
+      )
+
+      textarea.style.height =
+        previousHeight
+    }
+
+    return Math.min(
+      600,
+      Math.ceil(nextHeight),
+    )
+  }
+
+  function autoFitPurposeResearchRow(
+    recordId: string,
+  ): void {
+    const nextHeight =
+      getPurposeResearchAutoFitRowHeight(
+        recordId,
+      )
+
+    setRowHeights((currentHeights) => ({
+      ...currentHeights,
+      [recordId]: nextHeight,
+    }))
+  }
+
+  function autoFitAllPurposeResearchRows(): void {
+    const nextHeights: Partial<
+      Record<string, number>
+    > = {}
+
+    for (const record of visibleRecords) {
+      nextHeights[record.id] =
+        getPurposeResearchAutoFitRowHeight(
+          record.id,
+        )
+    }
+
+    setRowHeights((currentHeights) => ({
+      ...currentHeights,
+      ...nextHeights,
+    }))
+  }
+
   function startColumnResize(
     field: CohortPurposeResearchField,
     startX: number,
@@ -5807,43 +6239,76 @@ function CohortPurposeResearchPage({
       </header>
 
       <section
-        className="purpose-research-intro"
+        className={`purpose-research-intro${isDevelopmentWorkspaceExpanded
+          ? ''
+          : ' purpose-research-intro-collapsed'
+          }`}
         aria-labelledby="purpose-research-workspace-title"
       >
         <div className="purpose-research-intro-heading">
-          <h2 id="purpose-research-workspace-title">
-            Purpose &amp; Research Developmental Workspace
-          </h2>
+          <div className="purpose-research-intro-title-group">
+            <button
+              type="button"
+              className="purpose-research-intro-toggle"
+              aria-expanded={
+                isDevelopmentWorkspaceExpanded
+              }
+              aria-controls="purpose-research-workspace-content"
+              title={
+                isDevelopmentWorkspaceExpanded
+                  ? 'Collapse Developmental Workspace'
+                  : 'Expand Developmental Workspace'
+              }
+              onClick={() =>
+                setIsDevelopmentWorkspaceExpanded(
+                  (currentValue) =>
+                    !currentValue,
+                )
+              }
+            >
+              {isDevelopmentWorkspaceExpanded
+                ? '−'
+                : '+'}
+            </button>
+
+            <h2 id="purpose-research-workspace-title">
+              Purpose &amp; Research Developmental Workspace
+            </h2>
+          </div>
 
           <span>Developmental, Not Final Record</span>
         </div>
 
-        <p>
-          Provides a shared workspace for cohort members to
-          record and refine dissertation purpose statements and
-          research questions as their studies develop.
-        </p>
+        {isDevelopmentWorkspaceExpanded && (
+          <div id="purpose-research-workspace-content">
+            <p>
+              Provides a shared workspace for cohort members to
+              record and refine dissertation purpose statements
+              and research questions as their studies develop.
+            </p>
 
-        <ul>
-          <li>
-            Capture evolving dissertation ideas, purpose
-            statements, and multiple research questions.
-          </li>
-          <li>
-            Use this page as a developmental workspace rather
-            than a final or formally approved dissertation
-            record.
-          </li>
-          <li>
-            Retain Dr. CMO&apos;s thoughts and feedback alongside
-            evolving study ideas.
-          </li>
-          <li>
-            Track changes in dissertation direction and prepare
-            for conversations about narrowing or strengthening
-            the study.
-          </li>
-        </ul>
+            <ul>
+              <li>
+                Capture evolving dissertation ideas, purpose
+                statements, and multiple research questions.
+              </li>
+              <li>
+                Use this page as a developmental workspace rather
+                than a final or formally approved dissertation
+                record.
+              </li>
+              <li>
+                Retain Dr. CMO&apos;s thoughts and feedback alongside
+                evolving study ideas.
+              </li>
+              <li>
+                Track changes in dissertation direction and prepare
+                for conversations about narrowing or strengthening
+                the study.
+              </li>
+            </ul>
+          </div>
+        )}
       </section>
 
       <div className="purpose-research-toolbar">
@@ -5916,9 +6381,11 @@ function CohortPurposeResearchPage({
           onClick={(event) => event.stopPropagation()}
         >
           <select
+            className="purpose-research-font-family"
             value={selectedFormat.fontFamily}
             disabled={selectedCell === null}
-            aria-label="Font type"
+            aria-label="Font Family"
+            title="Font Family"
             onChange={(event) =>
               updateSelectedCellFormat({
                 fontFamily: event.target.value,
@@ -5941,7 +6408,8 @@ function CohortPurposeResearchPage({
             className="purpose-research-font-size"
             value={selectedFormat.fontSize}
             disabled={selectedCell === null}
-            aria-label="Font size"
+            aria-label="Font Size"
+            title="Font Size"
             onChange={(event) =>
               updateSelectedCellFormat({
                 fontSize: Number(
@@ -5962,16 +6430,19 @@ function CohortPurposeResearchPage({
             )}
           </select>
 
-          <span className="purpose-research-toolbar-divider" />
+          <span
+            className="purpose-research-toolbar-divider"
+            aria-hidden="true"
+          />
 
           <button
             type="button"
-            className={
-              selectedFormat.bold
-                ? 'purpose-research-format-active'
-                : undefined
-            }
+            className={`purpose-research-text-button${selectedFormat.bold
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
             disabled={selectedCell === null}
+            aria-label="Bold"
             title="Bold"
             onClick={() =>
               updateSelectedCellFormat({
@@ -5979,17 +6450,17 @@ function CohortPurposeResearchPage({
               })
             }
           >
-            B
+            <strong>B</strong>
           </button>
 
           <button
             type="button"
-            className={
-              selectedFormat.italic
-                ? 'purpose-research-format-active'
-                : undefined
-            }
+            className={`purpose-research-text-button${selectedFormat.italic
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
             disabled={selectedCell === null}
+            aria-label="Italic"
             title="Italic"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6002,12 +6473,12 @@ function CohortPurposeResearchPage({
 
           <button
             type="button"
-            className={
-              selectedFormat.underline
-                ? 'purpose-research-format-active'
-                : undefined
-            }
+            className={`purpose-research-text-button${selectedFormat.underline
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
             disabled={selectedCell === null}
+            aria-label="Underline"
             title="Underline"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6019,57 +6490,40 @@ function CohortPurposeResearchPage({
             <u>U</u>
           </button>
 
-          <button
-            type="button"
-            className={
-              selectedFormat.bordered
-                ? 'purpose-research-format-active'
-                : undefined
-            }
-            disabled={selectedCell === null}
-            title="Cell Border"
-            onClick={() =>
-              updateSelectedCellFormat({
-                bordered:
-                  !selectedFormat.bordered,
-              })
-            }
-          >
-            ▦
-          </button>
-
           <label
-            className="purpose-research-color-control"
-            title="Fill Color"
-          >
-            <span>Fill</span>
-            <input
-              type="color"
-              disabled={selectedCell === null}
-              value={
-                selectedFormat.fillColor ===
-                  'transparent'
-                  ? '#ffffff'
-                  : selectedFormat.fillColor
-              }
-              onChange={(event) =>
-                updateSelectedCellFormat({
-                  fillColor:
-                    event.target.value,
-                })
-              }
-            />
-          </label>
-
-          <label
-            className="purpose-research-color-control"
+            className="purpose-research-color-control purpose-research-font-color-control"
             title="Font Color"
           >
-            <span>A</span>
+            <span
+              className="purpose-research-font-color-icon"
+              aria-hidden="true"
+            >
+              <span className="purpose-research-font-color-letter">
+                A
+              </span>
+
+              <span
+                className="purpose-research-font-color-underline"
+                style={{
+                  backgroundColor:
+                    selectedFormat.fontColor,
+                }}
+              />
+            </span>
+
+            <span
+              className="purpose-research-dropdown-caret"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+
             <input
+              className="purpose-research-color-input"
               type="color"
               disabled={selectedCell === null}
               value={selectedFormat.fontColor}
+              aria-label="Font Color"
               onChange={(event) =>
                 updateSelectedCellFormat({
                   fontColor:
@@ -6079,7 +6533,84 @@ function CohortPurposeResearchPage({
             />
           </label>
 
-          <span className="purpose-research-toolbar-divider" />
+          <label
+            className="purpose-research-color-control purpose-research-fill-color-control"
+            title="Fill Color"
+          >
+            <span
+              className="purpose-research-fill-color-swatch"
+              style={{
+                backgroundColor:
+                  selectedFormat.fillColor ===
+                    'transparent'
+                    ? '#FFFF00'
+                    : selectedFormat.fillColor,
+              }}
+              aria-hidden="true"
+            />
+
+            <span
+              className="purpose-research-dropdown-caret"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+
+            <input
+              className="purpose-research-color-input"
+              type="color"
+              disabled={selectedCell === null}
+              value={
+                selectedFormat.fillColor ===
+                  'transparent'
+                  ? '#ffff00'
+                  : selectedFormat.fillColor
+              }
+              aria-label="Fill Color"
+              onChange={(event) =>
+                updateSelectedCellFormat({
+                  fillColor:
+                    event.target.value,
+                })
+              }
+            />
+          </label>
+
+          <button
+            type="button"
+            className={`purpose-research-icon-button${selectedFormat.bordered
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
+            disabled={selectedCell === null}
+            aria-label="Cell Border"
+            title="Cell Border"
+            onClick={() =>
+              updateSelectedCellFormat({
+                bordered:
+                  !selectedFormat.bordered,
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-toolbar-icon"
+              aria-hidden="true"
+            >
+              <rect
+                x="5"
+                y="5"
+                width="14"
+                height="14"
+                rx="1"
+              />
+            </svg>
+          </button>
+
+          <span
+            className="purpose-research-toolbar-divider"
+            aria-hidden="true"
+          />
 
           <button
             type="button"
@@ -6088,6 +6619,7 @@ function CohortPurposeResearchPage({
               : ''
               }`}
             disabled={selectedCell === null}
+            aria-label="Top Align"
             title="Top Align"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6097,43 +6629,51 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M4 4H20M4 8H16M4 12H12" />
+              <path d="M4 5H20" />
+              <path d="M6 9H18" />
+              <path d="M8 13H16" />
             </svg>
           </button>
 
           <button
             type="button"
-            className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'center'
+            className={`purpose-research-alignment-button${selectedFormat.verticalAlign ===
+              'center'
               ? ' purpose-research-format-active'
               : ''
               }`}
-            disabled={selectedCell === null}
-            title="Center Align Vertically"
+            disabled={!hasSelectedTextCells}
+            aria-label="Bullets"
+            title="Bullets"
             onClick={() =>
-              updateSelectedCellFormat({
-                verticalAlign: 'center',
-              })
+              toggleSelectedCellListStyle(
+                'bulleted',
+              )
             }
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M4 7H20M4 11H16M4 15H12" />
+              <path d="M8 8H16" />
+              <path d="M6 12H18" />
+              <path d="M8 16H16" />
             </svg>
           </button>
 
           <button
             type="button"
-            className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'bottom'
+            className={`purpose-research-alignment-button${selectedFormat.verticalAlign ===
+              'bottom'
               ? ' purpose-research-format-active'
               : ''
               }`}
             disabled={selectedCell === null}
+            aria-label="Bottom Align"
             title="Bottom Align"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6143,14 +6683,19 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M4 12H12M4 16H16M4 20H20" />
+              <path d="M8 11H16" />
+              <path d="M6 15H18" />
+              <path d="M4 19H20" />
             </svg>
           </button>
 
-          <span className="purpose-research-toolbar-divider" />
+          <span
+            className="purpose-research-toolbar-divider"
+            aria-hidden="true"
+          />
 
           <button
             type="button"
@@ -6159,6 +6704,7 @@ function CohortPurposeResearchPage({
               : ''
               }`}
             disabled={selectedCell === null}
+            aria-label="Align Left"
             title="Align Left"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6168,21 +6714,26 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M4 5H20M4 9H15M4 13H20M4 17H13" />
+              <path d="M4 5H20" />
+              <path d="M4 9H15" />
+              <path d="M4 13H20" />
+              <path d="M4 17H13" />
             </svg>
           </button>
 
           <button
             type="button"
-            className={`purpose-research-alignment-button${selectedFormat.textAlign === 'center'
+            className={`purpose-research-alignment-button${selectedFormat.textAlign ===
+              'center'
               ? ' purpose-research-format-active'
               : ''
               }`}
             disabled={selectedCell === null}
-            title="Center Align Horizontally"
+            aria-label="Align Center"
+            title="Align Center"
             onClick={() =>
               updateSelectedCellFormat({
                 textAlign: 'center',
@@ -6191,10 +6742,13 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M4 5H20M7 9H17M4 13H20M8 17H16" />
+              <path d="M4 5H20" />
+              <path d="M7 9H17" />
+              <path d="M4 13H20" />
+              <path d="M8 17H16" />
             </svg>
           </button>
 
@@ -6205,6 +6759,7 @@ function CohortPurposeResearchPage({
               : ''
               }`}
             disabled={selectedCell === null}
+            aria-label="Align Right"
             title="Align Right"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6214,22 +6769,202 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M4 5H20M9 9H20M4 13H20M11 17H20" />
+              <path d="M4 5H20" />
+              <path d="M9 9H20" />
+              <path d="M4 13H20" />
+              <path d="M11 17H20" />
             </svg>
           </button>
 
-          <span className="purpose-research-toolbar-divider" />
+          <button
+            type="button"
+            className={`purpose-research-alignment-button${selectedFormat.textAlign ===
+              'justify'
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
+            disabled={selectedCell === null}
+            aria-label="Justify"
+            title="Justify"
+            onClick={() =>
+              updateSelectedCellFormat({
+                textAlign: 'justify',
+              })
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-toolbar-icon"
+              aria-hidden="true"
+            >
+              <path d="M4 5H20" />
+              <path d="M4 9H20" />
+              <path d="M4 13H20" />
+              <path d="M4 17H20" />
+            </svg>
+          </button>
+
+          <span
+            className="purpose-research-toolbar-divider"
+            aria-hidden="true"
+          />
 
           <button
             type="button"
-            className="purpose-research-alignment-button"
+            className={`purpose-research-icon-button${selectedFormat.listStyle ===
+              'bulleted'
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
+            disabled={!hasSelectedTextCells}
+            aria-label="Bulleted List"
+            title="Bulleted List"
+            onClick={() =>
+              toggleSelectedCellListStyle(
+                'bulleted',
+              )
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-toolbar-icon purpose-research-list-icon"
+              aria-hidden="true"
+            >
+              <circle
+                cx="5"
+                cy="6"
+                r="1.4"
+                fill="currentColor"
+                stroke="none"
+              />
+              <circle
+                cx="5"
+                cy="12"
+                r="1.4"
+                fill="currentColor"
+                stroke="none"
+              />
+              <circle
+                cx="5"
+                cy="18"
+                r="1.4"
+                fill="currentColor"
+                stroke="none"
+              />
+              <path d="M9 6H20" />
+              <path d="M9 12H20" />
+              <path d="M9 18H20" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className={`purpose-research-icon-button${selectedFormat.listStyle ===
+              'numbered'
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
+            disabled={!hasSelectedTextCells}
+            aria-label="Numbering"
+            title="Numbering"
+            onClick={() =>
+              toggleSelectedCellListStyle(
+                'numbered',
+              )
+            }
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-toolbar-icon purpose-research-list-icon"
+              aria-hidden="true"
+            >
+              <text
+                x="4.8"
+                y="7.5"
+                fill="currentColor"
+                stroke="none"
+                fontSize="6"
+                fontWeight="700"
+                textAnchor="middle"
+              >
+                1
+              </text>
+              <text
+                x="4.8"
+                y="13.5"
+                fill="currentColor"
+                stroke="none"
+                fontSize="6"
+                fontWeight="700"
+                textAnchor="middle"
+              >
+                2
+              </text>
+              <text
+                x="4.8"
+                y="19.5"
+                fill="currentColor"
+                stroke="none"
+                fontSize="6"
+                fontWeight="700"
+                textAnchor="middle"
+              >
+                3
+              </text>
+              <path d="M9 6H20" />
+              <path d="M9 12H20" />
+              <path d="M9 18H20" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className="purpose-research-icon-button purpose-research-clear-format-button"
+            disabled={selectedCell === null}
+            aria-label="Clear Formatting"
+            title="Clear Formatting"
+            onClick={clearSelectedCellFormatting}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="purpose-research-clear-format-icon"
+              aria-hidden="true"
+            >
+              <path
+                d="M6.3 14.9L13.9 7.3L19.1 12.5L11.5 20.1H7.8L4.4 16.7Z"
+                fill="#22d3ee"
+                stroke="#075985"
+                strokeWidth="1.4"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M11.5 20.1L8.3 16.9L12.4 12.8L15.6 16Z"
+                fill="#f8fafc"
+                stroke="#075985"
+                strokeWidth="1.1"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M4 21H20"
+                fill="none"
+                stroke="#64748b"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className="purpose-research-icon-button"
             disabled={
               selectedCell === null ||
               selectedFormat.indentLevel === 0
             }
+            aria-label="Decrease Indent"
             title="Decrease Indent"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6242,21 +6977,25 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M10 5H20M10 9H20M10 13H20M10 17H20" />
+              <path d="M10 5H20" />
+              <path d="M10 9H20" />
+              <path d="M10 13H20" />
+              <path d="M10 17H20" />
               <path d="M7 9L3 12L7 15" />
             </svg>
           </button>
 
           <button
             type="button"
-            className="purpose-research-alignment-button"
+            className="purpose-research-icon-button"
             disabled={
               selectedCell === null ||
               selectedFormat.indentLevel >= 8
             }
+            aria-label="Increase Indent"
             title="Increase Indent"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6269,22 +7008,88 @@ function CohortPurposeResearchPage({
           >
             <svg
               viewBox="0 0 24 24"
-              className="purpose-research-alignment-icon"
+              className="purpose-research-toolbar-icon"
               aria-hidden="true"
             >
-              <path d="M10 5H20M10 9H20M10 13H20M10 17H20" />
+              <path d="M10 5H20" />
+              <path d="M10 9H20" />
+              <path d="M10 13H20" />
+              <path d="M10 17H20" />
               <path d="M3 9L7 12L3 15" />
             </svg>
           </button>
 
+          <span
+            className="purpose-research-toolbar-divider"
+            aria-hidden="true"
+          />
+
           <button
             type="button"
-            className={
-              selectedFormat.wrapText
-                ? 'purpose-research-format-active'
-                : undefined
-            }
+            className="purpose-research-icon-button purpose-research-merge-button"
+            disabled
+            aria-label="Merge & Center"
+            title="Merge & Center"
+          >
+            <svg
+              viewBox="0 0 30 26"
+              className="purpose-research-merge-icon"
+              aria-hidden="true"
+            >
+              <rect
+                x="3"
+                y="3"
+                width="24"
+                height="20"
+                rx="1"
+                className="purpose-research-merge-grid-background"
+              />
+
+              <path
+                d="M11 3V23M19 3V23M3 9H27M3 17H27"
+                className="purpose-research-merge-grid-lines"
+              />
+
+              <rect
+                x="6"
+                y="8"
+                width="18"
+                height="10"
+                rx="1"
+                className="purpose-research-merge-center-cell"
+              />
+
+              <path
+                d="M8 13H13M10.8 10.8L13 13L10.8 15.2"
+                className="purpose-research-merge-arrow"
+              />
+
+              <path
+                d="M22 13H17M19.2 10.8L17 13L19.2 15.2"
+                className="purpose-research-merge-arrow"
+              />
+            </svg>
+
+            <span className="purpose-research-control-label">
+              Merge &amp; Center
+            </span>
+
+            <span
+              className="purpose-research-split-caret"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className={`purpose-research-wrap-button${selectedFormat.wrapText
+              ? ' purpose-research-format-active'
+              : ''
+              }`}
             disabled={selectedCell === null}
+            aria-label="Wrap Text"
             title="Wrap Text"
             onClick={() =>
               updateSelectedCellFormat({
@@ -6293,15 +7098,68 @@ function CohortPurposeResearchPage({
               })
             }
           >
-            Wrap Text
-          </button>
+            <svg
+              viewBox="0 0 30 26"
+              className="purpose-research-wrap-icon"
+              aria-hidden="true"
+            >
+              <text
+                x="2"
+                y="10"
+                fill="currentColor"
+                fontFamily="Arial, sans-serif"
+                fontSize="9"
+                fontWeight="700"
+              >
+                a
+              </text>
 
-          <button
-            type="button"
-            disabled
-            title="True Merge & Center will be enabled after multi-cell selection is added."
-          >
-            Merge &amp; Center
+              <text
+                x="9"
+                y="10"
+                fill="currentColor"
+                fontFamily="Arial, sans-serif"
+                fontSize="9"
+                fontWeight="700"
+              >
+                b
+              </text>
+
+              <text
+                x="2"
+                y="22"
+                fill="currentColor"
+                fontFamily="Arial, sans-serif"
+                fontSize="9"
+                fontWeight="700"
+              >
+                c
+              </text>
+
+              <path
+                d="M17 10
+                   C22 10 24 12 24 15
+                   C24 18 21 19 17 19
+                   H10"
+                className="purpose-research-wrap-arrow"
+              />
+
+              <path
+                d="M13 16L10 19L13 22"
+                className="purpose-research-wrap-arrow"
+              />
+            </svg>
+
+            <span className="purpose-research-control-label">
+              Wrap Text
+            </span>
+
+            <span
+              className="purpose-research-split-caret"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
           </button>
         </div>
 
@@ -6461,8 +7319,22 @@ function CohortPurposeResearchPage({
 
             <thead>
               <tr>
-                <th className="purpose-research-row-number-header">
-                  #
+                <th
+                  className={`purpose-research-row-number-header${isEntirePurposeResearchTableSelected()
+                    ? ' purpose-research-row-number-header-selected'
+                    : ''
+                    }`}
+                >
+                  <button
+                    type="button"
+                    className="purpose-research-select-all-button"
+                    aria-label="Select all Purpose and Research cells"
+                    title="Select all cells"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      selectEntirePurposeResearchTable()
+                    }}
+                  />
                 </th>
 
                 {visibleColumns.map((column) => {
@@ -6498,8 +7370,27 @@ function CohortPurposeResearchPage({
 
                       <span
                         className="purpose-research-column-resize-handle"
-                        title="Drag to resize column"
+                        title="Drag to resize column. Double-click to AutoFit."
+                        onDoubleClick={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+
+                          if (
+                            isEntirePurposeResearchTableSelected()
+                          ) {
+                            autoFitAllPurposeResearchColumns()
+                            return
+                          }
+
+                          autoFitPurposeResearchColumn(
+                            column.field,
+                          )
+                        }}
                         onPointerDown={(event) => {
+                          if (event.detail > 1) {
+                            return
+                          }
+
                           event.preventDefault()
                           event.stopPropagation()
 
@@ -6542,7 +7433,10 @@ function CohortPurposeResearchPage({
                     ) + 1
 
                   return (
-                    <tr key={record.id}>
+                    <tr
+                      key={record.id}
+                      data-record-id={record.id}
+                    >
                       <th
                         scope="row"
                         className="purpose-research-row-number-cell"
@@ -6564,8 +7458,27 @@ function CohortPurposeResearchPage({
 
                         <span
                           className="purpose-research-row-resize-handle"
-                          title="Drag to resize row"
+                          title="Drag to resize row. Double-click to AutoFit."
+                          onDoubleClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+
+                            if (
+                              isEntirePurposeResearchTableSelected()
+                            ) {
+                              autoFitAllPurposeResearchRows()
+                              return
+                            }
+
+                            autoFitPurposeResearchRow(
+                              record.id,
+                            )
+                          }}
                           onPointerDown={(event) => {
+                            if (event.detail > 1) {
+                              return
+                            }
+
                             event.preventDefault()
                             event.stopPropagation()
 
