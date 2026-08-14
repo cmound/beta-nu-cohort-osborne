@@ -1452,82 +1452,160 @@
    Beta Nu Cohort Data Survey
    ========================================================= */
 
+.data-survey-workspace {
+  box-sizing: border-box;
+  padding: 0 2px 12px;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(4, 29, 66, 0.72) 0%,
+      rgba(3, 25, 58, 0.9) 100%
+    );
+}
+
 .data-survey-instruction {
+  min-height: 50px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 8px;
-  padding: 8px 11px;
-  border: 1px solid #c69214;
-  border-left: 4px solid #0b1f3b;
-  border-radius: 4px;
-  background: #ffff00;
-  font-size: 11px;
-  line-height: 1.25;
+  padding: 7px 18px;
+  border: 2px solid #0b1f3b;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      180deg,
+      #fff700 0%,
+      #ffe900 48%,
+      #f4d900 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -2px 2px rgba(120, 91, 0, 0.16),
+    0 3px 8px rgba(0, 0, 0, 0.28);
+  line-height: 1.2;
+}
+
+.data-survey-instruction-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 2px solid #0b1f3b;
+  border-radius: 50%;
+  color: #0b1f3b;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.data-survey-calendar-icon {
+  width: 23px;
+  height: 23px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .data-survey-instruction strong {
   color: #0b1f3b;
+  font-size: 14px;
   font-weight: 900;
+  white-space: nowrap;
 }
 
-.data-survey-instruction > span {
-  color: #7f94a4;
+.data-survey-instruction-secondary {
+  color: #0b4f9c;
+  font-size: 12px;
+  font-style: italic;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .data-survey-key {
+  min-height: 42px;
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 10px;
+  gap: 28px;
+  margin: 0 0 8px 16px;
   color: #f8fafc;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .data-survey-key > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .data-survey-key strong {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   box-sizing: border-box;
   display: inline-grid;
   place-items: center;
-  border: 1px solid #64748b;
-  border-radius: 3px;
-  color: #111827;
-  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 5px;
+  color: #0b1f3b;
+  font-size: 14px;
   font-weight: 900;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .data-survey-key-preferred {
-  background: #00ff00;
+  background:
+    linear-gradient(
+      180deg,
+      #19ef68 0%,
+      #00cf51 100%
+    );
 }
 
 .data-survey-key-conflict {
   color: #ffffff !important;
-  background: #ff0000;
+  background:
+    linear-gradient(
+      180deg,
+      #ff2929 0%,
+      #e30000 100%
+    );
 }
 
 .data-survey-key-available {
-  background: #cfe2f3;
+  background:
+    linear-gradient(
+      180deg,
+      #edf7ff 0%,
+      #cfe2f3 100%
+    );
 }
 
 .data-survey-key-adjust {
-  background: #ff9900;
+  background:
+    linear-gradient(
+      180deg,
+      #ffb323 0%,
+      #ff9700 100%
+    );
 }
 
 .data-survey-table-frame {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid #7f8c9d;
-  border-radius: 4px;
+  overflow-y: hidden;
+  border: 1px solid #6f8ead;
+  border-radius: 11px;
   background: #ffffff;
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.24);
 }
 
 .data-survey-table {
@@ -1536,7 +1614,7 @@
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
-  color: #111827;
+  color: #0b1f3b;
   background: #ffffff;
   font-size: 11px;
 }
@@ -1545,41 +1623,84 @@
 .data-survey-table td {
   box-sizing: border-box;
   padding: 0;
-  border-right: 1px solid #8d99a8;
-  border-bottom: 1px solid #8d99a8;
+  border-right: 1px solid #a2b0bd;
+  border-bottom: 1px solid #a2b0bd;
   vertical-align: middle;
 }
 
-.data-survey-corner-column,
-.data-survey-name-header,
+.data-survey-name-super-header,
 .data-survey-holiday-label,
 .data-survey-name-column {
   position: sticky;
   left: 0;
-  width: 190px;
-  min-width: 190px;
-  max-width: 190px;
+  width: 235px;
+  min-width: 235px;
+  max-width: 235px;
   box-sizing: border-box;
-  border-right: 0 !important;
+  border-right: 2px solid var(--umass-navy) !important;
   background-clip: padding-box;
-  box-shadow:
-    inset -2px 0 0 var(--umass-navy);
 }
 
-.data-survey-corner-column,
-.data-survey-name-header,
-.data-survey-holiday-label {
-  z-index: 8;
+.data-survey-name-super-header {
+  z-index: 10;
+  height: 148px;
+  padding: 0 !important;
+  border-bottom: 2px solid var(--umass-navy) !important;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      135deg,
+      #0c3f76 0%,
+      #082e5c 46%,
+      #061f46 100%
+    );
+}
+
+.data-survey-name-super-content {
+  height: 105%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0 5px 14px;
+}
+
+.data-survey-name-super-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+.data-survey-people-icon {
+  width: 46px;
+  height: 46px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.data-survey-name-super-content > span:last-child {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .data-survey-name-column {
-  z-index: 3;
-  height: 28px;
-  padding: 4px 8px !important;
-  color: #111827;
+  z-index: 4;
+  height: 32px;
+  padding: 5px 14px !important;
+  color: #0b1f3b;
   background: #ffffff;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.1;
   text-align: left;
   white-space: nowrap;
@@ -1591,60 +1712,17 @@
   font-weight: 900;
 }
 
-.data-survey-term-row
-  .data-survey-corner-column {
-  background:
-    linear-gradient(
-      180deg,
-      #123f63 0%,
-      #082a46 100%
-    );
-}
-
-.data-survey-cohort-row
-  .data-survey-corner-column {
-  background: #cbddec;
-}
-
-.data-survey-week-row
-  .data-survey-corner-column {
-  background: #d9ead3;
-}
-
-.data-survey-name-header {
-  height: 30px;
-  padding: 5px 8px !important;
-  border-top: 2px solid var(--umass-navy) !important;
-  border-bottom: 2px solid var(--umass-navy) !important;
-  color: #111827;
-  background: #a97800;
-  font-size: 12px;
-  font-weight: 900;
-  line-height: 1.1;
-  text-align: left;
-  vertical-align: bottom !important;
-}
-
-.data-survey-name-heading-cell {
-  width: 88px;
-  min-width: 88px;
-  max-width: 88px;
-  height: 30px;
-  padding: 0 !important;
-  border-top: 2px solid var(--umass-navy) !important;
-  border-bottom: 2px solid var(--umass-navy) !important;
-  background: #a97800;
-}
-
 .data-survey-term-header {
-  height: 46px;
+  height: 56px;
   border-left: 2px solid var(--umass-navy) !important;
-  color: var(--umass-gold);
+  border-bottom: 0 !important;
+  color: #ffd200;
   background:
     linear-gradient(
       180deg,
-      #123f63 0%,
-      #082a46 100%
+      #0d447c 0%,
+      #0a3768 50%,
+      #072850 100%
     );
   text-align: center;
 }
@@ -1659,34 +1737,46 @@
 }
 
 .data-survey-term-header strong {
-  font-size: 16px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1.05;
 }
 
 .data-survey-term-header span {
-  margin-top: 3px;
-  color: #dbe5ef;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.05;
+  margin-top: 5px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .data-survey-cohort-header {
   height: 31px;
-  color: #0b1f3b;
+  border-top: 2px solid var(--umass-navy) !important;
+  border-bottom: 2px solid var(--umass-navy) !important;
+  color: #111827;
   font-size: 12px;
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1;
   text-align: center;
 }
 
 .data-survey-cohort-one {
-  background: #d9eaf7;
+  background:
+    linear-gradient(
+      180deg,
+      #f4f8fb 0%,
+      #e8f1f8 100%
+    );
 }
 
 .data-survey-cohort-two {
-  background: #bfd4e6;
+  background:
+    linear-gradient(
+      180deg,
+      #edf4f9 0%,
+      #dce9f3 100%
+    );
 }
 
 .data-survey-week-column,
@@ -1699,10 +1789,16 @@
 }
 
 .data-survey-week-column {
-  height: 27px;
+  height: 30px;
   padding: 3px !important;
+  border-bottom: 2px solid var(--umass-navy) !important;
   color: #111827;
-  background: #d9ead3;
+  background:
+    linear-gradient(
+      180deg,
+      #eff9f4 0%,
+      #dff1e8 100%
+    );
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -1711,10 +1807,16 @@
 
 .data-survey-date-column {
   position: relative;
-  height: 30px;
+  height: 31px;
   padding: 3px !important;
+  border-bottom: 2px solid var(--umass-navy) !important;
   color: #111827;
-  background: #fff4cc;
+  background:
+    linear-gradient(
+      180deg,
+      #fffaf0 0%,
+      #fff3d2 100%
+    );
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -1722,42 +1824,13 @@
 }
 
 .data-survey-date-holiday {
-  background: #ffff00;
-}
-
-.data-survey-holiday-label {
-  height: 40px;
-  padding: 4px 8px !important;
   color: #0b1f3b;
-  background: #fff4cc;
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 1.1;
-  text-align: left;
-}
-
-.data-survey-holiday-note-cell {
-  height: 40px;
-  padding: 3px 4px !important;
-  color: #334155;
-  background: #fffdf4;
-  font-size: 8px;
-  font-weight: 700;
-  line-height: 1.12;
-  text-align: center;
-  white-space: normal;
-  overflow: hidden;
-}
-
-.data-survey-holiday-note-cell > span {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.data-survey-holiday-row th {
-  border-top: 2px solid var(--umass-navy) !important;
+  background:
+    linear-gradient(
+      180deg,
+      #82f23c 0%,
+      #68dd2b 100%
+    );
 }
 
 .data-survey-cohort-start {
@@ -1769,13 +1842,13 @@
 }
 
 .data-survey-mark-cell {
-  height: 28px;
+  height: 32px;
   background: #ffffff;
 }
 
 .data-survey-mark-input {
   width: 100%;
-  height: 27px;
+  height: 31px;
   box-sizing: border-box;
   display: block;
   margin: 0;
@@ -1783,7 +1856,7 @@
   border: 0;
   border-radius: 0;
   outline: 0;
-  color: #111827;
+  color: #0b1f3b;
   background: #ffffff;
   font-family: inherit;
   font-size: 12px;
@@ -1801,18 +1874,18 @@
 }
 
 .data-survey-mark-empty {
-  color: #111827;
+  color: #0b1f3b;
   background: #ffffff;
 }
 
 .data-survey-mark-preferred {
   color: #0b1f3b;
-  background: #00ff00;
+  background: #00e85a;
 }
 
 .data-survey-mark-conflict {
   color: #ffffff;
-  background: #ff0000;
+  background: #ff1010;
 }
 
 .data-survey-mark-available {
@@ -1822,19 +1895,89 @@
 
 .data-survey-mark-adjust {
   color: #0b1f3b;
-  background: #ff9900;
+  background: #ff9f0a;
+}
+
+.data-survey-holiday-label {
+  z-index: 7;
+  height: 78px;
+  padding: 10px 14px !important;
+  border-top: 2px solid var(--umass-navy) !important;
+  color: #0b1f3b;
+  background: #fffef9;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: right !important;
+  vertical-align: top !important;
+}
+
+.data-survey-holiday-note-cell {
+  height: 78px;
+  padding: 8px 5px 6px !important;
+  border-top: 2px solid var(--umass-navy) !important;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.15;
+  text-align: center !important;
+  vertical-align: top !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.data-survey-holiday-note-cell-populated {
+  background: #fff4cc;
+}
+
+.data-survey-holiday-note-cell strong,
+.data-survey-holiday-note-cell span {
+  display: block;
+  color: #0b1f3b;
+  font-weight: 400;
+  text-align: center;
+}
+
+.data-survey-holiday-note-cell strong {
+  margin-bottom: 3px;
+  font-size: 10px;
+  line-height: 1.15;
+}
+
+.data-survey-holiday-note-cell span {
+  font-size: 10px;
+  line-height: 1.15;
 }
 
 .data-survey-holiday-footnote {
-  margin: 8px 0 0;
-  padding: 6px 9px;
-  border: 1px solid #d6bd73;
-  border-radius: 3px;
-  color: #475569;
-  background: #fff8d6;
-  font-size: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 14px 24px 10px;
+  border: 0;
+  color: #f8fafc;
+  background:
+    linear-gradient(
+      180deg,
+      #082e5c 0%,
+      #061f46 100%
+    );
+  font-size: 10px;
   font-style: italic;
   line-height: 1.3;
+}
+
+.data-survey-holiday-footnote > span {
+  color: #f8fafc;
+  font-weight: 500;
+}
+
+.data-survey-holiday-footnote > strong {
+  color: #f4c542;
+  font-weight: 700;
 }
 
 /* =========================================================
