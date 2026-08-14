@@ -205,12 +205,6 @@ type PurposeResearchVerticalAlign =
   | 'center'
   | 'bottom'
 
-type PurposeResearchFreezeMode =
-  | 'none'
-  | 'panes'
-  | 'top-row'
-  | 'first-column'
-
 interface PurposeResearchCellFormat {
   readonly fontFamily: string
   readonly fontSize: number
@@ -482,7 +476,7 @@ const purposeResearchColumns:
     },
     {
       field: 'memberName',
-      label: 'Your Name',
+      label: 'Name',
       defaultWidth: 190,
     },
     {
@@ -4486,9 +4480,6 @@ function CohortPurposeResearchPage({
   const [hiddenColumns, setHiddenColumns] =
     useState<readonly CohortPurposeResearchField[]>([])
 
-  const [freezeMode, setFreezeMode] =
-    useState<PurposeResearchFreezeMode>('none')
-
   const [contextMenu, setContextMenu] =
     useState<PurposeResearchContextMenuState | null>(
       null,
@@ -4531,7 +4522,9 @@ function CohortPurposeResearchPage({
     }
 
     const edgeThreshold = 48
-    const maximumScrollStep = 24
+    const maximumHorizontalScrollStep = 24
+    const maximumVerticalScrollStep = 22
+
     let animationFrameId = 0
 
     function trackRangePointer(
@@ -4541,6 +4534,23 @@ function CohortPurposeResearchPage({
         x: event.clientX,
         y: event.clientY,
       }
+    }
+
+    function calculatePositiveScrollStep(
+      distanceIntoEdge: number,
+      maximumScrollStep: number,
+    ): number {
+      return Math.max(
+        4,
+        Math.ceil(
+          (Math.min(
+            edgeThreshold,
+            Math.max(0, distanceIntoEdge),
+          ) /
+            edgeThreshold) *
+          maximumScrollStep,
+        ),
+      )
     }
 
     function continueRangeAutoScroll(): void {
@@ -4558,62 +4568,83 @@ function CohortPurposeResearchPage({
           tableFrame.getBoundingClientRect()
 
         let horizontalScrollStep = 0
+        let verticalScrollStep = 0
 
         if (
           pointerPosition.x >=
           frameBounds.right - edgeThreshold
         ) {
-          const edgeDistance = Math.min(
-            edgeThreshold,
-            Math.max(
-              0,
+          horizontalScrollStep =
+            calculatePositiveScrollStep(
               pointerPosition.x -
-                (frameBounds.right -
-                  edgeThreshold),
-            ),
-          )
-
-          horizontalScrollStep = Math.max(
-            4,
-            Math.ceil(
-              (edgeDistance / edgeThreshold) *
-                maximumScrollStep,
-            ),
-          )
+              (frameBounds.right -
+                edgeThreshold),
+              maximumHorizontalScrollStep,
+            )
         } else if (
           pointerPosition.x <=
           frameBounds.left + edgeThreshold
         ) {
-          const edgeDistance = Math.min(
-            edgeThreshold,
-            Math.max(
-              0,
+          horizontalScrollStep =
+            -calculatePositiveScrollStep(
               frameBounds.left +
-                edgeThreshold -
-                pointerPosition.x,
-            ),
-          )
-
-          horizontalScrollStep = -Math.max(
-            4,
-            Math.ceil(
-              (edgeDistance / edgeThreshold) *
-                maximumScrollStep,
-            ),
-          )
+              edgeThreshold -
+              pointerPosition.x,
+              maximumHorizontalScrollStep,
+            )
         }
 
-        if (horizontalScrollStep !== 0) {
+        if (
+          pointerPosition.y >=
+          frameBounds.bottom - edgeThreshold
+        ) {
+          verticalScrollStep =
+            calculatePositiveScrollStep(
+              pointerPosition.y -
+              (frameBounds.bottom -
+                edgeThreshold),
+              maximumVerticalScrollStep,
+            )
+        } else if (
+          pointerPosition.y <=
+          frameBounds.top + edgeThreshold
+        ) {
+          verticalScrollStep =
+            -calculatePositiveScrollStep(
+              frameBounds.top +
+              edgeThreshold -
+              pointerPosition.y,
+              maximumVerticalScrollStep,
+            )
+        }
+
+        if (
+          horizontalScrollStep !== 0 ||
+          verticalScrollStep !== 0
+        ) {
           const maximumScrollLeft =
             tableFrame.scrollWidth -
             tableFrame.clientWidth
+
+          const maximumScrollTop =
+            tableFrame.scrollHeight -
+            tableFrame.clientHeight
 
           tableFrame.scrollLeft = Math.max(
             0,
             Math.min(
               maximumScrollLeft,
               tableFrame.scrollLeft +
-                horizontalScrollStep,
+              horizontalScrollStep,
+            ),
+          )
+
+          tableFrame.scrollTop = Math.max(
+            0,
+            Math.min(
+              maximumScrollTop,
+              tableFrame.scrollTop +
+              verticalScrollStep,
             ),
           )
 
@@ -4673,7 +4704,7 @@ function CohortPurposeResearchPage({
                 (currentFocus) =>
                   currentFocus?.recordId ===
                     nextCell.recordId &&
-                  currentFocus.field ===
+                    currentFocus.field ===
                     nextCell.field
                     ? currentFocus
                     : nextCell,
@@ -4683,7 +4714,7 @@ function CohortPurposeResearchPage({
                 (currentCell) =>
                   currentCell?.recordId ===
                     nextCell.recordId &&
-                  currentCell.field ===
+                    currentCell.field ===
                     nextCell.field
                     ? currentCell
                     : nextCell,
@@ -4760,6 +4791,20 @@ function CohortPurposeResearchPage({
           column.defaultWidth),
       0,
     )
+
+  const developmentNoteColumnWidth =
+    columnWidths.developmentNote ??
+    purposeResearchColumns.find(
+      (column) =>
+        column.field === 'developmentNote',
+    )?.defaultWidth ??
+    170
+
+  const frozenNameColumnLeft =
+    46 +
+    (hiddenColumns.includes('developmentNote')
+      ? 0
+      : developmentNoteColumnWidth)
 
   function isPurposeResearchField(
     value: string,
@@ -4912,6 +4957,164 @@ function CohortPurposeResearchPage({
 
     setSelectionFocus(cell)
     setSelectedCell(cell)
+  }
+
+  function focusPurposeResearchCell(
+    cell: PurposeResearchSelectedCell,
+  ): void {
+    setSelectedCell(cell)
+    setSelectionAnchor(cell)
+    setSelectionFocus(cell)
+
+    window.requestAnimationFrame(() => {
+      const tableFrame =
+        purposeResearchTableFrameRef.current
+
+      if (tableFrame === null) {
+        return
+      }
+
+      const tableCells =
+        tableFrame.querySelectorAll<HTMLTableCellElement>(
+          'td[data-record-id][data-field]',
+        )
+
+      const targetCell = Array.from(
+        tableCells,
+      ).find(
+        (tableCell) =>
+          tableCell.dataset.recordId ===
+          cell.recordId &&
+          tableCell.dataset.field ===
+          cell.field,
+      )
+
+      if (!targetCell) {
+        return
+      }
+
+      targetCell.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+      })
+
+      tableFrame.focus({
+        preventScroll: true,
+      })
+    })
+  }
+
+  function movePurposeResearchSelection(
+    rowChange: number,
+    columnChange: number,
+  ): void {
+    const currentCell =
+      selectionFocus ?? selectedCell
+
+    if (currentCell === null) {
+      return
+    }
+
+    const currentRowIndex =
+      visibleRecords.findIndex(
+        (record) =>
+          record.id === currentCell.recordId,
+      )
+
+    const currentColumnIndex =
+      visibleColumns.findIndex(
+        (column) =>
+          column.field === currentCell.field,
+      )
+
+    if (
+      currentRowIndex < 0 ||
+      currentColumnIndex < 0
+    ) {
+      return
+    }
+
+    const nextRowIndex = Math.max(
+      0,
+      Math.min(
+        visibleRecords.length - 1,
+        currentRowIndex + rowChange,
+      ),
+    )
+
+    const nextColumnIndex = Math.max(
+      0,
+      Math.min(
+        visibleColumns.length - 1,
+        currentColumnIndex + columnChange,
+      ),
+    )
+
+    const nextRecord =
+      visibleRecords[nextRowIndex]
+
+    const nextColumn =
+      visibleColumns[nextColumnIndex]
+
+    if (
+      nextRecord === undefined ||
+      nextColumn === undefined
+    ) {
+      return
+    }
+
+    focusPurposeResearchCell({
+      recordId: nextRecord.id,
+      field: nextColumn.field,
+    })
+  }
+
+  function movePurposeResearchSelectionHome(): void {
+    const tableFrame =
+      purposeResearchTableFrameRef.current
+
+    if (tableFrame === null) {
+      return
+    }
+
+    tableFrame.scrollLeft = 0
+
+    const currentCell =
+      selectionFocus ?? selectedCell
+
+    if (currentCell === null) {
+      return
+    }
+
+    const currentRowIndex =
+      visibleRecords.findIndex(
+        (record) =>
+          record.id === currentCell.recordId,
+      )
+
+    const firstVisibleColumn =
+      visibleColumns[0]
+
+    if (
+      currentRowIndex < 0 ||
+      firstVisibleColumn === undefined
+    ) {
+      return
+    }
+
+    const currentRecord =
+      visibleRecords[currentRowIndex]
+
+    if (currentRecord === undefined) {
+      return
+    }
+
+    focusPurposeResearchCell({
+      recordId: currentRecord.id,
+      field: firstVisibleColumn.field,
+    })
+
+    tableFrame.scrollLeft = 0
   }
 
   function getCellKey(
@@ -5426,6 +5629,14 @@ function CohortPurposeResearchPage({
       field,
     )
 
+    const nameVerticalAlignment =
+      cellFormat.verticalAlign === 'top'
+        ? 'flex-start'
+        : cellFormat.verticalAlign ===
+          'center'
+          ? 'center'
+          : 'flex-end'
+
     if (field === 'memberName') {
       return (
         <td
@@ -5433,6 +5644,9 @@ function CohortPurposeResearchPage({
           className={cellClassName}
           data-record-id={record.id}
           data-field={field}
+          style={{
+            left: `${frozenNameColumnLeft}px`,
+          }}
           onPointerDown={(event) => {
             if (event.button !== 0) {
               return
@@ -5454,43 +5668,55 @@ function CohortPurposeResearchPage({
             )
           }}
         >
-          <select
-            className="purpose-research-name-select"
+          <div
+            className="purpose-research-name-select-shell"
             style={{
-              ...getCellStyle(
-                record.id,
-                field,
-              ),
               height: `${rowHeight}px`,
+              alignItems: nameVerticalAlignment,
+              backgroundColor:
+                cellFormat.fillColor,
             }}
-            value={record.memberName}
-            aria-label="Cohort member name"
-            onFocus={() =>
-              setSelectedCell({
-                recordId: record.id,
-                field,
-              })
-            }
-            onChange={(event) =>
-              onUpdateRecord(
-                record.id,
-                field,
-                event.target.value,
-              )
-            }
           >
-            <option value="">
-              Select member
-            </option>
-
-            {memberNames.map((name) => (
-              <option key={name} value={name}>
-                {name === 'Patrick J. Harris'
-                  ? 'Patrick J. Harris (Former)'
-                  : name}
+            <select
+              className="purpose-research-name-select"
+              style={{
+                ...getCellStyle(
+                  record.id,
+                  field,
+                ),
+                height: '32px',
+                minHeight: '32px',
+                backgroundColor: 'transparent',
+              }}
+              value={record.memberName}
+              aria-label="Cohort member name"
+              onFocus={() =>
+                setSelectedCell({
+                  recordId: record.id,
+                  field,
+                })
+              }
+              onChange={(event) =>
+                onUpdateRecord(
+                  record.id,
+                  field,
+                  event.target.value,
+                )
+              }
+            >
+              <option value="">
+                Select member
               </option>
-            ))}
-          </select>
+
+              {memberNames.map((name) => (
+                <option key={name} value={name}>
+                  {name === 'Patrick J. Harris'
+                    ? 'Patrick J. Harris (Former)'
+                    : name}
+                </option>
+              ))}
+            </select>
+          </div>
         </td>
       )
     }
@@ -5570,11 +5796,6 @@ function CohortPurposeResearchPage({
   const contextHasColumn =
     contextMenu?.field !== null &&
     contextMenu?.field !== undefined
-
-  const freezeClassName =
-    freezeMode === 'none'
-      ? ''
-      : ` purpose-research-freeze-${freezeMode}`
 
   return (
     <section
@@ -5863,8 +6084,8 @@ function CohortPurposeResearchPage({
           <button
             type="button"
             className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'top'
-                ? ' purpose-research-format-active'
-                : ''
+              ? ' purpose-research-format-active'
+              : ''
               }`}
             disabled={selectedCell === null}
             title="Top Align"
@@ -5886,8 +6107,8 @@ function CohortPurposeResearchPage({
           <button
             type="button"
             className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'center'
-                ? ' purpose-research-format-active'
-                : ''
+              ? ' purpose-research-format-active'
+              : ''
               }`}
             disabled={selectedCell === null}
             title="Center Align Vertically"
@@ -5909,8 +6130,8 @@ function CohortPurposeResearchPage({
           <button
             type="button"
             className={`purpose-research-alignment-button${selectedFormat.verticalAlign === 'bottom'
-                ? ' purpose-research-format-active'
-                : ''
+              ? ' purpose-research-format-active'
+              : ''
               }`}
             disabled={selectedCell === null}
             title="Bottom Align"
@@ -5934,8 +6155,8 @@ function CohortPurposeResearchPage({
           <button
             type="button"
             className={`purpose-research-alignment-button${selectedFormat.textAlign === 'left'
-                ? ' purpose-research-format-active'
-                : ''
+              ? ' purpose-research-format-active'
+              : ''
               }`}
             disabled={selectedCell === null}
             title="Align Left"
@@ -5957,8 +6178,8 @@ function CohortPurposeResearchPage({
           <button
             type="button"
             className={`purpose-research-alignment-button${selectedFormat.textAlign === 'center'
-                ? ' purpose-research-format-active'
-                : ''
+              ? ' purpose-research-format-active'
+              : ''
               }`}
             disabled={selectedCell === null}
             title="Center Align Horizontally"
@@ -5980,8 +6201,8 @@ function CohortPurposeResearchPage({
           <button
             type="button"
             className={`purpose-research-alignment-button${selectedFormat.textAlign === 'right'
-                ? ' purpose-research-format-active'
-                : ''
+              ? ' purpose-research-format-active'
+              : ''
               }`}
             disabled={selectedCell === null}
             title="Align Right"
@@ -6082,61 +6303,16 @@ function CohortPurposeResearchPage({
           >
             Merge &amp; Center
           </button>
-
-          <span className="purpose-research-toolbar-divider" />
-
-          <details className="purpose-research-freeze-menu">
-            <summary>Freeze Panes</summary>
-
-            <div>
-              <button
-                type="button"
-                onClick={() =>
-                  setFreezeMode('panes')
-                }
-              >
-                Freeze Panes
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setFreezeMode('none')
-                }
-              >
-                Unfreeze Panes
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setFreezeMode('top-row')
-                }
-              >
-                Freeze Top Row
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setFreezeMode(
-                    'first-column',
-                  )
-                }
-              >
-                Freeze First Column
-              </button>
-            </div>
-          </details>
         </div>
 
         <div
           ref={purposeResearchTableFrameRef}
-          className={`purpose-research-table-frame${freezeClassName}${
-            isRangeSelecting
-              ? ' purpose-research-range-selecting'
-              : ''
-          }`}
+          tabIndex={0}
+          aria-label="Purpose and Research spreadsheet"
+          className={`purpose-research-table-frame${isRangeSelecting
+            ? ' purpose-research-range-selecting'
+            : ''
+            }`}
           onPointerMove={(event) => {
             if (
               !isRangeSelecting ||
@@ -6183,6 +6359,83 @@ function CohortPurposeResearchPage({
               fieldValue,
             )
           }}
+          onKeyDownCapture={(event) => {
+            const eventTarget = event.target
+
+            const isCellEditor =
+              eventTarget instanceof HTMLTextAreaElement ||
+              eventTarget instanceof HTMLSelectElement
+
+            if (isCellEditor) {
+              if (
+                event.key === 'Tab' &&
+                !event.altKey &&
+                !event.ctrlKey &&
+                !event.metaKey
+              ) {
+                event.preventDefault()
+
+                eventTarget.blur()
+
+                purposeResearchTableFrameRef.current?.focus({
+                  preventScroll: true,
+                })
+              }
+
+              return
+            }
+
+            if (
+              event.altKey ||
+              event.ctrlKey ||
+              event.metaKey ||
+              event.shiftKey
+            ) {
+              return
+            }
+
+            switch (event.key) {
+              case 'ArrowLeft':
+                event.preventDefault()
+                movePurposeResearchSelection(
+                  0,
+                  -1,
+                )
+                break
+
+              case 'ArrowRight':
+                event.preventDefault()
+                movePurposeResearchSelection(
+                  0,
+                  1,
+                )
+                break
+
+              case 'ArrowUp':
+                event.preventDefault()
+                movePurposeResearchSelection(
+                  -1,
+                  0,
+                )
+                break
+
+              case 'ArrowDown':
+                event.preventDefault()
+                movePurposeResearchSelection(
+                  1,
+                  0,
+                )
+                break
+
+              case 'Home':
+                event.preventDefault()
+                movePurposeResearchSelectionHome()
+                break
+
+              default:
+                break
+            }
+          }}
           onScroll={() => setContextMenu(null)}
         >
           <table
@@ -6221,6 +6474,13 @@ function CohortPurposeResearchPage({
                     <th
                       key={column.field}
                       className={`purpose-research-column-header purpose-research-column-${column.field}`}
+                      style={
+                        column.field === 'memberName'
+                          ? {
+                            left: `${frozenNameColumnLeft}px`,
+                          }
+                          : undefined
+                      }
                       onContextMenu={(event) => {
                         event.preventDefault()
 
