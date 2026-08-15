@@ -316,6 +316,11 @@
   width: 100%;
 }
 
+.bnf-app table:not(.purpose-research-table) tbody td:focus {
+  outline: 2px solid var(--umass-blue);
+  outline-offset: -2px;
+}
+
 .dashboard-page-heading {
   min-height: 58px;
   box-sizing: border-box;
@@ -1978,6 +1983,569 @@
 .data-survey-holiday-footnote > strong {
   color: #f4c542;
   font-weight: 700;
+}
+
+/* =========================================================
+   Beta Nu Cohort TLSi Dates
+   ========================================================= */
+
+.tlsi-dates-panel {
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 5px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.tlsi-webinar-row {
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 9px 14px;
+  border-bottom: 2px solid var(--umass-navy);
+  background: #f4cccc;
+}
+
+.tlsi-webinar-row strong {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.tlsi-webinar-row a {
+  color: #005eb8;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: underline;
+}
+
+.tlsi-webinar-row a:hover {
+  color: #003f7d;
+}
+
+.tlsi-webinar-row a:focus-visible {
+  outline: 2px solid var(--umass-blue);
+  outline-offset: 2px;
+}
+
+.tlsi-table-frame {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tlsi-dates-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #111827;
+  background: #ffffff;
+}
+
+.tlsi-dates-table th,
+.tlsi-dates-table td {
+  box-sizing: border-box;
+  border: 1px solid #8d99a8;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tlsi-dates-table th {
+  height: 34px;
+  padding: 6px 10px;
+  border-bottom: 2px solid var(--umass-navy);
+  color: #111827;
+  background: #a97800;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.tlsi-dates-table th:first-child {
+  width: 31%;
+}
+
+.tlsi-dates-table th:last-child {
+  width: 69%;
+}
+
+.tlsi-dates-table td {
+  min-height: 34px;
+  padding: 7px 10px;
+  color: #111827;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.tlsi-dates-table td:first-child {
+  font-weight: 700;
+}
+
+.tlsi-subrow td:last-child {
+  padding-left: 34px;
+}
+
+.tlsi-subrow td:first-child {
+  background: #f8fafc;
+}
+
+/* =========================================================
+   Beta Nu Cohort Book List
+   ========================================================= */
+
+.book-list-source-panel {
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #7f8c9d;
+  border-left: 4px solid var(--umass-gold);
+  border-radius: 5px;
+  color: #f8fafc;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(11, 31, 59, 0.98),
+      rgba(3, 18, 36, 0.98)
+    );
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.2);
+}
+
+.book-list-source-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.book-list-source-heading > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.book-list-source-heading h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.book-list-source-heading > div > p:not(.book-list-source-folder) {
+  margin: 4px 0 0;
+  color: #dbe5ef;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.book-list-source-button {
+  min-height: 34px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border: 1px solid var(--umass-gold);
+  border-radius: 5px;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #f3cf62 0%,
+      #d7a91f 48%,
+      #c69214 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    0 2px 4px rgba(0, 0, 0, 0.28);
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.book-list-source-button:hover {
+  background:
+    linear-gradient(
+      180deg,
+      #ffe27a 0%,
+      #e5ba35 48%,
+      #ce9912 100%
+    );
+}
+
+.book-list-source-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.book-list-source-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 26px;
+  margin: 9px 0 0;
+  padding-left: 20px;
+  color: #f8fafc;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.book-list-source-steps li {
+  margin: 0;
+}
+
+.book-list-source-steps a {
+  color: #8fd3ff;
+  font-weight: 800;
+}
+
+.book-list-source-folder {
+  margin: 10px 0 0;
+  color: #f8fafc;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.book-list-source-folder a {
+  color: #ffd200;
+  font-weight: 800;
+}
+
+.book-list-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.book-list-search {
+  width: 470px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.book-list-search > span {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.book-list-search input {
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.book-list-search input:focus {
+  outline: 2px solid rgba(0, 94, 184, 0.4);
+  border-color: var(--umass-blue);
+}
+
+.book-list-add-button,
+.book-list-clear-search-button {
+  height: 36px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.book-list-add-button {
+  border: 1px solid #8f6810;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #f1c94f 0%,
+      #d7a91f 35%,
+      #c69214 70%,
+      #a87908 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -2px 2px rgba(71, 45, 0, 0.28),
+    0 3px 5px rgba(0, 0, 0, 0.3);
+}
+
+.book-list-add-button > span {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.book-list-add-button:hover {
+  border-color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffdd67 0%,
+      #e5b92e 35%,
+      #d39d17 70%,
+      #b6820b 100%
+    );
+}
+
+.book-list-clear-search-button {
+  border: 1px solid #94a3b8;
+  color: #0b1f3b;
+  background: #f8fafc;
+}
+
+.book-list-clear-search-button:hover:not(:disabled) {
+  background: #e7edf4;
+}
+
+.book-list-clear-search-button:disabled {
+  color: #94a3b8;
+  cursor: default;
+  opacity: 0.7;
+}
+
+.book-list-add-button:focus-visible,
+.book-list-clear-search-button:focus-visible {
+  outline: 2px solid var(--umass-gold);
+  outline-offset: 2px;
+}
+
+.book-list-count-card {
+  min-width: 112px;
+  height: 36px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid #8a6500;
+  border-radius: 5px;
+  color: #000000;
+  background:
+    linear-gradient(
+      180deg,
+      #fff76a 0%,
+      #ffd200 48%,
+      #e3ad00 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 2px 4px rgba(0, 0, 0, 0.24);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.book-list-count-card strong {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.book-list-visible-count {
+  min-width: 96px;
+  margin-left: 0;
+  border-color: #7f8c9d;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #eef2f6 100%
+    );
+}
+
+.book-list-table-panel {
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 5px;
+  background: #ffffff;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.18);
+}
+
+.book-list-table-heading {
+  min-height: 42px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-bottom: 1px solid #7f8c9d;
+  background: var(--umass-navy);
+}
+
+.book-list-table-heading h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.book-list-table-heading p {
+  margin: 3px 0 0;
+  color: #cbd5e1;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.book-list-table-frame {
+  width: 100%;
+  max-height: 590px;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.book-list-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  color: #111827;
+  background: #ffffff;
+  font-size: 10px;
+}
+
+.book-list-table th,
+.book-list-table td {
+  box-sizing: border-box;
+  border-right: 1px solid #8d99a8;
+  border-bottom: 1px solid #8d99a8;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.book-list-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 34px;
+  padding: 6px 7px;
+  border-bottom: 2px solid var(--umass-navy);
+  color: #111827;
+  background: #a97800;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: left;
+  vertical-align: bottom;
+}
+
+.book-list-table th:nth-child(1) {
+  width: 70px;
+}
+
+.book-list-table th:nth-child(2) {
+  width: 50px;
+}
+
+.book-list-table th:nth-child(3) {
+  width: 180px;
+}
+
+.book-list-table th:nth-child(4) {
+  width: 130px;
+}
+
+.book-list-table th:nth-child(5) {
+  width: 135px;
+}
+
+.book-list-table th:nth-child(6) {
+  width: 175px;
+}
+
+.book-list-table th:nth-child(7) {
+  width: 520px;
+}
+
+.book-list-table th:nth-child(8) {
+  width: 50px;
+}
+
+.book-list-table th:nth-child(9) {
+  width: 225px;
+}
+
+.book-list-table th:nth-child(10) {
+  width: 55px;
+}
+
+.book-list-table td {
+  height: 30px;
+  padding: 0;
+  background: #ffffff;
+}
+
+.book-list-cell-input {
+  width: 100%;
+  height: 29px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.book-list-product-title-input {
+  min-height: 29px;
+  height: auto;
+  max-height: 64px;
+  field-sizing: content;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.book-list-cell-input:hover {
+  background: #f8fafc;
+}
+
+.book-list-cell-input:focus {
+  position: relative;
+  z-index: 2;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px var(--umass-blue);
+}
+
+.book-list-empty-state {
+  height: 70px !important;
+  padding: 16px !important;
+  color: #64748b !important;
+  background: #f8fafc !important;
+  font-size: 11px;
+  font-style: italic;
+  text-align: center !important;
+  vertical-align: middle !important;
 }
 
 /* =========================================================

@@ -136,6 +136,50 @@ interface CohortAttendancePageProps {
   ) => void
 }
 
+type CohortDataSurveyMark =
+  | ''
+  | 'P'
+  | 'C'
+  | 'A'
+  | 'I'
+
+type CohortDataSurveyState =
+  Record<string, CohortDataSurveyMark>
+
+interface CohortDataSurveyTerm {
+  readonly id: string
+  readonly label: string
+  readonly window: string
+}
+
+interface CohortDataSurveyDateOption {
+  readonly id: string
+  readonly termId: string
+  readonly cohort: 'Cohort 1' | 'Cohort 2'
+  readonly week:
+  | 'Week 3'
+  | 'Week 4'
+  | 'Week 6'
+  | 'Week 7'
+  readonly dateLabel: string
+  readonly holidayNote?: string
+}
+
+interface CohortDataSurveyParticipantSeed {
+  readonly id: string
+  readonly name: string
+  readonly marks: readonly CohortDataSurveyMark[]
+}
+
+interface CohortDataSurveyPageProps {
+  readonly survey: CohortDataSurveyState
+  readonly onUpdateSurvey: (
+    participantId: string,
+    dateId: string,
+    mark: CohortDataSurveyMark,
+  ) => void
+}
+
 type CohortProgramYear = 'Year 1' | 'Year 2'
 
 type CohortMeetingRoleField =
@@ -564,6 +608,292 @@ const defaultPurposeResearchCellFormat:
   indentLevel: 0,
   listStyle: 'none',
   wrapText: true,
+}
+
+type PurposeResearchCellFormatState = Partial<
+  Record<string, PurposeResearchCellFormat>
+>
+
+type PurposeResearchColumnWidthState = Partial<
+  Record<CohortPurposeResearchField, number>
+>
+
+type PurposeResearchRowHeightState = Partial<
+  Record<string, number>
+>
+
+const PURPOSE_RESEARCH_RECORDS_STORAGE_KEY =
+  'beta-nu-purpose-research-records-v1'
+
+const PURPOSE_RESEARCH_CELL_FORMATS_STORAGE_KEY =
+  'beta-nu-purpose-research-cell-formats-v1'
+
+const PURPOSE_RESEARCH_COLUMN_WIDTHS_STORAGE_KEY =
+  'beta-nu-purpose-research-column-widths-v1'
+
+const PURPOSE_RESEARCH_ROW_HEIGHTS_STORAGE_KEY =
+  'beta-nu-purpose-research-row-heights-v1'
+
+const PURPOSE_RESEARCH_HIDDEN_COLUMNS_STORAGE_KEY =
+  'beta-nu-purpose-research-hidden-columns-v1'
+
+function isPurposeResearchStorageRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isStoredPurposeResearchField(
+  value: string,
+): value is CohortPurposeResearchField {
+  return purposeResearchColumns.some(
+    (column) => column.field === value,
+  )
+}
+
+function isStoredPurposeResearchRecord(
+  value: unknown,
+): value is CohortPurposeResearchRecord {
+  if (!isPurposeResearchStorageRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.developmentNote === 'string' &&
+    typeof value.memberName === 'string' &&
+    typeof value.purposeStatement === 'string' &&
+    typeof value.researchQuestion1 === 'string' &&
+    typeof value.researchQuestion2 === 'string' &&
+    typeof value.researchQuestion3 === 'string' &&
+    typeof value.researchQuestion4 === 'string' &&
+    typeof value.researchQuestion5 === 'string' &&
+    typeof value.cmoThoughts === 'string' &&
+    typeof value.additionalResearchNotes === 'string'
+  )
+}
+
+function readStoredPurposeResearchRecords():
+  readonly CohortPurposeResearchRecord[] {
+  const storedValue = window.localStorage.getItem(
+    PURPOSE_RESEARCH_RECORDS_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return purposeResearchSeed
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every(
+        isStoredPurposeResearchRecord,
+      )
+    ) {
+      return purposeResearchSeed
+    }
+
+    return parsedValue
+  } catch {
+    return purposeResearchSeed
+  }
+}
+
+function isStoredPurposeResearchCellFormat(
+  value: unknown,
+): value is PurposeResearchCellFormat {
+  if (!isPurposeResearchStorageRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.fontFamily === 'string' &&
+    typeof value.fontSize === 'number' &&
+    Number.isFinite(value.fontSize) &&
+    typeof value.bold === 'boolean' &&
+    typeof value.italic === 'boolean' &&
+    typeof value.underline === 'boolean' &&
+    typeof value.bordered === 'boolean' &&
+    typeof value.fillColor === 'string' &&
+    typeof value.fontColor === 'string' &&
+    (
+      value.textAlign === 'left' ||
+      value.textAlign === 'center' ||
+      value.textAlign === 'right' ||
+      value.textAlign === 'justify'
+    ) &&
+    (
+      value.verticalAlign === 'top' ||
+      value.verticalAlign === 'center' ||
+      value.verticalAlign === 'bottom'
+    ) &&
+    typeof value.indentLevel === 'number' &&
+    Number.isFinite(value.indentLevel) &&
+    (
+      value.listStyle === 'none' ||
+      value.listStyle === 'bulleted' ||
+      value.listStyle === 'numbered'
+    ) &&
+    typeof value.wrapText === 'boolean'
+  )
+}
+
+function readStoredPurposeResearchCellFormats():
+  PurposeResearchCellFormatState {
+  const storedValue = window.localStorage.getItem(
+    PURPOSE_RESEARCH_CELL_FORMATS_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (!isPurposeResearchStorageRecord(parsedValue)) {
+      return {}
+    }
+
+    const formats: PurposeResearchCellFormatState = {}
+
+    for (
+      const [cellKey, formatValue]
+      of Object.entries(parsedValue)
+    ) {
+      if (
+        isStoredPurposeResearchCellFormat(
+          formatValue,
+        )
+      ) {
+        formats[cellKey] = formatValue
+      }
+    }
+
+    return formats
+  } catch {
+    return {}
+  }
+}
+
+function readStoredPurposeResearchColumnWidths():
+  PurposeResearchColumnWidthState {
+  const storedValue = window.localStorage.getItem(
+    PURPOSE_RESEARCH_COLUMN_WIDTHS_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (!isPurposeResearchStorageRecord(parsedValue)) {
+      return {}
+    }
+
+    const widths: PurposeResearchColumnWidthState = {}
+
+    for (const column of purposeResearchColumns) {
+      const width = parsedValue[column.field]
+
+      if (
+        typeof width === 'number' &&
+        Number.isFinite(width) &&
+        width >= 80 &&
+        width <= 800
+      ) {
+        widths[column.field] = width
+      }
+    }
+
+    return widths
+  } catch {
+    return {}
+  }
+}
+
+function readStoredPurposeResearchRowHeights():
+  PurposeResearchRowHeightState {
+  const storedValue = window.localStorage.getItem(
+    PURPOSE_RESEARCH_ROW_HEIGHTS_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (!isPurposeResearchStorageRecord(parsedValue)) {
+      return {}
+    }
+
+    const heights: PurposeResearchRowHeightState = {}
+
+    for (
+      const [recordId, height]
+      of Object.entries(parsedValue)
+    ) {
+      if (
+        typeof height === 'number' &&
+        Number.isFinite(height) &&
+        height >= 42 &&
+        height <= 600
+      ) {
+        heights[recordId] = height
+      }
+    }
+
+    return heights
+  } catch {
+    return {}
+  }
+}
+
+function readStoredPurposeResearchHiddenColumns():
+  readonly CohortPurposeResearchField[] {
+  const storedValue = window.localStorage.getItem(
+    PURPOSE_RESEARCH_HIDDEN_COLUMNS_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return []
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (!Array.isArray(parsedValue)) {
+      return []
+    }
+
+    const hiddenColumns:
+      CohortPurposeResearchField[] = []
+
+    for (const value of parsedValue) {
+      if (
+        typeof value === 'string' &&
+        isStoredPurposeResearchField(value) &&
+        !hiddenColumns.includes(value)
+      ) {
+        hiddenColumns.push(value)
+      }
+    }
+
+    return hiddenColumns
+  } catch {
+    return []
+  }
 }
 
 const COHORT_YEAR_TWO_START_DATE = '2026-08-24'
@@ -1115,12 +1445,749 @@ function createCohortAttendanceSeed(): CohortAttendanceState {
 
 const cohortAttendanceSeed = createCohortAttendanceSeed()
 
+const dataSurveyTerms:
+  readonly CohortDataSurveyTerm[] = [
+    {
+      id: 'fall-1',
+      label: 'Fall 1',
+      window: 'Aug 31 - Oct 25',
+    },
+    {
+      id: 'fall-2',
+      label: 'Fall 2',
+      window: 'Oct 26 - Dec 20',
+    },
+    {
+      id: 'spring-1',
+      label: 'Spring 1',
+      window: 'Jan 4 - Feb 28',
+    },
+    {
+      id: 'spring-2',
+      label: 'Spring 2',
+      window: 'March 1 - April 25',
+    },
+    {
+      id: 'summer-1',
+      label: 'Summer 1',
+      window: 'April 26 - June 20',
+    },
+    {
+      id: 'summer-2',
+      label: 'Summer 2',
+      window: 'June 21 - Aug 15',
+    },
+  ]
+
+const dataSurveyDateOptions:
+  readonly CohortDataSurveyDateOption[] = [
+    {
+      id: '09-20',
+      termId: 'fall-1',
+      cohort: 'Cohort 1',
+      week: 'Week 3',
+      dateLabel: '9/20',
+    },
+    {
+      id: '09-27',
+      termId: 'fall-1',
+      cohort: 'Cohort 1',
+      week: 'Week 4',
+      dateLabel: '9/27',
+    },
+    {
+      id: '10-11',
+      termId: 'fall-1',
+      cohort: 'Cohort 2',
+      week: 'Week 6',
+      dateLabel: '10/11',
+      holidayNote: '12th Columbus Day',
+    },
+    {
+      id: '10-18',
+      termId: 'fall-1',
+      cohort: 'Cohort 2',
+      week: 'Week 7',
+      dateLabel: '10/18',
+    },
+    {
+      id: '11-15',
+      termId: 'fall-2',
+      cohort: 'Cohort 1',
+      week: 'Week 3',
+      dateLabel: '11/15',
+      holidayNote: '11th Veterans Day',
+    },
+    {
+      id: '11-22',
+      termId: 'fall-2',
+      cohort: 'Cohort 1',
+      week: 'Week 4',
+      dateLabel: '11/22',
+      holidayNote: '26th Thanksgiving',
+    },
+    {
+      id: '12-06',
+      termId: 'fall-2',
+      cohort: 'Cohort 2',
+      week: 'Week 6',
+      dateLabel: '12/6',
+    },
+    {
+      id: '12-13',
+      termId: 'fall-2',
+      cohort: 'Cohort 2',
+      week: 'Week 7',
+      dateLabel: '12/13',
+    },
+    {
+      id: '01-24',
+      termId: 'spring-1',
+      cohort: 'Cohort 1',
+      week: 'Week 3',
+      dateLabel: '1/24',
+      holidayNote: "22nd Lailat al Bara'a",
+    },
+    {
+      id: '01-31',
+      termId: 'spring-1',
+      cohort: 'Cohort 1',
+      week: 'Week 4',
+      dateLabel: '1/31',
+    },
+    {
+      id: '02-14',
+      termId: 'spring-1',
+      cohort: 'Cohort 2',
+      week: 'Week 6',
+      dateLabel: '2/14',
+      holidayNote: "15th Presidents' Day",
+    },
+    {
+      id: '02-21',
+      termId: 'spring-1',
+      cohort: 'Cohort 2',
+      week: 'Week 7',
+      dateLabel: '2/21',
+    },
+    {
+      id: '03-21',
+      termId: 'spring-2',
+      cohort: 'Cohort 1',
+      week: 'Week 3',
+      dateLabel: '3/21',
+    },
+    {
+      id: '03-28',
+      termId: 'spring-2',
+      cohort: 'Cohort 1',
+      week: 'Week 4',
+      dateLabel: '3/28',
+      holidayNote:
+        '28th Easter & 31st Farm Workers/C. Chavez Day',
+    },
+    {
+      id: '04-11',
+      termId: 'spring-2',
+      cohort: 'Cohort 2',
+      week: 'Week 6',
+      dateLabel: '4/11',
+    },
+    {
+      id: '04-18',
+      termId: 'spring-2',
+      cohort: 'Cohort 2',
+      week: 'Week 7',
+      dateLabel: '4/18',
+    },
+    {
+      id: '05-16',
+      termId: 'summer-1',
+      cohort: 'Cohort 1',
+      week: 'Week 3',
+      dateLabel: '5/28',
+      holidayNote: 'Eid-al-Adha',
+    },
+    {
+      id: '05-23',
+      termId: 'summer-1',
+      cohort: 'Cohort 1',
+      week: 'Week 4',
+      dateLabel: '5/23',
+    },
+    {
+      id: '06-06',
+      termId: 'summer-1',
+      cohort: 'Cohort 2',
+      week: 'Week 6',
+      dateLabel: '6/6',
+      holidayNote: '6th Muharram',
+    },
+    {
+      id: '06-13',
+      termId: 'summer-1',
+      cohort: 'Cohort 2',
+      week: 'Week 7',
+      dateLabel: '6/13',
+    },
+    {
+      id: '07-11',
+      termId: 'summer-2',
+      cohort: 'Cohort 1',
+      week: 'Week 3',
+      dateLabel: '7/11',
+    },
+    {
+      id: '07-18',
+      termId: 'summer-2',
+      cohort: 'Cohort 1',
+      week: 'Week 4',
+      dateLabel: '7/18',
+    },
+    {
+      id: '08-01',
+      termId: 'summer-2',
+      cohort: 'Cohort 2',
+      week: 'Week 6',
+      dateLabel: '8/1',
+    },
+    {
+      id: '08-08',
+      termId: 'summer-2',
+      cohort: 'Cohort 2',
+      week: 'Week 7',
+      dateLabel: '8/8',
+    },
+  ]
+
+const dataSurveyParticipantSeed:
+  readonly CohortDataSurveyParticipantSeed[] = [
+    {
+      id: 'data-survey-participant-6',
+      name: 'Dr. CMO',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'C', 'A',
+        'A', 'A', 'I', 'A',
+        'A', 'A', 'A', 'A',
+        'I', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-7',
+      name: 'Patrick J. Harris',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'A', 'C', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-8',
+      name: 'Elanis Cruz',
+      marks: [
+        'A', 'I', 'C', 'A',
+        'A', 'C', 'A', 'C',
+        'A', 'I', 'C', 'A',
+        'A', 'C', 'A', 'A',
+        'C', 'A', 'C', 'A',
+        'A', 'A', 'A', 'C',
+      ],
+    },
+    {
+      id: 'data-survey-participant-9',
+      name: 'Sergiy Bryk',
+      marks: [
+        'A', 'A', 'C', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'A', 'C', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', '',
+      ],
+    },
+    {
+      id: 'data-survey-participant-10',
+      name: 'Jessica Leon',
+      marks: [
+        'A', 'I', 'A', 'A',
+        'A', 'C', 'C', 'A',
+        'A', 'A', 'C', 'A',
+        '', '', '', '',
+        '', '', '', '',
+        '', '', '', '',
+      ],
+    },
+    {
+      id: 'data-survey-participant-11',
+      name: 'Reynaldo Dulaney',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-12',
+      name: 'Jessica Jackson',
+      marks: [
+        'A', 'A', 'I', 'A',
+        'A', 'I', 'A', 'A',
+        'C', 'A', 'I', 'A',
+        'A', '', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-13',
+      name: 'Celia Cipres',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'C', 'I', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-14',
+      name: 'Chris Mound',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-15',
+      name: 'Monica Romero',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'C', 'C',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-16',
+      name: 'Asa Jones-McGhee',
+      marks: [
+        'C', 'C', 'C', 'C',
+        'C', 'C', 'C', 'C',
+        'C', 'C', 'C', 'C',
+        'C', 'C', 'C', 'C',
+        'C', 'C', 'C', 'C',
+        'C', 'C', 'C', 'C',
+      ],
+    },
+    {
+      id: 'data-survey-participant-17',
+      name: 'Tracy Rico',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-18',
+      name: 'Victoria Vildosola',
+      marks: [
+        'A', 'A', 'A', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'A', 'A', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'C', 'A', 'A',
+        'A', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-19',
+      name: 'Bashiyra Windley',
+      marks: [
+        'A', 'P', '', 'C',
+        'P', 'A', 'A', 'A',
+        'A', 'A', 'C', 'P',
+        'A', 'C', 'A', 'C',
+        'A', 'A', 'A', 'A',
+        'P', 'A', 'A', 'A',
+      ],
+    },
+    {
+      id: 'data-survey-participant-20',
+      name: 'Trevor Desouza',
+      marks: [
+        '', '', '', '',
+        '', '', '', '',
+        '', '', '', '',
+        '', '', '', '',
+        '', '', '', '',
+        '', '', '', '',
+      ],
+    },
+  ]
+
+const dataSurveyParticipantDisplayOrder:
+  readonly string[] = [
+    'data-survey-participant-6',
+    'data-survey-participant-16',
+    'data-survey-participant-19',
+    'data-survey-participant-13',
+    'data-survey-participant-14',
+    'data-survey-participant-8',
+    'data-survey-participant-12',
+    'data-survey-participant-10',
+    'data-survey-participant-15',
+    'data-survey-participant-11',
+    'data-survey-participant-9',
+    'data-survey-participant-17',
+    'data-survey-participant-20',
+    'data-survey-participant-18',
+  ]
+
+const DATA_SURVEY_STORAGE_KEY =
+  'beta-nu-data-survey-v1'
+
+const dataSurveyHolidayGeneralNote = {
+  primary:
+    "* Note: If somebody has disclosed devote religious following to me, I have attmepted to identify those holy holidays, along with the federal and state holidays, near proposed dates.",
+  emphasis:
+    "If I missed your holy holidays, my apologies, please feel free to add them to help educate us. :)",
+} as const
+
+function getCohortDataSurveyKey(
+  participantId: string,
+  dateId: string,
+): string {
+  return `${participantId}::${dateId}`
+}
+
+function createCohortDataSurveySeed():
+  CohortDataSurveyState {
+  const survey: CohortDataSurveyState = {}
+
+  for (const participant of dataSurveyParticipantSeed) {
+    dataSurveyDateOptions.forEach(
+      (dateOption, dateIndex) => {
+        survey[
+          getCohortDataSurveyKey(
+            participant.id,
+            dateOption.id,
+          )
+        ] = participant.marks[dateIndex] ?? ''
+      },
+    )
+  }
+
+  return survey
+}
+
+const cohortDataSurveySeed =
+  createCohortDataSurveySeed()
+
+function isCohortDataSurveyMark(
+  value: unknown,
+): value is CohortDataSurveyMark {
+  return (
+    value === '' ||
+    value === 'P' ||
+    value === 'C' ||
+    value === 'A' ||
+    value === 'I'
+  )
+}
+
+function normalizeCohortDataSurveyMark(
+  value: string,
+): CohortDataSurveyMark {
+  const normalizedValue =
+    value.trim().toUpperCase()
+
+  if (
+    normalizedValue === 'P' ||
+    normalizedValue === 'C' ||
+    normalizedValue === 'A' ||
+    normalizedValue === 'I'
+  ) {
+    return normalizedValue
+  }
+
+  return ''
+}
+
+function readStoredCohortDataSurvey():
+  CohortDataSurveyState {
+  const storedValue = window.localStorage.getItem(
+    DATA_SURVEY_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return cohortDataSurveySeed
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      typeof parsedValue !== 'object' ||
+      parsedValue === null
+    ) {
+      return cohortDataSurveySeed
+    }
+
+    const storedSurvey: CohortDataSurveyState = {
+      ...cohortDataSurveySeed,
+    }
+
+    for (
+      const [surveyKey, surveyValue]
+      of Object.entries(parsedValue)
+    ) {
+      if (isCohortDataSurveyMark(surveyValue)) {
+        storedSurvey[surveyKey] = surveyValue
+      }
+    }
+
+    return storedSurvey
+  } catch {
+    return cohortDataSurveySeed
+  }
+}
+
+interface CohortBookRecord {
+  readonly id: string
+  readonly course: string
+  readonly school: string
+  readonly courseTitle: string
+  readonly studentNotes: string
+  readonly isbn: string
+  readonly author: string
+  readonly productTitle: string
+  readonly edition: string
+  readonly publisher: string
+  readonly year: string
+}
+
+type CohortBookField = Exclude<
+  keyof CohortBookRecord,
+  'id'
+>
+
+const COHORT_BOOK_LIST_STORAGE_KEY =
+  'beta-nu-book-list-v1'
+
+const cohortBookListSeedSource = `EDDP-700	SOE	Transformational Leadership	N/A	9781422117347	McKee	Becoming a Resonant Leader	NA	Harvard Business Review Press	2008
+EDDP-700	SOE	Transformational Leadership	N/A	9780470648087	Anderson	Beyond Change Management: How To Achieve Breakthrough Results Through Conscious Change Leadership	2nd	Pfeiffer - Wiley	2010
+EDDP-700	SOE	Transformational Leadership	N/A	9780974320625	Bradberry	Emotional Intelligence 2.0	NA	Talent Smart	2009
+EDDP-700	SOE	Transformational Leadership	N/A	9781523002023	Brown	How to Be an Inclusive Leader: Your Role in Creating Cultures of Belonging Where Everyone Can Thrive	2nd	Berrett-Koehler Publishers	2022
+EDDP-700	SOE	Transformational Leadership	N/A	9780470648063	Anderson	The Change Leader's Roadmap: How to Navigate Your Organization's Transformation	2nd	Pfeiffer - Wiley	2010
+EDDP-706	SOE	Team and Group Dynamics	N/A	9780358533382	Burkus	Leading From Anywhere	1st	Mariner Books	2021
+EDDP-706	SOE	Team and Group Dynamics	N/A	9780470648063	Anderson	The Change Leader's Roadmap: How to Navigate Your Organization's Transformation	2nd	Pfeiffer - Wiley	2010
+EDDP-706	SOE	Team and Group Dynamics	N/A	9780470893869	Lencioni	The Five Dysfunctions of a Team: A Leadership Fable	1st	Wiley	2010
+EDDP-706	SOE	Team and Group Dynamics	N/A	9781475863192	Harvey	The Practical Decision Maker: A Handbook for Decision Making and Problem Solving	2nd	Rowman & Littlefield	2023
+EDDP-706	SOE	Team and Group Dynamics	N/A	9781119064398	Schwarz	The Skilled Facilitator: A Comprehensive Resource for Consultants, Facilitators, Coaches, and Trainers	3rd	Jossey-Bass	2017
+EDDP-707	SOE	Org Theory and Development	N/A	9781401967604	Crowley	Lead From The Heart: Transformational Leadership For The 21st Century	2nd	Hay House, Inc.	2022
+EDDP-707	SOE	Org Theory and Development	N/A	9781475857917	Bartels & Jackson	Meaning-Centered Leadership: Skills and Strategies for Increased Employee Well-Being and Organizational Success	1st	Rowman & Littlefield	2021
+EDDP-707	SOE	Org Theory and Development	N/A	9780470648063	Anderson	The Change Leader's Roadmap: How to Navigate Your Organization's Transformation	2nd	Pfeiffer - Wiley	2010
+EDDP-707	SOE	Org Theory and Development	N/A	9780988953802	Hammond	The Thin Book of Appreciative Inquiry	3rd	Thin Book Publishing	2013
+EDDP-708	SOE	Strategic Thinking	N/A	9780470648087	Anderson	Beyond Change Management: How to Achieve Breakthrough Results Through Conscious Change Leadership	2nd	Pfeiffer - Wiley	2010
+EDDP-708	SOE	Strategic Thinking	N/A	9781633696938	HBR	HBR Guide to Thinking Strategically	1st	Harvard Business Review Press	2019
+EDDP-708	SOE	Strategic Thinking	N/A	9780385516808	Senge	Presence: An Exploration of Profound Change in People, Organizations, and Society	1st	Crown Business	2004
+EDDP-708	SOE	Strategic Thinking	N/A	9780787908256	Howe	The Board Member's Guide to Strategic Planning: A Practical Approach to Strengthening Nonprofit Organizations	1st	Jossey-Bass	1997
+EDDP-709	SOE	Assess, Eval, Accountability	N/A	9780470873540	Boulmetis & Dutwin	The ABCs of Evaluation: Timeless Techniques for Program and Project Managers	3rd	Jossey-Bass	2011
+EDDP-740	SOE	Writing for Research and Publication I	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDDP-740	SOE	Writing for Research and Publication I	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDDP-741	SOE	Writing for Research and Publication II	N/A	9781936523399	Pan	Preparing Literature Reviews: Qualitative and Quantitative Approaches	5th	Routledge	2017
+EDDP-741	SOE	Writing for Research and Publication II	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDDP-741	SOE	Writing for Research and Publication II	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDDP-742	SOE	Quantitative Research Methods	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2009
+EDDP-742	SOE	Quantitative Research Methods	N/A	9781544381855	Salkind	Statistics for People Who (Think They) Hate Statistics	7th	Sage Publications	2020
+EDDP-742	SOE	Quantitative Research Methods	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2017
+EDDP-743	SOE	Qualitative Research Methods	N/A	9781544333809	Ravitch & Carl	Qualitative Research: Bridging the Conceptual, Theoretical, and Methodological	2nd	Sage Publications	2021
+EDDP-743	SOE	Qualitative Research Methods	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2009
+EDDP-781	SOE	Developing the Dissertation, Chapter I	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDDP-781	SOE	Developing the Dissertation, Chapter I	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2009
+EDDP-781	SOE	Developing the Dissertation, Chapter I	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2017
+EDDP-799	SOE	Dissertation Extension	N/A	NT	NT	No Text Required	NT	No Text Required	NT
+EDOL-705	SOE	Org Com & Conflict Mgmt	N/A	9781473674981	Kimsey-House et al	Co-Active Coaching: The Proven Framework for Transformative Conversations at Work and in Life	4th	Nicholas Brealey Publishing	2018
+EDOL-705	SOE	Org Com & Conflict Mgmt	N/A	9781260474183	Patterson	Crucial Conversations: Tools for Talking When Stakes are High	3rd	McGraw Hill	2022
+EDOL-705	SOE	Org Com & Conflict Mgmt	N/A	9780470548677	Denning	The Leaders Guide to Storytelling: Mastering the Art and Discipline of the Business Narrative	2nd	Jossey-Bass	2011
+EDOL-707	SOE	Org Theory and Development	N/A	9781401967604	Crowley	Lead From The Heart: Transformational Leadership For The 21st Century	2nd	Hay House, Inc.	2022
+EDOL-707	SOE	Org Theory and Development	N/A	9781475857917	Bartels & Jackson	Meaning-Centered Leadership: Skills and Strategies for Increased Employee Well-Being and Organizational Success	1st	Rowman & Littlefield	2021
+EDOL-707	SOE	Org Theory and Development	N/A	9780470648063	Anderson	The Change Leader's Roadmap: How to Navigate Your Organization's Transformation	2nd	Pfeiffer - Wiley	2010
+EDOL-707	SOE	Org Theory and Development	N/A	9780988953802	Hammond	The Thin Book of Appreciative Inquiry	3rd	Thin Book Publishing	2013
+EDOL-708	SOE	Strategic Thinking	N/A	9780470648087	Anderson	Beyond Change Management: How to Achieve Breakthrough Results Through Conscious Change Leadership	2nd	Pfeiffer - Wiley	2010
+EDOL-708	SOE	Strategic Thinking	N/A	9781633696938	HBR	HBR Guide to Thinking Strategically	1st	Harvard Business Review Press	2019
+EDOL-708	SOE	Strategic Thinking	N/A	9780385516808	Senge	Presence: An Exploration of Profound Change in People, Organizations, and Society	1st	Crown Business	2004
+EDOL-709	SOE	Assess, Eval, Accountability	N/A	9780470873540	Boulmetis & Dutwin	The ABCs of Evaluation: Timeless Techniques for Program and Project Managers	3rd	Jossey-Bass	2011
+EDOL-720	SOE	Creativity Innov & Sust Chnge	N/A	9781118002902	Owens	Creative People Must Be Stopped: 6 Ways We Kill Innovation (Without Even Trying)	1st	Jossey-Bass	2011
+EDOL-720	SOE	Creativity Innov & Sust Chnge	N/A	9780761169253	Kleon	Steal Like an Artist: 10 Things Nobody Told You About Being Creative	1st	Workman Publishing Company	2012
+EDOL-721	SOE	Ethics & Polt of Decn Making	N/A	9781422121061	Howard	Ethics for the Real World: Creating a Personal Code to Guide Decisions in Work and Life	1st	Harvard Business Review Press	2008
+EDOL-721	SOE	Ethics & Polt of Decn Making	N/A	9780313379765	Fairholm	Organizational Power Politics: Tactics in Organizational Leadership	2nd	ABC-CLIO	2009
+EDOL-721	SOE	Ethics & Polt of Decn Making	N/A	9781475828597	White	The Politically Intelligent Leader: Dealing with the Dilemmas of a High-Stakes Educational Environment	2nd	Rowman & Littlefield	2016
+EDOL-721	SOE	Ethics & Polt of Decn Making	N/A	9781475863185	Harvey	The Practical Decision Maker: A Handbook for Decision Making and Problem Solving	2nd	Rowman & Littlefield	2022
+EDOL-721	SOE	Ethics & Polt of Decn Making	Choose One of the Following:	9781119886112	George	True North, Emerging Leader Edition: Leading Authentically in Today's Workplace	3rd	Wiley	2022
+EDOL-721	SOE	Ethics & Polt of Decn Making	Choose One of the Following:	9780071808866	Patterson	Influencer: The Power to Change Anything	2nd	McGraw Hill	2014
+EDOL-721	SOE	Ethics & Polt of Decn Making	Choose One of the Following:	9781578514373	Linsky	Leadership on the Line: Staying Alive through the Dangers of Leading	1st	Harvard Business Review Press	2002
+EDOL-722	SOE	Div & Intrcltrl Asp of Lead	N/A	9781606491515	Moua	Culturally Intelligent Leadership: Essential Concepts to Leading and Managing Intercultural Interactions	NA	Business Expert Press	2010
+EDOL-722	SOE	Div & Intrcltrl Asp of Lead	N/A	9781119799542	Thompson	Diversity and Inclusion Matters: Tactics and Tools to Inspire Equity and Game-Changing Performance	1st	Wiley	2022
+EDOL-722	SOE	Div & Intrcltrl Asp of Lead	N/A	9780525509288	Kendi	How to Be an Antiracist	1st	One World	2019
+EDOL-723	SOE	Innovation in Resource Mgmt	N/A	9781578861415	Harvey	Building Teams, Building People: Expanding the Fifth Resource	2nd	Rowman & Littlefield	2004
+EDOL-723	SOE	Innovation in Resource Mgmt	N/A	9780060851132	Drucker	Innovation and Entrepreneurship	NA	HarperCollins Publishers	2006
+EDOL-723	SOE	Innovation in Resource Mgmt	N/A	9780316017930	Gladwell	Outliers: The Story of Success	NA	Little, Brown and Company	2008
+EDOL-724	SOE	The Leader as Change Agent	N/A	9780787982966	Kouzes	A Leader's Legacy	NA	Jossey-Bass	2006
+EDOL-750	SOE	Writing Res & Publication I	Software Download	n/a	Clarivate	EndNote 20	NA	Clarivate	2021
+EDOL-750	SOE	Writing Res & Publication I	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDOL-750	SOE	Writing Res & Publication I	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDOL-751	SOE	Writing Res & Publication II	Software Download	n/a	Clarivate	EndNote 20	NA	Clarivate	2021
+EDOL-751	SOE	Writing Res & Publication II	N/A	9781936523399	Pan	Preparing Literature Reviews: Qualitative and Quantitative Approaches	5th	Routledge	2017
+EDOL-751	SOE	Writing Res & Publication II	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDOL-751	SOE	Writing Res & Publication II	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDOL-752	SOE	Quant Research Methods I	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2014
+EDOL-752	SOE	Quant Research Methods I	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2018
+EDOL-753	SOE	Quant Research Methods II	Software Download	77425995	Orris	MegaStat for Microsoft Excel (digital download): https://highered.mheducation.com/sites/0077425995/information_center_view0/index.html	NA	McGraw Hill	2021
+EDOL-753	SOE	Quant Research Methods II	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2009
+EDOL-753	SOE	Quant Research Methods II	N/A	9781544381855	Salkind	Statistics for People Who (Think They) Hate Statistics	7th	Sage Publications	2020
+EDOL-753	SOE	Quant Research Methods II	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2017
+EDOL-754	SOE	Qual Research Methods I	N/A	9781412972123	Patton	Qualitative Research and Evaluation Methods	4th	Sage Publications	2014
+EDOL-755	SOE	Qual Research Methods II	N/A	9781412972123	Patton	Qualitative Research and Evaluation Methods	4th	Sage Publications	2014
+EDOL-780	SOE	Transf Change Field Exp	N/A	9780470648087	Anderson	Beyond Change Management: How To Achieve Breakthrough Results Through Conscious Change Leadership	2nd	Pfeiffer - Wiley	2010
+EDOL-780	SOE	Transf Change Field Exp	N/A	9780470648063	Anderson	The Change Leader's Roadmap: How to Navigate Your Organization's Transformation	2nd	Pfeiffer - Wiley	2010
+EDOL-790	SOE	Dev Dissertation Prospectus	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDOL-790	SOE	Dev Dissertation Prospectus	N/A	9780137152391	McMillan	Research In Education: Evidence-Based Inquiry	7th	Pearson	2009
+EDOL-790	SOE	Dev Dissertation Prospectus	N/A	9781544381855	Salkind	Statistics for People Who (Think They) Hate Statistics	7th	Sage Publications	2019
+EDOL-790	SOE	Dev Dissertation Prospectus	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDOL-790	SOE	Dev Dissertation Prospectus	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2018
+EDOL-791	SOE	Dissertation I	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDOL-791	SOE	Dissertation I	N/A	9781412972123	Patton	Qualitative Research & Evaluation Methods	4th	Sage Publications	2014
+EDOL-791	SOE	Dissertation I	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2009
+EDOL-791	SOE	Dissertation I	N/A	9780335249497	Pallant	SPSS Survival Manual: A Step by Step Guide to Data Analysis Using IBM SPSS	7th	Open University Press	2020
+EDOL-791	SOE	Dissertation I	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDOL-791	SOE	Dissertation I	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2018
+EDOL-792	SOE	Dissertation II	N/A	9781433832178	American Psychological Association	Publication Manual of the American Psychological Association	7th	American Psychological Association	2020
+EDOL-792	SOE	Dissertation II	N/A	9781412972123	Patton	Qualitative Research & Evaluation Methods	4th	Sage Publications	2014
+EDOL-792	SOE	Dissertation II	N/A	9780137152391	McMillan	Research In Education: Evidence-based Inquiry	7th	Pearson	2009
+EDOL-792	SOE	Dissertation II	N/A	9780335249497	Pallant	SPSS Survival Manual: A Step by Step Guide to Data Analysis Using IBM SPSS	7th	Open University Press	2020
+EDOL-792	SOE	Dissertation II	N/A	9781071891308	Hyatt & Roberts	The Dissertation Journey: A Practical and Comprehensive Guide to Planning, Writing, and Defending Your Dissertation	4th	Corwin Press	2024
+EDOL-792	SOE	Dissertation II	N/A	9780415790529	Patten	Understanding Research Methods: An Overview of Essentials	10th	Routledge	2018
+EDOL-799	SOE	Dissertation Ext	N/A	NT	NT	No Text Required	NT	No Text Required	NT`
+
+function createCohortBookListSeed():
+  readonly CohortBookRecord[] {
+  return cohortBookListSeedSource
+    .trim()
+    .split('\n')
+    .map((line, index) => {
+      const [
+        course = '',
+        school = '',
+        courseTitle = '',
+        studentNotes = '',
+        isbn = '',
+        author = '',
+        productTitle = '',
+        edition = '',
+        publisher = '',
+        year = '',
+      ] = line.split('\t')
+
+      return {
+        id: `master-book-${String(index + 1).padStart(3, '0')}`,
+        course,
+        school,
+        courseTitle,
+        studentNotes,
+        isbn,
+        author,
+        productTitle,
+        edition,
+        publisher,
+        year,
+      }
+    })
+}
+
+const cohortBookListSeed =
+  createCohortBookListSeed()
+
+function isStoredCohortBookRecord(
+  value: unknown,
+): value is CohortBookRecord {
+  if (
+    typeof value !== 'object' ||
+    value === null
+  ) {
+    return false
+  }
+
+  const record = value as Record<string, unknown>
+
+  return (
+    typeof record.id === 'string' &&
+    typeof record.course === 'string' &&
+    typeof record.school === 'string' &&
+    typeof record.courseTitle === 'string' &&
+    typeof record.studentNotes === 'string' &&
+    typeof record.isbn === 'string' &&
+    typeof record.author === 'string' &&
+    typeof record.productTitle === 'string' &&
+    typeof record.edition === 'string' &&
+    typeof record.publisher === 'string' &&
+    typeof record.year === 'string'
+  )
+}
+
+function readStoredCohortBookList():
+  readonly CohortBookRecord[] {
+  const storedValue = window.localStorage.getItem(
+    COHORT_BOOK_LIST_STORAGE_KEY,
+  )
+
+  if (storedValue === null) {
+    return cohortBookListSeed
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every(isStoredCohortBookRecord)
+    ) {
+      return cohortBookListSeed
+    }
+
+    return parsedValue
+  } catch {
+    return cohortBookListSeed
+  }
+}
+
 const purposeResearchSeed: readonly CohortPurposeResearchRecord[] = [
   {
     id: 'purpose-research-source-row-3',
     developmentNote: ``,
     memberName: `Asa Jones-McGhee`,
-    purposeStatement: `The purpose of this research aims at explore the perceptions of families who have gone through the child removal process using the foster care system.and how they perceive and explain it to be a legal kidnapping                   This study is aimed at investigating the general impacts of child removal associated with foster care on the trauma at a community level, especially how such experiences influence intergenerational trust in governmental agencies.`,
+    purposeStatement: `The purpose of this research aims at explore the perceptions of families who have gone through the child removal process using the foster care system.and how they perceive and explain it to be a legal kidnapping. This study is aimed at investigating the general impacts of child removal associated with foster care on the trauma at a community level, especially how such experiences influence intergenerational trust in governmental agencies.`,
     researchQuestion1: `What is the experience of families that have undergone foster care-related child removal, and what makes their description show such acts as legal kidnapping?`,
     researchQuestion2: `What connects foster care-associated child removal to the emergence of trauma in communities, and how is the resultant trauma mediated to affect intergenerational trust in governmental agencies?`,
     researchQuestion3: ``,
@@ -3968,6 +5035,383 @@ function CohortAttendancePage({
   )
 }
 
+function CohortDataSurveyPage({
+  survey,
+  onUpdateSurvey,
+}: CohortDataSurveyPageProps) {
+  const activeParticipants =
+    dataSurveyParticipantDisplayOrder.flatMap(
+      (participantId) => {
+        const participant =
+          dataSurveyParticipantSeed.find(
+            (candidate) =>
+              candidate.id === participantId,
+          )
+
+        return participant === undefined
+          ? []
+          : [participant]
+      },
+    )
+
+  function getColumnBoundaryClass(
+    dateIndex: number,
+  ): string {
+    if (dateIndex % 4 === 0) {
+      return ' data-survey-term-start'
+    }
+
+    if (dateIndex % 2 === 0) {
+      return ' data-survey-cohort-start'
+    }
+
+    return ''
+  }
+
+  function splitHolidayNote(
+    holidayNote: string,
+  ): {
+    readonly lead: string
+    readonly text: string
+  } {
+    const firstSpaceIndex =
+      holidayNote.indexOf(' ')
+
+    if (firstSpaceIndex === -1) {
+      return {
+        lead: '',
+        text: holidayNote,
+      }
+    }
+
+    return {
+      lead: holidayNote.slice(
+        0,
+        firstSpaceIndex,
+      ),
+      text: holidayNote.slice(
+        firstSpaceIndex + 1,
+      ),
+    }
+  }
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Data Survey</h1>
+      </header>
+
+      <div className="data-survey-workspace">
+        <div className="data-survey-instruction">
+          <span
+            className="data-survey-instruction-icon"
+            aria-hidden="true"
+          >
+            <svg
+              viewBox="0 0 32 32"
+              className="data-survey-calendar-icon"
+            >
+              <rect
+                x="6"
+                y="8"
+                width="20"
+                height="18"
+                rx="2"
+              />
+              <path d="M10 5v6M22 5v6M6 13h20" />
+              <path d="M10 17h3M15 17h3M20 17h3M10 21h3M15 21h3M20 21h3" />
+            </svg>
+          </span>
+
+          <strong>
+            Cohort meetings are Sundays,
+            1:30 - 5:30 PM Pacific Time.
+          </strong>
+
+          <span className="data-survey-instruction-secondary">
+            Enter one availability code in each cell.
+          </span>
+        </div>
+
+        <div
+          className="data-survey-key"
+          aria-label="Data Survey availability codes"
+        >
+          <span>
+            <strong className="data-survey-key-preferred">
+              P
+            </strong>
+            Preferred
+          </span>
+
+          <span>
+            <strong className="data-survey-key-conflict">
+              C
+            </strong>
+            Conflict
+          </span>
+
+          <span>
+            <strong className="data-survey-key-available">
+              A
+            </strong>
+            Available
+          </span>
+
+          <span>
+            <strong className="data-survey-key-adjust">
+              I
+            </strong>
+            Not Ideal but I will adjust
+          </span>
+        </div>
+
+        <div className="data-survey-table-frame">
+          <table className="data-survey-table">
+            <thead>
+              <tr className="data-survey-term-row">
+                <th
+                  className="data-survey-name-super-header"
+                  rowSpan={4}
+                >
+                  <div className="data-survey-name-super-content">
+                    <span
+                      className="data-survey-name-super-icon"
+                      aria-hidden="true"
+                    >
+                      <svg
+                        viewBox="0 0 48 48"
+                        className="data-survey-people-icon"
+                      >
+                        <circle cx="17" cy="17" r="6" />
+                        <circle cx="31" cy="17" r="6" />
+                        <path d="M6 35c0-6 4.5-10 11-10 3 0 5.5.8 7 2.2" />
+                        <path d="M42 35c0-6-4.5-10-11-10-3 0-5.5.8-7 2.2" />
+                        <path d="M11 40h26" />
+                      </svg>
+                    </span>
+
+                    <span>Name</span>
+                  </div>
+                </th>
+
+                {dataSurveyTerms.map((term) => (
+                  <th
+                    key={term.id}
+                    className="data-survey-term-header"
+                    colSpan={4}
+                  >
+                    <strong>{term.label}</strong>
+                    <span>{term.window}</span>
+                  </th>
+                ))}
+              </tr>
+
+              <tr className="data-survey-cohort-row">
+                {dataSurveyTerms.flatMap((term) => [
+                  <th
+                    key={`${term.id}-cohort-1`}
+                    className="data-survey-cohort-header data-survey-cohort-one data-survey-term-start"
+                    colSpan={2}
+                  >
+                    Cohort 1
+                  </th>,
+                  <th
+                    key={`${term.id}-cohort-2`}
+                    className="data-survey-cohort-header data-survey-cohort-two data-survey-cohort-start"
+                    colSpan={2}
+                  >
+                    Cohort 2
+                  </th>,
+                ])}
+              </tr>
+
+              <tr className="data-survey-week-row">
+                {dataSurveyDateOptions.map(
+                  (dateOption, dateIndex) => (
+                    <th
+                      key={`${dateOption.id}-week`}
+                      className={`data-survey-week-column${getColumnBoundaryClass(
+                        dateIndex,
+                      )}`}
+                    >
+                      {dateOption.week}
+                    </th>
+                  ),
+                )}
+              </tr>
+
+              <tr className="data-survey-date-row">
+                {dataSurveyDateOptions.map(
+                  (dateOption, dateIndex) => (
+                    <th
+                      key={dateOption.id}
+                      className={`data-survey-date-column${dateOption.holidayNote
+                        ? ' data-survey-date-holiday'
+                        : ''
+                        }${getColumnBoundaryClass(
+                          dateIndex,
+                        )}`}
+                      title={
+                        dateOption.holidayNote ??
+                        dateOption.dateLabel
+                      }
+                    >
+                      {dateOption.dateLabel}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+
+            <tbody>
+              {activeParticipants.map(
+                (participant) => {
+                  const displayName =
+                    participant.id ===
+                      'data-survey-participant-6'
+                      ? 'Dr. Cheryl-Marie Osborne (Mentor)'
+                      : participant.name
+
+                  return (
+                    <tr key={participant.id}>
+                      <td
+                        className={`data-survey-name-column${participant.id ===
+                          'data-survey-participant-6'
+                          ? ' data-survey-mentor-name'
+                          : ''
+                          }`}
+                        title={displayName}
+                      >
+                        {displayName}
+                      </td>
+
+                      {dataSurveyDateOptions.map(
+                        (dateOption, dateIndex) => {
+                          const surveyKey =
+                            getCohortDataSurveyKey(
+                              participant.id,
+                              dateOption.id,
+                            )
+
+                          const surveyMark =
+                            survey[surveyKey] ?? ''
+
+                          const markClass =
+                            surveyMark === 'P'
+                              ? ' data-survey-mark-preferred'
+                              : surveyMark === 'C'
+                                ? ' data-survey-mark-conflict'
+                                : surveyMark === 'A'
+                                  ? ' data-survey-mark-available'
+                                  : surveyMark === 'I'
+                                    ? ' data-survey-mark-adjust'
+                                    : ' data-survey-mark-empty'
+
+                          return (
+                            <td
+                              key={dateOption.id}
+                              className={`data-survey-mark-cell${getColumnBoundaryClass(
+                                dateIndex,
+                              )}`}
+                            >
+                              <input
+                                type="text"
+                                maxLength={1}
+                                spellCheck={false}
+                                autoComplete="off"
+                                className={`data-survey-mark-input${markClass}`}
+                                value={surveyMark}
+                                aria-label={`${displayName}, ${dateOption.dateLabel}, ${dateOption.cohort}, ${dateOption.week}`}
+                                title="P = Preferred | C = Conflict | A = Available | I = Not Ideal but I will adjust"
+                                onFocus={(event) =>
+                                  event.currentTarget.select()
+                                }
+                                onChange={(event) =>
+                                  onUpdateSurvey(
+                                    participant.id,
+                                    dateOption.id,
+                                    normalizeCohortDataSurveyMark(
+                                      event.target.value,
+                                    ),
+                                  )
+                                }
+                              />
+                            </td>
+                          )
+                        },
+                      )}
+                    </tr>
+                  )
+                },
+              )}
+            </tbody>
+
+            <tfoot>
+              <tr className="data-survey-holiday-row">
+                <th className="data-survey-holiday-label">
+                  Holidays:
+                </th>
+
+                {dataSurveyDateOptions.map(
+                  (dateOption, dateIndex) => {
+                    const holiday =
+                      dateOption.holidayNote ===
+                        undefined
+                        ? null
+                        : splitHolidayNote(
+                          dateOption.holidayNote,
+                        )
+
+                    return (
+                      <th
+                        key={`${dateOption.id}-holiday`}
+                        className={`data-survey-holiday-note-cell${dateOption.holidayNote
+                          ? ' data-survey-holiday-note-cell-populated'
+                          : ''
+                          }${getColumnBoundaryClass(
+                            dateIndex,
+                          )}`}
+                        title={
+                          dateOption.holidayNote ?? ''
+                        }
+                      >
+                        {holiday !== null && (
+                          <>
+                            {holiday.lead && (
+                              <strong>
+                                {holiday.lead}
+                              </strong>
+                            )}
+
+                            <span>
+                              {holiday.text}
+                            </span>
+                          </>
+                        )}
+                      </th>
+                    )
+                  },
+                )}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div className="data-survey-holiday-footnote">
+          <span>
+            {dataSurveyHolidayGeneralNote.primary}
+          </span>
+
+          <strong>
+            {dataSurveyHolidayGeneralNote.emphasis}
+          </strong>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function CohortNormsPage() {
   type CohortNormSectionKey =
     | 'development'
@@ -4474,24 +5918,24 @@ function CohortPurposeResearchPage({
     useState(false)
 
   const [cellFormats, setCellFormats] =
-    useState<
-      Partial<
-        Record<string, PurposeResearchCellFormat>
-      >
-    >({})
+    useState<PurposeResearchCellFormatState>(
+      () => readStoredPurposeResearchCellFormats(),
+    )
 
   const [columnWidths, setColumnWidths] =
-    useState<
-      Partial<
-        Record<CohortPurposeResearchField, number>
-      >
-    >({})
+    useState<PurposeResearchColumnWidthState>(
+      () => readStoredPurposeResearchColumnWidths(),
+    )
 
   const [rowHeights, setRowHeights] =
-    useState<Partial<Record<string, number>>>({})
+    useState<PurposeResearchRowHeightState>(
+      () => readStoredPurposeResearchRowHeights(),
+    )
 
   const [hiddenColumns, setHiddenColumns] =
-    useState<readonly CohortPurposeResearchField[]>([])
+    useState<readonly CohortPurposeResearchField[]>(
+      () => readStoredPurposeResearchHiddenColumns(),
+    )
 
   const [contextMenu, setContextMenu] =
     useState<PurposeResearchContextMenuState | null>(
@@ -4509,6 +5953,34 @@ function CohortPurposeResearchPage({
       readonly x: number
       readonly y: number
     } | null>(null)
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PURPOSE_RESEARCH_CELL_FORMATS_STORAGE_KEY,
+      JSON.stringify(cellFormats),
+    )
+  }, [cellFormats])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PURPOSE_RESEARCH_COLUMN_WIDTHS_STORAGE_KEY,
+      JSON.stringify(columnWidths),
+    )
+  }, [columnWidths])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PURPOSE_RESEARCH_ROW_HEIGHTS_STORAGE_KEY,
+      JSON.stringify(rowHeights),
+    )
+  }, [rowHeights])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PURPOSE_RESEARCH_HIDDEN_COLUMNS_STORAGE_KEY,
+      JSON.stringify(hiddenColumns),
+    )
+  }, [hiddenColumns])
 
   useEffect(() => {
     function stopRangeSelection(): void {
@@ -6275,8 +7747,6 @@ function CohortPurposeResearchPage({
               Purpose &amp; Research Developmental Workspace
             </h2>
           </div>
-
-          <span>Developmental, Not Final Record</span>
         </div>
 
         {isDevelopmentWorkspaceExpanded && (
@@ -6337,17 +7807,6 @@ function CohortPurposeResearchPage({
           <span aria-hidden="true">+</span>
           Add Development Update
         </button>
-
-        <div className="purpose-research-entry-count">
-          <span>Total Entries</span>
-          <strong>{records.length}</strong>
-
-          {normalizedSearch && (
-            <small>
-              Showing {visibleRecords.length}
-            </small>
-          )}
-        </div>
       </div>
 
       <datalist id="purpose-research-name-search-options">
@@ -6384,8 +7843,8 @@ function CohortPurposeResearchPage({
             className="purpose-research-font-family"
             value={selectedFormat.fontFamily}
             disabled={selectedCell === null}
-            aria-label="Font Family"
-            title="Font Family"
+            aria-label="Font"
+            title="Font"
             onChange={(event) =>
               updateSelectedCellFormat({
                 fontFamily: event.target.value,
@@ -6645,13 +8104,13 @@ function CohortPurposeResearchPage({
               ? ' purpose-research-format-active'
               : ''
               }`}
-            disabled={!hasSelectedTextCells}
-            aria-label="Bullets"
-            title="Bullets"
+            disabled={selectedCell === null}
+            aria-label="Middle Align"
+            title="Middle Align"
             onClick={() =>
-              toggleSelectedCellListStyle(
-                'bulleted',
-              )
+              updateSelectedCellFormat({
+                verticalAlign: 'center',
+              })
             }
           >
             <svg
@@ -6732,8 +8191,8 @@ function CohortPurposeResearchPage({
               : ''
               }`}
             disabled={selectedCell === null}
-            aria-label="Align Center"
-            title="Align Center"
+            aria-label="Center"
+            title="Center"
             onClick={() =>
               updateSelectedCellFormat({
                 textAlign: 'center',
@@ -6820,8 +8279,8 @@ function CohortPurposeResearchPage({
               : ''
               }`}
             disabled={!hasSelectedTextCells}
-            aria-label="Bulleted List"
-            title="Bulleted List"
+            aria-label="Bullets"
+            title="Bullets"
             onClick={() =>
               toggleSelectedCellListStyle(
                 'bulleted',
@@ -7161,6 +8620,21 @@ function CohortPurposeResearchPage({
               ▾
             </span>
           </button>
+
+          <div
+            className="purpose-research-entry-count"
+            aria-label={`Total Entries ${records.length}`}
+            title="Total Entries"
+          >
+            <span>Total Entries</span>
+            <strong>{records.length}</strong>
+
+            {normalizedSearch && (
+              <small>
+                Showing {visibleRecords.length}
+              </small>
+            )}
+          </div>
         </div>
 
         <div
@@ -7619,6 +9093,431 @@ function CohortPurposeResearchPage({
   )
 }
 
+function CohortTlsiDatesPage() {
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort TLSi Dates</h1>
+      </header>
+
+      <section className="tlsi-dates-panel">
+        <div className="tlsi-webinar-row">
+          <strong>
+            Webinar: Aug 27 @ 6:00 PT
+          </strong>
+
+          <a
+            href="https://umassglobal.zoom.us/my/cvgguzman"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Zoom: https://umassglobal.zoom.us/my/cvgguzman
+          </a>
+        </div>
+
+        <div className="tlsi-table-frame">
+          <table className="tlsi-dates-table">
+            <thead>
+              <tr>
+                <th>Date / Window</th>
+                <th>TLSi Activity</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td>Aug. 27</td>
+                <td>
+                  Student complete survey information and take survey
+                </td>
+              </tr>
+
+              <tr className="tlsi-subrow">
+                <td />
+                <td>
+                  Acknowledge personal pass code
+                </td>
+              </tr>
+
+              <tr>
+                <td>Aug. 27 – Sept. 10</td>
+                <td>
+                  Confirm respondents’ participation and communicate
+                </td>
+              </tr>
+
+              <tr className="tlsi-subrow">
+                <td />
+                <td>
+                  URL and pass code to participants
+                </td>
+              </tr>
+
+              <tr className="tlsi-subrow">
+                <td />
+                <td>
+                  Respondents complete on-line TLSi survey
+                </td>
+              </tr>
+
+              <tr>
+                <td>Sept. 3</td>
+                <td>
+                  Response counts sent to students
+                </td>
+              </tr>
+
+              <tr className="tlsi-subrow">
+                <td />
+                <td>
+                  Students to chase more results, if needed
+                </td>
+              </tr>
+
+              <tr>
+                <td>Sept. 11</td>
+                <td>
+                  TLSi data downloaded/reports are prepared
+                </td>
+              </tr>
+
+              <tr>
+                <td>Sept. 12</td>
+                <td>
+                  TLSi reports emailed to Cohort Mentors
+                </td>
+              </tr>
+
+              <tr>
+                <td>1-2 days before cohort meeting</td>
+                <td>
+                  TLSi reports emailed to students
+                </td>
+              </tr>
+
+              <tr className="tlsi-subrow">
+                <td />
+                <td>
+                  This is often the night before - don't fret, we will get there
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  )
+}
+
+function CohortBookListPage() {
+  const [books, setBooks] =
+    useState<readonly CohortBookRecord[]>(
+      () => readStoredCohortBookList(),
+    )
+  const [searchTerm, setSearchTerm] = useState('')
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      COHORT_BOOK_LIST_STORAGE_KEY,
+      JSON.stringify(books),
+    )
+  }, [books])
+
+  const normalizedSearchTerm =
+    searchTerm.trim().toLowerCase()
+
+  const visibleBooks =
+    normalizedSearchTerm.length === 0
+      ? books
+      : books.filter((book) =>
+        [
+          book.course,
+          book.school,
+          book.courseTitle,
+          book.studentNotes,
+          book.isbn,
+          book.author,
+          book.productTitle,
+          book.edition,
+          book.publisher,
+          book.year,
+        ].some((value) =>
+          value
+            .toLowerCase()
+            .includes(normalizedSearchTerm),
+        ),
+      )
+
+  function addBook(): void {
+    const newBook: CohortBookRecord = {
+      id: `custom-book-${Date.now()}`,
+      course: '',
+      school: 'SOE',
+      courseTitle: '',
+      studentNotes: '',
+      isbn: '',
+      author: '',
+      productTitle: '',
+      edition: '',
+      publisher: '',
+      year: '',
+    }
+
+    setBooks((currentBooks) => [
+      newBook,
+      ...currentBooks,
+    ])
+    setSearchTerm('')
+  }
+
+  function updateBook(
+    bookId: string,
+    field: CohortBookField,
+    value: string,
+  ): void {
+    setBooks((currentBooks) =>
+      currentBooks.map((book) =>
+        book.id === bookId
+          ? {
+            ...book,
+            [field]: value,
+          }
+          : book,
+      ),
+    )
+  }
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Book List</h1>
+      </header>
+
+      <section className="book-list-source-panel">
+        <div className="book-list-source-heading">
+          <div>
+            <h2>Official Master Book List</h2>
+
+            <p>
+              The table below begins with the complete 2025 Master Book List.
+              Changes made on this page are saved locally in this app and do
+              not change the official university master list.
+            </p>
+
+            <ol className="book-list-source-steps">
+              <li>
+                Open the Student Portal:
+                {' '}
+                <a
+                  href="https://umassglobal.sharepoint.com/sites/Student"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Student Portal
+                </a>
+              </li>
+
+              <li>
+                Select
+                {' '}
+                <strong>Schools &gt; Ed.D.</strong>
+                {' '}
+                or open the
+                {' '}
+                <a
+                  href="https://umassglobal.sharepoint.com/sites/EDD"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ed.D. site
+                </a>
+                .
+              </li>
+
+              <li>
+                Click
+                {' '}
+                <strong>
+                  Master Book List (All Terms)
+                </strong>
+                .
+              </li>
+
+              <li>
+                Open
+                {' '}
+                <strong>
+                  2025 Master Book List
+                </strong>
+                .
+              </li>
+            </ol>
+
+            <p className="book-list-source-folder">
+              Master Book List upload folder:
+              {' '}
+              <a
+                href="https://drive.google.com/drive/folders/1tSpSd0v50XE4mmo1qe-mSfrb5D-ldLgp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Google Drive Folder
+              </a>
+            </p>
+          </div>
+
+          <a
+            className="book-list-source-button"
+            href="https://docs.google.com/spreadsheets/d/1ZVlstI88IkG0omggdg3u86O3m2NAabhj/edit?gid=985629361#gid=985629361"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Master Book List
+          </a>
+        </div>
+      </section>
+
+      <div className="book-list-toolbar">
+        <label className="book-list-search">
+          <span>Search Book List</span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) =>
+              setSearchTerm(event.target.value)
+            }
+            placeholder="Search course, book title, author, ISBN, publisher, year..."
+          />
+        </label>
+
+        <button
+          type="button"
+          className="book-list-add-button"
+          onClick={addBook}
+        >
+          <span aria-hidden="true">+</span>
+          Add Book
+        </button>
+
+        <button
+          type="button"
+          className="book-list-clear-search-button"
+          disabled={searchTerm.length === 0}
+          onClick={() => setSearchTerm('')}
+        >
+          Clear Search
+        </button>
+
+        <div className="book-list-count-card">
+          <span>Total Books</span>
+          <strong>{books.length}</strong>
+        </div>
+
+        <div className="book-list-count-card book-list-visible-count">
+          <span>Visible</span>
+          <strong>{visibleBooks.length}</strong>
+        </div>
+      </div>
+
+      <section className="book-list-table-panel">
+        <div className="book-list-table-heading">
+          <div>
+            <h2>2025 Master Book List</h2>
+            <p>
+              Edit cells directly. Changes save automatically in this browser.
+            </p>
+          </div>
+        </div>
+
+        <div className="book-list-table-frame">
+          <table className="book-list-table">
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>School</th>
+                <th>Course Title</th>
+                <th>Student Notes</th>
+                <th>ISBN</th>
+                <th>Author</th>
+                <th>Product Title</th>
+                <th>Edition</th>
+                <th>Publisher</th>
+                <th>Year</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {visibleBooks.map((book) => (
+                <tr key={book.id}>
+                  {(
+                    [
+                      ['course', 'Course'],
+                      ['school', 'School'],
+                      ['courseTitle', 'Course Title'],
+                      ['studentNotes', 'Student Notes'],
+                      ['isbn', 'ISBN'],
+                      ['author', 'Author'],
+                      ['productTitle', 'Product Title'],
+                      ['edition', 'Edition'],
+                      ['publisher', 'Publisher'],
+                      ['year', 'Year'],
+                    ] as const
+                  ).map(([field, label]) => (
+                    <td key={field}>
+                      {field === 'productTitle' ? (
+                        <textarea
+                          className="book-list-cell-input book-list-product-title-input"
+                          value={book[field]}
+                          title={book[field]}
+                          aria-label={`${label} for ${book.productTitle || book.course || 'book'}`}
+                          rows={1}
+                          onChange={(event) =>
+                            updateBook(
+                              book.id,
+                              field,
+                              event.target.value,
+                            )
+                          }
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          className="book-list-cell-input"
+                          value={book[field]}
+                          title={book[field]}
+                          aria-label={`${label} for ${book.productTitle || book.course || 'book'}`}
+                          onChange={(event) =>
+                            updateBook(
+                              book.id,
+                              field,
+                              event.target.value,
+                            )
+                          }
+                        />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+
+              {visibleBooks.length === 0 && (
+                <tr>
+                  <td
+                    className="book-list-empty-state"
+                    colSpan={10}
+                  >
+                    No books match the current search.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -7704,10 +9603,272 @@ function App() {
   const [cohortAttendance, setCohortAttendance] =
     useState<CohortAttendanceState>(cohortAttendanceSeed)
 
+  const [cohortDataSurvey, setCohortDataSurvey] =
+    useState<CohortDataSurveyState>(
+      () => readStoredCohortDataSurvey(),
+    )
+
   const [purposeResearchRecords, setPurposeResearchRecords] =
     useState<readonly CohortPurposeResearchRecord[]>(
-      purposeResearchSeed,
+      () => readStoredPurposeResearchRecords(),
     )
+
+  useEffect(() => {
+    const getNavigableTableCell = (
+      target: EventTarget | null,
+    ): HTMLTableCellElement | null => {
+      if (!(target instanceof Element)) {
+        return null
+      }
+
+      const cell = target.closest('td')
+
+      if (!(cell instanceof HTMLTableCellElement)) {
+        return null
+      }
+
+      if (
+        cell.closest('.purpose-research-table') !== null
+      ) {
+        return null
+      }
+
+      return cell
+    }
+
+    const isCellEditor = (
+      target: EventTarget | null,
+    ): boolean => {
+      if (
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      ) {
+        return true
+      }
+
+      if (!(target instanceof HTMLInputElement)) {
+        return false
+      }
+
+      return ![
+        'button',
+        'checkbox',
+        'file',
+        'hidden',
+        'radio',
+        'reset',
+        'submit',
+      ].includes(target.type)
+    }
+
+    const isInteractiveTarget = (
+      target: EventTarget | null,
+    ): boolean => {
+      if (!(target instanceof Element)) {
+        return false
+      }
+
+      return target.closest(
+        'button, a[href], input, textarea, select, [contenteditable="true"]',
+      ) !== null
+    }
+
+    const focusTableCell = (
+      cell: HTMLTableCellElement,
+    ): void => {
+      cell.tabIndex = -1
+      cell.focus({ preventScroll: true })
+      cell.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+      })
+    }
+
+    const getDestinationCell = (
+      sourceCell: HTMLTableCellElement,
+      rowOffset: number,
+      columnOffset: number,
+    ): HTMLTableCellElement | null => {
+      const sourceRow = sourceCell.parentElement
+
+      if (!(sourceRow instanceof HTMLTableRowElement)) {
+        return null
+      }
+
+      const tableSection = sourceRow.parentElement
+
+      if (
+        !(
+          tableSection instanceof
+          HTMLTableSectionElement
+        ) ||
+        tableSection.tagName !== 'TBODY'
+      ) {
+        return null
+      }
+
+      const rows = Array.from(tableSection.rows)
+      const sourceRowIndex =
+        rows.indexOf(sourceRow)
+
+      if (sourceRowIndex < 0) {
+        return null
+      }
+
+      const destinationRow =
+        rows[sourceRowIndex + rowOffset]
+
+      if (destinationRow === undefined) {
+        return null
+      }
+
+      const destinationColumnIndex =
+        sourceCell.cellIndex + columnOffset
+
+      if (destinationColumnIndex < 0) {
+        return null
+      }
+
+      return destinationRow.cells.item(
+        destinationColumnIndex,
+      )
+    }
+
+    const handleTableClick = (
+      event: globalThis.MouseEvent,
+    ): void => {
+      const cell =
+        getNavigableTableCell(event.target)
+
+      if (
+        cell === null ||
+        isInteractiveTarget(event.target)
+      ) {
+        return
+      }
+
+      focusTableCell(cell)
+    }
+
+    const handleTableKeyDown = (
+      event: globalThis.KeyboardEvent,
+    ): void => {
+      const sourceCell =
+        getNavigableTableCell(event.target)
+
+      if (sourceCell === null) {
+        return
+      }
+
+      if (isCellEditor(event.target)) {
+        if (
+          event.key === 'Tab' &&
+          !event.altKey &&
+          !event.ctrlKey &&
+          !event.metaKey
+        ) {
+          event.preventDefault()
+
+          if (
+            event.target instanceof HTMLElement
+          ) {
+            event.target.blur()
+          }
+
+          focusTableCell(sourceCell)
+        }
+
+        return
+      }
+
+      if (isInteractiveTarget(event.target)) {
+        return
+      }
+
+      if (
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey
+      ) {
+        return
+      }
+
+      let rowOffset = 0
+      let columnOffset = 0
+
+      switch (event.key) {
+        case 'ArrowLeft':
+          columnOffset = -1
+          break
+
+        case 'ArrowRight':
+          columnOffset = 1
+          break
+
+        case 'ArrowUp':
+          rowOffset = -1
+          break
+
+        case 'ArrowDown':
+          rowOffset = 1
+          break
+
+        default:
+          return
+      }
+
+      const destinationCell =
+        getDestinationCell(
+          sourceCell,
+          rowOffset,
+          columnOffset,
+        )
+
+      if (destinationCell === null) {
+        return
+      }
+
+      event.preventDefault()
+      focusTableCell(destinationCell)
+    }
+
+    document.addEventListener(
+      'click',
+      handleTableClick,
+    )
+
+    document.addEventListener(
+      'keydown',
+      handleTableKeyDown,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'click',
+        handleTableClick,
+      )
+
+      document.removeEventListener(
+        'keydown',
+        handleTableKeyDown,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      DATA_SURVEY_STORAGE_KEY,
+      JSON.stringify(cohortDataSurvey),
+    )
+  }, [cohortDataSurvey])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PURPOSE_RESEARCH_RECORDS_STORAGE_KEY,
+      JSON.stringify(purposeResearchRecords),
+    )
+  }, [purposeResearchRecords])
 
   function addCohortContact(contact: CohortContactRecord): void {
     setContacts((currentContacts) => [
@@ -7804,6 +9965,22 @@ function App() {
     setCohortAttendance((currentAttendance) => ({
       ...currentAttendance,
       [attendanceKey]: mark,
+    }))
+  }
+
+  function updateCohortDataSurvey(
+    participantId: string,
+    dateId: string,
+    mark: CohortDataSurveyMark,
+  ): void {
+    const surveyKey = getCohortDataSurveyKey(
+      participantId,
+      dateId,
+    )
+
+    setCohortDataSurvey((currentSurvey) => ({
+      ...currentSurvey,
+      [surveyKey]: mark,
     }))
   }
 
@@ -8119,31 +10296,23 @@ function App() {
             <Route
               path="/data-survey"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Data Survey"
-                  description="Cohort survey information and related shared data will be organized here."
+                <CohortDataSurveyPage
+                  survey={cohortDataSurvey}
+                  onUpdateSurvey={
+                    updateCohortDataSurvey
+                  }
                 />
               }
             />
 
             <Route
               path="/tlsi-dates"
-              element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort TLSI Dates"
-                  description="TLSI milestones, dates, responsibilities, and related reminders will be organized here."
-                />
-              }
+              element={<CohortTlsiDatesPage />}
             />
 
             <Route
               path="/book-list"
-              element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Book List"
-                  description="Required and recommended books and course resources will be maintained here."
-                />
-              }
+              element={<CohortBookListPage />}
             />
 
             <Route
