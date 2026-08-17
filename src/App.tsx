@@ -14236,6 +14236,62 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/values-vision' ? (
+                <span
+                  className="nav-values-vision-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <path
+                      d="M2.5 12
+                         C4.8 8.2 8.1 6
+                         12 6
+                         C15.9 6 19.2 8.2
+                         21.5 12
+                         C19.2 15.8 15.9 18
+                         12 18
+                         C8.1 18 4.8 15.8
+                         2.5 12Z"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.35"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="3.1"
+                      fill="#F2B632"
+                      stroke="#FFD76A"
+                      strokeWidth="1"
+                    />
+
+                    <path
+                      d="M4.6 10.2
+                         C6.5 7.8 9 6.8 12 6.8"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+
+                    <path
+                      d="M14.5 16.8
+                         C17 16.2 18.8 14.6 20.2 12.5"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"
