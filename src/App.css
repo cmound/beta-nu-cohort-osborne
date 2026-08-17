@@ -4395,10 +4395,14 @@
   text-align: left;
 }
 
-.academic-plan-cell-input:hover:not(
+.academic-plan-cell-input:not(
     :read-only
   ) {
-  background: #f8fafc;
+  cursor: text;
+}
+
+.academic-plan-cell-input:read-only {
+  cursor: default;
 }
 
 .academic-plan-cell-input:focus {
@@ -4407,6 +4411,28 @@
   box-shadow:
     inset 0 0 0 2px
       var(--umass-blue);
+}
+
+.academic-plan-row-done
+  .academic-plan-cell-input:focus {
+  background: #c6efce;
+}
+
+.academic-plan-row-current
+  .academic-plan-cell-input:focus {
+  background: #fff200;
+}
+
+.academic-plan-row-pending
+  .academic-plan-cell-input:focus:not(
+    .academic-plan-status-input
+  ) {
+  background: #ffffff;
+}
+
+.academic-plan-row-pending
+  .academic-plan-status-input:focus {
+  background: #e5e7eb;
 }
 
 .academic-plan-status-input {

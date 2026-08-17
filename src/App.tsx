@@ -12949,6 +12949,8 @@ function CohortAcademicPlanPage() {
       return
     }
 
+    setFocusedAcademicPlanCell(null)
+
     nextElement.focus()
     nextElement.scrollIntoView({
       block: 'nearest',
@@ -12971,6 +12973,9 @@ function CohortAcademicPlanPage() {
       return
     }
 
+    const isEditing =
+      !event.currentTarget.readOnly
+
     let nextRowIndex = rowIndex
     let nextColumnIndex =
       columnIndex
@@ -12985,19 +12990,21 @@ function CohortAcademicPlanPage() {
         break
 
       case 'ArrowLeft': {
-        const selectionStart =
-          event.currentTarget
-            .selectionStart
+        if (isEditing) {
+          const selectionStart =
+            event.currentTarget
+              .selectionStart
 
-        const selectionEnd =
-          event.currentTarget
-            .selectionEnd
+          const selectionEnd =
+            event.currentTarget
+              .selectionEnd
 
-        if (
-          selectionStart !== 0 ||
-          selectionEnd !== 0
-        ) {
-          return
+          if (
+            selectionStart !== 0 ||
+            selectionEnd !== 0
+          ) {
+            return
+          }
         }
 
         nextColumnIndex -= 1
@@ -13005,25 +13012,27 @@ function CohortAcademicPlanPage() {
       }
 
       case 'ArrowRight': {
-        const selectionStart =
-          event.currentTarget
-            .selectionStart
+        if (isEditing) {
+          const selectionStart =
+            event.currentTarget
+              .selectionStart
 
-        const selectionEnd =
-          event.currentTarget
-            .selectionEnd
+          const selectionEnd =
+            event.currentTarget
+              .selectionEnd
 
-        const valueLength =
-          event.currentTarget
-            .value.length
+          const valueLength =
+            event.currentTarget
+              .value.length
 
-        if (
-          selectionStart !==
-          valueLength ||
-          selectionEnd !==
-          valueLength
-        ) {
-          return
+          if (
+            selectionStart !==
+              valueLength ||
+            selectionEnd !==
+              valueLength
+          ) {
+            return
+          }
         }
 
         nextColumnIndex += 1
@@ -13201,7 +13210,17 @@ function CohortAcademicPlanPage() {
                                   column.field
                                   ]
                               }
-                              onFocus={() =>
+                              readOnly={
+                                !(
+                                  focusedAcademicPlanCell
+                                    ?.recordId ===
+                                    record.id &&
+                                  focusedAcademicPlanCell
+                                    .field ===
+                                    column.field
+                                )
+                              }
+                              onClick={() =>
                                 setFocusedAcademicPlanCell(
                                   {
                                     recordId:
