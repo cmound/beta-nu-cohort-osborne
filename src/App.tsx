@@ -401,6 +401,10 @@ const navigationItems: readonly NavigationItem[] = [
     label: 'Shared Files',
     path: '/shared-files',
   },
+  {
+    label: 'Academic Plan',
+    path: '/academic-plan',
+  },
 ]
 
 const courses: readonly CourseNavigationItem[] = [
@@ -13229,6 +13233,16 @@ function App() {
               path="/shared-files"
               element={
                 <CohortSharedFilesPage />
+              }
+            />
+
+            <Route
+              path="/academic-plan"
+              element={
+                <CohortSectionPlaceholderPage
+                  title="Beta Nu Cohort Academic Plan"
+                  description="Cohort academic planning information and resources will be organized here."
+                />
               }
             />
 
