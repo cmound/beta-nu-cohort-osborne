@@ -13430,7 +13430,7 @@ function CoursePage() {
 }
 
 function App() {
-  const [coursesOpen, setCoursesOpen] = useState(false)
+  const [coursesOpen, setCoursesOpen] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const [
