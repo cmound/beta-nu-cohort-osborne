@@ -2549,6 +2549,525 @@
 }
 
 /* =========================================================
+   Beta Nu Fall Images
+   ========================================================= */
+
+.cohort-images-toolbar {
+  min-height: 82px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 14px;
+  padding: 12px 22px;
+  border: 1px solid #8b6b1a;
+  border-radius: 14px;
+  color: #f8fafc;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(10, 38, 77, 0.98) 0%,
+      rgba(8, 30, 58, 0.98) 58%,
+      rgba(5, 20, 42, 0.98) 100%
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.22),
+    0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+.cohort-images-toolbar-brand {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cohort-images-toolbar-seal {
+  width: 70px;
+  height: 70px;
+  flex: 0 0 70px;
+  display: block;
+  object-fit: contain;
+  filter:
+    drop-shadow(
+      0 2px 5px rgba(0, 0, 0, 0.35)
+    );
+}
+
+.cohort-images-toolbar-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cohort-images-toolbar h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+}
+
+.cohort-images-toolbar p {
+  max-width: 1050px;
+  margin: 7px 0 0;
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.cohort-images-toolbar
+  .cohort-images-selection-instruction {
+  color: #ffd200;
+  font-weight: 800;
+}
+
+.cohort-images-download-controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cohort-images-download-button,
+.cohort-images-cancel-button {
+  min-height: 46px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cohort-images-download-button {
+  border: 1px solid #8f6810;
+  color: #1f1a12;
+  background:
+    linear-gradient(
+      180deg,
+      #f3cf62 0%,
+      #d7a91f 48%,
+      #c69214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    inset 0 -2px 2px
+      rgba(71, 45, 0, 0.28),
+    0 3px 6px
+      rgba(0, 0, 0, 0.32);
+}
+
+.cohort-images-download-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f1a12;
+}
+
+.cohort-images-download-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.cohort-images-download-button:hover:not(
+    :disabled
+  ) {
+  border-color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe279 0%,
+      #e4b82d 48%,
+      #cb9712 100%
+    );
+}
+
+.cohort-images-download-button:disabled {
+  color: #64748b;
+  border-color: #94a3b8;
+  background: #d9e0e7;
+  box-shadow: none;
+  cursor: default;
+}
+
+.cohort-images-cancel-button {
+  border: 1px solid #94a3b8;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e8edf3 100%
+    );
+}
+
+.cohort-images-cancel-button:hover {
+  background: #ffffff;
+}
+
+.cohort-images-download-button:focus-visible,
+.cohort-images-cancel-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.cohort-images-section {
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid #7f8c9d;
+  border-radius: 6px;
+  background:
+    rgba(4, 20, 42, 0.96);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.cohort-images-section-header {
+  min-height: 58px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 16px;
+  border-bottom: 1px solid
+    rgba(198, 146, 20, 0.72);
+  background:
+    linear-gradient(
+      180deg,
+      #0d315b 0%,
+      #071f3d 100%
+    );
+}
+
+.cohort-images-section-title {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cohort-images-section-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cohort-images-section-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cohort-images-section-icon-seal {
+  width: 26px;
+  height: 26px;
+}
+
+.cohort-images-section-icon-monitor {
+  width: 27px;
+  height: 24px;
+  color: #F2B632;
+}
+
+.cohort-images-section-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter:
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.25)
+    );
+}
+
+.cohort-images-section-header h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.cohort-images-section-header p {
+  margin: 4px 0 0;
+  color: #cbd5e1;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.cohort-images-count-badge {
+  min-width: 88px;
+  height: 34px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 13px;
+  border: 1px solid #C89214;
+  border-radius: 7px;
+  color: #F2B632;
+  background:
+    linear-gradient(
+      to bottom,
+      #163b72 0%,
+      #0b2a56 55%,
+      #071c3c 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.18),
+    inset 0 -2px 3px
+      rgba(0, 0, 0, 0.28),
+    0 2px 6px
+      rgba(0, 0, 0, 0.28);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cohort-seal-image-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.cohort-wallpaper-image-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.cohort-image-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #64748b;
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      #0b2748 0%,
+      #061a31 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.07),
+    0 4px 10px
+      rgba(0, 0, 0, 0.22);
+}
+
+.cohort-image-card-selected {
+  border-color: #ffd200;
+  box-shadow:
+    inset 0 0 0 2px #ffd200,
+    0 5px 12px
+      rgba(0, 0, 0, 0.28);
+}
+
+.cohort-image-preview {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-bottom: 1px solid #64748b;
+}
+
+.cohort-image-preview-seal {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.35 / 1;
+  box-sizing: border-box;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: 2px solid #C89214;
+  border-radius: 8px;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(
+      45deg,
+      #d9e0e7 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      -45deg,
+      #d9e0e7 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      #d9e0e7 75%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 75%,
+      #d9e0e7 75%
+    );
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+.cohort-image-preview-wallpaper {
+  aspect-ratio: 16 / 9;
+  background: #020914;
+}
+
+.cohort-image-preview-media {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.cohort-image-preview-seal
+  .cohort-image-preview-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  object-fit: contain;
+  object-position: center center;
+  background: transparent;
+}
+
+.cohort-image-preview-wallpaper
+  .cohort-image-preview-media {
+  object-fit: cover;
+}
+
+.cohort-image-selection-control {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 5;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid #475569;
+  border-radius: 5px;
+  background:
+    rgba(255, 255, 255, 0.97);
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.cohort-image-selection-checkbox {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  accent-color: var(--umass-blue);
+  cursor: pointer;
+}
+
+.cohort-image-card-content {
+  padding: 11px 12px 12px;
+}
+
+.cohort-image-card-content h3 {
+  margin: 0;
+  color: #ffd200;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.cohort-image-specification {
+  display: block;
+  margin-top: 4px;
+  color: #8fd3ff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.cohort-image-card-content > p {
+  margin: 8px 0 0;
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.cohort-image-best-use strong {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.cohort-image-card-content
+  .cohort-image-tiff-note {
+  color: #f4c542;
+  font-size: 9px;
+  font-style: italic;
+}
+
+.cohort-image-file-name {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid
+    rgba(148, 163, 184, 0.3);
+}
+
+.cohort-image-file-name span,
+.cohort-image-file-name strong {
+  display: block;
+}
+
+.cohort-image-file-name span {
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.cohort-image-file-name strong {
+  margin-top: 3px;
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
    Beta Nu Cohort Norms
    ========================================================= */
 
