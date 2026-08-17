@@ -14872,6 +14872,39 @@ function App() {
                       strokeWidth="0.8"
                       strokeLinecap="round"
                     />
+
+                    <path
+                      d="M6.8 10.5
+                         12 12.8
+                         17.2 10.5"
+                      fill="none"
+                      stroke="#8F6500"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M8.2 14.6
+                         C10.5 15.7
+                         13.5 15.7
+                         15.8 14.6"
+                      fill="none"
+                      stroke="#9B6C08"
+                      strokeWidth="0.85"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M6.2 7.5
+                         12 5.4
+                         17.8 7.5"
+                      fill="none"
+                      stroke="#FFE58A"
+                      strokeWidth="0.7"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
                   </svg>
                 </span>
               ) : (
@@ -14943,6 +14976,34 @@ function App() {
                   />
 
                   <path
+                    d="M5.2 16.4
+                       H11.2"
+                    fill="none"
+                    stroke="#8F6500"
+                    strokeWidth="0.9"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M5.2 6.8
+                       H14.4"
+                    fill="none"
+                    stroke="#FFE58A"
+                    strokeWidth="0.75"
+                    strokeLinecap="round"
+                    opacity="0.9"
+                  />
+
+                  <path
+                    d="M4.8 6.5
+                       V17.3"
+                    fill="none"
+                    stroke="#9B6C08"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                  />
+
+                  <path
                     d="M12.5 15.7
                        18.6 9.6
                        21 12
@@ -14979,6 +15040,26 @@ function App() {
                     stroke="#FFD76A"
                     strokeWidth="0.8"
                     strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M14.2 16.4
+                       19.8 10.8"
+                    fill="none"
+                    stroke="#8F6500"
+                    strokeWidth="0.75"
+                    strokeLinecap="round"
+                    opacity="0.95"
+                  />
+
+                  <path
+                    d="M15 15.5
+                       20.2 10.3"
+                    fill="none"
+                    stroke="#FFE58A"
+                    strokeWidth="0.65"
+                    strokeLinecap="round"
+                    opacity="0.9"
                   />
                 </svg>
               </span>
