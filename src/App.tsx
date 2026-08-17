@@ -44,6 +44,10 @@ interface CoursePageProps {
   readonly CohortAcademicPlanRecord[]
   readonly meetings:
   readonly CohortMeetingRecord[]
+  readonly contacts:
+  readonly CohortContactRecord[]
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
 }
 
 interface CourseAssignmentRecord {
@@ -93,6 +97,17 @@ interface CourseAssignmentFormState {
 type CourseWorkspaceState = Record<
   string,
   CourseWorkspaceRecord
+>
+
+type CourseProgressStatus =
+  | "Haven't Started"
+  | 'In Progress'
+  | 'Done'
+  | 'Help!'
+
+type CourseProgressState = Record<
+  string,
+  CourseProgressStatus
 >
 
 interface ActiveCourseDashboardItem {
@@ -1178,6 +1193,8 @@ function formatCohortAcademicPlanDate(
 
 const COURSE_WORKSPACES_STORAGE_KEY =
   'beta-nu-course-workspaces-v1'
+const COURSE_PROGRESS_STORAGE_KEY =
+  'beta-nu-course-progress-v1'
 
 const courseAssignmentWeekdayLabels = [
   'Sun.',
@@ -1429,6 +1446,107 @@ function readStoredCourseWorkspaces():
     return workspaces
   } catch {
     return {}
+  }
+}
+
+function isCourseProgressStatus(
+  value: unknown,
+): value is CourseProgressStatus {
+  return (
+    value === "Haven't Started" ||
+    value === 'In Progress' ||
+    value === 'Done' ||
+    value === 'Help!'
+  )
+}
+
+function getCourseProgressKey(
+  courseSlug: string,
+  contactId: string,
+  assignmentId: string,
+): string {
+  return (
+    `${courseSlug}::` +
+    `${contactId}::` +
+    assignmentId
+  )
+}
+
+function readStoredCourseProgress():
+  CourseProgressState {
+  const storedValue =
+    window.localStorage.getItem(
+      COURSE_PROGRESS_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !isCourseWorkspaceStorageObject(
+        parsedValue,
+      )
+    ) {
+      return {}
+    }
+
+    const progress:
+      CourseProgressState = {}
+
+    for (
+      const [
+        progressKey,
+        progressValue,
+      ] of Object.entries(parsedValue)
+    ) {
+      if (
+        isCourseProgressStatus(
+          progressValue,
+        )
+      ) {
+        progress[progressKey] =
+          progressValue
+      }
+    }
+
+    return progress
+  } catch {
+    return {}
+  }
+}
+
+function getNextCourseProgressStatus(
+  status: CourseProgressStatus,
+): CourseProgressStatus {
+  switch (status) {
+    case "Haven't Started":
+      return 'In Progress'
+    case 'In Progress':
+      return 'Done'
+    case 'Done':
+      return 'Help!'
+    case 'Help!':
+      return "Haven't Started"
+  }
+}
+
+function getCourseProgressStatusClassName(
+  status: CourseProgressStatus,
+): string {
+  switch (status) {
+    case "Haven't Started":
+      return 'course-progress-status-not-started'
+    case 'In Progress':
+      return 'course-progress-status-progress'
+    case 'Done':
+      return 'course-progress-status-done'
+    case 'Help!':
+      return 'course-progress-status-help'
   }
 }
 
@@ -14316,6 +14434,8 @@ function PlaceholderPage({
 function CoursePage({
   academicPlan,
   meetings,
+  contacts,
+  contactStatuses,
 }: CoursePageProps) {
   const { courseCode } = useParams()
 
@@ -14325,6 +14445,14 @@ function CoursePage({
   ] =
     useState<CourseWorkspaceState>(
       readStoredCourseWorkspaces,
+    )
+
+  const [
+    courseProgress,
+    setCourseProgress,
+  ] =
+    useState<CourseProgressState>(
+      readStoredCourseProgress,
     )
 
   const [
@@ -14358,11 +14486,16 @@ function CoursePage({
     )
 
   const [
-    selectedWebinarId,
-    setSelectedWebinarId,
+    isWebinarDeleteMode,
+    setIsWebinarDeleteMode,
+  ] = useState(false)
+
+  const [
+    selectedWebinarIds,
+    setSelectedWebinarIds,
   ] =
-    useState<string | null>(
-      null,
+    useState<readonly string[]>(
+      [],
     )
 
   useEffect(() => {
@@ -14373,6 +14506,15 @@ function CoursePage({
       ),
     )
   }, [courseWorkspaces])
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      COURSE_PROGRESS_STORAGE_KEY,
+      JSON.stringify(
+        courseProgress,
+      ),
+    )
+  }, [courseProgress])
 
   useEffect(() => {
     setIsAssignmentModalOpen(
@@ -14388,8 +14530,13 @@ function CoursePage({
     setSelectedAssignmentId(
       null,
     )
-    setSelectedWebinarId(
-      null,
+
+    setIsWebinarDeleteMode(
+      false,
+    )
+
+    setSelectedWebinarIds(
+      [],
     )
   }, [courseCode])
 
@@ -14437,6 +14584,84 @@ function CoursePage({
     courseSlug
     ] ??
     createEmptyCourseWorkspaceRecord()
+
+  const courseProgressContacts =
+    sortCohortContacts(
+      contacts,
+    ).filter(
+      (contact) =>
+        !contact.isMentor &&
+        (
+          contactStatuses[
+          contact.id
+          ] ?? 'Active'
+        ) === 'Active',
+    )
+
+  function updateCourseProgress(
+    contactId: string,
+    assignmentId: string,
+    status: CourseProgressStatus,
+  ): void {
+    const progressKey =
+      getCourseProgressKey(
+        courseSlug,
+        contactId,
+        assignmentId,
+      )
+
+    setCourseProgress(
+      (current) => ({
+        ...current,
+        [progressKey]: status,
+      }),
+    )
+  }
+
+  function getStudentCourseProgress(
+    contactId: string,
+  ): {
+    readonly completed: number
+    readonly total: number
+    readonly percent: number
+  } {
+    const total =
+      workspace.assignments.length
+
+    let completed = 0
+
+    for (
+      const assignment
+      of workspace.assignments
+    ) {
+      const progressKey =
+        getCourseProgressKey(
+          courseSlug,
+          contactId,
+          assignment.id,
+        )
+
+      if (
+        courseProgress[
+        progressKey
+        ] === 'Done'
+      ) {
+        completed += 1
+      }
+    }
+
+    return {
+      completed,
+      total,
+      percent:
+        total === 0
+          ? 0
+          : Math.round(
+            (completed / total) *
+            100,
+          ),
+    }
+  }
 
   function updateCourseWorkspace(
     updates:
@@ -14730,6 +14955,18 @@ function CoursePage({
       ? 14
       : 10
 
+  const webinarColumnCount =
+    (
+      isSixteenWeekCourse
+        ? 7
+        : 6
+    ) +
+    (
+      isWebinarDeleteMode
+        ? 1
+        : 0
+    )
+
   const webinarMeetingId =
     extractCourseZoomMeetingId(
       workspace.webinarZoomUrl,
@@ -14765,10 +15002,6 @@ function CoursePage({
         newWebinar,
       ],
     })
-
-    setSelectedWebinarId(
-      newWebinar.id,
-    )
   }
 
   function updateCourseWebinar(
@@ -14821,39 +15054,50 @@ function CoursePage({
     })
   }
 
-  function deleteSelectedCourseWebinar():
+  function toggleCourseWebinarSelection(
+    webinarId: string,
+  ): void {
+    setSelectedWebinarIds(
+      (currentIds) =>
+        currentIds.includes(
+          webinarId,
+        )
+          ? currentIds.filter(
+            (selectedId) =>
+              selectedId !==
+              webinarId,
+          )
+          : [
+            ...currentIds,
+            webinarId,
+          ],
+    )
+  }
+
+  function handleDeleteCourseWebinars():
     void {
-    if (
-      selectedWebinarId === null
-    ) {
+    if (!isWebinarDeleteMode) {
+      setSelectedWebinarIds([])
+      setIsWebinarDeleteMode(true)
       return
     }
 
-    const selectedWebinar =
-      workspace.webinars.find(
-        (webinar) =>
-          webinar.id ===
-          selectedWebinarId,
+    if (
+      selectedWebinarIds.length === 0
+    ) {
+      window.alert(
+        'Select at least one webinar to delete.',
       )
 
-    if (
-      selectedWebinar ===
-      undefined
-    ) {
-      setSelectedWebinarId(null)
       return
     }
 
-    const webinarLabel =
-      selectedWebinar.webinarNumber
-        .trim() ||
-      'this webinar'
-
-    if (
-      !window.confirm(
-        `Delete ${webinarLabel}?`,
+    const confirmed =
+      window.confirm(
+        `Delete ${selectedWebinarIds.length} selected webinar(s)?`,
       )
-    ) {
+
+    if (!confirmed) {
       return
     }
 
@@ -14861,12 +15105,14 @@ function CoursePage({
       webinars:
         workspace.webinars.filter(
           (webinar) =>
-            webinar.id !==
-            selectedWebinarId,
+            !selectedWebinarIds.includes(
+              webinar.id,
+            ),
         ),
     })
 
-    setSelectedWebinarId(null)
+    setSelectedWebinarIds([])
+    setIsWebinarDeleteMode(false)
   }
 
   function handleCourseWebinarTableKeyDown(
@@ -15224,9 +15470,10 @@ function CoursePage({
                 deleteSelectedAssignment
               }
             >
-              <span aria-hidden="true">
-                🗑
-              </span>
+              <span
+                aria-hidden="true"
+                className="course-workspace-trash-icon"
+              />
 
               Delete
             </button>
@@ -15565,18 +15812,20 @@ function CoursePage({
                 type="button"
                 className="course-workspace-delete-button"
                 disabled={
-                  selectedWebinarId ===
-                  null
+                  workspace.webinars.length ===
+                  0
                 }
                 onClick={
-                  deleteSelectedCourseWebinar
+                  handleDeleteCourseWebinars
                 }
               >
                 <span aria-hidden="true">
                   🗑
                 </span>
 
-                Delete
+                {isWebinarDeleteMode
+                  ? `Delete Selected (${selectedWebinarIds.length})`
+                  : 'Delete'}
               </button>
             </div>
           </header>
@@ -15630,6 +15879,13 @@ function CoursePage({
             >
               <thead>
                 <tr>
+                  {isWebinarDeleteMode ? (
+                    <th
+                      className="course-webinar-select-column"
+                      aria-label="Select webinar"
+                    />
+                  ) : null}
+
                   <th className="course-webinar-number-column">
                     Webinar #
                   </th>
@@ -15669,9 +15925,7 @@ function CoursePage({
                     <td
                       className="course-workspace-empty-state"
                       colSpan={
-                        isSixteenWeekCourse
-                          ? 7
-                          : 6
+                        webinarColumnCount
                       }
                     >
                       No important webinars
@@ -15685,22 +15939,35 @@ function CoursePage({
                       <tr
                         key={webinar.id}
                         className={
-                          webinar.id ===
-                            selectedWebinarId
+                          selectedWebinarIds.includes(
+                            webinar.id,
+                          )
                             ? 'course-webinar-row course-webinar-row-selected'
                             : 'course-webinar-row'
                         }
-                        onClick={() => {
-                          setSelectedWebinarId(
-                            webinar.id,
-                          )
-                        }}
-                        onFocusCapture={() => {
-                          setSelectedWebinarId(
-                            webinar.id,
-                          )
-                        }}
                       >
+                        {isWebinarDeleteMode ? (
+                          <td className="course-webinar-select-cell">
+                            <input
+                              type="checkbox"
+                              className="course-webinar-delete-checkbox"
+                              checked={
+                                selectedWebinarIds.includes(
+                                  webinar.id,
+                                )
+                              }
+                              aria-label={
+                                `Select ${webinar.webinarNumber || 'webinar'} for deletion`
+                              }
+                              onChange={() => {
+                                toggleCourseWebinarSelection(
+                                  webinar.id,
+                                )
+                              }}
+                            />
+                          </td>
+                        ) : null}
+
                         <td>
                           <input
                             type="text"
@@ -16126,18 +16393,145 @@ function CoursePage({
           </div>
         </header>
 
-        <div className="course-progress-empty-state">
-          <strong>
-            Assignment progress will appear
-            here.
-          </strong>
+        <div className="course-progress-table-frame">
+          <table className="course-progress-table">
+            <thead>
+              <tr>
+                <th className="course-progress-student-column">
+                  Student
+                </th>
 
-          <span>
-            Student status columns will be
-            created automatically as
-            assignments are added.
-          </span>
+                <th className="course-progress-overall-column">
+                  Overall Progress
+                </th>
+
+                {workspace.assignments.length ===
+                  0 ? (
+                  <th className="course-progress-assignment-column">
+                    Assignments
+                  </th>
+                ) : (
+                  workspace.assignments.map(
+                    (assignment) => (
+                      <th
+                        className="course-progress-assignment-column"
+                        key={assignment.id}
+                        title={assignment.name}
+                      >
+                        <strong>
+                          {assignment.asn}
+                        </strong>
+
+                        <span>
+                          {assignment.name}
+                        </span>
+                      </th>
+                    ),
+                  )
+                )}
+              </tr>
+            </thead>
+
+            <tbody>
+              {courseProgressContacts.map(
+                (contact) => {
+                  const summary =
+                    getStudentCourseProgress(
+                      contact.id,
+                    )
+
+                  return (
+                    <tr key={contact.id}>
+                      <td className="course-progress-student-name">
+                        {contact.name}
+                      </td>
+
+                      <td className="course-progress-overall-cell">
+                        <div className="course-progress-overall-summary">
+                          <strong>
+                            {summary.completed} /{' '}
+                            {summary.total}
+                          </strong>
+
+                          <span>
+                            {summary.percent}% Done
+                          </span>
+                        </div>
+
+                        <progress
+                          className="course-progress-overall-bar"
+                          value={summary.percent}
+                          max={100}
+                          aria-label={`${contact.name} overall assignment progress`}
+                        />
+                      </td>
+
+                      {workspace.assignments.length ===
+                        0 ? (
+                        <td className="course-progress-no-assignments">
+                          Add assignments above to
+                          begin tracking progress.
+                        </td>
+                      ) : (
+                        workspace.assignments.map(
+                          (assignment) => {
+                            const progressKey =
+                              getCourseProgressKey(
+                                courseSlug,
+                                contact.id,
+                                assignment.id,
+                              )
+
+                            const status =
+                              courseProgress[
+                              progressKey
+                              ] ??
+                              "Haven't Started"
+
+                            return (
+                              <td
+                                className="course-progress-status-cell"
+                                key={assignment.id}
+                              >
+                                <button
+                                  type="button"
+                                  className={`course-progress-status-button ${getCourseProgressStatusClassName(
+                                    status,
+                                  )}`}
+                                  onClick={() =>
+                                    updateCourseProgress(
+                                      contact.id,
+                                      assignment.id,
+                                      getNextCourseProgressStatus(
+                                        status,
+                                      ),
+                                    )
+                                  }
+                                  title="Click to change progress status"
+                                  aria-label={`${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. Click to change status.`}
+                                >
+                                  {status}
+                                </button>
+                              </td>
+                            )
+                          },
+                        )
+                      )}
+                    </tr>
+                  )
+                },
+              )}
+            </tbody>
+          </table>
         </div>
+
+        <p className="course-progress-instruction">
+          Click a student assignment cell to
+          cycle through Haven&apos;t Started,
+          In Progress, Done, and Help!.
+          Progress is stored separately for
+          each course.
+        </p>
       </section>
     </section>
   )
@@ -18197,6 +18591,10 @@ function App() {
                   }
                   meetings={
                     cohortMeetings
+                  }
+                  contacts={contacts}
+                  contactStatuses={
+                    contactStatuses
                   }
                 />
               }

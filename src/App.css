@@ -8065,6 +8065,41 @@
   font-weight: 900;
 }
 
+.course-workspace-trash-icon {
+  position: relative;
+  width: 12px;
+  height: 14px;
+  flex: 0 0 12px;
+  display: inline-block;
+  box-sizing: border-box;
+  border: 2px solid #ffffff;
+  border-top: 0;
+  border-radius: 0 0 2px 2px;
+  margin-right: 1px;
+}
+
+.course-workspace-trash-icon::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -2px;
+  width: 12px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.course-workspace-trash-icon::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 2px;
+  width: 4px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
 .course-workspace-primary-button:hover {
   background:
     linear-gradient(
@@ -8346,6 +8381,247 @@
 .course-progress-empty-state span {
   font-size: 10px;
   line-height: 1.35;
+}
+
+/* =========================================================
+   Course Workspace Phase 4 Student Progress
+   ========================================================= */
+
+.course-progress-table-frame {
+  width: 100%;
+  overflow-x: auto;
+  border-top: 1px solid #7f8c9d;
+  border-bottom: 1px solid #7f8c9d;
+  background: #ffffff;
+}
+
+.course-progress-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  color: #111827;
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.course-progress-table th,
+.course-progress-table td {
+  box-sizing: border-box;
+  border-right: 1px solid #8d99a8;
+  border-bottom: 1px solid #8d99a8;
+  vertical-align: middle;
+}
+
+.course-progress-table th {
+  height: 52px;
+  padding: 6px 8px;
+  color: #111827;
+  background:
+    linear-gradient(
+      180deg,
+      #c69214 0%,
+      #a97800 100%
+    );
+  border-bottom: 2px solid #0b1f3b;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.course-progress-student-column,
+.course-progress-student-name {
+  position: sticky;
+  left: 0;
+  width: 205px;
+  min-width: 205px;
+  max-width: 205px;
+  border-right: 2px solid #0b1f3b !important;
+}
+
+.course-progress-student-column {
+  z-index: 5;
+  text-align: left !important;
+}
+
+.course-progress-student-name {
+  z-index: 3;
+  height: 38px;
+  padding: 6px 9px;
+  color: #111827;
+  background: #ffffff;
+  font-weight: 800;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.course-progress-overall-column,
+.course-progress-overall-cell {
+  width: 175px;
+  min-width: 175px;
+  max-width: 175px;
+}
+
+.course-progress-overall-cell {
+  height: 38px;
+  padding: 4px 8px;
+  background: #f8fafc;
+}
+
+.course-progress-overall-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+  line-height: 1;
+}
+
+.course-progress-overall-summary strong {
+  color: #0b1f3b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.course-progress-overall-summary span {
+  color: #475569;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.course-progress-overall-bar {
+  width: 100%;
+  height: 8px;
+  display: block;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #d7dee7;
+}
+
+.course-progress-overall-bar::-webkit-progress-bar {
+  border-radius: 999px;
+  background: #d7dee7;
+}
+
+.course-progress-overall-bar::-webkit-progress-value {
+  border-radius: 999px;
+  background: #56c96b;
+}
+
+.course-progress-overall-bar::-moz-progress-bar {
+  border-radius: 999px;
+  background: #56c96b;
+}
+
+.course-progress-assignment-column {
+  width: 155px;
+  min-width: 155px;
+  max-width: 155px;
+}
+
+.course-progress-assignment-column strong,
+.course-progress-assignment-column span {
+  display: block;
+}
+
+.course-progress-assignment-column strong {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.course-progress-assignment-column span {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #111827;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-progress-status-cell {
+  width: 155px;
+  min-width: 155px;
+  max-width: 155px;
+  height: 38px;
+  padding: 0;
+  background: #ffffff;
+}
+
+.course-progress-status-button {
+  width: 100%;
+  height: 37px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  cursor: pointer;
+}
+
+.course-progress-status-button:hover,
+.course-progress-status-button:focus-visible {
+  position: relative;
+  z-index: 2;
+  box-shadow:
+    inset 0 0 0 2px #005eb8;
+}
+
+.course-progress-status-not-started {
+  color: #111827;
+  background: #ffffff;
+}
+
+.course-progress-status-progress {
+  color: #111827;
+  background: #fff200;
+  font-weight: 900;
+}
+
+.course-progress-status-done {
+  color: #111827;
+  background: #56c96b;
+  font-weight: 900;
+}
+
+.course-progress-status-help {
+  color: #ffff00;
+  background: #c00000;
+  font-weight: 900;
+}
+
+.course-progress-no-assignments {
+  width: 310px;
+  min-width: 310px;
+  height: 38px;
+  padding: 6px 10px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 10px;
+  font-style: italic;
+  text-align: center;
+}
+
+.course-progress-instruction {
+  margin: 0;
+  padding: 7px 12px;
+  border-top: 1px solid #cbd5e1;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 9px;
+  font-style: italic;
+  line-height: 1.3;
 }
 
 /* =========================================================
@@ -8905,13 +9181,74 @@
   font-size: 10px;
 }
 
-/* Selected webinar row for Delete. */
+/* Webinar checkbox delete mode. */
 .course-webinar-row {
+  cursor: default;
+}
+
+.course-webinar-select-column,
+.course-webinar-select-cell {
+  width: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+  box-sizing: border-box;
+  text-align: center !important;
+}
+
+.course-webinar-select-cell {
+  padding: 0 !important;
+  background: #f8fafc !important;
+}
+
+.course-webinar-delete-checkbox {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0 auto;
+  padding: 0;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: 2px solid #334155;
+  border-radius: 2px;
+
+  background: #ffffff;
   cursor: pointer;
 }
 
+.course-webinar-delete-checkbox:checked {
+  border-color: #005eb8;
+  background: #ffffff;
+}
+
+.course-webinar-delete-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+
+  width: 5px;
+  height: 9px;
+
+  border: solid #005eb8;
+  border-width: 0 2px 2px 0;
+
+  transform: rotate(45deg);
+}
+
+.course-webinar-delete-checkbox:focus-visible {
+  outline: 2px solid #ffd200;
+  outline-offset: 2px;
+}
+
 .course-webinar-row-selected
-  > td,
+  > td {
+  background: #dbeafe;
+}
+
 .course-webinar-row-selected
   .course-webinar-cell-input,
 .course-webinar-row-selected
@@ -8919,10 +9256,4 @@
 .course-webinar-row-selected
   .course-webinar-derived-value {
   background: #dbeafe;
-}
-
-.course-webinar-row-selected
-  > td:first-child {
-  box-shadow:
-    inset 3px 0 0 #005eb8;
 }
