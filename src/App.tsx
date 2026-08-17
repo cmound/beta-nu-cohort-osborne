@@ -13,6 +13,8 @@ import {
   Routes,
   useParams,
 } from 'react-router'
+import { renderAsync } from 'docx-preview'
+import * as XLSX from 'xlsx'
 import './App.css'
 
 interface NavigationItem {
@@ -77,6 +79,31 @@ interface CohortImageAsset {
   readonly specification: string
   readonly description: string
   readonly bestUse: string
+}
+
+type CohortSharedFilePreviewKind =
+  | 'pdf'
+  | 'docx'
+  | 'spreadsheet'
+  | 'image'
+  | 'text'
+  | 'unsupported'
+
+interface CohortSharedFile {
+  readonly id: string
+  readonly title: string
+  readonly fileName: string
+  readonly previewFileName?: string
+  readonly category: string
+  readonly description: string
+  readonly runtimeOriginalUrl?: string
+  readonly runtimePreviewUrl?: string
+}
+
+interface CohortSharedSpreadsheetSheet {
+  readonly name: string
+  readonly rows:
+  readonly (readonly string[])[]
 }
 
 type CohortTimeZone =
@@ -616,6 +643,212 @@ const cohortZoomWallpapers:
         'Meetings, interviews, presentations, and other professional video calls.',
     },
   ]
+
+const cohortSharedFiles:
+  readonly CohortSharedFile[] = []
+
+function getCohortSharedFileExtension(
+  fileName: string,
+): string {
+  const separatorIndex =
+    fileName.lastIndexOf('.')
+
+  if (separatorIndex === -1) {
+    return ''
+  }
+
+  return fileName
+    .slice(separatorIndex + 1)
+    .toLowerCase()
+}
+
+function getCohortSharedFilePreviewFileName(
+  file: CohortSharedFile,
+): string {
+  return (
+    file.previewFileName ??
+    file.fileName
+  )
+}
+
+function getCohortSharedFilePreviewKind(
+  file: CohortSharedFile,
+): CohortSharedFilePreviewKind {
+  const previewFileName =
+    getCohortSharedFilePreviewFileName(
+      file,
+    )
+
+  const extension =
+    getCohortSharedFileExtension(
+      previewFileName,
+    )
+
+  if (extension === 'pdf') {
+    return 'pdf'
+  }
+
+  if (extension === 'docx') {
+    return 'docx'
+  }
+
+  if (
+    extension === 'xlsx' ||
+    extension === 'xls' ||
+    extension === 'csv'
+  ) {
+    return 'spreadsheet'
+  }
+
+  if (
+    extension === 'png' ||
+    extension === 'jpg' ||
+    extension === 'jpeg' ||
+    extension === 'gif' ||
+    extension === 'webp' ||
+    extension === 'bmp' ||
+    extension === 'svg'
+  ) {
+    return 'image'
+  }
+
+  if (
+    extension === 'txt' ||
+    extension === 'md'
+  ) {
+    return 'text'
+  }
+
+  return 'unsupported'
+}
+
+function getCohortSharedFileTypeLabel(
+  fileName: string,
+): string {
+  const extension =
+    getCohortSharedFileExtension(
+      fileName,
+    )
+
+  if (
+    extension === 'jpg' ||
+    extension === 'jpeg'
+  ) {
+    return 'JPEG'
+  }
+
+  if (extension.length === 0) {
+    return 'FILE'
+  }
+
+  return extension.toUpperCase()
+}
+
+function getCohortSharedFileUrl(
+  fileName: string,
+): string {
+  return (
+    `${import.meta.env.BASE_URL}` +
+    `shared-files/${encodeURIComponent(
+      fileName,
+    )}`
+  )
+}
+
+function getCohortSharedFileOriginalUrl(
+  file: CohortSharedFile,
+): string {
+  return (
+    file.runtimeOriginalUrl ??
+    getCohortSharedFileUrl(
+      file.fileName,
+    )
+  )
+}
+
+function getCohortSharedFilePreviewUrl(
+  file: CohortSharedFile,
+): string {
+  if (
+    file.runtimePreviewUrl !== undefined
+  ) {
+    return file.runtimePreviewUrl
+  }
+
+  return getCohortSharedFileUrl(
+    getCohortSharedFilePreviewFileName(
+      file,
+    ),
+  )
+}
+
+function canCohortSharedFilePreviewDirectly(
+  fileName: string,
+): boolean {
+  const extension =
+    getCohortSharedFileExtension(
+      fileName,
+    )
+
+  return (
+    extension === 'pdf' ||
+    extension === 'docx' ||
+    extension === 'xlsx' ||
+    extension === 'xls' ||
+    extension === 'csv' ||
+    extension === 'png' ||
+    extension === 'jpg' ||
+    extension === 'jpeg' ||
+    extension === 'gif' ||
+    extension === 'webp' ||
+    extension === 'bmp' ||
+    extension === 'svg' ||
+    extension === 'txt' ||
+    extension === 'md'
+  )
+}
+
+function getCohortSharedFileDefaultTitle(
+  fileName: string,
+): string {
+  const separatorIndex =
+    fileName.lastIndexOf('.')
+
+  if (separatorIndex <= 0) {
+    return fileName
+  }
+
+  return fileName.slice(
+    0,
+    separatorIndex,
+  )
+}
+
+function getSpreadsheetColumnLabel(
+  columnIndex: number,
+): string {
+  let remainingIndex =
+    columnIndex + 1
+
+  let label = ''
+
+  while (remainingIndex > 0) {
+    const remainder =
+      (remainingIndex - 1) % 26
+
+    label =
+      String.fromCharCode(
+        65 + remainder,
+      ) + label
+
+    remainingIndex =
+      Math.floor(
+        (remainingIndex - 1) / 26,
+      )
+  }
+
+  return label
+}
 
 const cohortTimeZoneOptions: readonly CohortTimeZone[] = [
   'Eastern',
@@ -10161,6 +10394,1448 @@ function CohortImagesPage() {
   )
 }
 
+function CohortSharedFilesPage() {
+  const [
+    addedSharedFiles,
+    setAddedSharedFiles,
+  ] =
+    useState<
+      readonly CohortSharedFile[]
+    >([])
+
+  const [
+    isAddDocumentOpen,
+    setIsAddDocumentOpen,
+  ] =
+    useState(false)
+
+  const [
+    addDocumentTitle,
+    setAddDocumentTitle,
+  ] =
+    useState('')
+
+  const [
+    addDocumentCategory,
+    setAddDocumentCategory,
+  ] =
+    useState('')
+
+  const [
+    addDocumentDescription,
+    setAddDocumentDescription,
+  ] =
+    useState('')
+
+  const [
+    addDocumentOriginalFile,
+    setAddDocumentOriginalFile,
+  ] =
+    useState<File | null>(null)
+
+  const [
+    addDocumentPreviewFile,
+    setAddDocumentPreviewFile,
+  ] =
+    useState<File | null>(null)
+
+  const sharedFileObjectUrlsRef =
+    useRef<string[]>([])
+
+  const [searchTerm, setSearchTerm] =
+    useState('')
+
+  const [
+    categoryFilter,
+    setCategoryFilter,
+  ] =
+    useState('All')
+
+  const [
+    selectedFileId,
+    setSelectedFileId,
+  ] =
+    useState<string | null>(
+      cohortSharedFiles[0]?.id ?? null,
+    )
+
+  const [
+    previewMessage,
+    setPreviewMessage,
+  ] =
+    useState('')
+
+  const [
+    textPreview,
+    setTextPreview,
+  ] =
+    useState('')
+
+  const [
+    spreadsheetSheets,
+    setSpreadsheetSheets,
+  ] =
+    useState<
+      readonly CohortSharedSpreadsheetSheet[]
+    >([])
+
+  const [
+    selectedSpreadsheetSheetName,
+    setSelectedSpreadsheetSheetName,
+  ] =
+    useState('')
+
+  const docxPreviewRef =
+    useRef<HTMLDivElement>(null)
+
+  const allSharedFiles:
+    readonly CohortSharedFile[] = [
+      ...cohortSharedFiles,
+      ...addedSharedFiles,
+    ]
+
+  const categoryOptions = [
+    'All',
+    ...Array.from(
+      new Set(
+        allSharedFiles.map(
+          (file) => file.category,
+        ),
+      ),
+    ).sort(
+      (
+        firstCategory,
+        secondCategory,
+      ) =>
+        firstCategory.localeCompare(
+          secondCategory,
+        ),
+    ),
+  ]
+
+  const normalizedSearchTerm =
+    searchTerm
+      .trim()
+      .toLowerCase()
+
+  const visibleFiles =
+    allSharedFiles.filter(
+      (file) => {
+        const categoryMatches =
+          categoryFilter === 'All' ||
+          file.category ===
+          categoryFilter
+
+        if (!categoryMatches) {
+          return false
+        }
+
+        if (
+          normalizedSearchTerm.length ===
+          0
+        ) {
+          return true
+        }
+
+        return [
+          file.title,
+          file.fileName,
+          file.category,
+          file.description,
+        ].some((value) =>
+          value
+            .toLowerCase()
+            .includes(
+              normalizedSearchTerm,
+            ),
+        )
+      },
+    )
+
+  const selectedFile =
+    selectedFileId === null
+      ? null
+      : allSharedFiles.find(
+        (file) =>
+          file.id === selectedFileId,
+      ) ?? null
+
+  const selectedPreviewKind =
+    selectedFile === null
+      ? null
+      : getCohortSharedFilePreviewKind(
+        selectedFile,
+      )
+
+  const selectedPreviewFileName =
+    selectedFile === null
+      ? null
+      : getCohortSharedFilePreviewFileName(
+        selectedFile,
+      )
+
+  const selectedSpreadsheetSheet =
+    spreadsheetSheets.find(
+      (sheet) =>
+        sheet.name ===
+        selectedSpreadsheetSheetName,
+    ) ??
+    spreadsheetSheets[0] ??
+    null
+
+  const spreadsheetColumnCount =
+    selectedSpreadsheetSheet === null
+      ? 0
+      : selectedSpreadsheetSheet.rows.reduce(
+        (
+          maximumColumnCount,
+          row,
+        ) =>
+          Math.max(
+            maximumColumnCount,
+            row.length,
+          ),
+        0,
+      )
+
+  useEffect(() => {
+    return () => {
+      for (
+        const objectUrl
+        of sharedFileObjectUrlsRef.current
+      ) {
+        URL.revokeObjectURL(
+          objectUrl,
+        )
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (
+      visibleFiles.length === 0
+    ) {
+      if (
+        selectedFileId !== null
+      ) {
+        setSelectedFileId(null)
+      }
+
+      return
+    }
+
+    const selectedFileStillVisible =
+      selectedFileId !== null &&
+      visibleFiles.some(
+        (file) =>
+          file.id === selectedFileId,
+      )
+
+    if (!selectedFileStillVisible) {
+      setSelectedFileId(
+        visibleFiles[0]?.id ?? null,
+      )
+    }
+  }, [
+    selectedFileId,
+    visibleFiles,
+  ])
+
+  useEffect(() => {
+    const currentDocxPreview =
+      docxPreviewRef.current
+
+    if (
+      currentDocxPreview !== null
+    ) {
+      currentDocxPreview.replaceChildren()
+    }
+
+    setPreviewMessage('')
+    setTextPreview('')
+    setSpreadsheetSheets([])
+    setSelectedSpreadsheetSheetName('')
+
+    if (
+      selectedFile === null ||
+      selectedPreviewKind === null ||
+      selectedPreviewFileName === null
+    ) {
+      return undefined
+    }
+
+    if (
+      selectedPreviewKind === 'pdf' ||
+      selectedPreviewKind === 'image' ||
+      selectedPreviewKind ===
+      'unsupported'
+    ) {
+      return undefined
+    }
+
+    const abortController =
+      new AbortController()
+
+    let isCancelled = false
+
+    async function loadSelectedPreview():
+      Promise<void> {
+      if (
+        selectedFile === null ||
+        selectedPreviewFileName === null
+      ) {
+        return
+      }
+
+      setPreviewMessage(
+        'Loading document preview...',
+      )
+
+      try {
+        const response =
+          await fetch(
+            getCohortSharedFilePreviewUrl(
+              selectedFile,
+            ),
+            {
+              signal:
+                abortController.signal,
+            },
+          )
+
+        if (!response.ok) {
+          throw new Error(
+            `Unable to load ${selectedPreviewFileName}.`,
+          )
+        }
+
+        if (
+          selectedPreviewKind ===
+          'docx'
+        ) {
+          const documentBlob =
+            await response.blob()
+
+          if (isCancelled) {
+            return
+          }
+
+          const previewElement =
+            docxPreviewRef.current
+
+          if (
+            previewElement === null
+          ) {
+            return
+          }
+
+          previewElement.replaceChildren()
+
+          await renderAsync(
+            documentBlob,
+            previewElement,
+            undefined,
+            {
+              breakPages: true,
+              ignoreWidth: false,
+              ignoreHeight: false,
+              ignoreFonts: false,
+            },
+          )
+
+          if (!isCancelled) {
+            setPreviewMessage('')
+          }
+
+          return
+        }
+
+        if (
+          selectedPreviewKind ===
+          'spreadsheet'
+        ) {
+          const workbookBuffer =
+            await response.arrayBuffer()
+
+          if (isCancelled) {
+            return
+          }
+
+          const workbook =
+            XLSX.read(
+              workbookBuffer,
+              {
+                type: 'array',
+              },
+            )
+
+          const sheets:
+            CohortSharedSpreadsheetSheet[] =
+            workbook.SheetNames.map(
+              (sheetName) => {
+                const worksheet =
+                  workbook.Sheets[
+                  sheetName
+                  ]
+
+                if (
+                  worksheet ===
+                  undefined
+                ) {
+                  return {
+                    name: sheetName,
+                    rows: [],
+                  }
+                }
+
+                const rawRows =
+                  XLSX.utils.sheet_to_json<
+                    unknown[]
+                  >(
+                    worksheet,
+                    {
+                      header: 1,
+                      raw: false,
+                      defval: '',
+                    },
+                  )
+
+                const rows =
+                  rawRows.map(
+                    (row) =>
+                      row.map(
+                        (value) =>
+                          value ===
+                            null ||
+                            value ===
+                            undefined
+                            ? ''
+                            : String(
+                              value,
+                            ),
+                      ),
+                  )
+
+                return {
+                  name: sheetName,
+                  rows,
+                }
+              },
+            )
+
+          if (isCancelled) {
+            return
+          }
+
+          setSpreadsheetSheets(
+            sheets,
+          )
+
+          setSelectedSpreadsheetSheetName(
+            sheets[0]?.name ?? '',
+          )
+
+          setPreviewMessage('')
+
+          return
+        }
+
+        if (
+          selectedPreviewKind ===
+          'text'
+        ) {
+          const text =
+            await response.text()
+
+          if (!isCancelled) {
+            setTextPreview(text)
+            setPreviewMessage('')
+          }
+        }
+      } catch (error: unknown) {
+        if (
+          abortController.signal
+            .aborted ||
+          isCancelled
+        ) {
+          return
+        }
+
+        setPreviewMessage(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load the selected document preview.',
+        )
+      }
+    }
+
+    void loadSelectedPreview()
+
+    return () => {
+      isCancelled = true
+      abortController.abort()
+
+      const previewElement =
+        docxPreviewRef.current
+
+      if (
+        previewElement !== null
+      ) {
+        previewElement.replaceChildren()
+      }
+    }
+  }, [
+    selectedFile,
+    selectedPreviewFileName,
+    selectedPreviewKind,
+  ])
+
+  function clearFilters(): void {
+    setSearchTerm('')
+    setCategoryFilter('All')
+  }
+
+  function resetAddDocumentForm():
+    void {
+    setAddDocumentTitle('')
+    setAddDocumentCategory('')
+    setAddDocumentDescription('')
+    setAddDocumentOriginalFile(null)
+    setAddDocumentPreviewFile(null)
+  }
+
+  function openAddDocument(): void {
+    resetAddDocumentForm()
+    setIsAddDocumentOpen(true)
+  }
+
+  function closeAddDocument(): void {
+    setIsAddDocumentOpen(false)
+    resetAddDocumentForm()
+  }
+
+  function handleAddDocumentFileSelection(
+    files: FileList | null,
+  ): void {
+    const selectedFiles =
+      files === null
+        ? []
+        : Array.from(files)
+
+    if (selectedFiles.length === 0) {
+      setAddDocumentOriginalFile(null)
+      setAddDocumentPreviewFile(null)
+      return
+    }
+
+    if (selectedFiles.length > 2) {
+      window.alert(
+        'Select one document, or select one original document and one PDF preview together.',
+      )
+      return
+    }
+
+    const firstFile =
+      selectedFiles[0]
+
+    if (firstFile === undefined) {
+      return
+    }
+
+    let originalFile = firstFile
+    let previewFile: File | null = null
+
+    const secondFile =
+      selectedFiles[1]
+
+    if (secondFile !== undefined) {
+      const firstIsPdf =
+        getCohortSharedFileExtension(
+          firstFile.name,
+        ) === 'pdf'
+
+      const secondIsPdf =
+        getCohortSharedFileExtension(
+          secondFile.name,
+        ) === 'pdf'
+
+      if (firstIsPdf === secondIsPdf) {
+        window.alert(
+          'When selecting two files, select the original document and one PDF preview.',
+        )
+        return
+      }
+
+      originalFile =
+        firstIsPdf
+          ? secondFile
+          : firstFile
+
+      previewFile =
+        firstIsPdf
+          ? firstFile
+          : secondFile
+    }
+
+    setAddDocumentOriginalFile(
+      originalFile,
+    )
+
+    setAddDocumentPreviewFile(
+      previewFile,
+    )
+
+    if (
+      addDocumentTitle
+        .trim()
+        .length === 0
+    ) {
+      setAddDocumentTitle(
+        getCohortSharedFileDefaultTitle(
+          originalFile.name,
+        ),
+      )
+    }
+  }
+
+  function saveAddedDocument(): void {
+    const originalFile =
+      addDocumentOriginalFile
+
+    if (originalFile === null) {
+      window.alert(
+        'Select an original document first.',
+      )
+
+      return
+    }
+
+    const directPreviewAvailable =
+      canCohortSharedFilePreviewDirectly(
+        originalFile.name,
+      )
+
+    if (
+      !directPreviewAvailable &&
+      addDocumentPreviewFile === null
+    ) {
+      window.alert(
+        'PowerPoint, legacy Word DOC, and other unsupported preview formats require a PDF preview. Reopen Document File and select the original document and its PDF preview together.',
+      )
+
+      return
+    }
+
+    if (
+      addDocumentPreviewFile !== null &&
+      getCohortSharedFileExtension(
+        addDocumentPreviewFile.name,
+      ) !== 'pdf'
+    ) {
+      window.alert(
+        'The companion preview must be a PDF file.',
+      )
+
+      return
+    }
+
+    const originalUrl =
+      URL.createObjectURL(
+        originalFile,
+      )
+
+    sharedFileObjectUrlsRef.current.push(
+      originalUrl,
+    )
+
+    let previewUrl = originalUrl
+
+    if (
+      addDocumentPreviewFile !== null
+    ) {
+      previewUrl =
+        URL.createObjectURL(
+          addDocumentPreviewFile,
+        )
+
+      sharedFileObjectUrlsRef.current.push(
+        previewUrl,
+      )
+    }
+
+    const documentId =
+      `local-shared-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 9)}`
+
+    const nextSharedFile:
+      CohortSharedFile = {
+      id: documentId,
+      title:
+        addDocumentTitle.trim() ||
+        getCohortSharedFileDefaultTitle(
+          originalFile.name,
+        ),
+      fileName: originalFile.name,
+      category:
+        addDocumentCategory.trim() ||
+        'General',
+      description:
+        addDocumentDescription.trim() ||
+        'Shared reference document.',
+      runtimeOriginalUrl:
+        originalUrl,
+      runtimePreviewUrl:
+        previewUrl,
+      ...(addDocumentPreviewFile === null
+        ? {}
+        : {
+          previewFileName:
+            addDocumentPreviewFile.name,
+        }),
+    }
+
+    setAddedSharedFiles(
+      (currentFiles) => [
+        ...currentFiles,
+        nextSharedFile,
+      ],
+    )
+
+    setSelectedFileId(
+      documentId,
+    )
+
+    setSearchTerm('')
+    setCategoryFilter('All')
+
+    closeAddDocument()
+  }
+
+  function downloadSelectedFile():
+    void {
+    if (selectedFile === null) {
+      return
+    }
+
+    const downloadLink =
+      document.createElement('a')
+
+    downloadLink.href =
+      getCohortSharedFileOriginalUrl(
+        selectedFile,
+      )
+
+    downloadLink.download =
+      selectedFile.fileName
+
+    document.body.appendChild(
+      downloadLink,
+    )
+
+    downloadLink.click()
+    downloadLink.remove()
+  }
+
+  function renderSelectedFilePreview():
+    ReactNode {
+    if (
+      selectedFile === null ||
+      selectedPreviewKind === null ||
+      selectedPreviewFileName === null
+    ) {
+      return (
+        <div className="shared-files-empty-preview">
+          <span aria-hidden="true">
+            ▤
+          </span>
+
+          <strong>
+            No document selected
+          </strong>
+
+          <p>
+            Select a shared document
+            from the list to view its
+            contents.
+          </p>
+        </div>
+      )
+    }
+
+    const previewFileUrl =
+      getCohortSharedFilePreviewUrl(
+        selectedFile,
+      )
+
+    if (
+      selectedPreviewKind === 'pdf'
+    ) {
+      return (
+        <iframe
+          className="shared-files-pdf-preview"
+          src={previewFileUrl}
+          title={`${selectedFile.title} preview`}
+        />
+      )
+    }
+
+    if (
+      selectedPreviewKind === 'image'
+    ) {
+      return (
+        <div className="shared-files-image-preview">
+          <img
+            src={previewFileUrl}
+            alt={selectedFile.title}
+          />
+        </div>
+      )
+    }
+
+    if (
+      selectedPreviewKind === 'docx'
+    ) {
+      return (
+        <div className="shared-files-docx-preview-shell">
+          <div
+            ref={docxPreviewRef}
+            className="shared-files-docx-preview"
+          />
+        </div>
+      )
+    }
+
+    if (
+      selectedPreviewKind ===
+      'spreadsheet'
+    ) {
+      return (
+        <div className="shared-files-spreadsheet-preview">
+          {spreadsheetSheets.length >
+            1 ? (
+            <div className="shared-files-sheet-selector">
+              <label>
+                <span>
+                  Worksheet
+                </span>
+
+                <select
+                  value={
+                    selectedSpreadsheetSheetName
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setSelectedSpreadsheetSheetName(
+                      event.target
+                        .value,
+                    )
+                  }
+                >
+                  {spreadsheetSheets.map(
+                    (sheet) => (
+                      <option
+                        key={
+                          sheet.name
+                        }
+                        value={
+                          sheet.name
+                        }
+                      >
+                        {
+                          sheet.name
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+            </div>
+          ) : null}
+
+          {selectedSpreadsheetSheet ===
+            null ? (
+            <div className="shared-files-preview-placeholder">
+              Spreadsheet preview is
+              loading.
+            </div>
+          ) : selectedSpreadsheetSheet
+            .rows.length === 0 ? (
+            <div className="shared-files-preview-placeholder">
+              This worksheet is empty.
+            </div>
+          ) : (
+            <div className="shared-files-spreadsheet-table-frame">
+              <table className="shared-files-spreadsheet-table">
+                <thead>
+                  <tr>
+                    <th className="shared-files-spreadsheet-row-number" />
+
+                    {Array.from(
+                      {
+                        length:
+                          spreadsheetColumnCount,
+                      },
+                      (
+                        _unusedValue,
+                        columnIndex,
+                      ) => (
+                        <th
+                          key={`shared-file-column-${columnIndex}`}
+                        >
+                          {getSpreadsheetColumnLabel(
+                            columnIndex,
+                          )}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {selectedSpreadsheetSheet.rows.map(
+                    (
+                      row,
+                      rowIndex,
+                    ) => (
+                      <tr
+                        key={`shared-file-row-${rowIndex}`}
+                      >
+                        <th className="shared-files-spreadsheet-row-number">
+                          {
+                            rowIndex +
+                            1
+                          }
+                        </th>
+
+                        {Array.from(
+                          {
+                            length:
+                              spreadsheetColumnCount,
+                          },
+                          (
+                            _unusedValue,
+                            columnIndex,
+                          ) => (
+                            <td
+                              key={`shared-file-cell-${rowIndex}-${columnIndex}`}
+                            >
+                              {row[
+                                columnIndex
+                              ] ?? ''}
+                            </td>
+                          ),
+                        )}
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (
+      selectedPreviewKind === 'text'
+    ) {
+      return (
+        <pre className="shared-files-text-preview">
+          {textPreview}
+        </pre>
+      )
+    }
+
+    return (
+      <div className="shared-files-unsupported-preview">
+        <strong>
+          Preview file required
+        </strong>
+
+        <p>
+          Add a PDF companion preview
+          for this file so it can be
+          viewed inside the Shared Files
+          page.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <section className="page-shell shared-files-page">
+      <section className="shared-files-header">
+        <div>
+          <h2>
+            Beta Nu Cohort Shared Files
+          </h2>
+
+          <p>
+            Important cohort documents
+            and resources available for
+            reference and download.
+          </p>
+        </div>
+
+        <div className="shared-files-header-count">
+          <span>
+            Total Files
+          </span>
+
+          <strong>
+            {allSharedFiles.length}
+          </strong>
+        </div>
+      </section>
+
+      <section className="shared-files-toolbar">
+        <label className="shared-files-search-field">
+          <span>
+            Search Shared Files
+          </span>
+
+          <input
+            type="text"
+            value={searchTerm}
+            placeholder="Search title, category, filename, or description..."
+            onChange={(event) =>
+              setSearchTerm(
+                event.target.value,
+              )
+            }
+          />
+        </label>
+
+        <label className="shared-files-category-field">
+          <span>Category</span>
+
+          <select
+            value={categoryFilter}
+            onChange={(event) =>
+              setCategoryFilter(
+                event.target.value,
+              )
+            }
+          >
+            {categoryOptions.map(
+              (category) => (
+                <option
+                  key={category}
+                  value={category}
+                >
+                  {category}
+                </option>
+              ),
+            )}
+          </select>
+        </label>
+
+        <button
+          type="button"
+          className="shared-files-clear-button"
+          disabled={
+            searchTerm.length === 0 &&
+            categoryFilter === 'All'
+          }
+          onClick={clearFilters}
+        >
+          Clear
+        </button>
+
+        <button
+          type="button"
+          className="shared-files-add-button"
+          onClick={openAddDocument}
+        >
+          <span aria-hidden="true">
+            +
+          </span>
+
+          Add Document
+        </button>
+
+        <div className="shared-files-visible-count">
+          <span>Visible</span>
+
+          <strong>
+            {visibleFiles.length}
+          </strong>
+        </div>
+      </section>
+
+      <div className="shared-files-layout">
+        <section className="shared-files-library-panel">
+          <header className="shared-files-panel-header">
+            <div>
+              <h2>
+                Shared Documents
+              </h2>
+
+              <p>
+                Select a document to
+                preview.
+              </p>
+            </div>
+          </header>
+
+          <div className="shared-files-list">
+            {visibleFiles.map(
+              (file) => {
+                const isSelected =
+                  file.id ===
+                  selectedFileId
+
+                return (
+                  <button
+                    key={file.id}
+                    type="button"
+                    className={`shared-files-list-item${isSelected
+                      ? ' shared-files-list-item-selected'
+                      : ''
+                      }`}
+                    onClick={() =>
+                      setSelectedFileId(
+                        file.id,
+                      )
+                    }
+                  >
+                    <span className="shared-files-type-badge">
+                      {getCohortSharedFileTypeLabel(
+                        file.fileName,
+                      )}
+                    </span>
+
+                    <span className="shared-files-list-item-copy">
+                      <strong>
+                        {file.title}
+                      </strong>
+
+                      <small>
+                        {
+                          file.category
+                        }
+                      </small>
+
+                      <span>
+                        {file.fileName}
+                      </span>
+                    </span>
+                  </button>
+                )
+              },
+            )}
+
+            {visibleFiles.length ===
+              0 ? (
+              <div className="shared-files-list-empty">
+                No shared files match
+                the current filters.
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="shared-files-preview-panel">
+          <header className="shared-files-preview-header">
+            <div>
+              <span>
+                Selected Document
+              </span>
+
+              <h2>
+                {selectedFile?.title ??
+                  'No document selected'}
+              </h2>
+            </div>
+
+            <button
+              type="button"
+              className="shared-files-download-button"
+              disabled={
+                selectedFile === null
+              }
+              onClick={
+                downloadSelectedFile
+              }
+            >
+              <span aria-hidden="true">
+                ↓
+              </span>
+
+              Download Original
+            </button>
+          </header>
+
+          {selectedFile !== null ? (
+            <div className="shared-files-selected-meta">
+              <div>
+                <span>
+                  Original Format
+                </span>
+
+                <strong>
+                  {getCohortSharedFileTypeLabel(
+                    selectedFile.fileName,
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Category
+                </span>
+
+                <strong>
+                  {
+                    selectedFile.category
+                  }
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Preview
+                </span>
+
+                <strong>
+                  {selectedFile
+                    .previewFileName ===
+                    undefined
+                    ? 'Original file'
+                    : `Companion ${getCohortSharedFileTypeLabel(
+                      selectedFile.previewFileName,
+                    )}`}
+                </strong>
+              </div>
+
+              <div className="shared-files-selected-description">
+                <span>
+                  Description
+                </span>
+
+                <strong>
+                  {
+                    selectedFile.description
+                  }
+                </strong>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="shared-files-preview-shell">
+            {previewMessage
+              .trim()
+              .length > 0 ? (
+              <div className="shared-files-preview-message">
+                {previewMessage}
+              </div>
+            ) : null}
+
+            {renderSelectedFilePreview()}
+          </div>
+        </section>
+      </div>
+
+      {isAddDocumentOpen ? (
+        <div
+          className="shared-files-modal-backdrop"
+          role="presentation"
+        >
+          <section
+            className="shared-files-add-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shared-files-add-title"
+          >
+            <header className="shared-files-add-modal-header">
+              <div>
+                <h2
+                  id="shared-files-add-title"
+                >
+                  Add Document
+                </h2>
+
+                <p>
+                  Select the original file
+                  that users will download.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="shared-files-add-modal-close"
+                aria-label="Close Add Document"
+                onClick={closeAddDocument}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="shared-files-add-modal-body">
+              <label className="shared-files-add-field">
+                <span>
+                  Document File
+                </span>
+
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp,.bmp,.svg,.txt,.md"
+                  onChange={(event) =>
+                    handleAddDocumentFileSelection(
+                      event.target.files,
+                    )
+                  }
+                />
+
+                <small>
+                  Select one document. For
+                  PowerPoint or legacy Word
+                  DOC files, select the
+                  original document and its
+                  PDF preview together in
+                  this same file picker.
+                </small>
+              </label>
+
+              <div className="shared-files-add-form-grid">
+                <label className="shared-files-add-field">
+                  <span>Title</span>
+
+                  <input
+                    type="text"
+                    value={
+                      addDocumentTitle
+                    }
+                    onChange={(event) =>
+                      setAddDocumentTitle(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="shared-files-add-field">
+                  <span>Category</span>
+
+                  <input
+                    type="text"
+                    list="shared-files-category-suggestions"
+                    value={
+                      addDocumentCategory
+                    }
+                    placeholder="Example: Dissertation"
+                    onChange={(event) =>
+                      setAddDocumentCategory(
+                        event.target.value,
+                      )
+                    }
+                  />
+
+                  <datalist
+                    id="shared-files-category-suggestions"
+                  >
+                    {categoryOptions
+                      .filter(
+                        (category) =>
+                          category !==
+                          'All',
+                      )
+                      .map(
+                        (category) => (
+                          <option
+                            key={
+                              category
+                            }
+                            value={
+                              category
+                            }
+                          />
+                        ),
+                      )}
+                  </datalist>
+
+                  <small>
+                    Previously used
+                    categories appear as
+                    you type.
+                  </small>
+                </label>
+              </div>
+
+              <label className="shared-files-add-field">
+                <span>Description</span>
+
+                <textarea
+                  value={
+                    addDocumentDescription
+                  }
+                  placeholder="Brief description of the document..."
+                  onChange={(event) =>
+                    setAddDocumentDescription(
+                      event.target.value,
+                    )
+                  }
+                />
+              </label>
+
+              {addDocumentOriginalFile !==
+                null &&
+              !canCohortSharedFilePreviewDirectly(
+                addDocumentOriginalFile.name,
+              ) &&
+              addDocumentPreviewFile ===
+                null ? (
+                <div className="shared-files-add-preview-required">
+                  This document requires a
+                  PDF preview. Reopen
+                  Document File and select
+                  the original document and
+                  its PDF preview together.
+                </div>
+              ) : null}
+
+              <div className="shared-files-add-session-note">
+                Temporary test mode:
+                files added here remain
+                available only while this
+                Shared Files page remains
+                open. Refreshing the page
+                or navigating away removes
+                them.
+              </div>
+            </div>
+
+            <footer className="shared-files-add-modal-actions">
+              <button
+                type="button"
+                className="shared-files-add-cancel-button"
+                onClick={
+                  closeAddDocument
+                }
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="shared-files-add-save-button"
+                onClick={
+                  saveAddedDocument
+                }
+              >
+                Add Document
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -10986,10 +12661,7 @@ function App() {
             <Route
               path="/shared-files"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Shared Files"
-                  description="Shared cohort documents and resources will be organized here."
-                />
+                <CohortSharedFilesPage />
               }
             />
 
