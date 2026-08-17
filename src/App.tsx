@@ -67,6 +67,18 @@ interface CohortValueDashboardItem {
   readonly imageFileName: string
 }
 
+interface CohortImageAsset {
+  readonly id: string
+  readonly title: string
+  readonly fileName: string
+  readonly previewFileName: string
+  readonly fallbackPreviewFileName?: string
+  readonly previewMimeType?: string
+  readonly specification: string
+  readonly description: string
+  readonly bestUse: string
+}
+
 type CohortTimeZone =
   | 'Eastern'
   | 'Central'
@@ -351,7 +363,7 @@ const navigationItems: readonly NavigationItem[] = [
     path: '/groups-assigned-by-member',
   },
   {
-    label: 'Beta Nu Fall Icons',
+    label: 'Beta Nu Fall Images',
     path: '/beta-nu-fall-icons',
   },
   {
@@ -500,6 +512,110 @@ const cohortValues: readonly CohortValueDashboardItem[] = [
     imageFileName: 'adaptability.png',
   },
 ]
+
+const cohortSealImages: readonly CohortImageAsset[] = [
+  {
+    id: 'seal-web',
+    title: 'Seal - Beta Nu Fall - Web',
+    fileName:
+      'Seal - Beta Nu Fall - Web (1024px).png',
+    previewFileName:
+      'Seal - Beta Nu Fall - Web (1024px).png',
+    specification: 'PNG • 1024px',
+    description:
+      'Optimized Beta Nu Fall seal for normal digital use while maintaining a clear, high-quality appearance.',
+    bestUse:
+      'Webpages, presentations, email, digital documents, and general screen use.',
+  },
+  {
+    id: 'seal-print-ready',
+    title: 'Seal - Beta Nu Fall - Print Ready',
+    fileName:
+      'Seal - Beta Nu Fall - Print Ready (5000px).tif',
+    previewFileName:
+      'Seal - Beta Nu Fall - Print Ready (5000px).tif',
+    fallbackPreviewFileName:
+      'Seal - Beta Nu Fall - Master File (5000px).png',
+    previewMimeType: 'image/tiff',
+    specification: 'TIFF • 5000px',
+    description:
+      'High-resolution Beta Nu Fall seal intended for applications where maximum print detail and quality are required.',
+    bestUse:
+      'High-resolution printing, posters, signs, large-format documents, and professional print projects.',
+  },
+  {
+    id: 'seal-cmyk-tiff',
+    title: 'Seal - Beta Nu Fall - CMYK TIFF',
+    fileName:
+      'Seal - Beta Nu Fall - CMYK TIFF (5000px).tif',
+    previewFileName:
+      'Seal - Beta Nu Fall - CMYK TIFF (5000px).tif',
+    fallbackPreviewFileName:
+      'Seal - Beta Nu Fall - Web (1024px).png',
+    previewMimeType: 'image/tiff',
+    specification: 'CMYK TIFF • 5000px',
+    description:
+      'Professional CMYK version of the Beta Nu Fall seal intended for print-production workflows.',
+    bestUse:
+      'Commercial printing and professional printers that require CMYK TIFF artwork.',
+  },
+  {
+    id: 'seal-master',
+    title: 'Seal - Beta Nu Fall - Master File',
+    fileName:
+      'Seal - Beta Nu Fall - Master File (5000px).png',
+    previewFileName:
+      'Seal - Beta Nu Fall - Master File (5000px).png',
+    specification: 'PNG • 5000px',
+    description:
+      'High-resolution master PNG retained as the primary source for future digital and design applications.',
+    bestUse:
+      'Archival storage, future design work, and creating additional Beta Nu Fall image versions.',
+  },
+]
+
+const cohortZoomWallpapers:
+  readonly CohortImageAsset[] = [
+    {
+      id: 'zoom-blue-texture',
+      title: 'Zoom - Beta Nu Fall - Blue Texture',
+      fileName:
+        'Zoom - Beta Nu Fall - Blue Texture.png',
+      previewFileName:
+        'Zoom - Beta Nu Fall - Blue Texture.png',
+      specification: 'PNG • Blue Texture',
+      description:
+        'Beta Nu Fall Zoom background featuring the blue textured cohort design.',
+      bestUse:
+        'Primary branded Zoom background for cohort meetings, presentations, and online events.',
+    },
+    {
+      id: 'zoom-maroon',
+      title: 'Zoom - Beta Nu Fall - Maroon',
+      fileName:
+        'Zoom - Beta Nu Fall - Maroon.png',
+      previewFileName:
+        'Zoom - Beta Nu Fall - Maroon.png',
+      specification: 'PNG • Maroon',
+      description:
+        'Beta Nu Fall Zoom background featuring the alternate maroon design.',
+      bestUse:
+        'An alternate branded Zoom background when a warmer color treatment is preferred.',
+    },
+    {
+      id: 'zoom-solid-navy',
+      title: 'Zoom - Beta Nu Fall - Solid Navy',
+      fileName:
+        'Zoom - Beta Nu Fall - Solid Navy.png',
+      previewFileName:
+        'Zoom - Beta Nu Fall - Solid Navy.png',
+      specification: 'PNG • Solid Navy',
+      description:
+        'Clean solid-navy Beta Nu Fall Zoom background with minimal visual distraction.',
+      bestUse:
+        'Meetings, interviews, presentations, and other professional video calls.',
+    },
+  ]
 
 const cohortTimeZoneOptions: readonly CohortTimeZone[] = [
   'Eastern',
@@ -9518,6 +9634,533 @@ function CohortBookListPage() {
   )
 }
 
+function CohortImagesPage() {
+  const [
+    activeDownloadSection,
+    setActiveDownloadSection,
+  ] =
+    useState<'seal' | 'wallpaper' | null>(null)
+
+  const [selectedAssetIds, setSelectedAssetIds] =
+    useState<readonly string[]>([])
+
+  const allImageAssets:
+    readonly CohortImageAsset[] = [
+      ...cohortSealImages,
+      ...cohortZoomWallpapers,
+    ]
+
+  function getImageAssetUrl(
+    fileName: string,
+  ): string {
+    return `${import.meta.env.BASE_URL}${encodeURI(fileName)}`
+  }
+
+  function renderDownloadIcon(): ReactNode {
+    return (
+      <span
+        className="cohort-images-download-icon"
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          role="presentation"
+        >
+          <path
+            d="M12 3v10"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+
+          <path
+            d="M8.2 9.7 12 13.6l3.8-3.9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          <path
+            d="M4 17.5h16v3H4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  function toggleAssetSelection(
+    assetId: string,
+  ): void {
+    setSelectedAssetIds((currentIds) =>
+      currentIds.includes(assetId)
+        ? currentIds.filter(
+          (currentId) =>
+            currentId !== assetId,
+        )
+        : [...currentIds, assetId],
+    )
+  }
+
+  function beginDownloadMode(
+    section: 'seal' | 'wallpaper',
+  ): void {
+    setSelectedAssetIds([])
+    setActiveDownloadSection(section)
+  }
+
+  function cancelDownloadMode(): void {
+    setSelectedAssetIds([])
+    setActiveDownloadSection(null)
+  }
+
+  function downloadSelectedAssets(): void {
+    const selectedAssets =
+      allImageAssets.filter((asset) =>
+        selectedAssetIds.includes(asset.id),
+      )
+
+    selectedAssets.forEach(
+      (asset, assetIndex) => {
+        window.setTimeout(() => {
+          const downloadLink =
+            document.createElement('a')
+
+          downloadLink.href =
+            getImageAssetUrl(asset.fileName)
+
+          downloadLink.download =
+            asset.fileName
+
+          document.body.appendChild(
+            downloadLink,
+          )
+
+          downloadLink.click()
+          downloadLink.remove()
+        }, assetIndex * 150)
+      },
+    )
+
+    setSelectedAssetIds([])
+    setActiveDownloadSection(null)
+  }
+
+  function renderAssetPreview(
+    asset: CohortImageAsset,
+  ) {
+    if (
+      asset.previewMimeType === 'image/tiff' &&
+      asset.fallbackPreviewFileName !==
+      undefined
+    ) {
+      return (
+        <object
+          className="cohort-image-preview-media"
+          data={getImageAssetUrl(
+            asset.previewFileName,
+          )}
+          type={asset.previewMimeType}
+          aria-label={`${asset.title} preview`}
+        >
+          <img
+            className="cohort-image-preview-media"
+            src={getImageAssetUrl(
+              asset.fallbackPreviewFileName,
+            )}
+            alt={`${asset.title} preview`}
+          />
+        </object>
+      )
+    }
+
+    return (
+      <img
+        className="cohort-image-preview-media"
+        src={getImageAssetUrl(
+          asset.previewFileName,
+        )}
+        alt={`${asset.title} preview`}
+      />
+    )
+  }
+
+  function renderAssetCard(
+    asset: CohortImageAsset,
+    previewType: 'seal' | 'wallpaper',
+  ) {
+    const isSelected =
+      selectedAssetIds.includes(asset.id)
+
+    return (
+      <article
+        key={asset.id}
+        className={`cohort-image-card${isSelected
+          ? ' cohort-image-card-selected'
+          : ''
+          }`}
+      >
+        <div
+          className={`cohort-image-preview cohort-image-preview-${previewType}`}
+        >
+          {activeDownloadSection ===
+            previewType ? (
+            <label
+              className="cohort-image-selection-control"
+              title={`Select ${asset.title}`}
+            >
+              <input
+                type="checkbox"
+                className="cohort-image-selection-checkbox"
+                checked={isSelected}
+                aria-label={`Select ${asset.title} for download`}
+                onChange={() =>
+                  toggleAssetSelection(
+                    asset.id,
+                  )
+                }
+              />
+            </label>
+          ) : null}
+
+          {renderAssetPreview(asset)}
+        </div>
+
+        <div className="cohort-image-card-content">
+          <h3>{asset.title}</h3>
+
+          <span className="cohort-image-specification">
+            {asset.specification}
+          </span>
+
+          <p>
+            {asset.description}
+          </p>
+
+          <p className="cohort-image-best-use">
+            <strong>Best used for:</strong>
+            {' '}
+            {asset.bestUse}
+          </p>
+
+          {asset.previewMimeType ===
+            'image/tiff' ? (
+            <p className="cohort-image-tiff-note">
+              TIFF download. A PNG fallback
+              preview may be shown if the
+              browser cannot display TIFF
+              images.
+            </p>
+          ) : null}
+
+          <div className="cohort-image-file-name">
+            <span>Original filename</span>
+
+            <strong>
+              {asset.fileName}
+            </strong>
+          </div>
+        </div>
+      </article>
+    )
+  }
+
+  return (
+    <section className="page-shell">
+      <section className="cohort-images-toolbar">
+        <div className="cohort-images-toolbar-brand">
+          <div className="cohort-images-toolbar-copy">
+            <h2>Beta Nu Fall Image Library</h2>
+
+            <p>
+              Approved Beta Nu Fall seals and
+              Zoom wallpapers are available
+              below. Preview dimensions do not
+              change the resolution or format of
+              the original downloaded files.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="cohort-images-section">
+        <header className="cohort-images-section-header">
+          <div className="cohort-images-section-title">
+            <div className="cohort-images-section-heading-row">
+              <span
+                className="cohort-images-section-icon cohort-images-section-icon-seal"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 32 32"
+                  role="presentation"
+                >
+                  <defs>
+                    <linearGradient
+                      id="sealOuterGold"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="#F2B632"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="#C89214"
+                      />
+                    </linearGradient>
+
+                    <linearGradient
+                      id="sealInnerNavy"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="#123e7c"
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="#0A2F63"
+                      />
+                    </linearGradient>
+                  </defs>
+
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    fill="url(#sealOuterGold)"
+                    stroke="#fff1b8"
+                    strokeWidth="0.8"
+                  />
+
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="10.4"
+                    fill="url(#sealInnerNavy)"
+                  />
+
+                  <path
+                    d="M16 9.1c1.5 1.6 2.1 3.2 1.5 4.9-.4 1-1.2 1.8-2.1 2.6 1.5-.2 2.6-.8 3.3-1.8.9-1.1 1.2-2.4 1-3.9 2.1 1.8 2.6 4 1.6 6.4-.8 1.8-2.3 3.1-4.6 4-2.2-.9-3.8-2.2-4.6-4-1-2.4-.5-4.6 1.6-6.4-.2 1.5.1 2.8 1 3.9.7 1 1.8 1.6 3.3 1.8-.9-.8-1.7-1.6-2.1-2.6-.6-1.7 0-3.3 1.5-4.9z"
+                    fill="#F2B632"
+                  />
+
+                  <rect
+                    x="14.7"
+                    y="18.6"
+                    width="2.6"
+                    height="6"
+                    rx="0.6"
+                    fill="#F2B632"
+                  />
+
+                  <path
+                    d="M12.2 24.8h7.6"
+                    fill="none"
+                    stroke="#F2B632"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+
+              <h2>Seal Images</h2>
+            </div>
+
+            <p>
+              Select the appropriate seal
+              version based on its intended
+              digital or print use.
+            </p>
+          </div>
+
+          <div className="cohort-images-section-actions">
+            <span className="cohort-images-count-badge">
+              4 Images
+            </span>
+
+            {activeDownloadSection ===
+              'seal' ? (
+              <>
+                <button
+                  type="button"
+                  className="cohort-images-download-button cohort-images-section-download-button"
+                  disabled={
+                    selectedAssetIds.length === 0
+                  }
+                  onClick={
+                    downloadSelectedAssets
+                  }
+                >
+                  {renderDownloadIcon()}
+
+                  Download Selected (
+                  {selectedAssetIds.length})
+                </button>
+
+                <button
+                  type="button"
+                  className="cohort-images-cancel-button cohort-images-section-cancel-button"
+                  onClick={cancelDownloadMode}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="cohort-images-download-button cohort-images-section-download-button"
+                onClick={() =>
+                  beginDownloadMode('seal')
+                }
+              >
+                {renderDownloadIcon()}
+
+                Download
+              </button>
+            )}
+          </div>
+        </header>
+
+        <div className="cohort-seal-image-grid">
+          {cohortSealImages.map(
+            (asset) =>
+              renderAssetCard(
+                asset,
+                'seal',
+              ),
+          )}
+        </div>
+      </section>
+
+      <section className="cohort-images-section">
+        <header className="cohort-images-section-header">
+          <div className="cohort-images-section-title">
+            <div className="cohort-images-section-heading-row">
+              <span
+                className="cohort-images-section-icon cohort-images-section-icon-monitor"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 32 28"
+                  role="presentation"
+                >
+                  <rect
+                    x="2.5"
+                    y="2.5"
+                    width="27"
+                    height="17"
+                    rx="1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                  />
+
+                  <path
+                    d="M16 19.5V24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M10.5 25.5H21.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+
+              <h2>Zoom Wallpapers</h2>
+            </div>
+
+            <p>
+              Beta Nu Fall branded backgrounds
+              for cohort meetings and online
+              presentations.
+            </p>
+          </div>
+
+          <div className="cohort-images-section-actions">
+            <span className="cohort-images-count-badge">
+              3 Images
+            </span>
+
+            {activeDownloadSection ===
+              'wallpaper' ? (
+              <>
+                <button
+                  type="button"
+                  className="cohort-images-download-button cohort-images-section-download-button"
+                  disabled={
+                    selectedAssetIds.length === 0
+                  }
+                  onClick={
+                    downloadSelectedAssets
+                  }
+                >
+                  {renderDownloadIcon()}
+
+                  Download Selected (
+                  {selectedAssetIds.length})
+                </button>
+
+                <button
+                  type="button"
+                  className="cohort-images-cancel-button cohort-images-section-cancel-button"
+                  onClick={cancelDownloadMode}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="cohort-images-download-button cohort-images-section-download-button"
+                onClick={() =>
+                  beginDownloadMode(
+                    'wallpaper',
+                  )
+                }
+              >
+                {renderDownloadIcon()}
+
+                Download
+              </button>
+            )}
+          </div>
+        </header>
+
+        <div className="cohort-wallpaper-image-grid">
+          {cohortZoomWallpapers.map(
+            (asset) =>
+              renderAssetCard(
+                asset,
+                'wallpaper',
+              ),
+          )}
+        </div>
+      </section>
+    </section>
+  )
+}
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -10337,12 +10980,7 @@ function App() {
 
             <Route
               path="/beta-nu-fall-icons"
-              element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Beta Nu Fall Icons"
-                  description="Beta Nu Fall seals, Zoom wallpapers, Word document tips, and related cohort branding resources will be organized here."
-                />
-              }
+              element={<CohortImagesPage />}
             />
 
             <Route
