@@ -110,6 +110,28 @@ interface CohortSharedSpreadsheetSheet {
   readonly (readonly string[])[]
 }
 
+type CohortAcademicPlanStatus =
+  | 'Pending'
+  | 'In Progress'
+  | 'Done'
+
+interface CohortAcademicPlanRecord {
+  readonly id: string
+  readonly programYear: string
+  readonly calendarYear: string
+  readonly code: string
+  readonly className: string
+  readonly startDate: string
+  readonly endDate: string
+  readonly termYear: string
+  readonly length: string
+}
+
+type CohortAcademicPlanField = Exclude<
+  keyof CohortAcademicPlanRecord,
+  'id'
+>
+
 type CohortTimeZone =
   | 'Eastern'
   | 'Central'
@@ -651,6 +673,400 @@ const cohortZoomWallpapers:
         'Meetings, interviews, presentations, and other professional video calls.',
     },
   ]
+
+const COHORT_ACADEMIC_PLAN_STORAGE_KEY =
+  'beta-nu-academic-plan-v1'
+
+const cohortAcademicPlanSeed:
+  readonly CohortAcademicPlanRecord[] = [
+    {
+      id: 'academic-plan-01',
+      programYear: 'Year 1',
+      calendarYear: '2025',
+      code: 'EDDP 700',
+      className: 'Transformational Leadership',
+      startDate: '2025-08-25',
+      endDate: '2025-10-19',
+      termYear: 'Fall I 2025',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-02',
+      programYear: 'Year 1',
+      calendarYear: '2025',
+      code: 'EDDP 740',
+      className: 'Writing for Research I',
+      startDate: '2025-08-25',
+      endDate: '2025-10-19',
+      termYear: 'Fall I 2025',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-03',
+      programYear: 'Year 1',
+      calendarYear: '2025',
+      code: 'EDDP 706',
+      className: 'Team and Group Dynamic',
+      startDate: '2025-10-20',
+      endDate: '2025-12-14',
+      termYear: 'Fall II 2025',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-04',
+      programYear: 'Year 1',
+      calendarYear: '2025',
+      code: 'EDDP 742',
+      className: 'Quantitative Research Methods',
+      startDate: '2025-10-20',
+      endDate: '2025-12-14',
+      termYear: 'Fall II 2025',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-05',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 707',
+      className: 'Organizational Theory and Development',
+      startDate: '2026-01-12',
+      endDate: '2026-03-08',
+      termYear: 'Spring I 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-06',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 743',
+      className: 'Qualitative Research Methods',
+      startDate: '2026-01-12',
+      endDate: '2026-03-08',
+      termYear: 'Spring I 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-07',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 708',
+      className: 'Strategic Thinking',
+      startDate: '2026-03-09',
+      endDate: '2026-05-03',
+      termYear: 'Spring II 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-08',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 741',
+      className: 'Writing for Research II',
+      startDate: '2026-03-09',
+      endDate: '2026-05-03',
+      termYear: 'Spring II 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-09',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 705',
+      className: 'Communication and Conflict Resolution',
+      startDate: '2026-05-04',
+      endDate: '2026-06-28',
+      termYear: 'Summer I 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-10',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 781',
+      className: 'Developing the Dissertation, Chapter I',
+      startDate: '2026-05-04',
+      endDate: '2026-08-23',
+      termYear: 'Summer I & II 2026',
+      length: '16-weeks',
+    },
+    {
+      id: 'academic-plan-11',
+      programYear: 'Year 1',
+      calendarYear: '2026',
+      code: 'EDDP 720',
+      className: 'Creativity, Innovation and Sustainable Change',
+      startDate: '2026-06-29',
+      endDate: '2026-08-23',
+      termYear: 'Summer II 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-13',
+      programYear: 'Year 2',
+      calendarYear: '2026',
+      code: 'EDDP 709',
+      className: 'Assessment, Evaluation and Accountability',
+      startDate: '2026-08-24',
+      endDate: '2026-10-18',
+      termYear: 'Fall I 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-14',
+      programYear: 'Year 2',
+      calendarYear: '2026',
+      code: 'EDDP 783',
+      className: 'Developing Dissertation Chapter III',
+      startDate: '2026-08-24',
+      endDate: '2026-12-13',
+      termYear: 'Fall I & II 2026',
+      length: '16-weeks',
+    },
+    {
+      id: 'academic-plan-15',
+      programYear: 'Year 2',
+      calendarYear: '2026',
+      code: 'EDDP 721',
+      className: 'The Ethics and Politics of Decision Making',
+      startDate: '2026-10-19',
+      endDate: '2026-12-13',
+      termYear: 'Fall II 2026',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-17',
+      programYear: 'Year 2',
+      calendarYear: '2027',
+      code: 'EDDP 723',
+      className: 'Innovation in Resource Management',
+      startDate: '2027-01-11',
+      endDate: '2027-03-07',
+      termYear: 'Spring I 2027',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-18',
+      programYear: 'Year 2',
+      calendarYear: '2027',
+      code: 'EDDP 782',
+      className: 'Developing Dissertation Chapter II - Review of the Literature',
+      startDate: '2027-01-11',
+      endDate: '2027-05-02',
+      termYear: 'Spring I & II 2027',
+      length: '16-weeks',
+    },
+    {
+      id: 'academic-plan-19',
+      programYear: 'Year 2',
+      calendarYear: '2027',
+      code: 'EDDP 724',
+      className: 'The Leaders as Change Agent - Advancement to Candidacy',
+      startDate: '2027-03-08',
+      endDate: '2027-05-02',
+      termYear: 'Spring II 2027',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-21',
+      programYear: 'Year 2',
+      calendarYear: '2027',
+      code: 'EDDP 791',
+      className: 'Dissertation I',
+      startDate: '2027-05-03',
+      endDate: '2027-06-27',
+      termYear: 'Summer I 2027',
+      length: '8-weeks',
+    },
+    {
+      id: 'academic-plan-22',
+      programYear: 'Year 2',
+      calendarYear: '2027',
+      code: 'EDDP 792',
+      className: 'Dissertation II',
+      startDate: '2027-05-03',
+      endDate: '2027-06-27',
+      termYear: 'Summer I 2027',
+      length: '8-weeks',
+    },
+  ]
+
+function isStoredCohortAcademicPlanRecord(
+  value: unknown,
+): value is CohortAcademicPlanRecord {
+  if (
+    typeof value !== 'object' ||
+    value === null
+  ) {
+    return false
+  }
+
+  const record =
+    value as Record<string, unknown>
+
+  return (
+    typeof record.id === 'string' &&
+    typeof record.programYear === 'string' &&
+    typeof record.calendarYear === 'string' &&
+    typeof record.code === 'string' &&
+    typeof record.className === 'string' &&
+    typeof record.startDate === 'string' &&
+    typeof record.endDate === 'string' &&
+    typeof record.termYear === 'string' &&
+    typeof record.length === 'string'
+  )
+}
+
+function normalizeCohortAcademicPlan(
+  records:
+    readonly CohortAcademicPlanRecord[],
+): readonly CohortAcademicPlanRecord[] {
+  return records
+    .filter(
+      (record) =>
+        record.id !==
+        'academic-plan-12' &&
+        record.id !==
+        'academic-plan-16' &&
+        record.id !==
+        'academic-plan-20',
+    )
+    .map((record) => {
+      if (
+        record.id ===
+        'academic-plan-10'
+      ) {
+        return {
+          ...record,
+          termYear:
+            'Summer I & II 2026',
+        }
+      }
+
+      if (
+        record.id ===
+        'academic-plan-14'
+      ) {
+        return {
+          ...record,
+          termYear:
+            'Fall I & II 2026',
+        }
+      }
+
+      if (
+        record.id ===
+        'academic-plan-18'
+      ) {
+        return {
+          ...record,
+          termYear:
+            'Spring I & II 2027',
+        }
+      }
+
+      return record
+    })
+}
+
+function readStoredCohortAcademicPlan():
+  readonly CohortAcademicPlanRecord[] {
+  const storedValue =
+    window.localStorage.getItem(
+      COHORT_ACADEMIC_PLAN_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return cohortAcademicPlanSeed
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every(
+        isStoredCohortAcademicPlanRecord,
+      )
+    ) {
+      return cohortAcademicPlanSeed
+    }
+
+    return normalizeCohortAcademicPlan(
+      parsedValue,
+    )
+  } catch {
+    return cohortAcademicPlanSeed
+  }
+}
+
+function getCohortAcademicPlanStatus(
+  startDate: string,
+  endDate: string,
+): CohortAcademicPlanStatus {
+  const startTime =
+    Date.parse(`${startDate}T00:00:00`)
+
+  const endTime =
+    Date.parse(`${endDate}T23:59:59`)
+
+  const today = Date.now()
+
+  if (
+    !Number.isFinite(startTime) ||
+    !Number.isFinite(endTime)
+  ) {
+    return 'Pending'
+  }
+
+  if (today < startTime) {
+    return 'Pending'
+  }
+
+  if (today > endTime) {
+    return 'Done'
+  }
+
+  return 'In Progress'
+}
+
+const cohortAcademicPlanFields = [
+  {
+    field: 'programYear',
+    label: 'Year',
+  },
+  {
+    field: 'calendarYear',
+    label: 'Calendar Year',
+  },
+  {
+    field: 'code',
+    label: 'Code',
+  },
+  {
+    field: 'className',
+    label: 'Class',
+  },
+  {
+    field: 'startDate',
+    label: 'Start Date',
+  },
+  {
+    field: 'endDate',
+    label: 'End Date',
+  },
+  {
+    field: 'termYear',
+    label: 'Term & Year',
+  },
+  {
+    field: 'length',
+    label: 'Length',
+  },
+] satisfies readonly {
+  readonly field: CohortAcademicPlanField
+  readonly label: string
+}[]
 
 const cohortSharedFiles:
   readonly CohortSharedFile[] = []
@@ -11059,7 +11475,7 @@ function CohortSharedFilesPage() {
     }
   }
 
-    function handleMassUploadFileSelection(
+  function handleMassUploadFileSelection(
     files: FileList | null,
   ): void {
     setMassUploadFiles(
@@ -12059,7 +12475,7 @@ function CohortSharedFilesPage() {
                   type="button"
                   className={
                     addDocumentMode ===
-                    'single'
+                      'single'
                       ? 'shared-files-add-mode-button shared-files-add-mode-button-active'
                       : 'shared-files-add-mode-button'
                   }
@@ -12077,7 +12493,7 @@ function CohortSharedFilesPage() {
                   type="button"
                   className={
                     addDocumentMode ===
-                    'mass'
+                      'mass'
                       ? 'shared-files-add-mode-button shared-files-add-mode-button-active'
                       : 'shared-files-add-mode-button'
                   }
@@ -12093,7 +12509,7 @@ function CohortSharedFilesPage() {
               </div>
 
               {addDocumentMode ===
-              'single' ? (
+                'single' ? (
                 <>
                   <label className="shared-files-add-field">
                     <span>
@@ -12225,10 +12641,10 @@ function CohortSharedFilesPage() {
 
                   {addDocumentOriginalFile !==
                     null &&
-                  !canCohortSharedFilePreviewDirectly(
-                    addDocumentOriginalFile.name,
-                  ) &&
-                  addDocumentPreviewFile ===
+                    !canCohortSharedFilePreviewDirectly(
+                      addDocumentOriginalFile.name,
+                    ) &&
+                    addDocumentPreviewFile ===
                     null ? (
                     <div className="shared-files-add-preview-required">
                       This document
@@ -12374,28 +12790,28 @@ function CohortSharedFilesPage() {
                 className="shared-files-add-save-button"
                 disabled={
                   addDocumentMode ===
-                  'single'
+                    'single'
                     ? addDocumentOriginalFile ===
-                        null ||
-                      (
-                        !canCohortSharedFilePreviewDirectly(
-                          addDocumentOriginalFile.name,
-                        ) &&
-                        addDocumentPreviewFile ===
-                          null
-                      )
+                    null ||
+                    (
+                      !canCohortSharedFilePreviewDirectly(
+                        addDocumentOriginalFile.name,
+                      ) &&
+                      addDocumentPreviewFile ===
+                      null
+                    )
                     : massUploadFiles.length ===
-                      0
+                    0
                 }
                 onClick={
                   addDocumentMode ===
-                  'single'
+                    'single'
                     ? saveAddedDocument
                     : saveMassUpload
                 }
               >
                 {addDocumentMode ===
-                'single'
+                  'single'
                   ? 'Add Document'
                   : 'Mass Upload'}
               </button>
@@ -12403,6 +12819,359 @@ function CohortSharedFilesPage() {
           </section>
         </div>
       ) : null}
+    </section>
+  )
+}
+
+function CohortAcademicPlanPage() {
+  const [
+    academicPlan,
+    setAcademicPlan,
+  ] =
+    useState<
+      readonly CohortAcademicPlanRecord[]
+    >(
+      () =>
+        readStoredCohortAcademicPlan(),
+    )
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      COHORT_ACADEMIC_PLAN_STORAGE_KEY,
+      JSON.stringify(academicPlan),
+    )
+  }, [academicPlan])
+
+  function updateAcademicPlanRecord(
+    recordId: string,
+    field: CohortAcademicPlanField,
+    value: string,
+  ): void {
+    setAcademicPlan(
+      (currentPlan) =>
+        currentPlan.map(
+          (record) =>
+            record.id === recordId
+              ? {
+                ...record,
+                [field]: value,
+              }
+              : record,
+        ),
+    )
+  }
+
+  function focusAcademicPlanCell(
+    rowIndex: number,
+    columnIndex: number,
+  ): void {
+    if (
+      rowIndex < 0 ||
+      rowIndex >= academicPlan.length ||
+      columnIndex < 0 ||
+      columnIndex >
+      cohortAcademicPlanFields.length
+    ) {
+      return
+    }
+
+    const nextElement =
+      document.querySelector<HTMLElement>(
+        `[data-academic-plan-row="${rowIndex}"]` +
+        `[data-academic-plan-column="${columnIndex}"]`,
+      )
+
+    if (nextElement === null) {
+      return
+    }
+
+    nextElement.focus()
+    nextElement.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    })
+  }
+
+  function handleAcademicPlanKeyDown(
+    event:
+      React.KeyboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    columnIndex: number,
+  ): void {
+    if (
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    ) {
+      return
+    }
+
+    let nextRowIndex = rowIndex
+    let nextColumnIndex =
+      columnIndex
+
+    switch (event.key) {
+      case 'ArrowUp':
+        nextRowIndex -= 1
+        break
+
+      case 'ArrowDown':
+        nextRowIndex += 1
+        break
+
+      case 'ArrowLeft': {
+        const selectionStart =
+          event.currentTarget
+            .selectionStart
+
+        const selectionEnd =
+          event.currentTarget
+            .selectionEnd
+
+        if (
+          selectionStart !== 0 ||
+          selectionEnd !== 0
+        ) {
+          return
+        }
+
+        nextColumnIndex -= 1
+        break
+      }
+
+      case 'ArrowRight': {
+        const selectionStart =
+          event.currentTarget
+            .selectionStart
+
+        const selectionEnd =
+          event.currentTarget
+            .selectionEnd
+
+        const valueLength =
+          event.currentTarget
+            .value.length
+
+        if (
+          selectionStart !==
+          valueLength ||
+          selectionEnd !==
+          valueLength
+        ) {
+          return
+        }
+
+        nextColumnIndex += 1
+        break
+      }
+
+      default:
+        return
+    }
+
+    event.preventDefault()
+
+    focusAcademicPlanCell(
+      nextRowIndex,
+      nextColumnIndex,
+    )
+  }
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>
+          Beta Nu Cohort Academic Plan
+        </h1>
+      </header>
+
+      <section className="academic-plan-panel">
+        <header className="academic-plan-panel-header">
+          <div>
+            <h2>
+              Beta Nu Fall Academic Plan
+            </h2>
+
+            <p>
+              Academic course sequence,
+              dates, term structure, and
+              current course status.
+            </p>
+          </div>
+
+          <div className="academic-plan-status-key">
+            <span className="academic-plan-key-pending">
+              Pending
+            </span>
+
+            <span className="academic-plan-key-progress">
+              In Progress
+            </span>
+
+            <span className="academic-plan-key-done">
+              Done
+            </span>
+          </div>
+        </header>
+
+        <div className="academic-plan-table-frame">
+          <table className="academic-plan-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Calendar Year</th>
+                <th>Code</th>
+                <th>Class</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Term &amp; Year</th>
+                <th>Length</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {academicPlan.map(
+                (
+                  record,
+                  rowIndex,
+                ) => {
+                  const status =
+                    getCohortAcademicPlanStatus(
+                      record.startDate,
+                      record.endDate,
+                    )
+
+                  return (
+                    <tr
+                      key={record.id}
+                      className={
+                        [
+                          status ===
+                            'Done'
+                            ? 'academic-plan-row-done'
+                            : '',
+                          status ===
+                            'In Progress'
+                            ? 'academic-plan-row-current'
+                            : '',
+                          status ===
+                            'Pending'
+                            ? 'academic-plan-row-pending'
+                            : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')
+                      }
+                    >
+                      {cohortAcademicPlanFields.map(
+                        (
+                          column,
+                          columnIndex,
+                        ) => (
+                          <td
+                            key={
+                              column.field
+                            }
+                          >
+                            <input
+                              type="text"
+                              className="academic-plan-cell-input"
+                              data-academic-plan-row={
+                                rowIndex
+                              }
+                              data-academic-plan-column={
+                                columnIndex
+                              }
+                              aria-label={
+                                `${column.label} for ${record.code}`
+                              }
+                              value={
+                                record[
+                                column.field
+                                ]
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateAcademicPlanRecord(
+                                  record.id,
+                                  column.field,
+                                  event
+                                    .target
+                                    .value,
+                                )
+                              }
+                              onKeyDown={(
+                                event,
+                              ) =>
+                                handleAcademicPlanKeyDown(
+                                  event,
+                                  rowIndex,
+                                  columnIndex,
+                                )
+                              }
+                            />
+                          </td>
+                        ),
+                      )}
+
+                      <td>
+                        <input
+                          type="text"
+                          readOnly
+                          className={
+                            [
+                              'academic-plan-cell-input',
+                              'academic-plan-status-input',
+                              status ===
+                                'Pending'
+                                ? 'academic-plan-status-pending'
+                                : '',
+                              status ===
+                                'In Progress'
+                                ? 'academic-plan-status-progress'
+                                : '',
+                              status ===
+                                'Done'
+                                ? 'academic-plan-status-done'
+                                : '',
+                            ]
+                              .filter(
+                                Boolean,
+                              )
+                              .join(' ')
+                          }
+                          data-academic-plan-row={
+                            rowIndex
+                          }
+                          data-academic-plan-column={
+                            cohortAcademicPlanFields.length
+                          }
+                          aria-label={
+                            `Status for ${record.code}`
+                          }
+                          value={status}
+                          onKeyDown={(
+                            event,
+                          ) =>
+                            handleAcademicPlanKeyDown(
+                              event,
+                              rowIndex,
+                              cohortAcademicPlanFields.length,
+                            )
+                          }
+                        />
+                      </td>
+                    </tr>
+                  )
+                },
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   )
 }
@@ -13239,10 +14008,7 @@ function App() {
             <Route
               path="/academic-plan"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Academic Plan"
-                  description="Cohort academic planning information and resources will be organized here."
-                />
+                <CohortAcademicPlanPage />
               }
             />
 

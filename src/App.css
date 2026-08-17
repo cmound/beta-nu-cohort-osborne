@@ -4124,6 +4124,272 @@
 }
 
 /* =========================================================
+   Beta Nu Cohort Academic Plan
+   ========================================================= */
+
+.academic-plan-panel {
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow:
+    0 8px 20px
+      rgba(0, 0, 0, 0.2);
+}
+
+.academic-plan-panel-header {
+  min-height: 58px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #7f8c9d;
+  background:
+    linear-gradient(
+      180deg,
+      #0d315b 0%,
+      #071f3d 100%
+    );
+}
+
+.academic-plan-panel-header h2 {
+  margin: 0;
+  color: var(--umass-gold);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.academic-plan-panel-header p {
+  margin: 4px 0 0;
+  color: #cbd5e1;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.academic-plan-status-key {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.academic-plan-status-key span {
+  min-width: 82px;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  border: 1px solid
+    rgba(15, 23, 42, 0.28);
+  border-radius: 4px;
+  color: #111827;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.academic-plan-key-pending {
+  background: #e5e7eb;
+}
+
+.academic-plan-key-progress {
+  background: #fff200;
+}
+
+.academic-plan-key-done {
+  background: #c6efce;
+}
+
+.academic-plan-table-frame {
+  width: 100%;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.academic-plan-table {
+  width: 100%;
+  min-width: 1340px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #111827;
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.academic-plan-table th,
+.academic-plan-table td {
+  box-sizing: border-box;
+  border: 1px solid #8d99a8;
+  vertical-align: middle;
+}
+
+.academic-plan-table th {
+  height: 36px;
+  padding: 6px 8px;
+  border-bottom: 2px solid
+    var(--umass-navy);
+  color: #111827;
+  background: #a97800;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: left;
+  vertical-align: bottom;
+}
+
+.academic-plan-table th:nth-child(1) {
+  width: 90px;
+}
+
+.academic-plan-table th:nth-child(2) {
+  width: 100px;
+}
+
+.academic-plan-table th:nth-child(3) {
+  width: 100px;
+}
+
+.academic-plan-table th:nth-child(4) {
+  width: 330px;
+}
+
+.academic-plan-table th:nth-child(5),
+.academic-plan-table th:nth-child(6) {
+  width: 125px;
+}
+
+.academic-plan-table th:nth-child(7) {
+  width: 135px;
+}
+
+.academic-plan-table th:nth-child(8) {
+  width: 90px;
+}
+
+.academic-plan-table th:nth-child(9) {
+  width: 110px;
+}
+
+.academic-plan-table td {
+  height: 34px;
+  padding: 0;
+  background: #ffffff;
+}
+
+.academic-plan-cell-input {
+  width: 100%;
+  height: 33px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.academic-plan-cell-input:hover:not(
+    :read-only
+  ) {
+  background: #f8fafc;
+}
+
+.academic-plan-cell-input:focus {
+  position: relative;
+  z-index: 2;
+  box-shadow:
+    inset 0 0 0 2px
+      var(--umass-blue);
+}
+
+.academic-plan-status-input {
+  font-weight: 900;
+  text-align: left;
+  cursor: default;
+}
+
+.academic-plan-status-pending {
+  color: #374151;
+  background: #e5e7eb;
+  font-style: italic;
+}
+
+.academic-plan-status-progress {
+  color: #111827;
+  background: #fff200;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.academic-plan-status-done {
+  color: #111827;
+  background: #c6efce;
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: line-through;
+}
+
+/* Done: complete row */
+.academic-plan-row-done td,
+.academic-plan-row-done
+  .academic-plan-cell-input {
+  color: #111827;
+  background: #c6efce;
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: line-through;
+}
+
+/* In Progress: complete row */
+.academic-plan-row-current td,
+.academic-plan-row-current
+  .academic-plan-cell-input {
+  color: #000000;
+  background: #fff200;
+  font-weight: 900;
+  font-style: normal;
+  text-decoration: none;
+}
+
+.academic-plan-row-current td {
+  border-top:
+    2px solid var(--umass-navy);
+  border-bottom:
+    2px solid var(--umass-navy);
+}
+
+/* Pending: normal row, only Status receives special formatting */
+.academic-plan-row-pending td:not(
+    :last-child
+  ),
+.academic-plan-row-pending
+  td:not(:last-child)
+  .academic-plan-cell-input {
+  color: #111827;
+  background: #ffffff;
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: none;
+}
+
+.academic-plan-row-pending
+  td:last-child
+  .academic-plan-status-input {
+  color: #374151;
+  background: #e5e7eb;
+  font-weight: 900;
+  font-style: italic;
+  text-decoration: none;
+}
+
+/* =========================================================
    Beta Nu Cohort Norms
    ========================================================= */
 
