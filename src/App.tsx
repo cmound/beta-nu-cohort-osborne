@@ -89,6 +89,10 @@ type CohortSharedFilePreviewKind =
   | 'text'
   | 'unsupported'
 
+type CohortSharedFileUploadMode =
+  | 'single'
+  | 'mass'
+
 interface CohortSharedFile {
   readonly id: string
   readonly title: string
@@ -821,6 +825,43 @@ function getCohortSharedFileDefaultTitle(
   return fileName.slice(
     0,
     separatorIndex,
+  )
+}
+
+function getCohortSharedFileNameKey(
+  fileName: string,
+): string {
+  return fileName
+    .trim()
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+}
+
+function isCohortSharedFileDuplicate(
+  fileName: string,
+  existingFiles:
+    readonly CohortSharedFile[],
+): boolean {
+  const fileNameKey =
+    getCohortSharedFileNameKey(
+      fileName,
+    )
+
+  return existingFiles.some(
+    (file) =>
+      getCohortSharedFileNameKey(
+        file.fileName,
+      ) === fileNameKey,
+  )
+}
+
+function getCohortSharedCompanionPreviewName(
+  originalFileName: string,
+): string {
+  return (
+    `${getCohortSharedFileDefaultTitle(
+      originalFileName,
+    )} - Preview.pdf`
   )
 }
 
@@ -10410,6 +10451,20 @@ function CohortSharedFilesPage() {
     useState(false)
 
   const [
+    addDocumentMode,
+    setAddDocumentMode,
+  ] =
+    useState<CohortSharedFileUploadMode>(
+      'single',
+    )
+
+  const [
+    massUploadFiles,
+    setMassUploadFiles,
+  ] =
+    useState<readonly File[]>([])
+
+  const [
     addDocumentTitle,
     setAddDocumentTitle,
   ] =
@@ -10902,10 +10957,12 @@ function CohortSharedFilesPage() {
     setAddDocumentDescription('')
     setAddDocumentOriginalFile(null)
     setAddDocumentPreviewFile(null)
+    setMassUploadFiles([])
   }
 
   function openAddDocument(): void {
     resetAddDocumentForm()
+    setAddDocumentMode('single')
     setIsAddDocumentOpen(true)
   }
 
@@ -10998,6 +11055,312 @@ function CohortSharedFilesPage() {
     }
   }
 
+    function handleMassUploadFileSelection(
+    files: FileList | null,
+  ): void {
+    setMassUploadFiles(
+      files === null
+        ? []
+        : Array.from(files),
+    )
+  }
+
+  function saveMassUpload(): void {
+    if (massUploadFiles.length === 0) {
+      window.alert(
+        'Select at least one file for Mass Upload.',
+      )
+
+      return
+    }
+
+    const existingFileNameKeys =
+      new Set(
+        allSharedFiles.map(
+          (file) =>
+            getCohortSharedFileNameKey(
+              file.fileName,
+            ),
+        ),
+      )
+
+    const uniqueSelectedFiles =
+      new Map<string, File>()
+
+    const duplicateFileNames:
+      string[] = []
+
+    for (
+      const file
+      of massUploadFiles
+    ) {
+      const fileNameKey =
+        getCohortSharedFileNameKey(
+          file.name,
+        )
+
+      if (
+        uniqueSelectedFiles.has(
+          fileNameKey,
+        )
+      ) {
+        duplicateFileNames.push(
+          file.name,
+        )
+
+        continue
+      }
+
+      uniqueSelectedFiles.set(
+        fileNameKey,
+        file,
+      )
+    }
+
+    const companionPreviewKeys =
+      new Set<string>()
+
+    const companionPreviews =
+      new Map<string, File>()
+
+    for (
+      const file
+      of uniqueSelectedFiles.values()
+    ) {
+      if (
+        canCohortSharedFilePreviewDirectly(
+          file.name,
+        )
+      ) {
+        continue
+      }
+
+      const expectedPreviewName =
+        getCohortSharedCompanionPreviewName(
+          file.name,
+        )
+
+      const expectedPreviewKey =
+        getCohortSharedFileNameKey(
+          expectedPreviewName,
+        )
+
+      const previewFile =
+        uniqueSelectedFiles.get(
+          expectedPreviewKey,
+        )
+
+      if (
+        previewFile !== undefined &&
+        getCohortSharedFileExtension(
+          previewFile.name,
+        ) === 'pdf'
+      ) {
+        companionPreviews.set(
+          getCohortSharedFileNameKey(
+            file.name,
+          ),
+          previewFile,
+        )
+
+        companionPreviewKeys.add(
+          expectedPreviewKey,
+        )
+      }
+    }
+
+    const missingPreviewFileNames:
+      string[] = []
+
+    const addedFiles:
+      CohortSharedFile[] = []
+
+    for (
+      const [
+        fileNameKey,
+        originalFile,
+      ]
+      of uniqueSelectedFiles.entries()
+    ) {
+      if (
+        companionPreviewKeys.has(
+          fileNameKey,
+        )
+      ) {
+        continue
+      }
+
+      if (
+        existingFileNameKeys.has(
+          fileNameKey,
+        )
+      ) {
+        duplicateFileNames.push(
+          originalFile.name,
+        )
+
+        continue
+      }
+
+      const directPreviewAvailable =
+        canCohortSharedFilePreviewDirectly(
+          originalFile.name,
+        )
+
+      const companionPreview =
+        directPreviewAvailable
+          ? null
+          : companionPreviews.get(
+            fileNameKey,
+          ) ?? null
+
+      if (
+        !directPreviewAvailable &&
+        companionPreview === null
+      ) {
+        missingPreviewFileNames.push(
+          originalFile.name,
+        )
+
+        continue
+      }
+
+      const originalUrl =
+        URL.createObjectURL(
+          originalFile,
+        )
+
+      sharedFileObjectUrlsRef.current.push(
+        originalUrl,
+      )
+
+      let previewUrl =
+        originalUrl
+
+      if (
+        companionPreview !== null
+      ) {
+        previewUrl =
+          URL.createObjectURL(
+            companionPreview,
+          )
+
+        sharedFileObjectUrlsRef.current.push(
+          previewUrl,
+        )
+      }
+
+      const documentId =
+        `local-shared-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 9)}`
+
+      const nextSharedFile:
+        CohortSharedFile = {
+        id: documentId,
+        title:
+          getCohortSharedFileDefaultTitle(
+            originalFile.name,
+          ),
+        fileName:
+          originalFile.name,
+        category:
+          addDocumentCategory.trim() ||
+          'General',
+        description:
+          'Shared reference document.',
+        runtimeOriginalUrl:
+          originalUrl,
+        runtimePreviewUrl:
+          previewUrl,
+        ...(companionPreview === null
+          ? {}
+          : {
+            previewFileName:
+              companionPreview.name,
+          }),
+      }
+
+      addedFiles.push(
+        nextSharedFile,
+      )
+
+      existingFileNameKeys.add(
+        fileNameKey,
+      )
+    }
+
+    if (addedFiles.length === 0) {
+      const messages = [
+        'No new documents were added.',
+      ]
+
+      if (
+        duplicateFileNames.length > 0
+      ) {
+        messages.push(
+          `${duplicateFileNames.length} duplicate file(s) were skipped.`,
+        )
+      }
+
+      if (
+        missingPreviewFileNames.length >
+        0
+      ) {
+        messages.push(
+          `${missingPreviewFileNames.length} file(s) require a matching PDF preview.`,
+        )
+      }
+
+      window.alert(
+        messages.join('\n'),
+      )
+
+      return
+    }
+
+    setAddedSharedFiles(
+      (currentFiles) => [
+        ...currentFiles,
+        ...addedFiles,
+      ],
+    )
+
+    setSelectedFileId(
+      addedFiles[0]?.id ?? null,
+    )
+
+    setSearchTerm('')
+    setCategoryFilter('All')
+
+    const resultMessages = [
+      `Added ${addedFiles.length} document(s).`,
+    ]
+
+    if (
+      duplicateFileNames.length > 0
+    ) {
+      resultMessages.push(
+        `Skipped ${duplicateFileNames.length} duplicate file(s).`,
+      )
+    }
+
+    if (
+      missingPreviewFileNames.length >
+      0
+    ) {
+      resultMessages.push(
+        `Skipped ${missingPreviewFileNames.length} file(s) that require a matching PDF preview.`,
+      )
+    }
+
+    closeAddDocument()
+
+    window.alert(
+      resultMessages.join('\n'),
+    )
+  }
+
   function saveAddedDocument(): void {
     const originalFile =
       addDocumentOriginalFile
@@ -11034,6 +11397,19 @@ function CohortSharedFilesPage() {
     ) {
       window.alert(
         'The companion preview must be a PDF file.',
+      )
+
+      return
+    }
+
+    if (
+      isCohortSharedFileDuplicate(
+        originalFile.name,
+        allSharedFiles,
+      )
+    ) {
+      window.alert(
+        `"${originalFile.name}" is already in Shared Files. The duplicate was not added.`,
       )
 
       return
@@ -11674,138 +12050,308 @@ function CohortSharedFilesPage() {
             </header>
 
             <div className="shared-files-add-modal-body">
-              <label className="shared-files-add-field">
-                <span>
-                  Document File
-                </span>
-
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp,.bmp,.svg,.txt,.md"
-                  onChange={(event) =>
-                    handleAddDocumentFileSelection(
-                      event.target.files,
-                    )
+              <div className="shared-files-add-mode-selector">
+                <button
+                  type="button"
+                  className={
+                    addDocumentMode ===
+                    'single'
+                      ? 'shared-files-add-mode-button shared-files-add-mode-button-active'
+                      : 'shared-files-add-mode-button'
                   }
-                />
+                  onClick={() => {
+                    resetAddDocumentForm()
+                    setAddDocumentMode(
+                      'single',
+                    )
+                  }}
+                >
+                  Single Document
+                </button>
 
-                <small>
-                  Select one document. For
-                  PowerPoint or legacy Word
-                  DOC files, select the
-                  original document and its
-                  PDF preview together in
-                  this same file picker.
-                </small>
-              </label>
-
-              <div className="shared-files-add-form-grid">
-                <label className="shared-files-add-field">
-                  <span>Title</span>
-
-                  <input
-                    type="text"
-                    value={
-                      addDocumentTitle
-                    }
-                    onChange={(event) =>
-                      setAddDocumentTitle(
-                        event.target.value,
-                      )
-                    }
-                  />
-                </label>
-
-                <label className="shared-files-add-field">
-                  <span>Category</span>
-
-                  <input
-                    type="text"
-                    list="shared-files-category-suggestions"
-                    value={
-                      addDocumentCategory
-                    }
-                    placeholder="Example: Dissertation"
-                    onChange={(event) =>
-                      setAddDocumentCategory(
-                        event.target.value,
-                      )
-                    }
-                  />
-
-                  <datalist
-                    id="shared-files-category-suggestions"
-                  >
-                    {categoryOptions
-                      .filter(
-                        (category) =>
-                          category !==
-                          'All',
-                      )
-                      .map(
-                        (category) => (
-                          <option
-                            key={
-                              category
-                            }
-                            value={
-                              category
-                            }
-                          />
-                        ),
-                      )}
-                  </datalist>
-
-                  <small>
-                    Previously used
-                    categories appear as
-                    you type.
-                  </small>
-                </label>
+                <button
+                  type="button"
+                  className={
+                    addDocumentMode ===
+                    'mass'
+                      ? 'shared-files-add-mode-button shared-files-add-mode-button-active'
+                      : 'shared-files-add-mode-button'
+                  }
+                  onClick={() => {
+                    resetAddDocumentForm()
+                    setAddDocumentMode(
+                      'mass',
+                    )
+                  }}
+                >
+                  Mass Upload
+                </button>
               </div>
 
-              <label className="shared-files-add-field">
-                <span>Description</span>
+              {addDocumentMode ===
+              'single' ? (
+                <>
+                  <label className="shared-files-add-field">
+                    <span>
+                      Document File
+                    </span>
 
-                <textarea
-                  value={
-                    addDocumentDescription
-                  }
-                  placeholder="Brief description of the document..."
-                  onChange={(event) =>
-                    setAddDocumentDescription(
-                      event.target.value,
-                    )
-                  }
-                />
-              </label>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(event) =>
+                        handleAddDocumentFileSelection(
+                          event.target.files,
+                        )
+                      }
+                    />
 
-              {addDocumentOriginalFile !==
-                null &&
-              !canCohortSharedFilePreviewDirectly(
-                addDocumentOriginalFile.name,
-              ) &&
-              addDocumentPreviewFile ===
-                null ? (
-                <div className="shared-files-add-preview-required">
-                  This document requires a
-                  PDF preview. Reopen
-                  Document File and select
-                  the original document and
-                  its PDF preview together.
-                </div>
-              ) : null}
+                    <small>
+                      Select one document.
+                      For PowerPoint,
+                      legacy Word DOC, or
+                      another format that
+                      cannot be rendered
+                      directly, select the
+                      original file and
+                      its matching PDF
+                      preview together.
+                    </small>
+                  </label>
 
-              <div className="shared-files-add-session-note">
-                Temporary test mode:
-                files added here remain
-                available only while this
-                Shared Files page remains
-                open. Refreshing the page
-                or navigating away removes
-                them.
-              </div>
+                  <div className="shared-files-add-form-grid">
+                    <label className="shared-files-add-field">
+                      <span>
+                        Title
+                      </span>
+
+                      <input
+                        type="text"
+                        value={
+                          addDocumentTitle
+                        }
+                        onChange={(
+                          event,
+                        ) =>
+                          setAddDocumentTitle(
+                            event.target
+                              .value,
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label className="shared-files-add-field">
+                      <span>
+                        Category
+                      </span>
+
+                      <input
+                        type="text"
+                        list="shared-files-category-suggestions"
+                        value={
+                          addDocumentCategory
+                        }
+                        placeholder="Example: Dissertation"
+                        onChange={(
+                          event,
+                        ) =>
+                          setAddDocumentCategory(
+                            event.target
+                              .value,
+                          )
+                        }
+                      />
+
+                      <datalist
+                        id="shared-files-category-suggestions"
+                      >
+                        {categoryOptions
+                          .filter(
+                            (
+                              category,
+                            ) =>
+                              category !==
+                              'All',
+                          )
+                          .map(
+                            (
+                              category,
+                            ) => (
+                              <option
+                                key={
+                                  category
+                                }
+                                value={
+                                  category
+                                }
+                              />
+                            ),
+                          )}
+                      </datalist>
+
+                      <small>
+                        Previously used
+                        categories appear
+                        as you type.
+                      </small>
+                    </label>
+                  </div>
+
+                  <label className="shared-files-add-field">
+                    <span>
+                      Description
+                    </span>
+
+                    <textarea
+                      value={
+                        addDocumentDescription
+                      }
+                      placeholder="Brief description of the document..."
+                      onChange={(
+                        event,
+                      ) =>
+                        setAddDocumentDescription(
+                          event.target
+                            .value,
+                        )
+                      }
+                    />
+                  </label>
+
+                  {addDocumentOriginalFile !==
+                    null &&
+                  !canCohortSharedFilePreviewDirectly(
+                    addDocumentOriginalFile.name,
+                  ) &&
+                  addDocumentPreviewFile ===
+                    null ? (
+                    <div className="shared-files-add-preview-required">
+                      This document
+                      requires a PDF
+                      preview. Select the
+                      original document
+                      and its PDF preview
+                      together using
+                      Document File.
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <label className="shared-files-add-field">
+                    <span>
+                      Mass Upload Files
+                    </span>
+
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(event) =>
+                        handleMassUploadFileSelection(
+                          event.target.files,
+                        )
+                      }
+                    />
+
+                    <small>
+                      Select all documents
+                      to add at once.
+                      Duplicate filenames
+                      are automatically
+                      skipped.
+                    </small>
+                  </label>
+
+                  <label className="shared-files-add-field">
+                    <span>
+                      Category
+                    </span>
+
+                    <input
+                      type="text"
+                      list="shared-files-mass-category-suggestions"
+                      value={
+                        addDocumentCategory
+                      }
+                      placeholder="Example: Dissertation"
+                      onChange={(
+                        event,
+                      ) =>
+                        setAddDocumentCategory(
+                          event.target.value,
+                        )
+                      }
+                    />
+
+                    <datalist
+                      id="shared-files-mass-category-suggestions"
+                    >
+                      {categoryOptions
+                        .filter(
+                          (category) =>
+                            category !==
+                            'All',
+                        )
+                        .map(
+                          (category) => (
+                            <option
+                              key={
+                                category
+                              }
+                              value={
+                                category
+                              }
+                            />
+                          ),
+                        )}
+                    </datalist>
+
+                    <small>
+                      This category will
+                      be applied to all
+                      documents in this
+                      Mass Upload.
+                    </small>
+                  </label>
+
+                  <div className="shared-files-mass-upload-summary">
+                    <strong>
+                      Selected Files
+                    </strong>
+
+                    <span>
+                      {
+                        massUploadFiles.length
+                      }
+                    </span>
+                  </div>
+
+                  <div className="shared-files-mass-upload-guidance">
+                    PowerPoint, legacy
+                    Word DOC, and other
+                    files that cannot be
+                    displayed directly
+                    must include a
+                    companion PDF in the
+                    same Mass Upload.
+
+                    <strong>
+                      Naming example:
+                    </strong>
+
+                    <span>
+                      Vision and Values
+                      Slide.pptx
+                    </span>
+
+                    <span>
+                      Vision and Values
+                      Slide - Preview.pdf
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             <footer className="shared-files-add-modal-actions">
@@ -11822,11 +12368,32 @@ function CohortSharedFilesPage() {
               <button
                 type="button"
                 className="shared-files-add-save-button"
+                disabled={
+                  addDocumentMode ===
+                  'single'
+                    ? addDocumentOriginalFile ===
+                        null ||
+                      (
+                        !canCohortSharedFilePreviewDirectly(
+                          addDocumentOriginalFile.name,
+                        ) &&
+                        addDocumentPreviewFile ===
+                          null
+                      )
+                    : massUploadFiles.length ===
+                      0
+                }
                 onClick={
-                  saveAddedDocument
+                  addDocumentMode ===
+                  'single'
+                    ? saveAddedDocument
+                    : saveMassUpload
                 }
               >
-                Add Document
+                {addDocumentMode ===
+                'single'
+                  ? 'Add Document'
+                  : 'Mass Upload'}
               </button>
             </footer>
           </section>
