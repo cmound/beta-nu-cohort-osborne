@@ -13046,7 +13046,7 @@ function CohortAcademicPlanPage() {
     <section className="page-shell">
       <section className="academic-plan-panel">
         <header className="academic-plan-panel-header">
-          <div>
+          <div className="academic-plan-header-copy">
             <h2>
               Beta Nu Cohort Academic Plan
             </h2>
@@ -13056,6 +13056,38 @@ function CohortAcademicPlanPage() {
               dates, term structure, and
               current course status.
             </p>
+          </div>
+
+          <div className="academic-stat-group">
+            <div className="academic-stat-box">
+              <span className="academic-stat-label">
+                Total Classes
+              </span>
+
+              <strong className="academic-stat-value">
+                22
+              </strong>
+            </div>
+
+            <div className="academic-stat-box">
+              <span className="academic-stat-label">
+                Total Completed
+              </span>
+
+              <strong className="academic-stat-value">
+                9
+              </strong>
+            </div>
+
+            <div className="academic-stat-box">
+              <span className="academic-stat-label">
+                Remaining
+              </span>
+
+              <strong className="academic-stat-value">
+                10
+              </strong>
+            </div>
           </div>
 
           <div className="academic-plan-status-key">
