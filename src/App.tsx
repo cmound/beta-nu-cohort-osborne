@@ -14540,6 +14540,262 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/transfer-courses' ? (
+                <span
+                  className="nav-transfer-courses-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <path
+                      d="M4 8h14"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="m15 5 3 3-3 3"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M20 16H6"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="m9 13-3 3 3 3"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M5 7h11"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+
+                    <path
+                      d="M19 17H8"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/groups-assigned-by-member' ? (
+                <span
+                  className="nav-groups-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <circle
+                      cx="12"
+                      cy="7"
+                      r="3"
+                      fill="#F2B632"
+                      stroke="#FFD76A"
+                      strokeWidth="0.8"
+                    />
+
+                    <circle
+                      cx="5.5"
+                      cy="9"
+                      r="2.4"
+                      fill="#F2B632"
+                      stroke="#FFD76A"
+                      strokeWidth="0.7"
+                    />
+
+                    <circle
+                      cx="18.5"
+                      cy="9"
+                      r="2.4"
+                      fill="#F2B632"
+                      stroke="#FFD76A"
+                      strokeWidth="0.7"
+                    />
+
+                    <path
+                      d="M7.2 20
+                         v-2.3
+                         c0-3 2.1-5.2 4.8-5.2
+                         s4.8 2.2 4.8 5.2
+                         V20"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="1"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M2.5 19
+                         v-1.6
+                         c0-2.5 1.5-4.3 3.6-4.7
+                         1.1-.2 2 .1 2.8.6"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M21.5 19
+                         v-1.6
+                         c0-2.5-1.5-4.3-3.6-4.7
+                         -1.1-.2-2 .1-2.8.6"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M9 14.5
+                         c.8-.7 1.8-1 3-1"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/beta-nu-fall-icons' ? (
+                <span
+                  className="nav-images-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="16"
+                      rx="2"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.2"
+                      strokeLinejoin="round"
+                    />
+
+                    <circle
+                      cx="8"
+                      cy="9"
+                      r="1.8"
+                      fill="#FFD76A"
+                      stroke="#C89214"
+                      strokeWidth="0.7"
+                    />
+
+                    <path
+                      d="M4.8 18
+                         9.2 13.6
+                         12.2 16.3
+                         15.4 12.5
+                         19.3 17.1"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M4.5 5.3h15"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+
+                    <path
+                      d="M5 19h14"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/shared-files' ? (
+                <span
+                  className="nav-shared-files-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <path
+                      className="nav-shared-files-folder-body"
+                      d="M3 7
+                         C3 5.9 3.9 5 5 5
+                         H9.1
+                         L11 7
+                         H19
+                         C20.1 7 21 7.9 21 9
+                         V18.5
+                         C21 19.6 20.1 20.5 19 20.5
+                         H5
+                         C3.9 20.5 3 19.6 3 18.5
+                         Z"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="1.2"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      className="nav-shared-files-folder-highlight"
+                      d="M4.5 8.3
+                         H19.3"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                    />
+
+                    <path
+                      d="M4.5 19
+                         H19.5"
+                      fill="none"
+                      stroke="#A87308"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.8"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"

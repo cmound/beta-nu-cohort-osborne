@@ -530,6 +530,130 @@
     );
 }
 
+.nav-transfer-courses-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-transfer-courses-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-groups-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-groups-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-images-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-images-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-shared-files-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-shared-files-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-link-active
+  .nav-shared-files-icon
+  .nav-shared-files-folder-body {
+  fill: #F7C84B;
+  stroke: #E0AA16;
+}
+
+.nav-link-active
+  .nav-shared-files-icon
+  .nav-shared-files-folder-highlight {
+  stroke: #FFE58A;
+}
+
+.nav-link-active
+  .nav-shared-files-icon
+  svg {
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    )
+    drop-shadow(
+      0 0 4px rgba(242, 182, 50, 0.42)
+    );
+}
+
 .nav-link-active .nav-marker {
   border-color: var(--gold-400);
   background: var(--gold-400);
