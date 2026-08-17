@@ -13979,6 +13979,147 @@ function App() {
                   <span />
                   <span />
                 </span>
+              ) : item.path === '/cohort-contact' ? (
+                <span
+                  className="nav-contacts-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="nav-contacts-gold"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#FFD76A"
+                        />
+                        <stop
+                          offset="52%"
+                          stopColor="#F2B632"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#C89214"
+                        />
+                      </linearGradient>
+                    </defs>
+
+                    <circle
+                      cx="8"
+                      cy="7"
+                      r="3.5"
+                    />
+
+                    <path
+                      d="M2 21v-2.2C2 15.6 4.6 13 7.8 13h.4c3.2 0 5.8 2.6 5.8 5.8V21"
+                    />
+
+                    <path
+                      d="M15.5 3.7a3.5 3.5 0 0 1 0 6.6"
+                    />
+
+                    <path
+                      d="M17 13.4c2.9.5 5 2.8 5 5.6v2"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/cohort-dates-roles' ? (
+                <span
+                  className="nav-dates-roles-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <g
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.25"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect
+                        x="3"
+                        y="5"
+                        width="18"
+                        height="16"
+                        rx="2.3"
+                      />
+
+                      <path d="M3 9.5h18" />
+
+                      <path d="M7 2.5v5" />
+                      <path d="M17 2.5v5" />
+                    </g>
+
+                    <g fill="#FFD76A">
+                      <rect
+                        x="6"
+                        y="12"
+                        width="2.5"
+                        height="2.5"
+                        rx="0.5"
+                      />
+
+                      <rect
+                        x="10.75"
+                        y="12"
+                        width="2.5"
+                        height="2.5"
+                        rx="0.5"
+                      />
+
+                      <rect
+                        x="15.5"
+                        y="12"
+                        width="2.5"
+                        height="2.5"
+                        rx="0.5"
+                      />
+
+                      <rect
+                        x="6"
+                        y="16.25"
+                        width="2.5"
+                        height="2.5"
+                        rx="0.5"
+                      />
+
+                      <rect
+                        x="10.75"
+                        y="16.25"
+                        width="2.5"
+                        height="2.5"
+                        rx="0.5"
+                      />
+
+                      <rect
+                        x="15.5"
+                        y="16.25"
+                        width="2.5"
+                        height="2.5"
+                        rx="0.5"
+                      />
+                    </g>
+
+                    <path
+                      d="M4.5 6.2h15"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                      opacity="0.75"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"
