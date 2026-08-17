@@ -38,6 +38,13 @@ interface PlaceholderPageProps {
   readonly description: string
 }
 
+interface CoursePageProps {
+  readonly academicPlan:
+  readonly CohortAcademicPlanRecord[]
+  readonly meetings:
+  readonly CohortMeetingRecord[]
+}
+
 interface ActiveCourseDashboardItem {
   readonly code: string
   readonly title: string
@@ -13398,12 +13405,19 @@ function PlaceholderPage({
   )
 }
 
-function CoursePage() {
+function CoursePage({
+  academicPlan,
+  meetings,
+}: CoursePageProps) {
   const { courseCode } = useParams()
 
-  const course = courses.find((item) => item.slug === courseCode)
+  const course =
+    courses.find(
+      (item) =>
+        item.slug === courseCode,
+    )
 
-  if (!course) {
+  if (course === undefined) {
     return (
       <PlaceholderPage
         title="Course Not Found"
@@ -13412,20 +13426,516 @@ function CoursePage() {
     )
   }
 
+  const courseRecord =
+    academicPlan.find(
+      (record) =>
+        record.code === course.code,
+    )
+
+  if (courseRecord === undefined) {
+    return (
+      <PlaceholderPage
+        title={course.code}
+        description="Academic Plan information for this course is not currently available."
+      />
+    )
+  }
+
+  const courseMeetings =
+    meetings
+      .filter(
+        (meeting) =>
+          meeting.date >=
+          courseRecord.startDate &&
+          meeting.date <=
+          courseRecord.endDate,
+      )
+      .sort(
+        (leftMeeting, rightMeeting) =>
+          leftMeeting.date.localeCompare(
+            rightMeeting.date,
+          ),
+      )
+
+  const isSixteenWeekCourse =
+    courseRecord.length
+      .toLowerCase()
+      .startsWith('16')
+
   return (
-    <PageShell title={course.code} eyebrow="Beta Nu Fall Course">
-      <div className="content-panel">
-        <div className="placeholder-content">
-          <p className="panel-eyebrow">Course Workspace</p>
-          <h2>{course.code}</h2>
-          <p>
-            This course page is ready for its assignment tracker, webinar
-            information, cohort responsibilities, and related course
-            resources.
-          </p>
+    <section className="page-shell course-workspace-page">
+      <header className="course-workspace-header">
+        <div className="course-workspace-header-copy">
+          <span className="course-workspace-eyebrow">
+            Beta Nu Fall Course
+          </span>
+
+          <h1>
+            {courseRecord.code} -{' '}
+            {courseRecord.className}
+          </h1>
+
+          <div className="course-workspace-meta">
+            <span>
+              {courseRecord.termYear}
+            </span>
+
+            <span aria-hidden="true">
+              |
+            </span>
+
+            <span>
+              {formatCohortAcademicPlanDate(
+                courseRecord.startDate,
+              )}
+            </span>
+
+            <span aria-hidden="true">
+              through
+            </span>
+
+            <span>
+              {formatCohortAcademicPlanDate(
+                courseRecord.endDate,
+              )}
+            </span>
+
+            <span aria-hidden="true">
+              |
+            </span>
+
+            <strong>
+              {isSixteenWeekCourse
+                ? '16-Week Course'
+                : '8-Week Course'}
+            </strong>
+          </div>
         </div>
+
+        <div className="course-workspace-header-badge">
+          <span>Course Length</span>
+
+          <strong>
+            {isSixteenWeekCourse
+              ? '16'
+              : '8'}
+          </strong>
+
+          <small>Weeks</small>
+        </div>
+      </header>
+
+      <div className="course-workspace-overview-grid">
+        <section className="course-workspace-info-card">
+          <header>
+            <div>
+              <span className="course-workspace-card-eyebrow">
+                Course Resource
+              </span>
+
+              <h2>
+                Course Information
+              </h2>
+            </div>
+          </header>
+
+          <div className="course-workspace-info-card-body">
+            <div className="course-workspace-field">
+              <span>
+                Assignments Page
+              </span>
+
+              <div className="course-workspace-field-value">
+                Not entered
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="course-workspace-secondary-button"
+            >
+              Open Assignments
+            </button>
+          </div>
+        </section>
+
+        <section className="course-workspace-info-card">
+          <header>
+            <div>
+              <span className="course-workspace-card-eyebrow">
+                Instructor
+              </span>
+
+              <h2>
+                Professor Information
+              </h2>
+            </div>
+          </header>
+
+          <div className="course-workspace-professor-grid">
+            <div className="course-workspace-field">
+              <span>
+                Professor Name
+              </span>
+
+              <div className="course-workspace-field-value">
+                Not entered
+              </div>
+            </div>
+
+            <div className="course-workspace-field">
+              <span>
+                Professor Email
+              </span>
+
+              <div className="course-workspace-field-value">
+                Not entered
+              </div>
+            </div>
+
+            <div className="course-workspace-field">
+              <span>
+                Professor Phone #
+              </span>
+
+              <div className="course-workspace-field-value">
+                Not entered
+              </div>
+            </div>
+
+            <div className="course-workspace-field">
+              <span>
+                Professor Office Hours
+              </span>
+
+              <div className="course-workspace-field-value">
+                Not entered
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-    </PageShell>
+
+      <section className="course-workspace-section">
+        <header className="course-workspace-section-header">
+          <div>
+            <span className="course-workspace-section-eyebrow">
+              Course Requirements
+            </span>
+
+            <h2>
+              Assignments
+            </h2>
+          </div>
+
+          <div className="course-workspace-section-actions">
+            <button
+              type="button"
+              className="course-workspace-primary-button"
+            >
+              <span aria-hidden="true">
+                +
+              </span>
+
+              Assignment
+            </button>
+
+            <button
+              type="button"
+              className="course-workspace-delete-button"
+            >
+              <span aria-hidden="true">
+                🗑
+              </span>
+
+              Delete
+            </button>
+          </div>
+        </header>
+
+        <div className="course-workspace-table-frame">
+          <table className="course-workspace-table course-assignment-table">
+            <thead>
+              <tr>
+                <th>ASN #</th>
+                <th>Assignment Name</th>
+                <th>Week Due</th>
+                <th>Due Date</th>
+                <th>Points</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td
+                  className="course-workspace-empty-state"
+                  colSpan={5}
+                >
+                  No assignments have been added.
+                  Click + Assignment to begin
+                  this course.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="course-workspace-section">
+        <header className="course-workspace-section-header">
+          <div>
+            <span className="course-workspace-section-eyebrow">
+              Live Sessions
+            </span>
+
+            <h2>
+              Important Webinars
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            className="course-workspace-primary-button"
+          >
+            <span aria-hidden="true">
+              +
+            </span>
+
+            Webinar
+          </button>
+        </header>
+
+        <div className="course-webinar-summary">
+          <div className="course-workspace-field course-webinar-zoom-field">
+            <span>
+              Zoom
+            </span>
+
+            <div className="course-workspace-field-value">
+              Not entered
+            </div>
+          </div>
+
+          <div className="course-workspace-field course-webinar-meeting-id">
+            <span>
+              Meeting ID
+            </span>
+
+            <div className="course-workspace-field-value">
+              Not entered
+            </div>
+          </div>
+        </div>
+
+        <div className="course-workspace-table-frame">
+          <table className="course-workspace-table course-webinar-table">
+            <thead>
+              <tr>
+                <th>Webinar #</th>
+                <th>Session</th>
+
+                {isSixteenWeekCourse ? (
+                  <th>Topic</th>
+                ) : null}
+
+                <th>Date</th>
+                <th>Start Time Pacific</th>
+                <th>Start Time Eastern</th>
+                <th>Required</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td
+                  className="course-workspace-empty-state"
+                  colSpan={
+                    isSixteenWeekCourse
+                      ? 7
+                      : 6
+                  }
+                >
+                  No important webinars have
+                  been added for this course.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="course-webinar-limit-note">
+          Maximum{' '}
+          {isSixteenWeekCourse
+            ? '14'
+            : '10'}{' '}
+          webinar rows for this course.
+        </div>
+      </section>
+
+      <section className="course-workspace-section">
+        <header className="course-workspace-section-header">
+          <div>
+            <span className="course-workspace-section-eyebrow">
+              Beta Nu Fall
+            </span>
+
+            <h2>
+              Cohort Meetings
+            </h2>
+          </div>
+
+          <div className="course-cohort-zoom">
+            <span>
+              Zoom
+            </span>
+
+            <a
+              href="https://umassglobal.zoom.us/my/drcmo"
+              target="_blank"
+              rel="noreferrer"
+            >
+              umassglobal.zoom.us/my/drcmo
+            </a>
+          </div>
+        </header>
+
+        <div className="course-workspace-table-frame">
+          <table className="course-workspace-table course-meetings-table">
+            <thead>
+              <tr>
+                <th>Meeting</th>
+                <th>Date</th>
+                <th>Facilitator</th>
+                <th>Community Builder</th>
+                <th>Recorder</th>
+                <th>Timekeeper</th>
+                <th>Process Observer</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {courseMeetings.length ===
+                0 ? (
+                <tr>
+                  <td
+                    className="course-workspace-empty-state"
+                    colSpan={7}
+                  >
+                    No cohort meetings fall
+                    within this course date
+                    range.
+                  </td>
+                </tr>
+              ) : (
+                courseMeetings.map(
+                  (meeting) => (
+                    <tr key={meeting.id}>
+                      <td>
+                        {
+                          meeting.meetingNumber
+                        }
+                      </td>
+
+                      <td>
+                        {formatCohortAcademicPlanDate(
+                          meeting.date,
+                        )}
+                      </td>
+
+                      <td>
+                        {
+                          meeting.facilitator ||
+                          'TBD'
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          meeting.communityBuilder ||
+                          'TBD'
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          meeting.recorder ||
+                          'TBD'
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          meeting.timeKeeper ||
+                          'TBD'
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          meeting.processObserver ||
+                          'TBD'
+                        }
+                      </td>
+                    </tr>
+                  ),
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="course-meeting-readonly-note">
+          Cohort meeting dates and role
+          assignments are managed on the
+          Cohort Dates &amp; Roles page.
+        </p>
+      </section>
+
+      <section className="course-workspace-section">
+        <header className="course-workspace-section-header">
+          <div>
+            <span className="course-workspace-section-eyebrow">
+              Student Tracking
+            </span>
+
+            <h2>
+              Cohort Assignment Progress
+            </h2>
+          </div>
+
+          <div className="course-progress-key">
+            <span className="course-progress-key-not-started">
+              Haven&apos;t Started
+            </span>
+
+            <span className="course-progress-key-progress">
+              In Progress
+            </span>
+
+            <span className="course-progress-key-done">
+              Done
+            </span>
+
+            <span className="course-progress-key-help">
+              Help!
+            </span>
+          </div>
+        </header>
+
+        <div className="course-progress-empty-state">
+          <strong>
+            Assignment progress will appear
+            here.
+          </strong>
+
+          <span>
+            Student status columns will be
+            created automatically as
+            assignments are added.
+          </span>
+        </div>
+      </section>
+    </section>
   )
 }
 
@@ -15476,7 +15986,16 @@ function App() {
 
             <Route
               path="/courses/:courseCode"
-              element={<CoursePage />}
+              element={
+                <CoursePage
+                  academicPlan={
+                    sidebarAcademicPlan
+                  }
+                  meetings={
+                    cohortMeetings
+                  }
+                />
+              }
             />
 
             <Route
