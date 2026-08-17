@@ -482,6 +482,54 @@
     );
 }
 
+.nav-tlsi-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-tlsi-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-book-list-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-book-list-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
 .nav-link-active .nav-marker {
   border-color: var(--gold-400);
   background: var(--gold-400);

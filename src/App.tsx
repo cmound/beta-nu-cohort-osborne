@@ -14430,6 +14430,116 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/tlsi-dates' ? (
+                <span
+                  className="nav-tlsi-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="8.7"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.3"
+                    />
+
+                    <path
+                      d="M12 7.2v5.1h4.3"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M6.2 7.2
+                         C7.7 5.5 9.7 4.5 12 4.5"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                    />
+
+                    <path
+                      d="M17.8 16.7
+                         C16.3 18.4 14.3 19.4 12 19.4"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/book-list' ? (
+                <span
+                  className="nav-book-list-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <path
+                      d="M3 5.2
+                         C6.4 4.1 9.2 4.7 12 6.6
+                         V20
+                         C9.3 18.2 6.3 17.6 3 18.7
+                         Z"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="1.2"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M21 5.2
+                         C17.6 4.1 14.8 4.7 12 6.6
+                         V20
+                         C14.7 18.2 17.7 17.6 21 18.7
+                         Z"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="1.2"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M4.7 6.2
+                         C7.1 5.6 9.2 6 11.1 7.2"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                    />
+
+                    <path
+                      d="M19.3 6.2
+                         C16.9 5.6 14.8 6 12.9 7.2"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                    />
+
+                    <path
+                      d="M12 6.6v13.2"
+                      fill="none"
+                      stroke="#9B6C08"
+                      strokeWidth="1.1"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"
