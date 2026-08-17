@@ -8347,3 +8347,582 @@
   font-size: 10px;
   line-height: 1.35;
 }
+
+/* =========================================================
+   Course Workspace Phase 2 Controls
+   ========================================================= */
+
+.course-workspace-field-input {
+  width: 100%;
+  min-height: 34px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.course-workspace-field-input::placeholder {
+  color: #64748b;
+  font-style: italic;
+}
+
+.course-workspace-field-input:focus {
+  border-color: #005eb8;
+  box-shadow:
+    inset 0 0 0 1px
+      #005eb8;
+}
+
+.course-workspace-secondary-button:disabled,
+.course-workspace-delete-button:disabled {
+  opacity: 0.48;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.course-assignment-row {
+  cursor: pointer;
+}
+
+.course-assignment-row:hover > td {
+  background: #eef6ff;
+}
+
+.course-assignment-row-selected > td {
+  background: #dbeafe;
+  box-shadow:
+    inset 0 1px 0
+      rgba(0, 94, 184, 0.32),
+    inset 0 -1px 0
+      rgba(0, 94, 184, 0.32);
+}
+
+.course-assignment-row-selected
+  > td:first-child {
+  box-shadow:
+    inset 3px 0 0
+      #005eb8,
+    inset 0 1px 0
+      rgba(0, 94, 184, 0.32),
+    inset 0 -1px 0
+      rgba(0, 94, 184, 0.32);
+}
+
+.course-assignment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background:
+    rgba(2, 9, 20, 0.8);
+}
+
+.course-assignment-modal {
+  width: 940px;
+  max-width:
+    calc(100vw - 80px);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #7f8c9d;
+  border-radius: 8px;
+  background: #f8fafc;
+  box-shadow:
+    0 24px 65px
+      rgba(0, 0, 0, 0.52);
+}
+
+.course-assignment-modal-header {
+  min-height: 62px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #c89214;
+  background:
+    linear-gradient(
+      180deg,
+      #0d3765 0%,
+      #08294d 55%,
+      #051d38 100%
+    );
+}
+
+.course-assignment-modal-header
+  > div
+  > span {
+  display: block;
+  color: #8fd3ff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.course-assignment-modal-header h2 {
+  margin: 5px 0 0;
+  color: #f2b632;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.course-assignment-modal-close {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.course-assignment-form {
+  padding: 16px;
+}
+
+.course-assignment-form-grid {
+  display: grid;
+  grid-template-columns:
+    120px
+    minmax(300px, 1fr)
+    250px
+    120px;
+  gap: 12px;
+  align-items: start;
+}
+
+.course-assignment-form-grid label {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.course-assignment-form-grid
+  label
+  > span {
+  color: #0b1f3b;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.course-assignment-form-grid input {
+  width: 100%;
+  min-height: 37px;
+  box-sizing: border-box;
+  padding: 8px 9px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.course-assignment-form-grid input:focus {
+  border-color: #005eb8;
+  box-shadow:
+    inset 0 0 0 1px
+      #005eb8;
+}
+
+.course-assignment-form-grid small {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.course-assignment-form-error {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #bd2031;
+  border-radius: 4px;
+  color: #9c0006;
+  background: #ffc7ce;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.course-assignment-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid #cbd5e1;
+}
+
+.course-assignment-modal-cancel,
+.course-assignment-modal-save {
+  min-width: 112px;
+  min-height: 35px;
+  padding: 7px 13px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.course-assignment-modal-cancel {
+  border: 1px solid #94a3b8;
+  color: #0b1f3b;
+  background: #ffffff;
+}
+
+.course-assignment-modal-save {
+  border: 1px solid #8f6810;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #f4d261 0%,
+      #d7a91f 50%,
+      #b7830b 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.62),
+    0 2px 4px
+      rgba(0, 0, 0, 0.24);
+}
+
+.course-assignment-modal-cancel:hover {
+  background: #eef2f6;
+}
+
+.course-assignment-modal-save:hover {
+  background:
+    linear-gradient(
+      180deg,
+      #ffe178 0%,
+      #e1b52d 50%,
+      #c28d0d 100%
+    );
+}
+
+/* =========================================================
+   Course Workspace Phase 3 Webinars
+   ========================================================= */
+
+.course-workspace-primary-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.course-webinar-derived-summary {
+  min-height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 7px 9px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #0b1f3b;
+  background: #e5e7eb;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.course-webinar-table {
+  min-width: 1060px;
+}
+
+.course-webinar-table-16 {
+  min-width: 1220px;
+}
+
+.course-webinar-table td {
+  height: 36px;
+  padding: 0;
+}
+
+.course-webinar-number-column {
+  width: 130px;
+}
+
+.course-webinar-session-column {
+  width: 125px;
+}
+
+.course-webinar-topic-column {
+  width: 230px;
+}
+
+.course-webinar-date-column {
+  width: 190px;
+}
+
+.course-webinar-time-column {
+  width: 165px;
+}
+
+.course-webinar-required-column {
+  width: 130px;
+}
+
+.course-webinar-cell-input,
+.course-webinar-cell-select {
+  width: 100%;
+  height: 35px;
+  min-height: 35px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.course-webinar-cell-input::placeholder {
+  color: #7b8794;
+  font-style: italic;
+}
+
+.course-webinar-cell-select {
+  cursor: pointer;
+}
+
+.course-webinar-row td:focus-within {
+  position: relative;
+  z-index: 2;
+  box-shadow:
+    inset 0 0 0 2px #005eb8;
+}
+
+.course-webinar-derived-value {
+  width: 100%;
+  height: 35px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  color: #111827;
+  background: #e5e7eb;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.course-webinar-limit-note {
+  font-size: 10px;
+}
+
+/* =========================================================
+   Course Workspace First-Test Adjustments
+   ========================================================= */
+
+/* Professor Information moves to the larger left position. */
+.course-workspace-overview-grid {
+  grid-template-columns:
+    minmax(0, 1.85fr)
+    minmax(330px, 0.75fr);
+}
+
+.course-workspace-overview-grid
+  > .course-workspace-info-card:nth-child(2) {
+  order: -1;
+}
+
+/* Professor fields display left-to-right in one row. */
+.course-workspace-professor-grid {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.course-workspace-professor-grid
+  .course-workspace-field
+  > span {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.course-workspace-professor-grid
+  .course-workspace-field-input {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.course-workspace-overview-grid
+  > .course-workspace-info-card:nth-child(2)
+  h2 {
+  font-size: 18px;
+}
+
+/* Multi-row Add Assignment popup. */
+.course-assignment-form-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.course-assignment-form-row {
+  padding-bottom: 12px;
+  border-bottom:
+    1px solid #cbd5e1;
+}
+
+.course-assignment-form-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.course-assignment-add-row-button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 5px 10px;
+  border: 1px solid #547897;
+  border-radius: 4px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #194a78 0%,
+      #0c3155 52%,
+      #061f3a 100%
+    );
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.course-assignment-add-row-button
+  > span {
+  color: #ffd200;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+/* Webinars and Cohort Meetings share one row. */
+.course-workspace-live-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.course-workspace-live-grid
+  .course-workspace-section {
+  min-width: 0;
+  margin-bottom: 12px;
+}
+
+/* Keep each table inside its half of the page. */
+.course-workspace-live-grid
+  .course-workspace-table-frame {
+  overflow-x: auto;
+}
+
+.course-workspace-live-grid
+  .course-webinar-table {
+  min-width: 760px;
+}
+
+.course-workspace-live-grid
+  .course-webinar-table-16 {
+  min-width: 850px;
+}
+
+.course-workspace-live-grid
+  .course-webinar-table
+  th {
+  width: auto;
+  padding: 5px 6px;
+  font-size: 9px;
+}
+
+.course-workspace-live-grid
+  .course-webinar-cell-input,
+.course-workspace-live-grid
+  .course-webinar-cell-select,
+.course-workspace-live-grid
+  .course-webinar-derived-value {
+  font-size: 10px;
+}
+
+/* Compact Cohort Meetings so the section does not span the page. */
+.course-workspace-live-grid
+  .course-meetings-table {
+  min-width: 760px;
+  table-layout: fixed;
+}
+
+.course-workspace-live-grid
+  .course-meetings-table
+  th {
+  width: auto;
+  padding: 5px;
+  font-size: 9px;
+}
+
+.course-workspace-live-grid
+  .course-meetings-table
+  td {
+  padding: 5px;
+  font-size: 10px;
+}
+
+/* Selected webinar row for Delete. */
+.course-webinar-row {
+  cursor: pointer;
+}
+
+.course-webinar-row-selected
+  > td,
+.course-webinar-row-selected
+  .course-webinar-cell-input,
+.course-webinar-row-selected
+  .course-webinar-cell-select,
+.course-webinar-row-selected
+  .course-webinar-derived-value {
+  background: #dbeafe;
+}
+
+.course-webinar-row-selected
+  > td:first-child {
+  box-shadow:
+    inset 3px 0 0 #005eb8;
+}

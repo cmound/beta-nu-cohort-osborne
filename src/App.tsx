@@ -4,6 +4,7 @@ import {
   useState,
   type CSSProperties,
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from 'react'
 import {
@@ -44,6 +45,55 @@ interface CoursePageProps {
   readonly meetings:
   readonly CohortMeetingRecord[]
 }
+
+interface CourseAssignmentRecord {
+  readonly id: string
+  readonly asn: string
+  readonly name: string
+  readonly dueDate: string
+  readonly points: string
+}
+
+type CourseWebinarRequirement =
+  | ''
+  | 'Required'
+  | 'Optional'
+
+interface CourseWebinarRecord {
+  readonly id: string
+  readonly webinarNumber: string
+  readonly session: string
+  readonly topic: string
+  readonly date: string
+  readonly pacificStartTime: string
+  readonly required:
+  CourseWebinarRequirement
+}
+
+interface CourseWorkspaceRecord {
+  readonly assignmentsPageUrl: string
+  readonly professorName: string
+  readonly professorEmail: string
+  readonly professorPhoneDigits: string
+  readonly professorOfficeHours: string
+  readonly assignments:
+  readonly CourseAssignmentRecord[]
+  readonly webinarZoomUrl: string
+  readonly webinars:
+  readonly CourseWebinarRecord[]
+}
+
+interface CourseAssignmentFormState {
+  readonly asn: string
+  readonly name: string
+  readonly dueDate: string
+  readonly points: string
+}
+
+type CourseWorkspaceState = Record<
+  string,
+  CourseWorkspaceRecord
+>
 
 interface ActiveCourseDashboardItem {
   readonly code: string
@@ -1123,6 +1173,864 @@ function formatCohortAcademicPlanDate(
   return (
     `${weekday}. ${monthName} ` +
     `${day}, ${year}`
+  )
+}
+
+const COURSE_WORKSPACES_STORAGE_KEY =
+  'beta-nu-course-workspaces-v1'
+
+const courseAssignmentWeekdayLabels = [
+  'Sun.',
+  'Mon.',
+  'Tue.',
+  'Wed.',
+  'Thu.',
+  'Fri.',
+  'Sat.',
+] as const
+
+const courseAssignmentMonthLabels = [
+  'Jan.',
+  'Feb.',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'Aug.',
+  'Sept.',
+  'Oct.',
+  'Nov.',
+  'Dec.',
+] as const
+
+function createEmptyCourseWorkspaceRecord():
+  CourseWorkspaceRecord {
+  return {
+    assignmentsPageUrl: '',
+    professorName: '',
+    professorEmail: '',
+    professorPhoneDigits: '',
+    professorOfficeHours: '',
+    assignments: [],
+    webinarZoomUrl: '',
+    webinars: [],
+  }
+}
+
+function createEmptyCourseAssignmentFormState():
+  CourseAssignmentFormState {
+  return {
+    asn: '',
+    name: '',
+    dueDate: '',
+    points: '',
+  }
+}
+
+function isCourseWorkspaceStorageObject(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null
+  )
+}
+
+function isStoredCourseAssignmentRecord(
+  value: unknown,
+): value is CourseAssignmentRecord {
+  if (
+    !isCourseWorkspaceStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.asn === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.dueDate === 'string' &&
+    typeof value.points === 'string'
+  )
+}
+
+function isStoredCourseWebinarRequirement(
+  value: unknown,
+): value is CourseWebinarRequirement {
+  return (
+    value === '' ||
+    value === 'Required' ||
+    value === 'Optional'
+  )
+}
+
+function isStoredCourseWebinarRecord(
+  value: unknown,
+): value is CourseWebinarRecord {
+  if (
+    !isCourseWorkspaceStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.webinarNumber ===
+    'string' &&
+    typeof value.session === 'string' &&
+    typeof value.topic === 'string' &&
+    typeof value.date === 'string' &&
+    typeof value.pacificStartTime ===
+    'string' &&
+    isStoredCourseWebinarRequirement(
+      value.required,
+    )
+  )
+}
+
+function normalizeStoredCourseWorkspaceRecord(
+  value: unknown,
+): CourseWorkspaceRecord | null {
+  if (
+    !isCourseWorkspaceStorageObject(
+      value,
+    )
+  ) {
+    return null
+  }
+
+  if (
+    typeof value.assignmentsPageUrl !==
+    'string' ||
+    typeof value.professorName !==
+    'string' ||
+    typeof value.professorEmail !==
+    'string' ||
+    typeof value.professorPhoneDigits !==
+    'string' ||
+    typeof value.professorOfficeHours !==
+    'string' ||
+    !Array.isArray(value.assignments)
+  ) {
+    return null
+  }
+
+  const assignments:
+    CourseAssignmentRecord[] = []
+
+  for (
+    const assignmentValue
+    of value.assignments
+  ) {
+    if (
+      !isStoredCourseAssignmentRecord(
+        assignmentValue,
+      )
+    ) {
+      return null
+    }
+
+    assignments.push(
+      assignmentValue,
+    )
+  }
+
+  const webinars:
+    CourseWebinarRecord[] = []
+
+  if (Array.isArray(value.webinars)) {
+    for (
+      const webinarValue
+      of value.webinars
+    ) {
+      if (
+        isStoredCourseWebinarRecord(
+          webinarValue,
+        )
+      ) {
+        webinars.push(
+          webinarValue,
+        )
+      }
+    }
+  }
+
+  return {
+    assignmentsPageUrl:
+      value.assignmentsPageUrl,
+    professorName:
+      value.professorName,
+    professorEmail:
+      value.professorEmail,
+    professorPhoneDigits:
+      value.professorPhoneDigits,
+    professorOfficeHours:
+      value.professorOfficeHours,
+    assignments,
+    webinarZoomUrl:
+      typeof value.webinarZoomUrl ===
+        'string'
+        ? value.webinarZoomUrl
+        : '',
+    webinars,
+  }
+}
+
+function readStoredCourseWorkspaces():
+  CourseWorkspaceState {
+  const storedValue =
+    window.localStorage.getItem(
+      COURSE_WORKSPACES_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !isCourseWorkspaceStorageObject(
+        parsedValue,
+      )
+    ) {
+      return {}
+    }
+
+    const workspaces:
+      CourseWorkspaceState = {}
+
+    for (
+      const [
+        courseSlug,
+        workspaceValue,
+      ] of Object.entries(parsedValue)
+    ) {
+      const normalizedWorkspace =
+        normalizeStoredCourseWorkspaceRecord(
+          workspaceValue,
+        )
+
+      if (
+        normalizedWorkspace !== null
+      ) {
+        workspaces[courseSlug] =
+          normalizedWorkspace
+      }
+    }
+
+    return workspaces
+  } catch {
+    return {}
+  }
+}
+
+function formatCourseProfessorPhone(
+  value: string,
+): string {
+  const digits = value
+    .replace(/\D/g, '')
+    .slice(0, 10)
+
+  if (digits.length === 0) {
+    return ''
+  }
+
+  if (digits.length <= 3) {
+    return `(${digits}`
+  }
+
+  if (digits.length <= 6) {
+    return (
+      `(${digits.slice(0, 3)}) ` +
+      digits.slice(3)
+    )
+  }
+
+  return (
+    `(${digits.slice(0, 3)}) ` +
+    `${digits.slice(3, 6)}-` +
+    digits.slice(6)
+  )
+}
+
+function formatCourseAssignmentNumber(
+  value: string,
+): string {
+  const trimmedValue = value.trim()
+
+  if (/^\d+$/.test(trimmedValue)) {
+    return `${Number(trimmedValue)}.0`
+  }
+
+  const decimalMatch =
+    /^(\d+)\.(\d+)$/.exec(
+      trimmedValue,
+    )
+
+  if (decimalMatch !== null) {
+    const wholeNumber =
+      Number(decimalMatch[1])
+
+    const decimalPart =
+      decimalMatch[2]
+        .replace(/0+$/, '') ||
+      '0'
+
+    return (
+      `${wholeNumber}.` +
+      decimalPart
+    )
+  }
+
+  return trimmedValue
+}
+
+function createCourseAssignmentIsoDate(
+  year: number,
+  month: number,
+  day: number,
+): string | null {
+  const date = new Date(
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+    ),
+  )
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !==
+    month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null
+  }
+
+  return (
+    `${String(year).padStart(
+      4,
+      '0',
+    )}-` +
+    `${String(month).padStart(
+      2,
+      '0',
+    )}-` +
+    String(day).padStart(
+      2,
+      '0',
+    )
+  )
+}
+
+function parseCourseAssignmentDate(
+  value: string,
+  courseStartDate: string,
+  courseEndDate: string,
+): string | null {
+  const trimmedValue = value.trim()
+
+  const isoMatch =
+    /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+      trimmedValue,
+    )
+
+  if (isoMatch !== null) {
+    return createCourseAssignmentIsoDate(
+      Number(isoMatch[1]),
+      Number(isoMatch[2]),
+      Number(isoMatch[3]),
+    )
+  }
+
+  const startYear =
+    Number(
+      courseStartDate.slice(0, 4),
+    )
+
+  const startMonth =
+    Number(
+      courseStartDate.slice(5, 7),
+    )
+
+  const endYear =
+    Number(
+      courseEndDate.slice(0, 4),
+    )
+
+  function inferYear(
+    month: number,
+  ): number {
+    if (
+      endYear > startYear &&
+      month < startMonth
+    ) {
+      return endYear
+    }
+
+    return startYear
+  }
+
+  const slashMatch =
+    /^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2}|\d{4}))?$/.exec(
+      trimmedValue,
+    )
+
+  if (slashMatch !== null) {
+    const month =
+      Number(slashMatch[1])
+
+    const day =
+      Number(slashMatch[2])
+
+    const yearText =
+      slashMatch[3]
+
+    const year =
+      yearText === undefined
+        ? inferYear(month)
+        : yearText.length === 2
+          ? 2000 +
+          Number(yearText)
+          : Number(yearText)
+
+    return createCourseAssignmentIsoDate(
+      year,
+      month,
+      day,
+    )
+  }
+
+  const digits =
+    trimmedValue.replace(
+      /\D/g,
+      '',
+    )
+
+  if (
+    digits.length !== 3 &&
+    digits.length !== 4 &&
+    digits.length !== 6 &&
+    digits.length !== 8
+  ) {
+    return null
+  }
+
+  let month = 0
+  let day = 0
+  let year = startYear
+
+  if (digits.length === 3) {
+    month =
+      Number(
+        digits.slice(0, 1),
+      )
+
+    day =
+      Number(
+        digits.slice(1, 3),
+      )
+
+    year = inferYear(month)
+  } else if (
+    digits.length === 4
+  ) {
+    month =
+      Number(
+        digits.slice(0, 2),
+      )
+
+    day =
+      Number(
+        digits.slice(2, 4),
+      )
+
+    year = inferYear(month)
+  } else if (
+    digits.length === 6
+  ) {
+    month =
+      Number(
+        digits.slice(0, 2),
+      )
+
+    day =
+      Number(
+        digits.slice(2, 4),
+      )
+
+    year =
+      2000 +
+      Number(
+        digits.slice(4, 6),
+      )
+  } else {
+    month =
+      Number(
+        digits.slice(0, 2),
+      )
+
+    day =
+      Number(
+        digits.slice(2, 4),
+      )
+
+    year =
+      Number(
+        digits.slice(4, 8),
+      )
+  }
+
+  return createCourseAssignmentIsoDate(
+    year,
+    month,
+    day,
+  )
+}
+
+function formatCourseAssignmentDate(
+  value: string,
+): string {
+  const date = new Date(
+    `${value}T00:00:00Z`,
+  )
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return value
+  }
+
+  return (
+    `${courseAssignmentWeekdayLabels[
+    date.getUTCDay()
+    ]
+    } ` +
+    `${courseAssignmentMonthLabels[
+    date.getUTCMonth()
+    ]
+    } ` +
+    `${date.getUTCDate()}, ` +
+    date.getUTCFullYear()
+  )
+}
+
+function getCourseAssignmentWeekLabel(
+  courseStartDate: string,
+  dueDate: string,
+): string {
+  const startTime =
+    Date.parse(
+      `${courseStartDate}T00:00:00Z`,
+    )
+
+  const dueTime =
+    Date.parse(
+      `${dueDate}T00:00:00Z`,
+    )
+
+  if (
+    !Number.isFinite(
+      startTime,
+    ) ||
+    !Number.isFinite(
+      dueTime,
+    )
+  ) {
+    return ''
+  }
+
+  const millisecondsPerDay =
+    24 * 60 * 60 * 1000
+
+  const dayDifference =
+    Math.floor(
+      (dueTime - startTime) /
+      millisecondsPerDay,
+    )
+
+  const weekNumber =
+    Math.floor(
+      dayDifference / 7,
+    ) + 1
+
+  return `Week ${weekNumber}`
+}
+
+function extractCourseZoomMeetingId(
+  value: string,
+): string {
+  const trimmedValue =
+    value.trim()
+
+  if (trimmedValue.length === 0) {
+    return ''
+  }
+
+  const meetingMatch =
+    /\/(?:j|wc\/join)\/(\d{9,12})/i.exec(
+      trimmedValue,
+    )
+
+  return meetingMatch?.[1] ?? ''
+}
+
+function normalizeCourseWebinarNumber(
+  value: string,
+): string {
+  const normalizedValue =
+    value
+      .trim()
+      .replace(
+        /^webinar\s*#?\s*/i,
+        '',
+      )
+
+  if (
+    normalizedValue.length === 0
+  ) {
+    return ''
+  }
+
+  return `Webinar #${normalizedValue}`
+}
+
+function normalizeCourseWebinarSession(
+  value: string,
+): string {
+  const normalizedValue =
+    value
+      .trim()
+      .replace(
+        /^session\s*/i,
+        '',
+      )
+
+  if (
+    normalizedValue.length === 0
+  ) {
+    return ''
+  }
+
+  return `Session ${normalizedValue}`
+}
+
+function parseCourseWebinarTimeMinutes(
+  value: string,
+): number | null {
+  const normalizedValue =
+    value
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '')
+
+  if (
+    normalizedValue.length === 0
+  ) {
+    return null
+  }
+
+  const meridiemMatch =
+    /(AM|PM)$/.exec(
+      normalizedValue,
+    )
+
+  const meridiem =
+    meridiemMatch?.[1] ?? null
+
+  const timeValue =
+    meridiem === null
+      ? normalizedValue
+      : normalizedValue.slice(
+        0,
+        -meridiem.length,
+      )
+
+  let hour = 0
+  let minute = 0
+
+  if (timeValue.includes(':')) {
+    const timeParts =
+      timeValue.split(':')
+
+    if (timeParts.length !== 2) {
+      return null
+    }
+
+    hour =
+      Number(timeParts[0])
+
+    minute =
+      Number(timeParts[1])
+  } else if (
+    /^\d{1,4}$/.test(
+      timeValue,
+    )
+  ) {
+    if (
+      timeValue.length <= 2
+    ) {
+      hour = Number(timeValue)
+      minute = 0
+    } else if (
+      timeValue.length === 3
+    ) {
+      hour =
+        Number(
+          timeValue.slice(0, 1),
+        )
+
+      minute =
+        Number(
+          timeValue.slice(1),
+        )
+    } else {
+      hour =
+        Number(
+          timeValue.slice(0, 2),
+        )
+
+      minute =
+        Number(
+          timeValue.slice(2),
+        )
+    }
+  } else {
+    return null
+  }
+
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null
+  }
+
+  if (meridiem !== null) {
+    if (
+      hour < 1 ||
+      hour > 12
+    ) {
+      return null
+    }
+
+    if (meridiem === 'AM') {
+      hour =
+        hour === 12
+          ? 0
+          : hour
+    } else {
+      hour =
+        hour === 12
+          ? 12
+          : hour + 12
+    }
+  } else if (
+    hour >= 1 &&
+    hour <= 12
+  ) {
+    /*
+     * Per the Beta Nu Course Page
+     * requirement, times without an
+     * explicit AM/PM designation
+     * default to PM.
+     */
+    hour =
+      hour === 12
+        ? 12
+        : hour + 12
+  } else if (
+    hour < 0 ||
+    hour > 23
+  ) {
+    return null
+  }
+
+  return hour * 60 + minute
+}
+
+function formatCourseWebinarTimeMinutes(
+  totalMinutes: number,
+): string {
+  const normalizedMinutes =
+    (
+      totalMinutes %
+      (24 * 60) +
+      24 * 60
+    ) %
+    (24 * 60)
+
+  const hour24 =
+    Math.floor(
+      normalizedMinutes / 60,
+    )
+
+  const minute =
+    normalizedMinutes % 60
+
+  const meridiem =
+    hour24 >= 12
+      ? 'PM'
+      : 'AM'
+
+  const hour12 =
+    hour24 % 12 === 0
+      ? 12
+      : hour24 % 12
+
+  return (
+    `${hour12}:` +
+    `${String(minute).padStart(
+      2,
+      '0',
+    )} ` +
+    meridiem
+  )
+}
+
+function normalizeCourseWebinarTime(
+  value: string,
+): string | null {
+  const totalMinutes =
+    parseCourseWebinarTimeMinutes(
+      value,
+    )
+
+  if (totalMinutes === null) {
+    return null
+  }
+
+  return formatCourseWebinarTimeMinutes(
+    totalMinutes,
+  )
+}
+
+function getCourseWebinarEasternTime(
+  pacificTime: string,
+): string {
+  const pacificMinutes =
+    parseCourseWebinarTimeMinutes(
+      pacificTime,
+    )
+
+  if (pacificMinutes === null) {
+    return ''
+  }
+
+  return formatCourseWebinarTimeMinutes(
+    pacificMinutes + 3 * 60,
   )
 }
 
@@ -13411,6 +14319,80 @@ function CoursePage({
 }: CoursePageProps) {
   const { courseCode } = useParams()
 
+  const [
+    courseWorkspaces,
+    setCourseWorkspaces,
+  ] =
+    useState<CourseWorkspaceState>(
+      readStoredCourseWorkspaces,
+    )
+
+  const [
+    isAssignmentModalOpen,
+    setIsAssignmentModalOpen,
+  ] = useState(false)
+
+  const [
+    assignmentForms,
+    setAssignmentForms,
+  ] =
+    useState<
+      readonly CourseAssignmentFormState[]
+    >(
+      () => [
+        createEmptyCourseAssignmentFormState(),
+      ],
+    )
+
+  const [
+    assignmentFormError,
+    setAssignmentFormError,
+  ] = useState('')
+
+  const [
+    selectedAssignmentId,
+    setSelectedAssignmentId,
+  ] =
+    useState<string | null>(
+      null,
+    )
+
+  const [
+    selectedWebinarId,
+    setSelectedWebinarId,
+  ] =
+    useState<string | null>(
+      null,
+    )
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      COURSE_WORKSPACES_STORAGE_KEY,
+      JSON.stringify(
+        courseWorkspaces,
+      ),
+    )
+  }, [courseWorkspaces])
+
+  useEffect(() => {
+    setIsAssignmentModalOpen(
+      false,
+    )
+
+    setAssignmentForms([
+      createEmptyCourseAssignmentFormState(),
+    ])
+
+    setAssignmentFormError('')
+
+    setSelectedAssignmentId(
+      null,
+    )
+    setSelectedWebinarId(
+      null,
+    )
+  }, [courseCode])
+
   const course =
     courses.find(
       (item) =>
@@ -13441,6 +14423,287 @@ function CoursePage({
     )
   }
 
+  const courseSlug =
+    course.slug
+
+  const courseStartDate =
+    courseRecord.startDate
+
+  const courseEndDate =
+    courseRecord.endDate
+
+  const workspace =
+    courseWorkspaces[
+    courseSlug
+    ] ??
+    createEmptyCourseWorkspaceRecord()
+
+  function updateCourseWorkspace(
+    updates:
+      Partial<CourseWorkspaceRecord>,
+  ): void {
+    setCourseWorkspaces(
+      (current) => ({
+        ...current,
+
+        [courseSlug]: {
+          ...(
+            current[
+            courseSlug
+            ] ??
+            createEmptyCourseWorkspaceRecord()
+          ),
+
+          ...updates,
+        },
+      }),
+    )
+  }
+
+  function openAssignmentModal():
+    void {
+    setAssignmentForms([
+      createEmptyCourseAssignmentFormState(),
+    ])
+
+    setAssignmentFormError('')
+
+    setIsAssignmentModalOpen(
+      true,
+    )
+  }
+
+  function closeAssignmentModal():
+    void {
+    setIsAssignmentModalOpen(
+      false,
+    )
+
+    setAssignmentFormError('')
+  }
+
+  function updateAssignmentFormRow(
+    rowIndex: number,
+    field: keyof CourseAssignmentFormState,
+    value: string,
+  ): void {
+    setAssignmentForms(
+      (currentRows) =>
+        currentRows.map(
+          (row, currentRowIndex) =>
+            currentRowIndex === rowIndex
+              ? {
+                ...row,
+                [field]: value,
+              }
+              : row,
+        ),
+    )
+  }
+
+  function addAssignmentFormRow():
+    void {
+    setAssignmentForms(
+      (currentRows) => [
+        ...currentRows,
+        createEmptyCourseAssignmentFormState(),
+      ],
+    )
+  }
+
+  function saveAssignments(
+    event:
+      FormEvent<HTMLFormElement>,
+  ): void {
+    event.preventDefault()
+
+    const newAssignments:
+      CourseAssignmentRecord[] = []
+
+    for (
+      const [
+        rowIndex,
+        formRow,
+      ] of assignmentForms.entries()
+    ) {
+      const rawAsn =
+        formRow.asn.trim()
+
+      const rawName =
+        formRow.name.trim()
+
+      const rawDueDate =
+        formRow.dueDate.trim()
+
+      const rawPoints =
+        formRow.points.trim()
+
+      const isBlankRow =
+        rawAsn.length === 0 &&
+        rawName.length === 0 &&
+        rawDueDate.length === 0 &&
+        rawPoints.length === 0
+
+      if (isBlankRow) {
+        continue
+      }
+
+      const asn =
+        formatCourseAssignmentNumber(
+          rawAsn,
+        )
+
+      const dueDate =
+        parseCourseAssignmentDate(
+          rawDueDate,
+          courseStartDate,
+          courseEndDate,
+        )
+
+      if (
+        asn.length === 0 ||
+        rawName.length === 0 ||
+        rawPoints.length === 0 ||
+        dueDate === null
+      ) {
+        setAssignmentFormError(
+          `Row ${rowIndex + 1}: Enter ASN #, Assignment Name, a valid Due Date, and Points.`,
+        )
+
+        return
+      }
+
+      if (
+        dueDate <
+        courseStartDate ||
+        dueDate >
+        courseEndDate
+      ) {
+        setAssignmentFormError(
+          `Row ${rowIndex + 1}: Due Date must fall within this course start and end date.`,
+        )
+
+        return
+      }
+
+      newAssignments.push({
+        id: crypto.randomUUID(),
+        asn,
+        name: rawName,
+        dueDate,
+        points: rawPoints,
+      })
+    }
+
+    if (
+      newAssignments.length === 0
+    ) {
+      setAssignmentFormError(
+        'Enter at least one assignment.',
+      )
+
+      return
+    }
+
+    const nextAssignments = [
+      ...workspace.assignments,
+      ...newAssignments,
+    ].sort(
+      (
+        leftAssignment,
+        rightAssignment,
+      ) => {
+        const dateComparison =
+          leftAssignment.dueDate.localeCompare(
+            rightAssignment.dueDate,
+          )
+
+        if (
+          dateComparison !== 0
+        ) {
+          return dateComparison
+        }
+
+        return leftAssignment.asn.localeCompare(
+          rightAssignment.asn,
+          undefined,
+          {
+            numeric: true,
+          },
+        )
+      },
+    )
+
+    updateCourseWorkspace({
+      assignments:
+        nextAssignments,
+    })
+
+    const firstNewAssignment =
+      newAssignments[0]
+
+    if (
+      firstNewAssignment !==
+      undefined
+    ) {
+      setSelectedAssignmentId(
+        firstNewAssignment.id,
+      )
+    }
+
+    closeAssignmentModal()
+  }
+
+  function deleteSelectedAssignment():
+    void {
+    if (
+      selectedAssignmentId ===
+      null
+    ) {
+      return
+    }
+
+    const selectedAssignment =
+      workspace.assignments.find(
+        (assignment) =>
+          assignment.id ===
+          selectedAssignmentId,
+      )
+
+    if (
+      selectedAssignment ===
+      undefined
+    ) {
+      setSelectedAssignmentId(
+        null,
+      )
+
+      return
+    }
+
+    const shouldDelete =
+      window.confirm(
+        `Delete ${selectedAssignment.asn} - ${selectedAssignment.name}?`,
+      )
+
+    if (!shouldDelete) {
+      return
+    }
+
+    updateCourseWorkspace({
+      assignments:
+        workspace.assignments.filter(
+          (assignment) =>
+            assignment.id !==
+            selectedAssignmentId,
+        ),
+    })
+
+    setSelectedAssignmentId(
+      null,
+    )
+  }
+
   const courseMeetings =
     meetings
       .filter(
@@ -13461,6 +14724,220 @@ function CoursePage({
     courseRecord.length
       .toLowerCase()
       .startsWith('16')
+
+  const webinarLimit =
+    isSixteenWeekCourse
+      ? 14
+      : 10
+
+  const webinarMeetingId =
+    extractCourseZoomMeetingId(
+      workspace.webinarZoomUrl,
+    )
+
+  function addCourseWebinar():
+    void {
+    if (
+      workspace.webinars.length >=
+      webinarLimit
+    ) {
+      window.alert(
+        `This course can contain a maximum of ${webinarLimit} webinars.`,
+      )
+
+      return
+    }
+
+    const newWebinar:
+      CourseWebinarRecord = {
+      id: crypto.randomUUID(),
+      webinarNumber: '',
+      session: '',
+      topic: '',
+      date: '',
+      pacificStartTime: '',
+      required: 'Required',
+    }
+
+    updateCourseWorkspace({
+      webinars: [
+        ...workspace.webinars,
+        newWebinar,
+      ],
+    })
+
+    setSelectedWebinarId(
+      newWebinar.id,
+    )
+  }
+
+  function updateCourseWebinar(
+    webinarId: string,
+    field:
+      | 'webinarNumber'
+      | 'session'
+      | 'topic'
+      | 'date'
+      | 'pacificStartTime',
+    value: string,
+  ): void {
+    updateCourseWorkspace({
+      webinars:
+        workspace.webinars.map(
+          (webinar) =>
+            webinar.id === webinarId
+              ? {
+                ...webinar,
+                [field]: value,
+              }
+              : webinar,
+        ),
+    })
+  }
+
+  function updateCourseWebinarRequirement(
+    webinarId: string,
+    value: string,
+  ): void {
+    if (
+      !isStoredCourseWebinarRequirement(
+        value,
+      )
+    ) {
+      return
+    }
+
+    updateCourseWorkspace({
+      webinars:
+        workspace.webinars.map(
+          (webinar) =>
+            webinar.id === webinarId
+              ? {
+                ...webinar,
+                required: value,
+              }
+              : webinar,
+        ),
+    })
+  }
+
+  function deleteSelectedCourseWebinar():
+    void {
+    if (
+      selectedWebinarId === null
+    ) {
+      return
+    }
+
+    const selectedWebinar =
+      workspace.webinars.find(
+        (webinar) =>
+          webinar.id ===
+          selectedWebinarId,
+      )
+
+    if (
+      selectedWebinar ===
+      undefined
+    ) {
+      setSelectedWebinarId(null)
+      return
+    }
+
+    const webinarLabel =
+      selectedWebinar.webinarNumber
+        .trim() ||
+      'this webinar'
+
+    if (
+      !window.confirm(
+        `Delete ${webinarLabel}?`,
+      )
+    ) {
+      return
+    }
+
+    updateCourseWorkspace({
+      webinars:
+        workspace.webinars.filter(
+          (webinar) =>
+            webinar.id !==
+            selectedWebinarId,
+        ),
+    })
+
+    setSelectedWebinarId(null)
+  }
+
+  function handleCourseWebinarTableKeyDown(
+    event:
+      ReactKeyboardEvent<HTMLTableElement>,
+  ): void {
+    if (event.key !== 'Tab') {
+      return
+    }
+
+    const target =
+      event.target
+
+    if (
+      !(
+        target instanceof
+        HTMLInputElement
+      ) &&
+      !(
+        target instanceof
+        HTMLSelectElement
+      )
+    ) {
+      return
+    }
+
+    const editableFields =
+      Array.from(
+        event.currentTarget
+          .querySelectorAll<
+            | HTMLInputElement
+            | HTMLSelectElement
+          >(
+            '.course-webinar-cell-input, .course-webinar-cell-select',
+          ),
+      )
+
+    const currentIndex =
+      editableFields.indexOf(
+        target,
+      )
+
+    if (currentIndex === -1) {
+      return
+    }
+
+    const nextIndex =
+      event.shiftKey
+        ? currentIndex - 1
+        : currentIndex + 1
+
+    const nextField =
+      editableFields[nextIndex]
+
+    if (
+      nextField === undefined
+    ) {
+      return
+    }
+
+    event.preventDefault()
+
+    nextField.focus()
+
+    if (
+      nextField instanceof
+      HTMLInputElement
+    ) {
+      nextField.select()
+    }
+  }
 
   return (
     <section className="page-shell course-workspace-page">
@@ -13540,19 +15017,45 @@ function CoursePage({
           </header>
 
           <div className="course-workspace-info-card-body">
-            <div className="course-workspace-field">
+            <label className="course-workspace-field">
               <span>
                 Assignments Page
               </span>
 
-              <div className="course-workspace-field-value">
-                Not entered
-              </div>
-            </div>
+              <input
+                type="url"
+                className="course-workspace-field-input"
+                placeholder="Paste assignments page URL"
+                value={
+                  workspace.assignmentsPageUrl
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    assignmentsPageUrl:
+                      event.target
+                        .value,
+                  })
+                }}
+              />
+            </label>
 
             <button
               type="button"
               className="course-workspace-secondary-button"
+              disabled={
+                workspace.assignmentsPageUrl
+                  .trim()
+                  .length === 0
+              }
+              onClick={() => {
+                window.open(
+                  workspace.assignmentsPageUrl,
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }}
             >
               Open Assignments
             </button>
@@ -13573,45 +15076,112 @@ function CoursePage({
           </header>
 
           <div className="course-workspace-professor-grid">
-            <div className="course-workspace-field">
+            <label className="course-workspace-field">
               <span>
                 Professor Name
               </span>
 
-              <div className="course-workspace-field-value">
-                Not entered
-              </div>
-            </div>
+              <input
+                type="text"
+                className="course-workspace-field-input"
+                placeholder="Enter professor name"
+                value={
+                  workspace.professorName
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    professorName:
+                      event.target
+                        .value,
+                  })
+                }}
+              />
+            </label>
 
-            <div className="course-workspace-field">
+            <label className="course-workspace-field">
               <span>
                 Professor Email
               </span>
 
-              <div className="course-workspace-field-value">
-                Not entered
-              </div>
-            </div>
+              <input
+                type="email"
+                className="course-workspace-field-input"
+                placeholder="Enter professor email"
+                value={
+                  workspace.professorEmail
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    professorEmail:
+                      event.target
+                        .value,
+                  })
+                }}
+              />
+            </label>
 
-            <div className="course-workspace-field">
+            <label className="course-workspace-field">
               <span>
                 Professor Phone #
               </span>
 
-              <div className="course-workspace-field-value">
-                Not entered
-              </div>
-            </div>
+              <input
+                type="tel"
+                inputMode="tel"
+                className="course-workspace-field-input"
+                placeholder="(555) 123-4567"
+                value={
+                  formatCourseProfessorPhone(
+                    workspace.professorPhoneDigits,
+                  )
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    professorPhoneDigits:
+                      event.target
+                        .value
+                        .replace(
+                          /\D/g,
+                          '',
+                        )
+                        .slice(
+                          0,
+                          10,
+                        ),
+                  })
+                }}
+              />
+            </label>
 
-            <div className="course-workspace-field">
+            <label className="course-workspace-field">
               <span>
                 Professor Office Hours
               </span>
 
-              <div className="course-workspace-field-value">
-                Not entered
-              </div>
-            </div>
+              <input
+                type="text"
+                className="course-workspace-field-input"
+                placeholder="Enter office hours"
+                value={
+                  workspace.professorOfficeHours
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    professorOfficeHours:
+                      event.target
+                        .value,
+                  })
+                }}
+              />
+            </label>
           </div>
         </section>
       </div>
@@ -13632,6 +15202,9 @@ function CoursePage({
             <button
               type="button"
               className="course-workspace-primary-button"
+              onClick={
+                openAssignmentModal
+              }
             >
               <span aria-hidden="true">
                 +
@@ -13643,6 +15216,13 @@ function CoursePage({
             <button
               type="button"
               className="course-workspace-delete-button"
+              disabled={
+                selectedAssignmentId ===
+                null
+              }
+              onClick={
+                deleteSelectedAssignment
+              }
             >
               <span aria-hidden="true">
                 🗑
@@ -13666,214 +15246,66 @@ function CoursePage({
             </thead>
 
             <tbody>
-              <tr>
-                <td
-                  className="course-workspace-empty-state"
-                  colSpan={5}
-                >
-                  No assignments have been added.
-                  Click + Assignment to begin
-                  this course.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="course-workspace-section">
-        <header className="course-workspace-section-header">
-          <div>
-            <span className="course-workspace-section-eyebrow">
-              Live Sessions
-            </span>
-
-            <h2>
-              Important Webinars
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            className="course-workspace-primary-button"
-          >
-            <span aria-hidden="true">
-              +
-            </span>
-
-            Webinar
-          </button>
-        </header>
-
-        <div className="course-webinar-summary">
-          <div className="course-workspace-field course-webinar-zoom-field">
-            <span>
-              Zoom
-            </span>
-
-            <div className="course-workspace-field-value">
-              Not entered
-            </div>
-          </div>
-
-          <div className="course-workspace-field course-webinar-meeting-id">
-            <span>
-              Meeting ID
-            </span>
-
-            <div className="course-workspace-field-value">
-              Not entered
-            </div>
-          </div>
-        </div>
-
-        <div className="course-workspace-table-frame">
-          <table className="course-workspace-table course-webinar-table">
-            <thead>
-              <tr>
-                <th>Webinar #</th>
-                <th>Session</th>
-
-                {isSixteenWeekCourse ? (
-                  <th>Topic</th>
-                ) : null}
-
-                <th>Date</th>
-                <th>Start Time Pacific</th>
-                <th>Start Time Eastern</th>
-                <th>Required</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr>
-                <td
-                  className="course-workspace-empty-state"
-                  colSpan={
-                    isSixteenWeekCourse
-                      ? 7
-                      : 6
-                  }
-                >
-                  No important webinars have
-                  been added for this course.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div className="course-webinar-limit-note">
-          Maximum{' '}
-          {isSixteenWeekCourse
-            ? '14'
-            : '10'}{' '}
-          webinar rows for this course.
-        </div>
-      </section>
-
-      <section className="course-workspace-section">
-        <header className="course-workspace-section-header">
-          <div>
-            <span className="course-workspace-section-eyebrow">
-              Beta Nu Fall
-            </span>
-
-            <h2>
-              Cohort Meetings
-            </h2>
-          </div>
-
-          <div className="course-cohort-zoom">
-            <span>
-              Zoom
-            </span>
-
-            <a
-              href="https://umassglobal.zoom.us/my/drcmo"
-              target="_blank"
-              rel="noreferrer"
-            >
-              umassglobal.zoom.us/my/drcmo
-            </a>
-          </div>
-        </header>
-
-        <div className="course-workspace-table-frame">
-          <table className="course-workspace-table course-meetings-table">
-            <thead>
-              <tr>
-                <th>Meeting</th>
-                <th>Date</th>
-                <th>Facilitator</th>
-                <th>Community Builder</th>
-                <th>Recorder</th>
-                <th>Timekeeper</th>
-                <th>Process Observer</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {courseMeetings.length ===
-                0 ? (
+              {workspace.assignments
+                .length === 0 ? (
                 <tr>
                   <td
                     className="course-workspace-empty-state"
-                    colSpan={7}
+                    colSpan={5}
                   >
-                    No cohort meetings fall
-                    within this course date
-                    range.
+                    No assignments have
+                    been added. Click +
+                    Assignment to begin
+                    this course.
                   </td>
                 </tr>
               ) : (
-                courseMeetings.map(
-                  (meeting) => (
-                    <tr key={meeting.id}>
+                workspace.assignments.map(
+                  (assignment) => (
+                    <tr
+                      key={
+                        assignment.id
+                      }
+                      className={
+                        assignment.id ===
+                          selectedAssignmentId
+                          ? 'course-assignment-row course-assignment-row-selected'
+                          : 'course-assignment-row'
+                      }
+                      onClick={() => {
+                        setSelectedAssignmentId(
+                          assignment.id,
+                        )
+                      }}
+                    >
                       <td>
                         {
-                          meeting.meetingNumber
+                          assignment.asn
                         }
                       </td>
 
                       <td>
-                        {formatCohortAcademicPlanDate(
-                          meeting.date,
+                        {
+                          assignment.name
+                        }
+                      </td>
+
+                      <td>
+                        {getCourseAssignmentWeekLabel(
+                          courseRecord.startDate,
+                          assignment.dueDate,
+                        )}
+                      </td>
+
+                      <td>
+                        {formatCourseAssignmentDate(
+                          assignment.dueDate,
                         )}
                       </td>
 
                       <td>
                         {
-                          meeting.facilitator ||
-                          'TBD'
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          meeting.communityBuilder ||
-                          'TBD'
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          meeting.recorder ||
-                          'TBD'
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          meeting.timeKeeper ||
-                          'TBD'
-                        }
-                      </td>
-
-                      <td>
-                        {
-                          meeting.processObserver ||
-                          'TBD'
+                          assignment.points
                         }
                       </td>
                     </tr>
@@ -13883,13 +15315,785 @@ function CoursePage({
             </tbody>
           </table>
         </div>
-
-        <p className="course-meeting-readonly-note">
-          Cohort meeting dates and role
-          assignments are managed on the
-          Cohort Dates &amp; Roles page.
-        </p>
       </section>
+
+      {isAssignmentModalOpen ? (
+        <div className="course-assignment-modal-backdrop">
+          <div
+            className="course-assignment-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="course-assignment-modal-title"
+          >
+            <header className="course-assignment-modal-header">
+              <div>
+                <span>
+                  ADD ASSIGNMENT
+                </span>
+
+                <h2 id="course-assignment-modal-title">
+                  {courseRecord.code}{' '}
+                  {
+                    courseRecord.className
+                  }
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="course-assignment-modal-close"
+                aria-label="Close assignment window"
+                onClick={
+                  closeAssignmentModal
+                }
+              >
+                ×
+              </button>
+            </header>
+
+            <form
+              className="course-assignment-form"
+              onSubmit={
+                saveAssignments
+              }
+            >
+              <div className="course-assignment-form-rows">
+                {assignmentForms.map(
+                  (
+                    formRow,
+                    rowIndex,
+                  ) => (
+                    <div
+                      className="course-assignment-form-row"
+                      key={`assignment-form-row-${rowIndex}`}
+                    >
+                      <div className="course-assignment-form-grid">
+                        <label>
+                          <span>
+                            ASN #
+                          </span>
+
+                          <input
+                            autoFocus={
+                              rowIndex === 0
+                            }
+                            type="text"
+                            placeholder="4, 3.5, or PQR"
+                            value={
+                              formRow.asn
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              updateAssignmentFormRow(
+                                rowIndex,
+                                'asn',
+                                event.target
+                                  .value,
+                              )
+                            }}
+                          />
+                        </label>
+
+                        <label>
+                          <span>
+                            Assignment Name
+                          </span>
+
+                          <input
+                            type="text"
+                            placeholder="Enter assignment name"
+                            value={
+                              formRow.name
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              updateAssignmentFormRow(
+                                rowIndex,
+                                'name',
+                                event.target
+                                  .value,
+                              )
+                            }}
+                          />
+                        </label>
+
+                        <label>
+                          <span>
+                            Due Date
+                          </span>
+
+                          <input
+                            type="text"
+                            placeholder="817, 0817, 081726, or 8/17/2026"
+                            value={
+                              formRow.dueDate
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              updateAssignmentFormRow(
+                                rowIndex,
+                                'dueDate',
+                                event.target
+                                  .value,
+                              )
+                            }}
+                          />
+
+                          <small>
+                            Week Due is
+                            calculated
+                            automatically.
+                          </small>
+                        </label>
+
+                        <label>
+                          <span>
+                            Points
+                          </span>
+
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="Enter points"
+                            value={
+                              formRow.points
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              updateAssignmentFormRow(
+                                rowIndex,
+                                'points',
+                                event.target
+                                  .value,
+                              )
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {rowIndex ===
+                        assignmentForms.length -
+                        1 ? (
+                        <button
+                          type="button"
+                          className="course-assignment-add-row-button"
+                          onClick={
+                            addAssignmentFormRow
+                          }
+                        >
+                          <span aria-hidden="true">
+                            +
+                          </span>
+
+                          Add another assignment
+                        </button>
+                      ) : null}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {assignmentFormError
+                .length > 0 ? (
+                <p className="course-assignment-form-error">
+                  {
+                    assignmentFormError
+                  }
+                </p>
+              ) : null}
+
+              <div className="course-assignment-modal-actions">
+                <button
+                  type="button"
+                  className="course-assignment-modal-cancel"
+                  onClick={
+                    closeAssignmentModal
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="course-assignment-modal-save"
+                >
+                  Add Assignment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="course-workspace-live-grid">
+        <section className="course-workspace-section">
+          <header className="course-workspace-section-header">
+            <div>
+              <span className="course-workspace-section-eyebrow">
+                Live Sessions
+              </span>
+
+              <h2>
+                Important Webinars
+              </h2>
+            </div>
+
+            <div className="course-workspace-section-actions">
+              <button
+                type="button"
+                className="course-workspace-primary-button"
+                disabled={
+                  workspace.webinars.length >=
+                  webinarLimit
+                }
+                onClick={
+                  addCourseWebinar
+                }
+              >
+                <span aria-hidden="true">
+                  +
+                </span>
+
+                Webinar
+              </button>
+
+              <button
+                type="button"
+                className="course-workspace-delete-button"
+                disabled={
+                  selectedWebinarId ===
+                  null
+                }
+                onClick={
+                  deleteSelectedCourseWebinar
+                }
+              >
+                <span aria-hidden="true">
+                  🗑
+                </span>
+
+                Delete
+              </button>
+            </div>
+          </header>
+
+          <div className="course-webinar-summary">
+            <label className="course-workspace-field course-webinar-zoom-field">
+              <span>
+                Zoom
+              </span>
+
+              <input
+                type="url"
+                className="course-workspace-field-input"
+                placeholder="Paste full Zoom link"
+                value={
+                  workspace.webinarZoomUrl
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    webinarZoomUrl:
+                      event.target.value,
+                  })
+                }}
+              />
+            </label>
+
+            <div className="course-workspace-field course-webinar-meeting-id">
+              <span>
+                Meeting ID
+              </span>
+
+              <div className="course-webinar-derived-summary">
+                {webinarMeetingId ||
+                  'Not entered'}
+              </div>
+            </div>
+          </div>
+
+          <div className="course-workspace-table-frame">
+            <table
+              className={
+                isSixteenWeekCourse
+                  ? 'course-workspace-table course-webinar-table course-webinar-table-16'
+                  : 'course-workspace-table course-webinar-table'
+              }
+              onKeyDown={
+                handleCourseWebinarTableKeyDown
+              }
+            >
+              <thead>
+                <tr>
+                  <th className="course-webinar-number-column">
+                    Webinar #
+                  </th>
+
+                  <th className="course-webinar-session-column">
+                    Session
+                  </th>
+
+                  {isSixteenWeekCourse ? (
+                    <th className="course-webinar-topic-column">
+                      Topic
+                    </th>
+                  ) : null}
+
+                  <th className="course-webinar-date-column">
+                    Date
+                  </th>
+
+                  <th className="course-webinar-time-column">
+                    Start Time Pacific
+                  </th>
+
+                  <th className="course-webinar-time-column">
+                    Start Time Eastern
+                  </th>
+
+                  <th className="course-webinar-required-column">
+                    Required
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {workspace.webinars.length ===
+                  0 ? (
+                  <tr>
+                    <td
+                      className="course-workspace-empty-state"
+                      colSpan={
+                        isSixteenWeekCourse
+                          ? 7
+                          : 6
+                      }
+                    >
+                      No important webinars
+                      have been added for this
+                      course.
+                    </td>
+                  </tr>
+                ) : (
+                  workspace.webinars.map(
+                    (webinar) => (
+                      <tr
+                        key={webinar.id}
+                        className={
+                          webinar.id ===
+                            selectedWebinarId
+                            ? 'course-webinar-row course-webinar-row-selected'
+                            : 'course-webinar-row'
+                        }
+                        onClick={() => {
+                          setSelectedWebinarId(
+                            webinar.id,
+                          )
+                        }}
+                        onFocusCapture={() => {
+                          setSelectedWebinarId(
+                            webinar.id,
+                          )
+                        }}
+                      >
+                        <td>
+                          <input
+                            type="text"
+                            className="course-webinar-cell-input"
+                            defaultValue={
+                              webinar.webinarNumber
+                            }
+                            placeholder="1"
+                            aria-label="Webinar number"
+                            onBlur={(
+                              event,
+                            ) => {
+                              const normalizedValue =
+                                normalizeCourseWebinarNumber(
+                                  event
+                                    .currentTarget
+                                    .value,
+                                )
+
+                              event.currentTarget.value =
+                                normalizedValue
+
+                              updateCourseWebinar(
+                                webinar.id,
+                                'webinarNumber',
+                                normalizedValue,
+                              )
+                            }}
+                          />
+                        </td>
+
+                        <td>
+                          <input
+                            type="text"
+                            className="course-webinar-cell-input"
+                            defaultValue={
+                              webinar.session
+                            }
+                            placeholder="1"
+                            aria-label="Webinar session"
+                            onBlur={(
+                              event,
+                            ) => {
+                              const normalizedValue =
+                                normalizeCourseWebinarSession(
+                                  event
+                                    .currentTarget
+                                    .value,
+                                )
+
+                              event.currentTarget.value =
+                                normalizedValue
+
+                              updateCourseWebinar(
+                                webinar.id,
+                                'session',
+                                normalizedValue,
+                              )
+                            }}
+                          />
+                        </td>
+
+                        {isSixteenWeekCourse ? (
+                          <td>
+                            <input
+                              type="text"
+                              className="course-webinar-cell-input"
+                              defaultValue={
+                                webinar.topic
+                              }
+                              placeholder="Topic"
+                              aria-label="Webinar topic"
+                              onBlur={(
+                                event,
+                              ) => {
+                                const topic =
+                                  event
+                                    .currentTarget
+                                    .value
+                                    .trim()
+
+                                event.currentTarget.value =
+                                  topic
+
+                                updateCourseWebinar(
+                                  webinar.id,
+                                  'topic',
+                                  topic,
+                                )
+                              }}
+                            />
+                          </td>
+                        ) : null}
+
+                        <td>
+                          <input
+                            key={
+                              `${webinar.id}-${webinar.date}`
+                            }
+                            type="text"
+                            className="course-webinar-cell-input"
+                            defaultValue={
+                              webinar.date
+                                ? formatCourseAssignmentDate(
+                                  webinar.date,
+                                )
+                                : ''
+                            }
+                            placeholder="817"
+                            aria-label="Webinar date"
+                            onBlur={(
+                              event,
+                            ) => {
+                              const originalValue =
+                                webinar.date
+                                  ? formatCourseAssignmentDate(
+                                    webinar.date,
+                                  )
+                                  : ''
+
+                              const parsedDate =
+                                parseCourseAssignmentDate(
+                                  event
+                                    .currentTarget
+                                    .value,
+                                  courseStartDate,
+                                  courseEndDate,
+                                )
+
+                              if (
+                                parsedDate === null
+                              ) {
+                                event.currentTarget.value =
+                                  originalValue
+
+                                window.alert(
+                                  'Enter a valid webinar date.',
+                                )
+
+                                return
+                              }
+
+                              if (
+                                parsedDate <
+                                courseStartDate ||
+                                parsedDate >
+                                courseEndDate
+                              ) {
+                                event.currentTarget.value =
+                                  originalValue
+
+                                window.alert(
+                                  'Webinar date must fall within this course start and end date.',
+                                )
+
+                                return
+                              }
+
+                              event.currentTarget.value =
+                                formatCourseAssignmentDate(
+                                  parsedDate,
+                                )
+
+                              updateCourseWebinar(
+                                webinar.id,
+                                'date',
+                                parsedDate,
+                              )
+                            }}
+                          />
+                        </td>
+
+                        <td>
+                          <input
+                            key={
+                              `${webinar.id}-${webinar.pacificStartTime}`
+                            }
+                            type="text"
+                            className="course-webinar-cell-input"
+                            defaultValue={
+                              webinar.pacificStartTime
+                            }
+                            placeholder="5:30"
+                            aria-label="Pacific start time"
+                            onBlur={(
+                              event,
+                            ) => {
+                              const normalizedTime =
+                                normalizeCourseWebinarTime(
+                                  event
+                                    .currentTarget
+                                    .value,
+                                )
+
+                              if (
+                                normalizedTime ===
+                                null
+                              ) {
+                                event.currentTarget.value =
+                                  webinar.pacificStartTime
+
+                                window.alert(
+                                  'Enter a valid start time, such as 5:30, 1730, or 9 AM.',
+                                )
+
+                                return
+                              }
+
+                              event.currentTarget.value =
+                                normalizedTime
+
+                              updateCourseWebinar(
+                                webinar.id,
+                                'pacificStartTime',
+                                normalizedTime,
+                              )
+                            }}
+                          />
+                        </td>
+
+                        <td>
+                          <div className="course-webinar-derived-value">
+                            {getCourseWebinarEasternTime(
+                              webinar.pacificStartTime,
+                            ) || '—'}
+                          </div>
+                        </td>
+
+                        <td>
+                          <select
+                            className="course-webinar-cell-select"
+                            aria-label="Webinar requirement"
+                            value={
+                              webinar.required
+                            }
+                            onChange={(
+                              event,
+                            ) => {
+                              updateCourseWebinarRequirement(
+                                webinar.id,
+                                event.target
+                                  .value,
+                              )
+                            }}
+                          >
+                            <option value="">
+                              Select
+                            </option>
+
+                            <option value="Required">
+                              Required
+                            </option>
+
+                            <option value="Optional">
+                              Optional
+                            </option>
+                          </select>
+                        </td>
+                      </tr>
+                    ),
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="course-webinar-limit-note">
+            {workspace.webinars.length}
+            {' of '}
+            {webinarLimit}
+            {' webinar rows used for this course.'}
+          </div>
+        </section>
+
+        <section className="course-workspace-section">
+          <header className="course-workspace-section-header">
+            <div>
+              <span className="course-workspace-section-eyebrow">
+                Beta Nu Fall
+              </span>
+
+              <h2>
+                Cohort Meetings
+              </h2>
+            </div>
+
+            <div className="course-cohort-zoom">
+              <span>
+                Zoom
+              </span>
+
+              <a
+                href="https://umassglobal.zoom.us/my/drcmo"
+                target="_blank"
+                rel="noreferrer"
+              >
+                umassglobal.zoom.us/my/drcmo
+              </a>
+            </div>
+          </header>
+
+          <div className="course-workspace-table-frame">
+            <table className="course-workspace-table course-meetings-table">
+              <thead>
+                <tr>
+                  <th>Meeting</th>
+                  <th>Date</th>
+                  <th>Facilitator</th>
+                  <th>Community Builder</th>
+                  <th>Recorder</th>
+                  <th>Timekeeper</th>
+                  <th>Process Observer</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {courseMeetings.length ===
+                  0 ? (
+                  <tr>
+                    <td
+                      className="course-workspace-empty-state"
+                      colSpan={7}
+                    >
+                      No cohort meetings fall
+                      within this course date
+                      range.
+                    </td>
+                  </tr>
+                ) : (
+                  courseMeetings.map(
+                    (meeting) => (
+                      <tr key={meeting.id}>
+                        <td>
+                          {
+                            meeting.meetingNumber
+                          }
+                        </td>
+
+                        <td>
+                          {formatCohortAcademicPlanDate(
+                            meeting.date,
+                          )}
+                        </td>
+
+                        <td>
+                          {
+                            meeting.facilitator ||
+                            'TBD'
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            meeting.communityBuilder ||
+                            'TBD'
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            meeting.recorder ||
+                            'TBD'
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            meeting.timeKeeper ||
+                            'TBD'
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            meeting.processObserver ||
+                            'TBD'
+                          }
+                        </td>
+                      </tr>
+                    ),
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="course-meeting-readonly-note">
+            Cohort meeting dates and role
+            assignments are managed on the
+            Cohort Dates &amp; Roles page.
+          </p>
+        </section>
+      </div>
 
       <section className="course-workspace-section">
         <header className="course-workspace-section-header">
