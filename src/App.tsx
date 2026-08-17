@@ -14292,6 +14292,144 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/purpose-research' ? (
+                <span
+                  className="nav-purpose-research-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <circle
+                      cx="11"
+                      cy="13"
+                      r="7"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.2"
+                    />
+
+                    <circle
+                      cx="11"
+                      cy="13"
+                      r="4"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2"
+                    />
+
+                    <circle
+                      cx="11"
+                      cy="13"
+                      r="1.7"
+                      fill="#FFD76A"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                    />
+
+                    <path
+                      d="M14.3 9.7 20.2 3.8"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M20.2 3.8 18.5 4.1"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M20.2 3.8 19.9 5.5"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M4.8 18.8
+                         C6 20 8 21 11 21"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/data-survey' ? (
+                <span
+                  className="nav-data-survey-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <rect
+                      x="4"
+                      y="12.5"
+                      width="4"
+                      height="7.5"
+                      rx="0.9"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                    />
+
+                    <rect
+                      x="10"
+                      y="8.5"
+                      width="4"
+                      height="11.5"
+                      rx="0.9"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                    />
+
+                    <rect
+                      x="16"
+                      y="4.5"
+                      width="4"
+                      height="15.5"
+                      rx="0.9"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                    />
+
+                    <path
+                      d="M4.8 13.6h2.4"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M10.8 9.6h2.4"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M16.8 5.6h2.4"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"
