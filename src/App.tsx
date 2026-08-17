@@ -412,7 +412,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Book List', path: '/book-list' },
   { label: 'Transfer Courses', path: '/transfer-courses' },
   {
-    label: 'Groups - Asn by Dr. CMO',
+    label: 'Groups - by Dr. CMO',
     path: '/groups-assigned-by-member',
   },
   {
@@ -676,6 +676,9 @@ const cohortZoomWallpapers:
 
 const COHORT_ACADEMIC_PLAN_STORAGE_KEY =
   'beta-nu-academic-plan-v1'
+
+const COHORT_ACADEMIC_PLAN_UPDATED_EVENT =
+  'beta-nu-academic-plan-updated'
 
 const cohortAcademicPlanSeed:
   readonly CohortAcademicPlanRecord[] = [
@@ -1028,6 +1031,38 @@ function getCohortAcademicPlanStatus(
   }
 
   return 'In Progress'
+}
+
+function getSidebarCoursesForStatus(
+  academicPlan:
+    readonly CohortAcademicPlanRecord[],
+  status: CohortAcademicPlanStatus,
+): readonly CourseNavigationItem[] {
+  return academicPlan.flatMap(
+    (record) => {
+      const recordStatus =
+        getCohortAcademicPlanStatus(
+          record.startDate,
+          record.endDate,
+        )
+
+      if (recordStatus !== status) {
+        return []
+      }
+
+      const course =
+        courses.find(
+          (item) =>
+            item.code === record.code,
+        )
+
+      if (course === undefined) {
+        return []
+      }
+
+      return [course]
+    },
+  )
 }
 
 function formatCohortAcademicPlanDate(
@@ -12904,6 +12939,12 @@ function CohortAcademicPlanPage() {
       COHORT_ACADEMIC_PLAN_STORAGE_KEY,
       JSON.stringify(academicPlan),
     )
+
+    window.dispatchEvent(
+      new Event(
+        COHORT_ACADEMIC_PLAN_UPDATED_EVENT,
+      ),
+    )
   }, [academicPlan])
 
   function updateAcademicPlanRecord(
@@ -13392,6 +13433,17 @@ function App() {
   const [coursesOpen, setCoursesOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
+  const [
+    sidebarAcademicPlan,
+    setSidebarAcademicPlan,
+  ] =
+    useState<
+      readonly CohortAcademicPlanRecord[]
+    >(
+      () =>
+        readStoredCohortAcademicPlan(),
+    )
+
   const [contacts, setContacts] =
     useState<readonly CohortContactRecord[]>(cohortContactsSeed)
 
@@ -13413,6 +13465,57 @@ function App() {
     useState<readonly CohortPurposeResearchRecord[]>(
       () => readStoredPurposeResearchRecords(),
     )
+
+  useEffect(() => {
+    const syncSidebarAcademicPlan =
+      (): void => {
+        setSidebarAcademicPlan(
+          readStoredCohortAcademicPlan(),
+        )
+      }
+
+    const handleAcademicPlanStorage =
+      (event: StorageEvent): void => {
+        if (
+          event.key ===
+          COHORT_ACADEMIC_PLAN_STORAGE_KEY
+        ) {
+          syncSidebarAcademicPlan()
+        }
+      }
+
+    window.addEventListener(
+      COHORT_ACADEMIC_PLAN_UPDATED_EVENT,
+      syncSidebarAcademicPlan,
+    )
+
+    window.addEventListener(
+      'storage',
+      handleAcademicPlanStorage,
+    )
+
+    const refreshInterval =
+      window.setInterval(
+        syncSidebarAcademicPlan,
+        60_000,
+      )
+
+    return () => {
+      window.removeEventListener(
+        COHORT_ACADEMIC_PLAN_UPDATED_EVENT,
+        syncSidebarAcademicPlan,
+      )
+
+      window.removeEventListener(
+        'storage',
+        handleAcademicPlanStorage,
+      )
+
+      window.clearInterval(
+        refreshInterval,
+      )
+    }
+  }, [])
 
   useEffect(() => {
     const getNavigableTableCell = (
@@ -13922,6 +14025,24 @@ function App() {
       }),
     )
   }
+
+  const activeSidebarCourses =
+    getSidebarCoursesForStatus(
+      sidebarAcademicPlan,
+      'In Progress',
+    )
+
+  const pendingSidebarCourses =
+    getSidebarCoursesForStatus(
+      sidebarAcademicPlan,
+      'Pending',
+    )
+
+  const completedSidebarCourses =
+    getSidebarCoursesForStatus(
+      sidebarAcademicPlan,
+      'Done',
+    )
 
   return (
     <div
@@ -15072,33 +15193,148 @@ function App() {
             </button>
 
             {coursesOpen && (
-              <div className="course-nav">
-                {courses.map((course) => (
-                  <NavLink
-                    key={course.slug}
-                    to={`/courses/${course.slug}`}
-                    className={({ isActive }) =>
-                      isActive
-                        ? 'course-nav-link course-nav-link-active'
-                        : 'course-nav-link'
-                    }
-                  >
-                    <span className="course-nav-dot" aria-hidden="true" />
-                    <span>{course.code}</span>
-                  </NavLink>
-                ))}
+              <div className="courses-status-panel">
+                <section className="course-status-group course-status-group-active">
+                  <div className="course-status-heading">
+                    <span
+                      className="course-status-heading-node"
+                      aria-hidden="true"
+                    />
 
-                <NavLink
-                  to="/template-eddp-7xx"
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'course-nav-link course-nav-link-active'
-                      : 'course-nav-link'
-                  }
-                >
-                  <span className="course-nav-dot" aria-hidden="true" />
-                  <span>Template EDDP 7XX</span>
-                </NavLink>
+                    <strong>
+                      ACTIVE
+                    </strong>
+
+                    <span className="course-count-badge">
+                      {
+                        activeSidebarCourses.length
+                      }
+                    </span>
+                  </div>
+
+                  <div className="course-status-tree">
+                    {activeSidebarCourses.map(
+                      (course) => (
+                        <NavLink
+                          key={course.slug}
+                          to={`/courses/${course.slug}`}
+                          className={({
+                            isActive,
+                          }) =>
+                            isActive
+                              ? 'course-status-link course-status-link-active'
+                              : 'course-status-link'
+                          }
+                        >
+                          <span
+                            className="course-status-dot"
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            {course.code}
+                          </span>
+                        </NavLink>
+                      ),
+                    )}
+                  </div>
+                </section>
+
+                <div className="course-status-divider" />
+
+                <section className="course-status-group course-status-group-pending">
+                  <div className="course-status-heading">
+                    <span
+                      className="course-status-heading-node"
+                      aria-hidden="true"
+                    />
+
+                    <strong>
+                      PENDING
+                    </strong>
+
+                    <span className="course-count-badge">
+                      {
+                        pendingSidebarCourses.length
+                      }
+                    </span>
+                  </div>
+
+                  <div className="course-status-tree">
+                    {pendingSidebarCourses.map(
+                      (course) => (
+                        <NavLink
+                          key={course.slug}
+                          to={`/courses/${course.slug}`}
+                          className={({
+                            isActive,
+                          }) =>
+                            isActive
+                              ? 'course-status-link course-status-link-active'
+                              : 'course-status-link'
+                          }
+                        >
+                          <span
+                            className="course-status-dot"
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            {course.code}
+                          </span>
+                        </NavLink>
+                      ),
+                    )}
+                  </div>
+                </section>
+
+                <div className="course-status-divider" />
+
+                <section className="course-status-group course-status-group-completed">
+                  <div className="course-status-heading">
+                    <span
+                      className="course-status-heading-node"
+                      aria-hidden="true"
+                    />
+
+                    <strong>
+                      COMPLETED
+                    </strong>
+
+                    <span className="course-count-badge">
+                      {
+                        completedSidebarCourses.length
+                      }
+                    </span>
+                  </div>
+
+                  <div className="course-status-tree">
+                    {completedSidebarCourses.map(
+                      (course) => (
+                        <NavLink
+                          key={course.slug}
+                          to={`/courses/${course.slug}`}
+                          className={({
+                            isActive,
+                          }) =>
+                            isActive
+                              ? 'course-status-link course-status-link-active'
+                              : 'course-status-link'
+                          }
+                        >
+                          <span
+                            className="course-status-dot"
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            {course.code}
+                          </span>
+                        </NavLink>
+                      ),
+                    )}
+                  </div>
+                </section>
               </div>
             )}
           </div>
@@ -15213,7 +15449,7 @@ function App() {
               path="/groups-assigned-by-member"
               element={
                 <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Groups - Asn by Dr. CMO"
+                  title="Beta Nu Cohort Groups - by Dr. CMO"
                   description="Course group assignments and member participation will be organized here."
                 />
               }
