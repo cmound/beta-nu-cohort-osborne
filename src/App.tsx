@@ -1030,6 +1030,60 @@ function getCohortAcademicPlanStatus(
   return 'In Progress'
 }
 
+function formatCohortAcademicPlanDate(
+  value: string,
+): string {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+      value.trim(),
+    )
+
+  if (match === null) {
+    return value
+  }
+
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day,
+    )
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !==
+    month - 1 ||
+    date.getDate() !== day
+  ) {
+    return value
+  }
+
+  const weekday =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        weekday: 'short',
+      },
+    ).format(date)
+
+  const monthName =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        month: 'long',
+      },
+    ).format(date)
+
+  return (
+    `${weekday}. ${monthName} ` +
+    `${day}, ${year}`
+  )
+}
+
 const cohortAcademicPlanFields = [
   {
     field: 'programYear',
@@ -12835,6 +12889,16 @@ function CohortAcademicPlanPage() {
         readStoredCohortAcademicPlan(),
     )
 
+  const [
+    focusedAcademicPlanCell,
+    setFocusedAcademicPlanCell,
+  ] =
+    useState<{
+      readonly recordId: string
+      readonly field:
+      CohortAcademicPlanField
+    } | null>(null)
+
   useEffect(() => {
     window.localStorage.setItem(
       COHORT_ACADEMIC_PLAN_STORAGE_KEY,
@@ -12980,17 +13044,11 @@ function CohortAcademicPlanPage() {
 
   return (
     <section className="page-shell">
-      <header className="dashboard-page-heading cohort-contacts-page-heading">
-        <h1>
-          Beta Nu Cohort Academic Plan
-        </h1>
-      </header>
-
       <section className="academic-plan-panel">
         <header className="academic-plan-panel-header">
           <div>
             <h2>
-              Beta Nu Fall Academic Plan
+              Beta Nu Cohort Academic Plan
             </h2>
 
             <p>
@@ -13088,9 +13146,43 @@ function CohortAcademicPlanPage() {
                                 `${column.label} for ${record.code}`
                               }
                               value={
-                                record[
-                                column.field
-                                ]
+                                (
+                                  column.field ===
+                                  'startDate' ||
+                                  column.field ===
+                                  'endDate'
+                                ) &&
+                                  !(
+                                    focusedAcademicPlanCell
+                                      ?.recordId ===
+                                    record.id &&
+                                    focusedAcademicPlanCell
+                                      .field ===
+                                    column.field
+                                  )
+                                  ? formatCohortAcademicPlanDate(
+                                    record[
+                                    column.field
+                                    ],
+                                  )
+                                  : record[
+                                  column.field
+                                  ]
+                              }
+                              onFocus={() =>
+                                setFocusedAcademicPlanCell(
+                                  {
+                                    recordId:
+                                      record.id,
+                                    field:
+                                      column.field,
+                                  },
+                                )
+                              }
+                              onBlur={() =>
+                                setFocusedAcademicPlanCell(
+                                  null,
+                                )
                               }
                               onChange={(
                                 event,

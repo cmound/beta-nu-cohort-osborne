@@ -4157,7 +4157,7 @@
 .academic-plan-panel-header h2 {
   margin: 0;
   color: var(--umass-gold);
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 900;
 }
 
@@ -4208,7 +4208,7 @@
 
 .academic-plan-table {
   width: 100%;
-  min-width: 1340px;
+  min-width: 1460px;
   border-collapse: collapse;
   table-layout: fixed;
   color: #111827;
@@ -4230,7 +4230,7 @@
     var(--umass-navy);
   color: #111827;
   background: #a97800;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.15;
   text-align: left;
@@ -4289,7 +4289,7 @@
   color: #111827;
   background: #ffffff;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 1.15;
   text-align: left;
