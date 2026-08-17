@@ -412,7 +412,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Book List', path: '/book-list' },
   { label: 'Transfer Courses', path: '/transfer-courses' },
   {
-    label: 'Groups - Assigned by Member',
+    label: 'Groups - Asn by Dr. CMO',
     path: '/groups-assigned-by-member',
   },
   {
@@ -13027,9 +13027,9 @@ function CohortAcademicPlanPage() {
 
           if (
             selectionStart !==
-              valueLength ||
+            valueLength ||
             selectionEnd !==
-              valueLength
+            valueLength
           ) {
             return
           }
@@ -13214,10 +13214,10 @@ function CohortAcademicPlanPage() {
                                 !(
                                   focusedAcademicPlanCell
                                     ?.recordId ===
-                                    record.id &&
+                                  record.id &&
                                   focusedAcademicPlanCell
                                     .field ===
-                                    column.field
+                                  column.field
                                 )
                               }
                               onClick={() =>
@@ -13969,7 +13969,23 @@ function App() {
                 isActive ? 'nav-link nav-link-active' : 'nav-link'
               }
             >
-              <span className="nav-marker" aria-hidden="true" />
+              {item.path === '/' ? (
+                <span
+                  className="nav-dashboard-icon"
+                  aria-hidden="true"
+                >
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              ) : (
+                <span
+                  className="nav-marker"
+                  aria-hidden="true"
+                />
+              )}
+
               <span>{item.label}</span>
             </NavLink>
           ))}
@@ -14130,7 +14146,7 @@ function App() {
               path="/groups-assigned-by-member"
               element={
                 <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Groups - Assigned by Member"
+                  title="Beta Nu Cohort Groups - Asn by Dr. CMO"
                   description="Course group assignments and member participation will be organized here."
                 />
               }
