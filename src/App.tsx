@@ -14120,6 +14120,122 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/attendance' ? (
+                <span
+                  className="nav-attendance-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <rect
+                      x="5"
+                      y="4"
+                      width="14"
+                      height="17"
+                      rx="2.4"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.2"
+                    />
+
+                    <rect
+                      x="8"
+                      y="2.5"
+                      width="8"
+                      height="4.5"
+                      rx="1.5"
+                      fill="#FFD76A"
+                      stroke="#C89214"
+                      strokeWidth="1.3"
+                    />
+
+                    <path
+                      d="M8.5 11.5h7"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M8.5 15h7"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M8.5 18.5h5"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M6 20h12"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.8"
+                    />
+                  </svg>
+                </span>
+              ) : item.path === '/norms' ? (
+                <span
+                  className="nav-norms-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <path
+                      d="M12 2.5
+                         19 5.4
+                         V11
+                         C19 15.7
+                         16.3 19.1
+                         12 21.3
+                         C7.7 19.1
+                         5 15.7
+                         5 11
+                         V5.4
+                         Z"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M12 3.9
+                         17.5 6.2"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+
+                    <path
+                      d="M7.4 16.4
+                         C8.5 18
+                         10 19.2
+                         12 20.2"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"

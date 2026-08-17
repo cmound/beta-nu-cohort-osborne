@@ -180,7 +180,7 @@
     inset 0 -2px 3px rgba(0, 0, 0, 0.28),
     0 3px 5px rgba(0, 0, 0, 0.38);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
   line-height: 1.15;
   text-align: left;
@@ -272,6 +272,142 @@
   box-sizing: border-box;
   border: 1px solid var(--silver-300);
   border-radius: 2px;
+}
+
+.nav-dashboard-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: grid;
+  grid-template-columns:
+    repeat(2, 1fr);
+  grid-template-rows:
+    repeat(2, 1fr);
+  gap: 3px;
+  margin-right: 2px;
+}
+
+.nav-dashboard-icon > span {
+  display: block;
+  box-sizing: border-box;
+  border: 1px solid #c89214;
+  border-radius: 2px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 52%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.58),
+    inset 0 -1px 0
+      rgba(91, 57, 0, 0.42),
+    0 1px 2px
+      rgba(0, 0, 0, 0.32);
+}
+
+.nav-contacts-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-contacts-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  fill: none;
+  stroke:
+    url(#nav-contacts-gold);
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.7)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.32)
+    );
+}
+
+.nav-dates-roles-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-dates-roles-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-attendance-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-attendance-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-norms-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-norms-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
 }
 
 .nav-link-active .nav-marker {
