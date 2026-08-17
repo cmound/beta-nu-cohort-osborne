@@ -14796,6 +14796,84 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/academic-plan' ? (
+                <span
+                  className="nav-academic-plan-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <path
+                      d="M2.5 8.2
+                         12 3.8
+                         21.5 8.2
+                         12 12.7
+                         Z"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="1.1"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M6.5 10.3
+                         V15.2
+                         C8.2 17
+                         10 17.8
+                         12 17.8
+                         C14 17.8
+                         15.8 17
+                         17.5 15.2
+                         V10.3"
+                      fill="#F2B632"
+                      stroke="#C89214"
+                      strokeWidth="1.1"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M4.4 7.6
+                         12 4.8
+                         18.5 7.8"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      opacity="0.95"
+                    />
+
+                    <path
+                      d="M18.7 8.8
+                         V14.6"
+                      fill="none"
+                      stroke="#F2B632"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+
+                    <circle
+                      cx="18.7"
+                      cy="16.1"
+                      r="1.2"
+                      fill="#FFD76A"
+                      stroke="#C89214"
+                      strokeWidth="0.6"
+                    />
+
+                    <path
+                      d="M8 16.3
+                         C9.2 17.1
+                         10.5 17.4
+                         12 17.4"
+                      fill="none"
+                      stroke="#FFD76A"
+                      strokeWidth="0.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
               ) : (
                 <span
                   className="nav-marker"
@@ -14814,8 +14892,99 @@ function App() {
               onClick={() => setCoursesOpen((isOpen) => !isOpen)}
               aria-expanded={coursesOpen}
             >
-              <span className="nav-marker nav-marker-courses" aria-hidden="true" />
+              <span
+                className="nav-courses-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  role="presentation"
+                >
+                  <path
+                    d="M3.5 5.5
+                       H15
+                       C16.1 5.5 17 6.4 17 7.5
+                       V18.5
+                       H5
+                       C4.2 18.5 3.5 17.8 3.5 17
+                       Z"
+                    fill="#F2B632"
+                    stroke="#C89214"
+                    strokeWidth="1.2"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M5.5 8
+                       H13.3"
+                    fill="none"
+                    stroke="#FFD76A"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M5.5 11
+                       H11.5"
+                    fill="none"
+                    stroke="#FFD76A"
+                    strokeWidth="0.9"
+                    strokeLinecap="round"
+                    opacity="0.9"
+                  />
+
+                  <path
+                    d="M5.5 14
+                       H10"
+                    fill="none"
+                    stroke="#C89214"
+                    strokeWidth="0.9"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M12.5 15.7
+                       18.6 9.6
+                       21 12
+                       14.9 18.1
+                       12.1 18.7
+                       Z"
+                    fill="#F2B632"
+                    stroke="#C89214"
+                    strokeWidth="1"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M18.6 9.6
+                       19.8 8.4
+                       C20.2 8
+                       20.8 8
+                       21.2 8.4
+                       L22.2 9.4
+                       C22.6 9.8
+                       22.6 10.4
+                       22.2 10.8
+                       L21 12"
+                    fill="#FFD76A"
+                    stroke="#C89214"
+                    strokeWidth="0.8"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M13 17.9
+                       15 17.4"
+                    fill="none"
+                    stroke="#FFD76A"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+
               <span>Courses</span>
+
               <span className="nav-chevron" aria-hidden="true">
                 {coursesOpen ? '[-]' : '[+]'}
               </span>

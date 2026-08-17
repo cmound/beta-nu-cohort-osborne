@@ -578,6 +578,54 @@
     );
 }
 
+.nav-transfer-courses-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-transfer-courses-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-groups-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-groups-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
 .nav-images-icon {
   width: 24px;
   height: 24px;
@@ -651,6 +699,54 @@
     )
     drop-shadow(
       0 0 4px rgba(242, 182, 50, 0.42)
+    );
+}
+
+.nav-academic-plan-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-academic-plan-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
+    );
+}
+
+.nav-courses-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+}
+
+.nav-courses-icon svg {
+  width: 25px;
+  height: 25px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0 rgba(83, 53, 0, 0.72)
+    )
+    drop-shadow(
+      0 1px 1px rgba(0, 0, 0, 0.34)
     );
 }
 
