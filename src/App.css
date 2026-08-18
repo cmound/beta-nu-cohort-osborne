@@ -2288,12 +2288,14 @@
 
 .facilitator-planner-role-name {
   display: block;
+  box-sizing: border-box;
   margin: 0;
+  padding-left: 51px;
   color: #000000;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 900;
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
 }
 
 .facilitator-planner-workspace {
