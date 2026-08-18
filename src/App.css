@@ -2001,115 +2001,299 @@
 
 .facilitator-planner-meeting-panel {
   margin-bottom: 12px;
-  padding: 12px 14px 14px;
-  border-left: 4px solid var(--umass-gold);
+  padding: 16px 18px 18px;
+  border: 1px solid #7f8c9d;
+  border-left: 4px solid #f2b632;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(6, 35, 70, 0.98) 0%,
+      rgba(3, 24, 54, 0.99) 58%,
+      rgba(2, 16, 38, 0.99) 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.1),
+    inset 0 -3px 5px
+      rgba(0, 0, 0, 0.24),
+    0 7px 18px
+      rgba(0, 0, 0, 0.28);
 }
 
 .facilitator-planner-meeting-select {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 34px;
+  margin-bottom: 14px;
 }
 
 .facilitator-planner-meeting-select label {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 7px;
 }
 
-.facilitator-planner-meeting-select label:first-child {
-  width: 520px;
+.facilitator-planner-meeting-field {
+  width: 58%;
+  max-width: 780px;
 }
 
-.facilitator-planner-meeting-select label:last-child {
-  width: 130px;
+.facilitator-planner-status-field {
+  width: 220px;
 }
 
-.facilitator-planner-meeting-select span {
+.facilitator-planner-meeting-select label > span {
   color: #f8fafc;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
+  line-height: 1;
 }
 
 .facilitator-planner-meeting-select select {
-  min-height: 34px;
+  height: 44px;
+  min-height: 44px;
   box-sizing: border-box;
-  padding: 6px 9px;
+  appearance: none;
+  padding: 8px 44px 8px 16px;
+  border-radius: 8px;
+  color: #111827;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+  cursor: pointer;
+  background-repeat: no-repeat;
+  background-position:
+    right 14px center,
+    0 0;
+  background-size:
+    16px 16px,
+    auto;
+}
+
+.facilitator-planner-meeting-dropdown {
+  border: 1px solid #c89214;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b1f3b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"),
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 58%,
+      #dba421 78%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 1px 1px 1px
+      rgba(255, 255, 255, 0.8),
+    inset -2px -3px 3px
+      rgba(104, 67, 0, 0.26),
+    0 3px 7px
+      rgba(0, 0, 0, 0.3);
+}
+
+.facilitator-planner-status-select {
   border: 1px solid #94a3b8;
-  border-radius: 4px;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b1f3b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"),
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f8fafc 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    0 2px 5px
+      rgba(0, 0, 0, 0.2);
+}
+
+.facilitator-planner-status-select-final {
+  border-color: #c89214;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b1f3b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"),
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 58%,
+      #c89214 100%
+    );
+  color: #000000;
+  font-weight: 900;
+}
+
+.facilitator-planner-meeting-select option {
   color: #111827;
   background: #ffffff;
-  font-family: inherit;
-  font-size: 11px;
   font-weight: 700;
 }
 
 .facilitator-planner-meeting-select select:focus {
-  outline: 2px solid rgba(0, 94, 184, 0.45);
-  border-color: var(--umass-blue);
+  outline: 2px solid #ffd76a;
+  outline-offset: 2px;
 }
 
+/* Meeting details */
 .facilitator-planner-meeting-summary {
   display: grid;
   grid-template-columns:
-    1fr
-    0.75fr
-    1.45fr
-    1fr
-    1fr;
-  gap: 8px;
-  margin-bottom: 9px;
+    repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.facilitator-planner-meeting-summary > div,
-.facilitator-planner-role-grid > div {
+.facilitator-planner-meeting-summary > div {
   min-width: 0;
+  min-height: 62px;
   box-sizing: border-box;
-  padding: 7px 9px;
-  border: 1px solid #476984;
-  border-radius: 5px;
+  padding: 11px 13px;
+  border: 1px solid #547897;
+  border-radius: 7px;
   background:
     linear-gradient(
       180deg,
-      #17365d 0%,
-      #0b2444 58%,
-      #06182f 100%
+      #123c6a 0%,
+      #0b2d54 50%,
+      #061d3b 100%
     );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -2px 2px rgba(0, 0, 0, 0.2);
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.14),
+    inset 0 -2px 2px
+      rgba(0, 0, 0, 0.28),
+    0 3px 6px
+      rgba(0, 0, 0, 0.22);
 }
 
-.facilitator-planner-meeting-summary span,
-.facilitator-planner-role-grid span {
+.facilitator-planner-meeting-summary span {
   display: block;
-  color: #a8b4c4;
-  font-size: 8px;
+  color: #a9c6e4;
+  font-size: 9px;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 
-.facilitator-planner-meeting-summary strong,
-.facilitator-planner-role-grid strong {
+.facilitator-planner-meeting-summary strong {
   display: block;
-  margin-top: 4px;
+  margin-top: 8px;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
 }
 
+/* Role assignment cards */
 .facilitator-planner-role-grid {
   display: grid;
   grid-template-columns:
     repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
-.facilitator-planner-role-grid strong {
-  color: #ffd200;
+.facilitator-planner-role-card {
+  min-width: 0;
+  min-height: 108px;
+  box-sizing: border-box;
+  padding: 12px 13px 13px;
+  border: 1px solid #0b1f3b;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      145deg,
+      #e2effd 0%,
+      #c9def4 50%,
+      #adc9e6 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.85),
+    inset 0 -3px 4px
+      rgba(36, 76, 115, 0.18),
+    0 4px 7px
+      rgba(0, 0, 0, 0.25);
+}
+
+.facilitator-planner-role-heading {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.facilitator-planner-role-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid #31577a;
+  border-radius: 50%;
+  color: #f2b632;
+  background:
+    linear-gradient(
+      145deg,
+      #0d4a83 0%,
+      #083663 48%,
+      #052344 100%
+    );
+  box-shadow:
+    inset 1px 1px 1px
+      rgba(255, 255, 255, 0.14),
+    inset -2px -2px 2px
+      rgba(0, 0, 0, 0.28),
+    0 3px 5px
+      rgba(0, 0, 0, 0.32);
+}
+
+.facilitator-planner-role-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  overflow: visible;
+  fill: currentColor;
+  color: #f2b632;
+  filter:
+    drop-shadow(
+      0 1px 0 #c89214
+    )
+    drop-shadow(
+      0 1px 1px
+      rgba(66, 42, 0, 0.35)
+    );
+}
+
+.facilitator-planner-role-icon svg[fill='none'] {
+  fill: none;
+  stroke: currentColor;
+}
+
+.facilitator-planner-role-title {
+  color: #0b1f3b;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.facilitator-planner-role-divider {
+  width: 66%;
+  display: block;
+  margin: 8px auto 8px;
+  border-top: 2px dotted #0066cc;
+}
+
+.facilitator-planner-role-name {
+  display: block;
+  margin: 0;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .facilitator-planner-workspace {

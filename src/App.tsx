@@ -8931,10 +8931,11 @@ function FacilitatorPlannerPage({
 
       <section className="facilitator-planner-meeting-panel">
         <div className="facilitator-planner-meeting-select">
-          <label>
+          <label className="facilitator-planner-meeting-field">
             <span>Meeting</span>
 
             <select
+              className="facilitator-planner-meeting-dropdown"
               value={selectedMeetingId}
               onChange={(event) =>
                 loadMeetingAgenda(
@@ -8948,14 +8949,17 @@ function FacilitatorPlannerPage({
                     key={meeting.id}
                     value={meeting.id}
                   >
-                    {meeting.term}
-                    {' | '}
-                    {getFacilitatorMeetingNumberLabel(
-                      meeting.meetingNumber,
-                    )}
-                    {' | '}
                     {formatFacilitatorMeetingDate(
                       meeting.date,
+                    )}
+                    {' – '}
+                    {meeting.term.replace(
+                      /\s+\d{4}$/,
+                      '',
+                    )}
+                    {' – '}
+                    {getFacilitatorMeetingNumberLabel(
+                      meeting.meetingNumber,
                     )}
                   </option>
                 ),
@@ -8963,10 +8967,15 @@ function FacilitatorPlannerPage({
             </select>
           </label>
 
-          <label>
+          <label className="facilitator-planner-status-field">
             <span>Status</span>
 
             <select
+              className={
+                agendaStatus === 'Final'
+                  ? 'facilitator-planner-status-select facilitator-planner-status-select-final'
+                  : 'facilitator-planner-status-select'
+              }
               value={agendaStatus}
               onChange={(event) =>
                 setAgendaStatus(
@@ -8991,6 +9000,7 @@ function FacilitatorPlannerPage({
         <div className="facilitator-planner-meeting-summary">
           <div>
             <span>Term</span>
+
             <strong>
               {selectedMeeting.term}
             </strong>
@@ -8998,6 +9008,7 @@ function FacilitatorPlannerPage({
 
           <div>
             <span>Meeting</span>
+
             <strong>
               {getFacilitatorMeetingNumberLabel(
                 selectedMeeting.meetingNumber,
@@ -9007,6 +9018,7 @@ function FacilitatorPlannerPage({
 
           <div>
             <span>Date</span>
+
             <strong>
               {formatFacilitatorMeetingDate(
                 selectedMeeting.date,
@@ -9016,6 +9028,7 @@ function FacilitatorPlannerPage({
 
           <div>
             <span>Pacific</span>
+
             <strong>
               {formatFacilitatorClockTime(
                 FACILITATOR_MEETING_START_MINUTES,
@@ -9032,6 +9045,7 @@ function FacilitatorPlannerPage({
 
           <div>
             <span>Eastern</span>
+
             <strong>
               {formatFacilitatorClockTime(
                 FACILITATOR_MEETING_START_MINUTES +
@@ -9050,41 +9064,175 @@ function FacilitatorPlannerPage({
         </div>
 
         <div className="facilitator-planner-role-grid">
-          <div>
-            <span>Facilitator</span>
-            <strong>
+          <div className="facilitator-planner-role-card">
+            <div className="facilitator-planner-role-heading">
+              <span
+                className="facilitator-planner-role-icon"
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2.8 14.7 8l5.8.8-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8-4.2-4.1L9.3 8 12 2.8Z"
+                  />
+                </svg>
+              </span>
+
+              <span className="facilitator-planner-role-title">
+                Facilitator
+              </span>
+            </div>
+
+            <span
+              className="facilitator-planner-role-divider"
+              aria-hidden="true"
+            />
+
+            <strong className="facilitator-planner-role-name">
               {selectedMeeting.facilitator ||
                 'TBD'}
             </strong>
           </div>
 
-          <div>
-            <span>Community Builder</span>
-            <strong>
+          <div className="facilitator-planner-role-card">
+            <div className="facilitator-planner-role-heading">
+              <span
+                className="facilitator-planner-role-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="7" r="3" />
+                  <circle cx="5.5" cy="9" r="2.25" />
+                  <circle cx="18.5" cy="9" r="2.25" />
+                  <path d="M7.5 19v-1.8c0-3 2-5.2 4.5-5.2s4.5 2.2 4.5 5.2V19" />
+                  <path d="M2.5 18v-1.3c0-2.2 1.4-3.8 3.2-3.8 1.1 0 2 .5 2.6 1.3" />
+                  <path d="M21.5 18v-1.3c0-2.2-1.4-3.8-3.2-3.8-1.1 0-2 .5-2.6 1.3" />
+                </svg>
+              </span>
+
+              <span className="facilitator-planner-role-title">
+                Community Builder
+              </span>
+            </div>
+
+            <span
+              className="facilitator-planner-role-divider"
+              aria-hidden="true"
+            />
+
+            <strong className="facilitator-planner-role-name">
               {selectedMeeting.communityBuilder ||
                 'TBD'}
             </strong>
           </div>
 
-          <div>
-            <span>Recorder</span>
-            <strong>
+          <div className="facilitator-planner-role-card">
+            <div className="facilitator-planner-role-heading">
+              <span
+                className="facilitator-planner-role-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m4 20 4.2-1.1L19 8.1 15.9 5 5.1 15.8 4 20Z" />
+                  <path d="m13.8 7.1 3.1 3.1" />
+                  <path d="m5.1 15.8 3.1 3.1" />
+                </svg>
+              </span>
+
+              <span className="facilitator-planner-role-title">
+                Recorder
+              </span>
+            </div>
+
+            <span
+              className="facilitator-planner-role-divider"
+              aria-hidden="true"
+            />
+
+            <strong className="facilitator-planner-role-name">
               {selectedMeeting.recorder ||
                 'TBD'}
             </strong>
           </div>
 
-          <div>
-            <span>Timekeeper</span>
-            <strong>
+          <div className="facilitator-planner-role-card">
+            <div className="facilitator-planner-role-heading">
+              <span
+                className="facilitator-planner-role-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="8" />
+                  <path d="M12 7v5l3.5 2" />
+                </svg>
+              </span>
+
+              <span className="facilitator-planner-role-title">
+                Timekeeper
+              </span>
+            </div>
+
+            <span
+              className="facilitator-planner-role-divider"
+              aria-hidden="true"
+            />
+
+            <strong className="facilitator-planner-role-name">
               {selectedMeeting.timeKeeper ||
                 'TBD'}
             </strong>
           </div>
 
-          <div>
-            <span>Process Observer</span>
-            <strong>
+          <div className="facilitator-planner-role-card">
+            <div className="facilitator-planner-role-heading">
+              <span
+                className="facilitator-planner-role-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M2.5 12s3.4-5.2 9.5-5.2S21.5 12 21.5 12 18.1 17.2 12 17.2 2.5 12 2.5 12Z" />
+                  <circle cx="12" cy="12" r="2.5" />
+                </svg>
+              </span>
+
+              <span className="facilitator-planner-role-title">
+                Process Observer
+              </span>
+            </div>
+
+            <span
+              className="facilitator-planner-role-divider"
+              aria-hidden="true"
+            />
+
+            <strong className="facilitator-planner-role-name">
               {selectedMeeting.processObserver ||
                 'TBD'}
             </strong>
