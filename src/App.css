@@ -9254,18 +9254,48 @@
   order: -1;
 }
 
-/* Professor fields use two columns and two rows. */
+/* Professor fields use four stacked label/input rows. */
 .course-workspace-professor-grid {
   grid-template-columns:
-    minmax(0, 0.82fr)
-    minmax(0, 1.18fr);
-  gap: 10px 12px;
-  padding: 14px;
+    150px minmax(0, 59%);
+  grid-template-rows:
+    repeat(4, 29px);
+  align-content: center;
+  justify-content: start;
+  column-gap: 12px;
+  row-gap: 5px;
+  padding: 11px 14px;
+}
+
+.course-workspace-professor-grid
+  .course-workspace-field {
+  display: contents;
 }
 
 .course-workspace-professor-grid
   .course-workspace-field
-  > span,
+  > span {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.course-workspace-professor-grid
+  .course-workspace-field-input {
+  width: 100%;
+  height: 29px;
+  min-height: 29px;
+  box-sizing: border-box;
+  align-self: center;
+  padding: 4px 10px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
 .course-workspace-links-grid
   .course-workspace-field
   > span {
@@ -9274,8 +9304,6 @@
   font-weight: 900;
 }
 
-.course-workspace-professor-grid
-  .course-workspace-field-input,
 .course-workspace-links-grid
   .course-workspace-field-input {
   min-height: 38px;
@@ -9284,12 +9312,6 @@
   line-height: 1.25;
 }
 
-.course-workspace-professor-grid
-  .course-workspace-field:nth-child(1)
-  .course-workspace-field-input,
-.course-workspace-professor-grid
-  .course-workspace-field:nth-child(2)
-  .course-workspace-field-input,
 .course-workspace-links-grid
   .course-link-copy-field:first-child
   .course-workspace-field-input {
