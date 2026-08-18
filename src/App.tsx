@@ -7019,7 +7019,7 @@ function isStoredFacilitatorAgendaItem(
     typeof value.agendaItem === 'string' &&
     typeof value.name === 'string' &&
     typeof value.durationMinutes ===
-      'number' &&
+    'number' &&
     Number.isFinite(
       value.durationMinutes,
     ) &&
@@ -7047,7 +7047,7 @@ function isStoredFacilitatorAgenda(
     ) &&
     typeof value.savedAt === 'string' &&
     typeof value.housekeepingNotes ===
-      'string' &&
+    'string' &&
     Array.isArray(value.agendaItems) &&
     value.agendaItems.every(
       isStoredFacilitatorAgendaItem,
@@ -8720,7 +8720,7 @@ function FacilitatorPlannerPage({
   function deleteSelectedAgendaItem(): void {
     if (
       selectedAgendaItem ===
-        undefined ||
+      undefined ||
       selectedAgendaItem.isDefault
     ) {
       return
@@ -8847,7 +8847,7 @@ function FacilitatorPlannerPage({
         'Word agenda generated.',
       )
     } catch (
-      error: unknown
+    error: unknown
     ) {
       setActionMessage(
         error instanceof Error
@@ -8885,7 +8885,7 @@ function FacilitatorPlannerPage({
         'Saved Word agenda generated.',
       )
     } catch (
-      error: unknown
+    error: unknown
     ) {
       setActionMessage(
         error instanceof Error
@@ -9244,23 +9244,72 @@ function FacilitatorPlannerPage({
         <section className="facilitator-planner-editor-panel">
           <div className="facilitator-planner-time-cards">
             <div>
-              <span>Meeting Length</span>
-              <strong>4 hrs</strong>
+              <span
+                className="facilitator-planner-summary-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="13" r="7" />
+                  <path d="M12 9v4l2.5 1.5" />
+                  <path d="M8 3.5 6 5.5" />
+                  <path d="m16 3.5 2 2" />
+                </svg>
+              </span>
+
+              <div>
+                <span>Meeting Length</span>
+                <strong>4 hrs</strong>
+              </div>
             </div>
 
             <div>
-              <span>Planned</span>
-              <strong>
-                {Math.floor(
-                  plannedMinutes / 60,
-                ) > 0
-                  ? `${Math.floor(
+              <span
+                className="facilitator-planner-summary-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect
+                    x="4"
+                    y="5"
+                    width="16"
+                    height="15"
+                    rx="2"
+                  />
+                  <path d="M8 3v4" />
+                  <path d="M16 3v4" />
+                  <path d="M4 9h16" />
+                </svg>
+              </span>
+
+              <div>
+                <span>Planned</span>
+
+                <strong>
+                  {Math.floor(
                     plannedMinutes / 60,
-                  )} hr `
-                  : ''}
-                {plannedMinutes % 60}
-                {' min'}
-              </strong>
+                  ) > 0
+                    ? `${Math.floor(
+                      plannedMinutes / 60,
+                    )} hr `
+                    : ''}
+                  {plannedMinutes % 60}
+                  {' min'}
+                </strong>
+              </div>
             </div>
 
             <div
@@ -9270,25 +9319,70 @@ function FacilitatorPlannerPage({
                   : ''
               }
             >
-              <span>
-                {remainingMinutes < 0
-                  ? 'Over Schedule'
-                  : 'Remaining'}
+              <span
+                className="facilitator-planner-summary-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M7 3h10" />
+                  <path d="M7 21h10" />
+                  <path d="M8 3c0 4 1.4 6 4 8-2.6 2-4 4-4 8" />
+                  <path d="M16 3c0 4-1.4 6-4 8 2.6 2 4 4 4 8" />
+                </svg>
               </span>
 
-              <strong>
-                {Math.abs(
-                  remainingMinutes,
-                )}
-                {' min'}
-              </strong>
+              <div>
+                <span>
+                  {remainingMinutes < 0
+                    ? 'Over Schedule'
+                    : 'Remaining'}
+                </span>
+
+                <strong>
+                  {Math.abs(
+                    remainingMinutes,
+                  )}
+                  {' min'}
+                </strong>
+              </div>
             </div>
 
             <div>
-              <span>Agenda Items</span>
-              <strong>
-                {agendaItems.length}
-              </strong>
+              <span
+                className="facilitator-planner-summary-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="5" cy="6" r="1" />
+                  <circle cx="5" cy="12" r="1" />
+                  <circle cx="5" cy="18" r="1" />
+                  <path d="M9 6h10" />
+                  <path d="M9 12h10" />
+                  <path d="M9 18h10" />
+                </svg>
+              </span>
+
+              <div>
+                <span>Agenda Items</span>
+
+                <strong>
+                  {agendaItems.length}
+                </strong>
+              </div>
             </div>
           </div>
 
@@ -9359,7 +9453,7 @@ function FacilitatorPlannerPage({
               className="facilitator-planner-delete-button"
               disabled={
                 selectedAgendaItem ===
-                  undefined ||
+                undefined ||
                 selectedAgendaItem
                   .isDefault
               }
@@ -9616,6 +9710,26 @@ function FacilitatorPlannerPage({
               className="facilitator-planner-save-button"
               onClick={saveAgenda}
             >
+              <svg
+                className="facilitator-planner-action-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 3h12l2 2v16H5V3Z" />
+                <path d="M8 3v6h8V3" />
+                <rect
+                  x="8"
+                  y="13"
+                  width="8"
+                  height="6"
+                />
+              </svg>
+
               Save Agenda
             </button>
 
@@ -9626,6 +9740,23 @@ function FacilitatorPlannerPage({
                 void generateCurrentAgenda()
               }
             >
+              <svg
+                className="facilitator-planner-action-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 2h8l4 4v16H6V2Z" />
+                <path d="M14 2v5h5" />
+                <path d="M9 12h6" />
+                <path d="M9 15h6" />
+                <path d="M9 18h4" />
+              </svg>
+
               Generate Word
             </button>
 

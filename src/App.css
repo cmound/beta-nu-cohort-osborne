@@ -2301,53 +2301,68 @@
 .facilitator-planner-workspace {
   display: grid;
   grid-template-columns:
-    minmax(700px, 3fr)
-    minmax(520px, 2fr);
-  gap: 12px;
+    minmax(0, 1.24fr)
+    minmax(0, 1fr);
+  gap: 10px;
   align-items: start;
 }
 
 .facilitator-planner-editor-panel {
   min-width: 0;
   overflow: hidden;
-  padding: 12px;
+  padding: 14px;
 }
 
 .facilitator-planner-time-cards {
   display: grid;
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 9px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .facilitator-planner-time-cards > div {
-  min-height: 58px;
+  min-width: 0;
+  min-height: 68px;
   box-sizing: border-box;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  padding: 7px 10px;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 13px;
   border: 1px solid #c89214;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #ffffff;
   background:
     linear-gradient(
-      180deg,
-      #17365d 0%,
-      #0b2444 48%,
-      #06182f 100%
+      145deg,
+      #173d68 0%,
+      #0b294d 48%,
+      #061a34 100%
     );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -2px 2px rgba(0, 0, 0, 0.26),
-    0 3px 6px rgba(0, 0, 0, 0.24);
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.16),
+    inset 0 -3px 3px
+      rgba(0, 0, 0, 0.28),
+    0 4px 8px
+      rgba(0, 0, 0, 0.28);
 }
 
-.facilitator-planner-time-cards span {
-  color: #dbe5ef;
-  font-size: 9px;
+.facilitator-planner-time-cards > div > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.facilitator-planner-time-cards
+  > div
+  > div
+  > span {
+  color: #f8fafc;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -2355,9 +2370,32 @@
 .facilitator-planner-time-cards strong {
   margin-top: 5px;
   color: #ffd200;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 900;
   line-height: 1;
+}
+
+.facilitator-planner-summary-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  color: #f2b632;
+}
+
+.facilitator-planner-summary-icon svg {
+  width: 31px;
+  height: 31px;
+  display: block;
+  filter:
+    drop-shadow(
+      0 1px 0 #c89214
+    )
+    drop-shadow(
+      0 1px 1px
+      rgba(0, 0, 0, 0.35)
+    );
 }
 
 .facilitator-planner-time-cards
@@ -2379,11 +2417,21 @@
 }
 
 .facilitator-planner-time-track {
-  margin-bottom: 11px;
-  padding: 9px 11px;
+  margin-bottom: 14px;
+  padding: 11px 13px 10px;
   border: 1px solid #476984;
-  border-radius: 5px;
-  background: rgba(2, 13, 28, 0.78);
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(3, 20, 43, 0.94) 0%,
+      rgba(1, 12, 28, 0.94) 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.07),
+    0 3px 7px
+      rgba(0, 0, 0, 0.2);
 }
 
 .facilitator-planner-time-track-labels {
@@ -2430,9 +2478,9 @@
 }
 
 .facilitator-planner-time-track p {
-  margin: 6px 0 0;
-  color: #cbd5e1;
-  font-size: 9px;
+  margin: 9px 0 0;
+  color: #e2e8f0;
+  font-size: 10px;
   font-weight: 700;
   text-align: center;
 }
@@ -2524,7 +2572,7 @@
 
 .facilitator-planner-table {
   width: 100%;
-  min-width: 800px;
+  min-width: 0;
   border-collapse: collapse;
   table-layout: fixed;
   color: #111827;
@@ -2540,32 +2588,42 @@
 }
 
 .facilitator-planner-table th {
-  height: 32px;
-  padding: 6px 7px;
-  border-bottom: 2px solid var(--umass-navy);
+  height: 38px;
+  padding: 7px 9px;
+  border-bottom: 2px solid #0b1f3b;
   color: #111827;
-  background: #a97800;
-  font-size: 11px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 52%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.55);
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.1;
   text-align: left;
+  vertical-align: middle;
 }
 
 .facilitator-planner-table th:nth-child(1) {
-  width: 40%;
+  width: 46%;
 }
 
 .facilitator-planner-table th:nth-child(2) {
-  width: 19%;
+  width: 16%;
 }
 
 .facilitator-planner-table th:nth-child(3) {
-  width: 13%;
+  width: 11%;
 }
 
 .facilitator-planner-table th:nth-child(4),
 .facilitator-planner-table th:nth-child(5) {
-  width: 14%;
+  width: 13.5%;
 }
 
 .facilitator-planner-table td {
@@ -2607,38 +2665,47 @@
   height: 31px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding-right: 5px;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 0 7px;
 }
 
 .facilitator-planner-duration-input input {
-  min-width: 0;
-  flex: 1 1 auto;
-  text-align: right;
+  width: 30px;
+  min-width: 30px;
+  flex: 0 0 30px;
+  padding: 4px 0;
+  text-align: left;
 }
 
 .facilitator-planner-duration-input span {
   flex: 0 0 auto;
-  color: #4b5563;
-  font-size: 9px;
-  font-weight: 700;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 400;
 }
 
 .facilitator-planner-time-cell {
-  padding: 4px 7px !important;
+  padding: 4px 8px !important;
   color: #111827;
+  font-size: 11px;
   font-weight: 900;
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
 }
 
 .facilitator-planner-detail-editor,
 .facilitator-planner-housekeeping-editor {
-  margin-top: 11px;
+  margin-top: 14px;
   overflow: hidden;
-  border: 1px solid #5f7892;
-  border-radius: 6px;
+  border: 1px solid #547897;
+  border-radius: 9px;
   background: #f8fafc;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.08),
+    0 3px 7px
+      rgba(0, 0, 0, 0.22);
 }
 
 .facilitator-planner-detail-editor header,
@@ -2658,6 +2725,20 @@
       180deg,
       #17365d 0%,
       #0b2444 100%
+    );
+}
+
+.facilitator-planner-detail-editor header,
+.facilitator-planner-housekeeping-editor header {
+  min-height: 54px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #547897;
+  background:
+    linear-gradient(
+      145deg,
+      #123c68 0%,
+      #0b2b51 52%,
+      #061d39 100%
     );
 }
 
@@ -2691,6 +2772,32 @@
   font-size: 9px;
   font-weight: 800;
   line-height: 1.2;
+}
+
+.facilitator-planner-detail-editor header > strong,
+.facilitator-planner-housekeeping-editor header > strong {
+  min-height: 28px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid #31577a;
+  border-radius: 999px;
+  color: #f8fafc;
+  background:
+    linear-gradient(
+      180deg,
+      #173c68 0%,
+      #0b2b50 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.12),
+    0 2px 4px
+      rgba(0, 0, 0, 0.24);
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .facilitator-planner-detail-editor textarea,
@@ -2746,29 +2853,54 @@
 
 .facilitator-planner-primary-actions
   .facilitator-planner-save-button {
-  min-width: 118px;
+  min-width: 138px;
+  min-height: 40px;
   color: #07152a;
   border-color: #8f6810;
   background:
     linear-gradient(
       180deg,
-      #ffe06d 0%,
+      #ffe477 0%,
       #f2b632 52%,
       #c89214 100%
     );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.7),
+    inset 0 -3px 2px
+      rgba(91, 57, 0, 0.34),
+    0 4px 7px
+      rgba(0, 0, 0, 0.3);
+  font-size: 11px;
 }
 
 .facilitator-planner-primary-actions
   .facilitator-planner-generate-button {
-  min-width: 128px;
+  min-width: 148px;
+  min-height: 40px;
   border-color: #34a3ef;
   background:
     linear-gradient(
       180deg,
-      #087ce8 0%,
-      #0560bd 60%,
+      #1592f2 0%,
+      #087ce8 42%,
+      #0560bd 70%,
       #034789 100%
     );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.32),
+    inset 0 -3px 2px
+      rgba(1, 37, 79, 0.34),
+    0 4px 7px
+      rgba(0, 0, 0, 0.3);
+  font-size: 11px;
+}
+
+.facilitator-planner-action-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
 }
 
 .facilitator-planner-action-message {
