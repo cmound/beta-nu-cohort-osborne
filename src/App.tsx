@@ -20,11 +20,13 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  Header,
   ImageRun,
   Packer,
   Paragraph,
   Table,
   TableCell,
+  TableLayoutType,
   TableRow,
   TextRun,
   UnderlineType,
@@ -7362,7 +7364,7 @@ function createFacilitatorAgendaTableBorders() {
   const border = {
     style: BorderStyle.SINGLE,
     size: 4,
-    color: '808080',
+    color: '666666',
   } as const
 
   return {
@@ -7377,20 +7379,30 @@ function createFacilitatorAgendaTableBorders() {
 
 function createFacilitatorAgendaTableCell(
   children: readonly Paragraph[],
-  widthPercent: number,
+  widthTwips: number,
+  shadingFill?: string,
 ): TableCell {
   return new TableCell({
     children: [...children],
     width: {
-      size: widthPercent,
-      type: WidthType.PERCENTAGE,
+      size: widthTwips,
+      type: WidthType.DXA,
     },
     margins: {
-      top: 70,
-      right: 80,
-      bottom: 70,
-      left: 80,
+      top: 15,
+      right: 15,
+      bottom: 15,
+      left: 15,
     },
+    ...(
+      shadingFill === undefined
+        ? {}
+        : {
+          shading: {
+            fill: shadingFill,
+          },
+        }
+    ),
   })
 }
 
@@ -7437,6 +7449,11 @@ function createFacilitatorAgendaTable(
             ? ` ${presenter}`
             : ''
 
+        const rowShading =
+          itemIndex % 2 === 0
+            ? 'D9D9D9'
+            : undefined
+
         return new TableRow({
           children: [
             createFacilitatorAgendaTableCell(
@@ -7457,13 +7474,14 @@ function createFacilitatorAgendaTable(
                         ),
                       bold: true,
                       font:
-                        'Times New Roman',
-                      size: 22,
+                        'Playfair Display',
+                      size: 24,
                     }),
                   ],
                 }),
               ],
-              18,
+              7027,
+              rowShading,
             ),
             createFacilitatorAgendaTableCell(
               [
@@ -7479,8 +7497,8 @@ function createFacilitatorAgendaTable(
                         : itemTitle,
                       bold: true,
                       font:
-                        'Times New Roman',
-                      size: 22,
+                        'Playfair Display',
+                      size: 24,
                     }),
                     new TextRun({
                       text:
@@ -7488,14 +7506,15 @@ function createFacilitatorAgendaTable(
                         `${getFacilitatorDurationLabel(
                           item.durationMinutes,
                         )})`,
+                      bold: true,
                       font:
-                        'Times New Roman',
-                      size: 22,
+                        'Playfair Display',
+                      size: 24,
                     }),
                   ],
                 }),
               ],
-              64,
+              7027,
             ),
             createFacilitatorAgendaTableCell(
               [
@@ -7515,13 +7534,14 @@ function createFacilitatorAgendaTable(
                         ),
                       bold: true,
                       font:
-                        'Times New Roman',
-                      size: 22,
+                        'Playfair Display',
+                      size: 24,
                     }),
                   ],
                 }),
               ],
-              18,
+              1207,
+              rowShading,
             ),
           ],
         })
@@ -7535,6 +7555,12 @@ function createFacilitatorAgendaTable(
   const meetingEndEastern =
     meetingEndPacific +
     FACILITATOR_EASTERN_OFFSET_MINUTES
+
+  const closingRowShading =
+    populatedAgendaItems.length %
+      2 === 0
+      ? 'D9D9D9'
+      : undefined
 
   agendaRows.push(
     new TableRow({
@@ -7556,13 +7582,14 @@ function createFacilitatorAgendaTable(
                       true,
                     ),
                   bold: true,
-                  font: 'Times New Roman',
-                  size: 22,
+                  font: 'Playfair Display',
+                  size: 24,
                 }),
               ],
             }),
           ],
-          18,
+          1126,
+          closingRowShading,
         ),
         createFacilitatorAgendaTableCell(
           [
@@ -7576,13 +7603,14 @@ function createFacilitatorAgendaTable(
                   text:
                     'Closing Cohort Meeting',
                   bold: true,
-                  font: 'Times New Roman',
-                  size: 22,
+                  font: 'Playfair Display',
+                  size: 24,
                 }),
               ],
             }),
           ],
-          64,
+          7027,
+          closingRowShading,
         ),
         createFacilitatorAgendaTableCell(
           [
@@ -7601,13 +7629,14 @@ function createFacilitatorAgendaTable(
                       true,
                     ),
                   bold: true,
-                  font: 'Times New Roman',
-                  size: 22,
+                  font: 'Playfair Display',
+                  size: 24,
                 }),
               ],
             }),
           ],
-          18,
+          1207,
+          closingRowShading,
         ),
       ],
     }),
@@ -7615,9 +7644,16 @@ function createFacilitatorAgendaTable(
 
   return new Table({
     width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
+      size: 9360,
+      type: WidthType.DXA,
     },
+    layout:
+      TableLayoutType.FIXED,
+    columnWidths: [
+      1126,
+      7027,
+      1207,
+    ],
     borders:
       createFacilitatorAgendaTableBorders(),
     rows: [
@@ -7639,13 +7675,13 @@ function createFacilitatorAgendaTable(
                     bold: true,
                     italics: true,
                     font:
-                      'Times New Roman',
-                    size: 22,
+                      'Playfair Display',
+                    size: 24,
                   }),
                 ],
               }),
             ],
-            18,
+            1126,
           ),
           createFacilitatorAgendaTableCell(
             [
@@ -7662,13 +7698,13 @@ function createFacilitatorAgendaTable(
                     bold: true,
                     italics: true,
                     font:
-                      'Times New Roman',
-                    size: 22,
+                      'Playfair Display',
+                    size: 24,
                   }),
                 ],
               }),
             ],
-            64,
+            7027,
           ),
           createFacilitatorAgendaTableCell(
             [
@@ -7685,13 +7721,13 @@ function createFacilitatorAgendaTable(
                     bold: true,
                     italics: true,
                     font:
-                      'Times New Roman',
-                    size: 22,
+                      'Playfair Display',
+                    size: 24,
                   }),
                 ],
               }),
             ],
-            18,
+            1207,
           ),
         ],
       }),
@@ -7722,44 +7758,30 @@ function createFacilitatorRoleTable(
 
   return new Table({
     width: {
-      size: 72,
-      type: WidthType.PERCENTAGE,
+      size: 5845,
+      type: WidthType.DXA,
     },
-    borders: {
-      top: {
-        style: BorderStyle.NONE,
-        size: 0,
-        color: 'FFFFFF',
-      },
-      bottom: {
-        style: BorderStyle.NONE,
-        size: 0,
-        color: 'FFFFFF',
-      },
-      left: {
-        style: BorderStyle.NONE,
-        size: 0,
-        color: 'FFFFFF',
-      },
-      right: {
-        style: BorderStyle.NONE,
-        size: 0,
-        color: 'FFFFFF',
-      },
-      insideHorizontal: {
-        style: BorderStyle.NONE,
-        size: 0,
-        color: 'FFFFFF',
-      },
-      insideVertical: {
-        style: BorderStyle.NONE,
-        size: 0,
-        color: 'FFFFFF',
-      },
-    },
+    alignment:
+      AlignmentType.CENTER,
+    layout:
+      TableLayoutType.FIXED,
+    columnWidths: [
+      3505,
+      2340,
+    ],
+    borders:
+      createFacilitatorAgendaTableBorders(),
     rows: roleRows.map(
-      ([role, name]) =>
-        new TableRow({
+      (
+        [role, name],
+        roleIndex,
+      ) => {
+        const rowShading =
+          roleIndex % 2 === 1
+            ? 'D9D9D9'
+            : undefined
+
+        return new TableRow({
           children: [
             createFacilitatorAgendaTableCell(
               [
@@ -7771,14 +7793,16 @@ function createFacilitatorRoleTable(
                   children: [
                     new TextRun({
                       text: role,
+                      bold: true,
                       font:
-                        'Times New Roman',
+                        'Playfair Display',
                       size: 24,
                     }),
                   ],
                 }),
               ],
-              43,
+              3505,
+              rowShading,
             ),
             createFacilitatorAgendaTableCell(
               [
@@ -7795,16 +7819,18 @@ function createFacilitatorRoleTable(
                           ? name.trim()
                           : 'TBD',
                       font:
-                        'Times New Roman',
+                        'Playfair Display',
                       size: 24,
                     }),
                   ],
                 }),
               ],
-              57,
+              2340,
+              rowShading,
             ),
           ],
-        }),
+        })
+      },
     ),
   })
 }
@@ -7826,8 +7852,12 @@ function createFacilitatorHousekeepingParagraphs(
   return lines.map(
     (line, lineIndex) =>
       new Paragraph({
+        indent: {
+          left: 720,
+          hanging: 360,
+        },
         spacing: {
-          after: 100,
+          after: 0,
         },
         children: [
           new TextRun({
@@ -8081,37 +8111,57 @@ function createFacilitatorAgendaDocument(
         properties: {
           page: {
             margin: {
-              top: 600,
-              right: 650,
-              bottom: 600,
-              left: 650,
+              top: 1440,
+              right: 1440,
+              bottom: 864,
+              left: 1440,
+              header: 720,
+              footer: 720,
             },
           },
+        },
+         headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                alignment:
+                  AlignmentType.CENTER,
+                spacing: {
+                  before: 0,
+                  after: 0,
+                  line: 240,
+                },
+                children: [
+                  new ImageRun({
+                    data:
+                      agendaHeaderImage,
+                    type: 'jpg',
+                    transformation: {
+                      width: 624,
+                      height: 94,
+                    },
+                  }),
+                ],
+              }),
+              new Paragraph({
+                spacing: {
+                  before: 0,
+                  after: 0,
+                  line: 240,
+                },
+                children: [],
+              }),
+            ],
+          }),
         },
         children: [
           new Paragraph({
             alignment:
               AlignmentType.CENTER,
             spacing: {
-              after: 70,
-            },
-            children: [
-              new ImageRun({
-                data:
-                  agendaHeaderImage,
-                type: 'jpg',
-                transformation: {
-                  width: 680,
-                  height: 102,
-                },
-              }),
-            ],
-          }),
-          new Paragraph({
-            alignment:
-              AlignmentType.CENTER,
-            spacing: {
-              after: 60,
+              before: 0,
+              after: 0,
+              line: 240,
             },
             children: [
               new TextRun({
@@ -8119,7 +8169,7 @@ function createFacilitatorAgendaDocument(
                   'Dr. Osborne’s Beta Nu Cohort',
                 bold: true,
                 font:
-                  'Times New Roman',
+                  'Playfair Display',
                 size: 24,
               }),
             ],
@@ -8128,7 +8178,9 @@ function createFacilitatorAgendaDocument(
             alignment:
               AlignmentType.CENTER,
             spacing: {
-              after: 60,
+              before: 0,
+              after: 0,
+              line: 240,
             },
             children: [
               new TextRun({
@@ -8138,7 +8190,7 @@ function createFacilitatorAgendaDocument(
                   ),
                 bold: true,
                 font:
-                  'Times New Roman',
+                  'Playfair Display',
                 size: 24,
               }),
             ],
@@ -8147,7 +8199,9 @@ function createFacilitatorAgendaDocument(
             alignment:
               AlignmentType.CENTER,
             spacing: {
-              after: 60,
+              before: 0,
+              after: 0,
+              line: 240,
             },
             children: [
               new TextRun({
@@ -8171,7 +8225,7 @@ function createFacilitatorAgendaDocument(
                   )} (Eastern)`,
                 bold: true,
                 font:
-                  'Times New Roman',
+                  'Playfair Display',
                 size: 24,
               }),
             ],
@@ -8180,36 +8234,58 @@ function createFacilitatorAgendaDocument(
             alignment:
               AlignmentType.CENTER,
             spacing: {
-              after: 120,
+              before: 0,
+              after: 0,
+              line: 240,
             },
             children: [
               new TextRun({
                 text: 'Zoom Meeting',
                 bold: true,
                 font:
-                  'Times New Roman',
+                  'Playfair Display',
                 size: 24,
               }),
               new TextRun({
                 text:
                   ` - ${FACILITATOR_ZOOM_URL}`,
                 font:
-                  'Times New Roman',
+                  'Playfair Display',
                 size: 24,
               }),
             ],
           }),
           new Paragraph({
             spacing: {
-              before: 40,
-              after: 20,
+              before: 0,
+              after: 0,
+              line: 240,
+            },
+            children: [],
+          }),
+          new Paragraph({
+            indent: {
+              left: 900,
+              firstLine: 540,
+            },
+            spacing: {
+              before: 0,
+              after: 0,
+              line: 240,
             },
             children: [
+              new TextRun({
+                text: '   ',
+                bold: true,
+                font:
+                  'Playfair Display',
+                size: 24,
+              }),
               new TextRun({
                 text: 'ROLES:',
                 bold: true,
                 font:
-                  'Times New Roman',
+                  'Playfair Display',
                 size: 24,
               }),
             ],
@@ -8218,8 +8294,12 @@ function createFacilitatorAgendaDocument(
             meeting,
           ),
           new Paragraph({
+            alignment:
+              AlignmentType.CENTER,
             spacing: {
-              after: 80,
+              before: 0,
+              after: 0,
+              line: 240,
             },
             children: [],
           }),
@@ -8228,6 +8308,12 @@ function createFacilitatorAgendaDocument(
           ),
           new Paragraph({
             pageBreakBefore: true,
+            spacing: {
+              after: 120,
+            },
+            children: [],
+          }),
+          new Paragraph({
             spacing: {
               after: 120,
             },
@@ -8754,22 +8840,43 @@ function FacilitatorPlannerPage({
     )
   }
 
-  function focusAgendaItemInput(
+  function focusAgendaTableInput(
     agendaItemId: string,
+    field:
+      | 'agendaItem'
+      | 'name'
+      | 'duration',
   ): void {
+    const inputId =
+      field === 'agendaItem'
+        ? `facilitator-agenda-item-${agendaItemId}`
+        : field === 'name'
+          ? `facilitator-agenda-name-${agendaItemId}`
+          : `facilitator-agenda-duration-${agendaItemId}`
+
     window.setTimeout(() => {
-      const agendaItemInput =
+      const input =
         document.getElementById(
-          `facilitator-agenda-item-${agendaItemId}`,
+          inputId,
         )
 
       if (
-        agendaItemInput instanceof
+        input instanceof
         HTMLInputElement
       ) {
-        agendaItemInput.focus()
+        input.focus()
+        input.select()
       }
     }, 0)
+  }
+
+  function focusAgendaItemInput(
+    agendaItemId: string,
+  ): void {
+    focusAgendaTableInput(
+      agendaItemId,
+      'agendaItem',
+    )
   }
 
   function addAgendaItem(): void {
@@ -8814,18 +8921,15 @@ function FacilitatorPlannerPage({
     )
   }
 
-  function handleAgendaDurationKeyDown(
+  function handleAgendaTableKeyDown(
     agendaItemId: string,
+    field:
+      | 'agendaItem'
+      | 'name'
+      | 'duration',
     event:
       ReactKeyboardEvent<HTMLInputElement>,
   ): void {
-    if (
-      event.key !== 'Tab' ||
-      event.shiftKey
-    ) {
-      return
-    }
-
     const currentIndex =
       agendaItems.findIndex(
         (agendaItem) =>
@@ -8837,41 +8941,245 @@ function FacilitatorPlannerPage({
       return
     }
 
-    event.preventDefault()
+    function moveToField(
+      targetIndex: number,
+      targetField:
+        | 'agendaItem'
+        | 'name'
+        | 'duration',
+    ): boolean {
+      const targetAgendaItem =
+        agendaItems[targetIndex]
 
-    const nextAgendaItem =
-      agendaItems[
-      currentIndex + 1
-      ]
+      if (
+        targetAgendaItem ===
+        undefined
+      ) {
+        return false
+      }
 
-    if (nextAgendaItem !== undefined) {
+      event.preventDefault()
+
       setSelectedAgendaItemId(
-        nextAgendaItem.id,
+        targetAgendaItem.id,
       )
 
-      focusAgendaItemInput(
-        nextAgendaItem.id,
+      focusAgendaTableInput(
+        targetAgendaItem.id,
+        targetField,
+      )
+
+      return true
+    }
+
+    if (event.key === 'Tab') {
+      event.preventDefault()
+
+      if (event.shiftKey) {
+        if (field === 'duration') {
+          focusAgendaTableInput(
+            agendaItemId,
+            'name',
+          )
+
+          return
+        }
+
+        if (field === 'name') {
+          focusAgendaTableInput(
+            agendaItemId,
+            'agendaItem',
+          )
+
+          return
+        }
+
+        moveToField(
+          currentIndex - 1,
+          'duration',
+        )
+
+        return
+      }
+
+      if (field === 'agendaItem') {
+        focusAgendaTableInput(
+          agendaItemId,
+          'name',
+        )
+
+        return
+      }
+
+      if (field === 'name') {
+        focusAgendaTableInput(
+          agendaItemId,
+          'duration',
+        )
+
+        return
+      }
+
+      const nextAgendaItem =
+        agendaItems[
+        currentIndex + 1
+        ]
+
+      if (
+        nextAgendaItem !==
+        undefined
+      ) {
+        setSelectedAgendaItemId(
+          nextAgendaItem.id,
+        )
+
+        focusAgendaTableInput(
+          nextAgendaItem.id,
+          'agendaItem',
+        )
+
+        return
+      }
+
+      const newAgendaItem =
+        createBlankFacilitatorAgendaItem()
+
+      setAgendaItems(
+        (currentItems) => [
+          ...currentItems,
+          newAgendaItem,
+        ],
+      )
+
+      setSelectedAgendaItemId(
+        newAgendaItem.id,
+      )
+
+      focusAgendaTableInput(
+        newAgendaItem.id,
+        'agendaItem',
       )
 
       return
     }
 
-    const newAgendaItem =
-      createBlankFacilitatorAgendaItem()
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
 
-    setAgendaItems(
-      (currentItems) => [
-        ...currentItems,
-        newAgendaItem,
-      ],
-    )
+      moveToField(
+        currentIndex - 1,
+        field,
+      )
 
-    setSelectedAgendaItemId(
-      newAgendaItem.id,
-    )
+      return
+    }
 
-    focusAgendaItemInput(
-      newAgendaItem.id,
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+
+      moveToField(
+        currentIndex + 1,
+        field,
+      )
+
+      return
+    }
+
+    if (
+      event.key !== 'ArrowLeft' &&
+      event.key !== 'ArrowRight'
+    ) {
+      return
+    }
+
+    if (field !== 'duration') {
+      const selectionStart =
+        event.currentTarget
+          .selectionStart
+
+      const selectionEnd =
+        event.currentTarget
+          .selectionEnd
+
+      if (
+        selectionStart === null ||
+        selectionEnd === null
+      ) {
+        return
+      }
+
+      if (
+        selectionStart !==
+        selectionEnd
+      ) {
+        return
+      }
+
+      if (
+        event.key === 'ArrowLeft' &&
+        selectionStart > 0
+      ) {
+        return
+      }
+
+      if (
+        event.key === 'ArrowRight' &&
+        selectionEnd <
+        event.currentTarget
+          .value.length
+      ) {
+        return
+      }
+    }
+
+    if (event.key === 'ArrowLeft') {
+      if (field === 'duration') {
+        moveToField(
+          currentIndex,
+          'name',
+        )
+
+        return
+      }
+
+      if (field === 'name') {
+        moveToField(
+          currentIndex,
+          'agendaItem',
+        )
+
+        return
+      }
+
+      moveToField(
+        currentIndex - 1,
+        'duration',
+      )
+
+      return
+    }
+
+    if (field === 'agendaItem') {
+      moveToField(
+        currentIndex,
+        'name',
+      )
+
+      return
+    }
+
+    if (field === 'name') {
+      moveToField(
+        currentIndex,
+        'duration',
+      )
+
+      return
+    }
+
+    moveToField(
+      currentIndex + 1,
+      'agendaItem',
     )
   }
 
@@ -9944,12 +10252,24 @@ function FacilitatorPlannerPage({
                                   event.target.value,
                                 )
                               }
+                              onKeyDown={(
+                                event,
+                              ) =>
+                                handleAgendaTableKeyDown(
+                                  agendaItem.id,
+                                  'agendaItem',
+                                  event,
+                                )
+                              }
                             />
                           </div>
                         </td>
 
                         <td>
                           <input
+                            id={
+                              `facilitator-agenda-name-${agendaItem.id}`
+                            }
                             value={
                               agendaItem.name
                             }
@@ -9968,12 +10288,24 @@ function FacilitatorPlannerPage({
                                 event.target.value,
                               )
                             }
+                            onKeyDown={(
+                              event,
+                            ) =>
+                              handleAgendaTableKeyDown(
+                                agendaItem.id,
+                                'name',
+                                event,
+                              )
+                            }
                           />
                         </td>
 
                         <td>
                           <label className="facilitator-planner-duration-input">
                             <input
+                              id={
+                                `facilitator-agenda-duration-${agendaItem.id}`
+                              }
                               type="number"
                               min="0"
                               step="1"
@@ -10000,8 +10332,9 @@ function FacilitatorPlannerPage({
                               onKeyDown={(
                                 event,
                               ) =>
-                                handleAgendaDurationKeyDown(
+                                handleAgendaTableKeyDown(
                                   agendaItem.id,
+                                  'duration',
                                   event,
                                 )
                               }
