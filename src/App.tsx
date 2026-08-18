@@ -15,6 +15,20 @@ import {
   useParams,
 } from 'react-router'
 import { renderAsync } from 'docx-preview'
+import {
+  AlignmentType,
+  BorderStyle,
+  Document,
+  ImageRun,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  UnderlineType,
+  WidthType,
+} from 'docx'
 import * as XLSX from 'xlsx'
 import './App.css'
 
@@ -357,6 +371,33 @@ interface CohortDatesRolesPageProps {
   ) => void
 }
 
+interface FacilitatorPlannerPageProps {
+  readonly meetings: readonly CohortMeetingRecord[]
+}
+
+type FacilitatorAgendaStatus =
+  | 'Draft'
+  | 'Final'
+
+interface FacilitatorAgendaItemRecord {
+  readonly id: string
+  readonly agendaItem: string
+  readonly name: string
+  readonly durationMinutes: number
+  readonly details: string
+  readonly isDefault: boolean
+}
+
+interface FacilitatorAgendaRecord {
+  readonly id: string
+  readonly meetingId: string
+  readonly status: FacilitatorAgendaStatus
+  readonly savedAt: string
+  readonly housekeepingNotes: string
+  readonly agendaItems:
+  readonly FacilitatorAgendaItemRecord[]
+}
+
 interface CohortPurposeResearchRecord {
   readonly id: string
   readonly developmentNote: string
@@ -475,6 +516,7 @@ const navigationItems: readonly NavigationItem[] = [
   { label: 'Dashboard', path: '/' },
   { label: 'Cohort Contacts', path: '/cohort-contact' },
   { label: 'Cohort Dates & Roles', path: '/cohort-dates-roles' },
+  { label: 'Facilitator Planner', path: '/facilitator-planner' },
   { label: 'Attendance', path: '/attendance' },
   { label: 'Norms', path: '/norms' },
   { label: 'Values and Vision', path: '/values-vision' },
@@ -6813,6 +6855,2802 @@ function CohortDatesRolesPage({
           </section>
         </div>
       )}
+    </section>
+  )
+}
+
+const FACILITATOR_AGENDAS_STORAGE_KEY =
+  'beta-nu-facilitator-agendas-v1'
+
+const FACILITATOR_MEETING_START_MINUTES =
+  13 * 60 + 30
+
+const FACILITATOR_MEETING_LENGTH_MINUTES =
+  4 * 60
+
+const FACILITATOR_EASTERN_OFFSET_MINUTES =
+  3 * 60
+
+const FACILITATOR_ZOOM_URL =
+  'https://umassglobal.zoom.us/my/drcmo'
+
+const FACILITATOR_AGENDA_HEADER_FILE =
+  'facilitator-agenda-header.jpg'
+
+let facilitatorAgendaHeaderImage:
+  ArrayBuffer | null = null
+
+const facilitatorAgendaValues = [
+  {
+    name: 'Respect',
+    description:
+      'Treating others with dignity, listening to their perspectives, and honoring differences.',
+  },
+  {
+    name: 'Commitment',
+    description:
+      'Following through on agreed responsibilities, showing up prepared, and staying engaged even when the workload is heavy.',
+  },
+  {
+    name: 'Communication',
+    description:
+      'Sharing information clearly, honestly, and in a timely manner, including when you need help or cannot meet a deadline.',
+  },
+  {
+    name: 'Accountability',
+    description:
+      'Owning your actions and impact, taking responsibility for results, and making things right when commitments are missed.',
+  },
+  {
+    name: 'Adaptability',
+    description:
+      'Adjusting to change with a problem-solving mindset, staying flexible in methods while remaining anchored to shared goals.',
+  },
+] as const
+
+function getFacilitatorAgendaPersonLabel(
+  value: string,
+): string {
+  const normalizedValue = value.trim()
+
+  if (normalizedValue.length === 0) {
+    return 'TBD'
+  }
+
+  if (
+    normalizedValue === 'Dr. CMO' ||
+    normalizedValue.startsWith('Dr. ')
+  ) {
+    return normalizedValue
+  }
+
+  const firstSpaceIndex =
+    normalizedValue.indexOf(' ')
+
+  if (firstSpaceIndex === -1) {
+    return normalizedValue
+  }
+
+  return normalizedValue.slice(
+    0,
+    firstSpaceIndex,
+  )
+}
+
+function createDefaultFacilitatorAgendaItems(
+  meeting: CohortMeetingRecord,
+): readonly FacilitatorAgendaItemRecord[] {
+  const facilitatorName =
+    getFacilitatorAgendaPersonLabel(
+      meeting.facilitator,
+    )
+
+  const communityBuilderName =
+    getFacilitatorAgendaPersonLabel(
+      meeting.communityBuilder,
+    )
+
+  return [
+    {
+      id: `${meeting.id}-welcome`,
+      agendaItem:
+        'Welcome & Review of the Agenda and Roles',
+      name: facilitatorName,
+      durationMinutes: 5,
+      details: '',
+      isDefault: true,
+    },
+    {
+      id: `${meeting.id}-vision-values`,
+      agendaItem: 'Vision & Values',
+      name: facilitatorName,
+      durationMinutes: 5,
+      details: '',
+      isDefault: true,
+    },
+    {
+      id: `${meeting.id}-community-builder`,
+      agendaItem: 'Community Builder',
+      name: communityBuilderName,
+      durationMinutes: 20,
+      details: '',
+      isDefault: true,
+    },
+  ]
+}
+
+function createDefaultFacilitatorHousekeepingNotes(
+  meeting: CohortMeetingRecord,
+): string {
+  const communityBuilderName =
+    getFacilitatorAgendaPersonLabel(
+      meeting.communityBuilder,
+    )
+
+  return [
+    `Please be prepared to participate in any requests ${communityBuilderName} facilitates as part of the Community Builder (icebreaker) activity.`,
+    'If you have been assigned a role for this meeting, review all relevant materials in advance to ensure you are fully prepared.',
+    'Please ensure your technology is functioning properly, including your microphone and camera, and that you are in a quiet, distraction-free environment that supports full engagement.',
+  ].join('\n')
+}
+
+function isStoredFacilitatorAgendaStatus(
+  value: unknown,
+): value is FacilitatorAgendaStatus {
+  return (
+    value === 'Draft' ||
+    value === 'Final'
+  )
+}
+
+function isStoredFacilitatorAgendaItem(
+  value: unknown,
+): value is FacilitatorAgendaItemRecord {
+  if (
+    !isCourseWorkspaceStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.agendaItem === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.durationMinutes ===
+      'number' &&
+    Number.isFinite(
+      value.durationMinutes,
+    ) &&
+    typeof value.details === 'string' &&
+    typeof value.isDefault === 'boolean'
+  )
+}
+
+function isStoredFacilitatorAgenda(
+  value: unknown,
+): value is FacilitatorAgendaRecord {
+  if (
+    !isCourseWorkspaceStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.meetingId === 'string' &&
+    isStoredFacilitatorAgendaStatus(
+      value.status,
+    ) &&
+    typeof value.savedAt === 'string' &&
+    typeof value.housekeepingNotes ===
+      'string' &&
+    Array.isArray(value.agendaItems) &&
+    value.agendaItems.every(
+      isStoredFacilitatorAgendaItem,
+    )
+  )
+}
+
+function readStoredFacilitatorAgendas():
+  readonly FacilitatorAgendaRecord[] {
+  const storedValue =
+    window.localStorage.getItem(
+      FACILITATOR_AGENDAS_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return []
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every(
+        isStoredFacilitatorAgenda,
+      )
+    ) {
+      return []
+    }
+
+    return parsedValue
+  } catch {
+    return []
+  }
+}
+
+function getDefaultFacilitatorMeetingId(
+  meetings: readonly CohortMeetingRecord[],
+): string {
+  const currentPacificDate =
+    getPacificDateKey(new Date())
+
+  const nextMeeting =
+    meetings.find(
+      (meeting) =>
+        meeting.date >= currentPacificDate,
+    )
+
+  if (nextMeeting !== undefined) {
+    return nextMeeting.id
+  }
+
+  return (
+    meetings[meetings.length - 1]?.id ??
+    ''
+  )
+}
+
+function getFacilitatorMeetingNumberLabel(
+  meetingNumber: string,
+): string {
+  const numberMatch =
+    /(\d+)/.exec(meetingNumber)
+
+  if (numberMatch === null) {
+    return meetingNumber
+  }
+
+  return `Meeting ${numberMatch[1]}`
+}
+
+function formatFacilitatorMeetingDate(
+  dateValue: string,
+): string {
+  const parsedDate =
+    new Date(`${dateValue}T12:00:00Z`)
+
+  if (
+    Number.isNaN(
+      parsedDate.getTime(),
+    )
+  ) {
+    return dateValue
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-US',
+    {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    },
+  ).format(parsedDate)
+}
+
+function formatFacilitatorAgendaDateForFileName(
+  dateValue: string,
+): string {
+  const dateMatch =
+    /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+      dateValue,
+    )
+
+  if (dateMatch === null) {
+    return dateValue.replace(
+      /[^0-9A-Za-z.-]+/g,
+      '-',
+    )
+  }
+
+  return (
+    `${dateMatch[2]}.` +
+    `${dateMatch[3]}.` +
+    `${dateMatch[1]}`
+  )
+}
+
+function formatFacilitatorClockTime(
+  totalMinutes: number,
+  documentStyle = false,
+): string {
+  const normalizedMinutes =
+    ((totalMinutes % 1440) + 1440) %
+    1440
+
+  const hour24 =
+    Math.floor(
+      normalizedMinutes / 60,
+    )
+
+  const minute =
+    normalizedMinutes % 60
+
+  const hour12 =
+    hour24 % 12 === 0
+      ? 12
+      : hour24 % 12
+
+  const meridiem =
+    hour24 < 12
+      ? documentStyle
+        ? 'a.m.'
+        : 'AM'
+      : documentStyle
+        ? 'p.m.'
+        : 'PM'
+
+  return (
+    `${hour12}:` +
+    `${String(minute).padStart(
+      2,
+      '0',
+    )} ${meridiem}`
+  )
+}
+
+function getFacilitatorTimeZoneAbbreviation(
+  meetingDate: string,
+  timeZone: 'America/Los_Angeles' |
+    'America/New_York',
+): string {
+  const sampleDate =
+    new Date(
+      `${meetingDate}T20:00:00Z`,
+    )
+
+  if (
+    Number.isNaN(
+      sampleDate.getTime(),
+    )
+  ) {
+    return timeZone ===
+      'America/Los_Angeles'
+      ? 'PT'
+      : 'ET'
+  }
+
+  const timeZonePart =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        timeZone,
+        timeZoneName: 'short',
+      },
+    )
+      .formatToParts(sampleDate)
+      .find(
+        (part) =>
+          part.type ===
+          'timeZoneName',
+      )
+
+  return (
+    timeZonePart?.value ??
+    (
+      timeZone ===
+        'America/Los_Angeles'
+        ? 'PT'
+        : 'ET'
+    )
+  )
+}
+
+function getFacilitatorAgendaFileName(
+  meeting: CohortMeetingRecord,
+): string {
+  const facilitatorName =
+    meeting.facilitator.trim().length > 0
+      ? meeting.facilitator.trim()
+      : 'TBD'
+
+  return (
+    `Cohort Agenda - ${meeting.term} - ` +
+    `${getFacilitatorMeetingNumberLabel(
+      meeting.meetingNumber,
+    )} - ` +
+    `${facilitatorName} - ` +
+    `${formatFacilitatorAgendaDateForFileName(
+      meeting.date,
+    )}.docx`
+  )
+}
+
+function getFacilitatorAgendaItemTitle(
+  agendaItem: string,
+): string {
+  const normalizedTitle =
+    agendaItem.trim().replace(
+      /:\s*$/,
+      '',
+    )
+
+  return (
+    normalizedTitle.length > 0
+      ? normalizedTitle
+      : 'Agenda Item'
+  )
+}
+
+function getFacilitatorDurationLabel(
+  durationMinutes: number,
+): string {
+  const normalizedDuration =
+    Math.max(
+      0,
+      Math.round(durationMinutes),
+    )
+
+  return (
+    `${normalizedDuration} ` +
+    (
+      normalizedDuration === 1
+        ? 'min'
+        : 'mins'
+    )
+  )
+}
+
+function createFacilitatorAgendaTableBorders() {
+  const border = {
+    style: BorderStyle.SINGLE,
+    size: 4,
+    color: '808080',
+  } as const
+
+  return {
+    top: border,
+    bottom: border,
+    left: border,
+    right: border,
+    insideHorizontal: border,
+    insideVertical: border,
+  }
+}
+
+function createFacilitatorAgendaTableCell(
+  children: readonly Paragraph[],
+  widthPercent: number,
+): TableCell {
+  return new TableCell({
+    children: [...children],
+    width: {
+      size: widthPercent,
+      type: WidthType.PERCENTAGE,
+    },
+    margins: {
+      top: 70,
+      right: 80,
+      bottom: 70,
+      left: 80,
+    },
+  })
+}
+
+function createFacilitatorAgendaTable(
+  agendaItems:
+    readonly FacilitatorAgendaItemRecord[],
+): Table {
+  const agendaRows =
+    agendaItems.map(
+      (item, itemIndex) => {
+        const pacificMinutes =
+          FACILITATOR_MEETING_START_MINUTES +
+          agendaItems
+            .slice(0, itemIndex)
+            .reduce(
+              (total, agendaItem) =>
+                total +
+                agendaItem.durationMinutes,
+              0,
+            )
+
+        const easternMinutes =
+          pacificMinutes +
+          FACILITATOR_EASTERN_OFFSET_MINUTES
+
+        const itemTitle =
+          getFacilitatorAgendaItemTitle(
+            item.agendaItem,
+          )
+
+        const presenter =
+          item.name.trim()
+
+        const presenterText =
+          presenter.length > 0
+            ? ` ${presenter}`
+            : ''
+
+        return new TableRow({
+          children: [
+            createFacilitatorAgendaTableCell(
+              [
+                new Paragraph({
+                  alignment:
+                    AlignmentType.CENTER,
+                  spacing: {
+                    before: 0,
+                    after: 0,
+                  },
+                  children: [
+                    new TextRun({
+                      text:
+                        formatFacilitatorClockTime(
+                          pacificMinutes,
+                          true,
+                        ),
+                      bold: true,
+                      font:
+                        'Times New Roman',
+                      size: 22,
+                    }),
+                  ],
+                }),
+              ],
+              18,
+            ),
+            createFacilitatorAgendaTableCell(
+              [
+                new Paragraph({
+                  spacing: {
+                    before: 0,
+                    after: 0,
+                  },
+                  children: [
+                    new TextRun({
+                      text: presenterText
+                        ? `${itemTitle}:`
+                        : itemTitle,
+                      bold: true,
+                      font:
+                        'Times New Roman',
+                      size: 22,
+                    }),
+                    new TextRun({
+                      text:
+                        `${presenterText} (` +
+                        `${getFacilitatorDurationLabel(
+                          item.durationMinutes,
+                        )})`,
+                      font:
+                        'Times New Roman',
+                      size: 22,
+                    }),
+                  ],
+                }),
+              ],
+              64,
+            ),
+            createFacilitatorAgendaTableCell(
+              [
+                new Paragraph({
+                  alignment:
+                    AlignmentType.CENTER,
+                  spacing: {
+                    before: 0,
+                    after: 0,
+                  },
+                  children: [
+                    new TextRun({
+                      text:
+                        formatFacilitatorClockTime(
+                          easternMinutes,
+                          true,
+                        ),
+                      bold: true,
+                      font:
+                        'Times New Roman',
+                      size: 22,
+                    }),
+                  ],
+                }),
+              ],
+              18,
+            ),
+          ],
+        })
+      },
+    )
+
+  const meetingEndPacific =
+    FACILITATOR_MEETING_START_MINUTES +
+    FACILITATOR_MEETING_LENGTH_MINUTES
+
+  const meetingEndEastern =
+    meetingEndPacific +
+    FACILITATOR_EASTERN_OFFSET_MINUTES
+
+  agendaRows.push(
+    new TableRow({
+      children: [
+        createFacilitatorAgendaTableCell(
+          [
+            new Paragraph({
+              alignment:
+                AlignmentType.CENTER,
+              spacing: {
+                before: 0,
+                after: 0,
+              },
+              children: [
+                new TextRun({
+                  text:
+                    formatFacilitatorClockTime(
+                      meetingEndPacific,
+                      true,
+                    ),
+                  bold: true,
+                  font: 'Times New Roman',
+                  size: 22,
+                }),
+              ],
+            }),
+          ],
+          18,
+        ),
+        createFacilitatorAgendaTableCell(
+          [
+            new Paragraph({
+              spacing: {
+                before: 0,
+                after: 0,
+              },
+              children: [
+                new TextRun({
+                  text:
+                    'Closing Cohort Meeting',
+                  bold: true,
+                  font: 'Times New Roman',
+                  size: 22,
+                }),
+              ],
+            }),
+          ],
+          64,
+        ),
+        createFacilitatorAgendaTableCell(
+          [
+            new Paragraph({
+              alignment:
+                AlignmentType.CENTER,
+              spacing: {
+                before: 0,
+                after: 0,
+              },
+              children: [
+                new TextRun({
+                  text:
+                    formatFacilitatorClockTime(
+                      meetingEndEastern,
+                      true,
+                    ),
+                  bold: true,
+                  font: 'Times New Roman',
+                  size: 22,
+                }),
+              ],
+            }),
+          ],
+          18,
+        ),
+      ],
+    }),
+  )
+
+  return new Table({
+    width: {
+      size: 100,
+      type: WidthType.PERCENTAGE,
+    },
+    borders:
+      createFacilitatorAgendaTableBorders(),
+    rows: [
+      new TableRow({
+        tableHeader: true,
+        children: [
+          createFacilitatorAgendaTableCell(
+            [
+              new Paragraph({
+                alignment:
+                  AlignmentType.CENTER,
+                spacing: {
+                  before: 0,
+                  after: 0,
+                },
+                children: [
+                  new TextRun({
+                    text: 'Pacific Time',
+                    bold: true,
+                    italics: true,
+                    font:
+                      'Times New Roman',
+                    size: 22,
+                  }),
+                ],
+              }),
+            ],
+            18,
+          ),
+          createFacilitatorAgendaTableCell(
+            [
+              new Paragraph({
+                alignment:
+                  AlignmentType.CENTER,
+                spacing: {
+                  before: 0,
+                  after: 0,
+                },
+                children: [
+                  new TextRun({
+                    text: 'Agenda Item',
+                    bold: true,
+                    italics: true,
+                    font:
+                      'Times New Roman',
+                    size: 22,
+                  }),
+                ],
+              }),
+            ],
+            64,
+          ),
+          createFacilitatorAgendaTableCell(
+            [
+              new Paragraph({
+                alignment:
+                  AlignmentType.CENTER,
+                spacing: {
+                  before: 0,
+                  after: 0,
+                },
+                children: [
+                  new TextRun({
+                    text: 'Eastern Time',
+                    bold: true,
+                    italics: true,
+                    font:
+                      'Times New Roman',
+                    size: 22,
+                  }),
+                ],
+              }),
+            ],
+            18,
+          ),
+        ],
+      }),
+      ...agendaRows,
+    ],
+  })
+}
+
+function createFacilitatorRoleTable(
+  meeting: CohortMeetingRecord,
+): Table {
+  const roleRows = [
+    ['Facilitator', meeting.facilitator],
+    [
+      'Community Builder',
+      meeting.communityBuilder,
+    ],
+    ['Timekeeper', meeting.timeKeeper],
+    [
+      'Recorder (Note Taker)',
+      meeting.recorder,
+    ],
+    [
+      'Process Observer',
+      meeting.processObserver,
+    ],
+  ] as const
+
+  return new Table({
+    width: {
+      size: 72,
+      type: WidthType.PERCENTAGE,
+    },
+    borders: {
+      top: {
+        style: BorderStyle.NONE,
+        size: 0,
+        color: 'FFFFFF',
+      },
+      bottom: {
+        style: BorderStyle.NONE,
+        size: 0,
+        color: 'FFFFFF',
+      },
+      left: {
+        style: BorderStyle.NONE,
+        size: 0,
+        color: 'FFFFFF',
+      },
+      right: {
+        style: BorderStyle.NONE,
+        size: 0,
+        color: 'FFFFFF',
+      },
+      insideHorizontal: {
+        style: BorderStyle.NONE,
+        size: 0,
+        color: 'FFFFFF',
+      },
+      insideVertical: {
+        style: BorderStyle.NONE,
+        size: 0,
+        color: 'FFFFFF',
+      },
+    },
+    rows: roleRows.map(
+      ([role, name]) =>
+        new TableRow({
+          children: [
+            createFacilitatorAgendaTableCell(
+              [
+                new Paragraph({
+                  spacing: {
+                    before: 0,
+                    after: 0,
+                  },
+                  children: [
+                    new TextRun({
+                      text: role,
+                      font:
+                        'Times New Roman',
+                      size: 24,
+                    }),
+                  ],
+                }),
+              ],
+              43,
+            ),
+            createFacilitatorAgendaTableCell(
+              [
+                new Paragraph({
+                  spacing: {
+                    before: 0,
+                    after: 0,
+                  },
+                  children: [
+                    new TextRun({
+                      text:
+                        name.trim()
+                          .length > 0
+                          ? name.trim()
+                          : 'TBD',
+                      font:
+                        'Times New Roman',
+                      size: 24,
+                    }),
+                  ],
+                }),
+              ],
+              57,
+            ),
+          ],
+        }),
+    ),
+  })
+}
+
+function createFacilitatorHousekeepingParagraphs(
+  housekeepingNotes: string,
+): readonly Paragraph[] {
+  const lines =
+    housekeepingNotes
+      .split('\n')
+      .map(
+        (line) => line.trim(),
+      )
+      .filter(
+        (line) =>
+          line.length > 0,
+      )
+
+  return lines.map(
+    (line, lineIndex) =>
+      new Paragraph({
+        spacing: {
+          after: 100,
+        },
+        children: [
+          new TextRun({
+            text:
+              `${lineIndex + 1}. ${line}`,
+            font: 'Times New Roman',
+            size: 24,
+          }),
+        ],
+      }),
+  )
+}
+
+function createFacilitatorDetailParagraphs(
+  details: string,
+): readonly Paragraph[] {
+  const detailLines =
+    details
+      .split('\n')
+      .map(
+        (line) => line.trim(),
+      )
+      .filter(
+        (line) =>
+          line.length > 0,
+      )
+
+  return detailLines.map(
+    (line) => {
+      const isBullet =
+        line.startsWith('•') ||
+        line.startsWith('-')
+
+      const normalizedLine =
+        isBullet
+          ? line.replace(
+            /^[•-]\s*/,
+            '',
+          )
+          : line
+
+      const colonIndex =
+        normalizedLine.indexOf(':')
+
+      const shouldBoldLabel =
+        colonIndex > 0 &&
+        colonIndex <= 48
+
+      const children =
+        shouldBoldLabel
+          ? [
+            new TextRun({
+              text:
+                `${normalizedLine.slice(
+                  0,
+                  colonIndex + 1,
+                )}`,
+              bold: true,
+              font:
+                'Times New Roman',
+              size: 24,
+            }),
+            new TextRun({
+              text:
+                normalizedLine.slice(
+                  colonIndex + 1,
+                ),
+              font:
+                'Times New Roman',
+              size: 24,
+            }),
+          ]
+          : [
+            new TextRun({
+              text: normalizedLine,
+              font:
+                'Times New Roman',
+              size: 24,
+            }),
+          ]
+
+      if (isBullet) {
+        return new Paragraph({
+          indent: {
+            left: 360,
+            hanging: 180,
+          },
+          spacing: {
+            after: 80,
+          },
+          children: [
+            new TextRun({
+              text: '• ',
+              font:
+                'Times New Roman',
+              size: 24,
+            }),
+            ...children,
+          ],
+        })
+      }
+
+      return new Paragraph({
+        spacing: {
+          after: 100,
+        },
+        children,
+      })
+    },
+  )
+}
+
+async function loadFacilitatorAgendaHeaderImage():
+  Promise<ArrayBuffer> {
+  if (
+    facilitatorAgendaHeaderImage !==
+    null
+  ) {
+    return facilitatorAgendaHeaderImage
+  }
+
+  const response =
+    await fetch(
+      `${import.meta.env.BASE_URL}` +
+      FACILITATOR_AGENDA_HEADER_FILE,
+    )
+
+  if (!response.ok) {
+    throw new Error(
+      'Unable to load the Facilitator Planner agenda header image.',
+    )
+  }
+
+  const imageData =
+    await response.arrayBuffer()
+
+  facilitatorAgendaHeaderImage =
+    imageData
+
+  return imageData
+}
+
+function createFacilitatorAgendaDocument(
+  meeting: CohortMeetingRecord,
+  agendaItems:
+    readonly FacilitatorAgendaItemRecord[],
+  housekeepingNotes: string,
+  agendaHeaderImage: ArrayBuffer,
+): Document {
+  const meetingEndPacific =
+    FACILITATOR_MEETING_START_MINUTES +
+    FACILITATOR_MEETING_LENGTH_MINUTES
+
+  const meetingEndEastern =
+    meetingEndPacific +
+    FACILITATOR_EASTERN_OFFSET_MINUTES
+
+  const pacificZone =
+    getFacilitatorTimeZoneAbbreviation(
+      meeting.date,
+      'America/Los_Angeles',
+    )
+
+  const easternZone =
+    getFacilitatorTimeZoneAbbreviation(
+      meeting.date,
+      'America/New_York',
+    )
+
+  const agendaDetailSections =
+    agendaItems.flatMap(
+      (agendaItem, itemIndex) => {
+        if (
+          agendaItem.details.trim()
+            .length === 0
+        ) {
+          return []
+        }
+
+        const pacificMinutes =
+          FACILITATOR_MEETING_START_MINUTES +
+          agendaItems
+            .slice(0, itemIndex)
+            .reduce(
+              (total, item) =>
+                total +
+                item.durationMinutes,
+              0,
+            )
+
+        const easternMinutes =
+          pacificMinutes +
+          FACILITATOR_EASTERN_OFFSET_MINUTES
+
+        return [
+          new Paragraph({
+            spacing: {
+              before: 280,
+              after: 80,
+            },
+            children: [
+              new TextRun({
+                text:
+                  `${formatFacilitatorClockTime(
+                    pacificMinutes,
+                    true,
+                  )} (${pacificZone}) / ` +
+                  `${formatFacilitatorClockTime(
+                    easternMinutes,
+                    true,
+                  )} (${easternZone})`,
+                italics: true,
+                color: '808080',
+                font:
+                  'Times New Roman',
+                size: 22,
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: {
+              after: 120,
+            },
+            children: [
+              new TextRun({
+                text:
+                  getFacilitatorAgendaItemTitle(
+                    agendaItem.agendaItem,
+                  ).toUpperCase(),
+                bold: true,
+                underline: {
+                  type:
+                    UnderlineType.SINGLE,
+                },
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          ...createFacilitatorDetailParagraphs(
+            agendaItem.details,
+          ),
+        ]
+      },
+    )
+
+  return new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: 600,
+              right: 650,
+              bottom: 600,
+              left: 650,
+            },
+          },
+        },
+        children: [
+          new Paragraph({
+            alignment:
+              AlignmentType.CENTER,
+            spacing: {
+              after: 70,
+            },
+            children: [
+              new ImageRun({
+                data:
+                  agendaHeaderImage,
+                type: 'jpg',
+                transformation: {
+                  width: 680,
+                  height: 102,
+                },
+              }),
+            ],
+          }),
+          new Paragraph({
+            alignment:
+              AlignmentType.CENTER,
+            spacing: {
+              after: 60,
+            },
+            children: [
+              new TextRun({
+                text:
+                  'Dr. Osborne’s Beta Nu Cohort',
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            alignment:
+              AlignmentType.CENTER,
+            spacing: {
+              after: 60,
+            },
+            children: [
+              new TextRun({
+                text:
+                  formatFacilitatorMeetingDate(
+                    meeting.date,
+                  ),
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            alignment:
+              AlignmentType.CENTER,
+            spacing: {
+              after: 60,
+            },
+            children: [
+              new TextRun({
+                text:
+                  `${formatFacilitatorClockTime(
+                    FACILITATOR_MEETING_START_MINUTES,
+                    true,
+                  )} – ` +
+                  `${formatFacilitatorClockTime(
+                    meetingEndPacific,
+                    true,
+                  )} (Pacific) / ` +
+                  `${formatFacilitatorClockTime(
+                    FACILITATOR_MEETING_START_MINUTES +
+                    FACILITATOR_EASTERN_OFFSET_MINUTES,
+                    true,
+                  )} - ` +
+                  `${formatFacilitatorClockTime(
+                    meetingEndEastern,
+                    true,
+                  )} (Eastern)`,
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            alignment:
+              AlignmentType.CENTER,
+            spacing: {
+              after: 120,
+            },
+            children: [
+              new TextRun({
+                text: 'Zoom Meeting',
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+              new TextRun({
+                text:
+                  ` - ${FACILITATOR_ZOOM_URL}`,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: {
+              before: 40,
+              after: 20,
+            },
+            children: [
+              new TextRun({
+                text: 'ROLES:',
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          createFacilitatorRoleTable(
+            meeting,
+          ),
+          new Paragraph({
+            spacing: {
+              after: 80,
+            },
+            children: [],
+          }),
+          createFacilitatorAgendaTable(
+            agendaItems,
+          ),
+          new Paragraph({
+            pageBreakBefore: true,
+            spacing: {
+              after: 120,
+            },
+            children: [
+              new TextRun({
+                text:
+                  'COHORT HOUSEKEEPING',
+                bold: true,
+                underline: {
+                  type:
+                    UnderlineType.SINGLE,
+                },
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          ...createFacilitatorHousekeepingParagraphs(
+            housekeepingNotes,
+          ),
+          new Paragraph({
+            spacing: {
+              before: 180,
+              after: 100,
+            },
+            children: [
+              new TextRun({
+                text: 'VISION & VALUES',
+                bold: true,
+                underline: {
+                  type:
+                    UnderlineType.SINGLE,
+                },
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: {
+              after: 80,
+            },
+            children: [
+              new TextRun({
+                text: 'Vision',
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: {
+              after: 120,
+            },
+            children: [
+              new TextRun({
+                text:
+                  `“${cohortVision}”`,
+                italics: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: {
+              after: 80,
+            },
+            children: [
+              new TextRun({
+                text: 'Values',
+                bold: true,
+                font:
+                  'Times New Roman',
+                size: 24,
+              }),
+            ],
+          }),
+          ...facilitatorAgendaValues.map(
+            (value) =>
+              new Paragraph({
+                indent: {
+                  left: 360,
+                  hanging: 180,
+                },
+                spacing: {
+                  after: 70,
+                },
+                children: [
+                  new TextRun({
+                    text: '• ',
+                    font:
+                      'Times New Roman',
+                    size: 24,
+                  }),
+                  new TextRun({
+                    text: value.name,
+                    bold: true,
+                    font:
+                      'Times New Roman',
+                    size: 24,
+                  }),
+                  new TextRun({
+                    text:
+                      ` - ${value.description}`,
+                    font:
+                      'Times New Roman',
+                    size: 24,
+                  }),
+                ],
+              }),
+          ),
+          ...agendaDetailSections,
+        ],
+      },
+    ],
+  })
+}
+
+async function createFacilitatorAgendaBlob(
+  meeting: CohortMeetingRecord,
+  agendaItems:
+    readonly FacilitatorAgendaItemRecord[],
+  housekeepingNotes: string,
+): Promise<Blob> {
+  const agendaHeaderImage =
+    await loadFacilitatorAgendaHeaderImage()
+
+  return Packer.toBlob(
+    createFacilitatorAgendaDocument(
+      meeting,
+      agendaItems,
+      housekeepingNotes,
+      agendaHeaderImage,
+    ),
+  )
+}
+
+function downloadFacilitatorAgendaBlob(
+  blob: Blob,
+  fileName: string,
+): void {
+  const objectUrl =
+    window.URL.createObjectURL(blob)
+
+  const downloadLink =
+    document.createElement('a')
+
+  downloadLink.href = objectUrl
+  downloadLink.download = fileName
+
+  document.body.append(
+    downloadLink,
+  )
+
+  downloadLink.click()
+  downloadLink.remove()
+
+  window.URL.revokeObjectURL(
+    objectUrl,
+  )
+}
+
+function FacilitatorPlannerPage({
+  meetings,
+}: FacilitatorPlannerPageProps) {
+  const [savedAgendas, setSavedAgendas] =
+    useState<
+      readonly FacilitatorAgendaRecord[]
+    >(
+      readStoredFacilitatorAgendas,
+    )
+
+  const initialMeetingId =
+    getDefaultFacilitatorMeetingId(
+      meetings,
+    )
+
+  const initialMeeting =
+    meetings.find(
+      (meeting) =>
+        meeting.id ===
+        initialMeetingId,
+    )
+
+  const initialSavedAgenda =
+    savedAgendas.find(
+      (agenda) =>
+        agenda.meetingId ===
+        initialMeetingId,
+    )
+
+  const [selectedMeetingId, setSelectedMeetingId] =
+    useState(initialMeetingId)
+
+  const [agendaStatus, setAgendaStatus] =
+    useState<FacilitatorAgendaStatus>(
+      initialSavedAgenda?.status ??
+      'Draft',
+    )
+
+  const [agendaItems, setAgendaItems] =
+    useState<
+      readonly FacilitatorAgendaItemRecord[]
+    >(
+      () =>
+        initialSavedAgenda?.agendaItems ??
+        (
+          initialMeeting ===
+            undefined
+            ? []
+            : createDefaultFacilitatorAgendaItems(
+              initialMeeting,
+            )
+        ),
+    )
+
+  const [
+    housekeepingNotes,
+    setHousekeepingNotes,
+  ] = useState(
+    () =>
+      initialSavedAgenda?.housekeepingNotes ??
+      (
+        initialMeeting ===
+          undefined
+          ? ''
+          : createDefaultFacilitatorHousekeepingNotes(
+            initialMeeting,
+          )
+      ),
+  )
+
+  const [
+    selectedAgendaItemId,
+    setSelectedAgendaItemId,
+  ] = useState<string | null>(
+    agendaItems[0]?.id ?? null,
+  )
+
+  const [previewMessage, setPreviewMessage] =
+    useState('Preparing Word preview.')
+
+  const [actionMessage, setActionMessage] =
+    useState('')
+
+  const previewRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
+
+  const selectedMeeting =
+    meetings.find(
+      (meeting) =>
+        meeting.id ===
+        selectedMeetingId,
+    )
+
+  const selectedAgendaItem =
+    agendaItems.find(
+      (agendaItem) =>
+        agendaItem.id ===
+        selectedAgendaItemId,
+    )
+
+  const plannedMinutes =
+    agendaItems.reduce(
+      (total, agendaItem) =>
+        total +
+        agendaItem.durationMinutes,
+      0,
+    )
+
+  const remainingMinutes =
+    FACILITATOR_MEETING_LENGTH_MINUTES -
+    plannedMinutes
+
+  const plannedPercent =
+    Math.min(
+      100,
+      Math.max(
+        0,
+        (
+          plannedMinutes /
+          FACILITATOR_MEETING_LENGTH_MINUTES
+        ) * 100,
+      ),
+    )
+
+  const plannedFinishMinutes =
+    FACILITATOR_MEETING_START_MINUTES +
+    plannedMinutes
+
+  const savedAgendaRows =
+    savedAgendas.flatMap(
+      (agenda) => {
+        const meeting =
+          meetings.find(
+            (meetingRecord) =>
+              meetingRecord.id ===
+              agenda.meetingId,
+          )
+
+        if (
+          meeting === undefined
+        ) {
+          return []
+        }
+
+        return [
+          {
+            agenda,
+            meeting,
+          },
+        ]
+      },
+    )
+      .sort(
+        (
+          firstRecord,
+          secondRecord,
+        ) =>
+          secondRecord.meeting.date
+            .localeCompare(
+              firstRecord.meeting.date,
+            ),
+      )
+
+  useEffect(() => {
+    const previewElement =
+      previewRef.current
+
+    if (
+      previewElement === null ||
+      selectedMeeting === undefined
+    ) {
+      return undefined
+    }
+
+    let isCancelled = false
+
+    const timeoutId =
+      window.setTimeout(() => {
+        setPreviewMessage(
+          'Rendering Word preview.',
+        )
+
+        void createFacilitatorAgendaBlob(
+          selectedMeeting,
+          agendaItems,
+          housekeepingNotes,
+        )
+          .then(
+            async (blob) => {
+              if (isCancelled) {
+                return
+              }
+
+              previewElement.replaceChildren()
+
+              await renderAsync(
+                blob,
+                previewElement,
+                undefined,
+                {
+                  breakPages: true,
+                  ignoreWidth: false,
+                  ignoreHeight: false,
+                  ignoreFonts: false,
+                },
+              )
+
+              if (!isCancelled) {
+                setPreviewMessage('')
+              }
+            },
+          )
+          .catch(
+            (error: unknown) => {
+              if (isCancelled) {
+                return
+              }
+
+              setPreviewMessage(
+                error instanceof Error
+                  ? error.message
+                  : 'Unable to render the Word preview.',
+              )
+            },
+          )
+      }, 450)
+
+    return () => {
+      isCancelled = true
+      window.clearTimeout(
+        timeoutId,
+      )
+    }
+  }, [
+    agendaItems,
+    housekeepingNotes,
+    selectedMeeting,
+  ])
+
+  function loadMeetingAgenda(
+    meetingId: string,
+    preferredSavedAgenda?:
+      FacilitatorAgendaRecord,
+  ): void {
+    const meeting =
+      meetings.find(
+        (meetingRecord) =>
+          meetingRecord.id ===
+          meetingId,
+      )
+
+    if (meeting === undefined) {
+      return
+    }
+
+    const savedAgenda =
+      preferredSavedAgenda ??
+      savedAgendas.find(
+        (agenda) =>
+          agenda.meetingId ===
+          meetingId,
+      )
+
+    const nextItems =
+      savedAgenda?.agendaItems ??
+      createDefaultFacilitatorAgendaItems(
+        meeting,
+      )
+
+    setSelectedMeetingId(
+      meetingId,
+    )
+
+    setAgendaStatus(
+      savedAgenda?.status ??
+      'Draft',
+    )
+
+    setAgendaItems(
+      nextItems,
+    )
+
+    setHousekeepingNotes(
+      savedAgenda?.housekeepingNotes ??
+      createDefaultFacilitatorHousekeepingNotes(
+        meeting,
+      ),
+    )
+
+    setSelectedAgendaItemId(
+      nextItems[0]?.id ?? null,
+    )
+
+    setActionMessage('')
+  }
+
+  function updateAgendaItemText(
+    agendaItemId: string,
+    field:
+      | 'agendaItem'
+      | 'name'
+      | 'details',
+    value: string,
+  ): void {
+    setAgendaItems(
+      (currentItems) =>
+        currentItems.map(
+          (agendaItem) =>
+            agendaItem.id ===
+              agendaItemId
+              ? {
+                ...agendaItem,
+                [field]: value,
+              }
+              : agendaItem,
+        ),
+    )
+  }
+
+  function updateAgendaItemDuration(
+    agendaItemId: string,
+    value: string,
+  ): void {
+    const parsedValue =
+      Number(value)
+
+    const durationMinutes =
+      Number.isFinite(
+        parsedValue,
+      )
+        ? Math.max(
+          0,
+          Math.round(
+            parsedValue,
+          ),
+        )
+        : 0
+
+    setAgendaItems(
+      (currentItems) =>
+        currentItems.map(
+          (agendaItem) =>
+            agendaItem.id ===
+              agendaItemId
+              ? {
+                ...agendaItem,
+                durationMinutes,
+              }
+              : agendaItem,
+        ),
+    )
+  }
+
+  function addAgendaItem(): void {
+    const newAgendaItem:
+      FacilitatorAgendaItemRecord = {
+      id: crypto.randomUUID(),
+      agendaItem: '',
+      name: '',
+      durationMinutes: 15,
+      details: '',
+      isDefault: false,
+    }
+
+    setAgendaItems(
+      (currentItems) => [
+        ...currentItems,
+        newAgendaItem,
+      ],
+    )
+
+    setSelectedAgendaItemId(
+      newAgendaItem.id,
+    )
+  }
+
+  function deleteSelectedAgendaItem(): void {
+    if (
+      selectedAgendaItem ===
+        undefined ||
+      selectedAgendaItem.isDefault
+    ) {
+      return
+    }
+
+    const selectedIndex =
+      agendaItems.findIndex(
+        (agendaItem) =>
+          agendaItem.id ===
+          selectedAgendaItem.id,
+      )
+
+    const nextItems =
+      agendaItems.filter(
+        (agendaItem) =>
+          agendaItem.id !==
+          selectedAgendaItem.id,
+      )
+
+    setAgendaItems(
+      nextItems,
+    )
+
+    setSelectedAgendaItemId(
+      nextItems[
+        Math.max(
+          0,
+          selectedIndex - 1,
+        )
+      ]?.id ??
+      nextItems[0]?.id ??
+      null,
+    )
+  }
+
+  function saveAgenda(): void {
+    if (
+      selectedMeeting === undefined
+    ) {
+      return
+    }
+
+    const savedAgenda:
+      FacilitatorAgendaRecord = {
+      id:
+        `facilitator-agenda-${selectedMeeting.id}`,
+      meetingId:
+        selectedMeeting.id,
+      status: agendaStatus,
+      savedAt:
+        new Date().toISOString(),
+      housekeepingNotes,
+      agendaItems,
+    }
+
+    const nextSavedAgendas =
+      savedAgendas.some(
+        (agenda) =>
+          agenda.meetingId ===
+          selectedMeeting.id,
+      )
+        ? savedAgendas.map(
+          (agenda) =>
+            agenda.meetingId ===
+              selectedMeeting.id
+              ? savedAgenda
+              : agenda,
+        )
+        : [
+          ...savedAgendas,
+          savedAgenda,
+        ]
+
+    try {
+      window.localStorage.setItem(
+        FACILITATOR_AGENDAS_STORAGE_KEY,
+        JSON.stringify(
+          nextSavedAgendas,
+        ),
+      )
+
+      setSavedAgendas(
+        nextSavedAgendas,
+      )
+
+      setActionMessage(
+        `${agendaStatus} agenda saved.`,
+      )
+    } catch {
+      setActionMessage(
+        'Unable to save this agenda in the browser.',
+      )
+    }
+  }
+
+  async function generateCurrentAgenda():
+    Promise<void> {
+    if (
+      selectedMeeting === undefined
+    ) {
+      return
+    }
+
+    setActionMessage(
+      'Generating Word agenda.',
+    )
+
+    try {
+      const blob =
+        await createFacilitatorAgendaBlob(
+          selectedMeeting,
+          agendaItems,
+          housekeepingNotes,
+        )
+
+      downloadFacilitatorAgendaBlob(
+        blob,
+        getFacilitatorAgendaFileName(
+          selectedMeeting,
+        ),
+      )
+
+      setActionMessage(
+        'Word agenda generated.',
+      )
+    } catch (
+      error: unknown
+    ) {
+      setActionMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to generate the Word agenda.',
+      )
+    }
+  }
+
+  async function generateSavedAgenda(
+    savedAgenda:
+      FacilitatorAgendaRecord,
+    meeting: CohortMeetingRecord,
+  ): Promise<void> {
+    setActionMessage(
+      'Generating saved Word agenda.',
+    )
+
+    try {
+      const blob =
+        await createFacilitatorAgendaBlob(
+          meeting,
+          savedAgenda.agendaItems,
+          savedAgenda.housekeepingNotes,
+        )
+
+      downloadFacilitatorAgendaBlob(
+        blob,
+        getFacilitatorAgendaFileName(
+          meeting,
+        ),
+      )
+
+      setActionMessage(
+        'Saved Word agenda generated.',
+      )
+    } catch (
+      error: unknown
+    ) {
+      setActionMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to generate the saved Word agenda.',
+      )
+    }
+  }
+
+  if (
+    selectedMeeting === undefined
+  ) {
+    return (
+      <section className="page-shell">
+        <header className="dashboard-page-heading cohort-contacts-page-heading">
+          <h1>Facilitator Planner</h1>
+        </header>
+
+        <section className="facilitator-planner-empty-state">
+          No cohort meetings are available.
+        </section>
+      </section>
+    )
+  }
+
+  const pacificZone =
+    getFacilitatorTimeZoneAbbreviation(
+      selectedMeeting.date,
+      'America/Los_Angeles',
+    )
+
+  const easternZone =
+    getFacilitatorTimeZoneAbbreviation(
+      selectedMeeting.date,
+      'America/New_York',
+    )
+
+  return (
+    <section className="page-shell facilitator-planner-page">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Facilitator Planner</h1>
+      </header>
+
+      <section className="facilitator-planner-meeting-panel">
+        <div className="facilitator-planner-meeting-select">
+          <label>
+            <span>Meeting</span>
+
+            <select
+              value={selectedMeetingId}
+              onChange={(event) =>
+                loadMeetingAgenda(
+                  event.target.value,
+                )
+              }
+            >
+              {meetings.map(
+                (meeting) => (
+                  <option
+                    key={meeting.id}
+                    value={meeting.id}
+                  >
+                    {meeting.term}
+                    {' | '}
+                    {getFacilitatorMeetingNumberLabel(
+                      meeting.meetingNumber,
+                    )}
+                    {' | '}
+                    {formatFacilitatorMeetingDate(
+                      meeting.date,
+                    )}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+
+          <label>
+            <span>Status</span>
+
+            <select
+              value={agendaStatus}
+              onChange={(event) =>
+                setAgendaStatus(
+                  event.target.value ===
+                    'Final'
+                    ? 'Final'
+                    : 'Draft',
+                )
+              }
+            >
+              <option value="Draft">
+                Draft
+              </option>
+
+              <option value="Final">
+                Final
+              </option>
+            </select>
+          </label>
+        </div>
+
+        <div className="facilitator-planner-meeting-summary">
+          <div>
+            <span>Term</span>
+            <strong>
+              {selectedMeeting.term}
+            </strong>
+          </div>
+
+          <div>
+            <span>Meeting</span>
+            <strong>
+              {getFacilitatorMeetingNumberLabel(
+                selectedMeeting.meetingNumber,
+              )}
+            </strong>
+          </div>
+
+          <div>
+            <span>Date</span>
+            <strong>
+              {formatFacilitatorMeetingDate(
+                selectedMeeting.date,
+              )}
+            </strong>
+          </div>
+
+          <div>
+            <span>Pacific</span>
+            <strong>
+              {formatFacilitatorClockTime(
+                FACILITATOR_MEETING_START_MINUTES,
+              )}
+              {' - '}
+              {formatFacilitatorClockTime(
+                FACILITATOR_MEETING_START_MINUTES +
+                FACILITATOR_MEETING_LENGTH_MINUTES,
+              )}
+              {' '}
+              {pacificZone}
+            </strong>
+          </div>
+
+          <div>
+            <span>Eastern</span>
+            <strong>
+              {formatFacilitatorClockTime(
+                FACILITATOR_MEETING_START_MINUTES +
+                FACILITATOR_EASTERN_OFFSET_MINUTES,
+              )}
+              {' - '}
+              {formatFacilitatorClockTime(
+                FACILITATOR_MEETING_START_MINUTES +
+                FACILITATOR_MEETING_LENGTH_MINUTES +
+                FACILITATOR_EASTERN_OFFSET_MINUTES,
+              )}
+              {' '}
+              {easternZone}
+            </strong>
+          </div>
+        </div>
+
+        <div className="facilitator-planner-role-grid">
+          <div>
+            <span>Facilitator</span>
+            <strong>
+              {selectedMeeting.facilitator ||
+                'TBD'}
+            </strong>
+          </div>
+
+          <div>
+            <span>Community Builder</span>
+            <strong>
+              {selectedMeeting.communityBuilder ||
+                'TBD'}
+            </strong>
+          </div>
+
+          <div>
+            <span>Recorder</span>
+            <strong>
+              {selectedMeeting.recorder ||
+                'TBD'}
+            </strong>
+          </div>
+
+          <div>
+            <span>Timekeeper</span>
+            <strong>
+              {selectedMeeting.timeKeeper ||
+                'TBD'}
+            </strong>
+          </div>
+
+          <div>
+            <span>Process Observer</span>
+            <strong>
+              {selectedMeeting.processObserver ||
+                'TBD'}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <div className="facilitator-planner-workspace">
+        <section className="facilitator-planner-editor-panel">
+          <div className="facilitator-planner-time-cards">
+            <div>
+              <span>Meeting Length</span>
+              <strong>4 hrs</strong>
+            </div>
+
+            <div>
+              <span>Planned</span>
+              <strong>
+                {Math.floor(
+                  plannedMinutes / 60,
+                ) > 0
+                  ? `${Math.floor(
+                    plannedMinutes / 60,
+                  )} hr `
+                  : ''}
+                {plannedMinutes % 60}
+                {' min'}
+              </strong>
+            </div>
+
+            <div
+              className={
+                remainingMinutes < 0
+                  ? 'facilitator-planner-time-card-warning'
+                  : ''
+              }
+            >
+              <span>
+                {remainingMinutes < 0
+                  ? 'Over Schedule'
+                  : 'Remaining'}
+              </span>
+
+              <strong>
+                {Math.abs(
+                  remainingMinutes,
+                )}
+                {' min'}
+              </strong>
+            </div>
+
+            <div>
+              <span>Agenda Items</span>
+              <strong>
+                {agendaItems.length}
+              </strong>
+            </div>
+          </div>
+
+          <div className="facilitator-planner-time-track">
+            <div className="facilitator-planner-time-track-labels">
+              <span>
+                {formatFacilitatorClockTime(
+                  FACILITATOR_MEETING_START_MINUTES,
+                )}
+              </span>
+
+              <strong>
+                Planned finish:{' '}
+                {formatFacilitatorClockTime(
+                  plannedFinishMinutes,
+                )}
+              </strong>
+
+              <span>
+                {formatFacilitatorClockTime(
+                  FACILITATOR_MEETING_START_MINUTES +
+                  FACILITATOR_MEETING_LENGTH_MINUTES,
+                )}
+              </span>
+            </div>
+
+            <div className="facilitator-planner-time-track-bar">
+              <span
+                style={{
+                  width:
+                    `${plannedPercent}%`,
+                }}
+              />
+            </div>
+
+            {remainingMinutes < 0 ? (
+              <p>
+                OVER SCHEDULE BY{' '}
+                {Math.abs(
+                  remainingMinutes,
+                )}{' '}
+                MINUTES
+              </p>
+            ) : (
+              <p>
+                {remainingMinutes}{' '}
+                minutes remain before the
+                fixed closing time.
+              </p>
+            )}
+          </div>
+
+          <div className="facilitator-planner-table-toolbar">
+            <button
+              type="button"
+              onClick={
+                addAgendaItem
+              }
+            >
+              <span aria-hidden="true">
+                +
+              </span>
+              Add Agenda Item
+            </button>
+
+            <button
+              type="button"
+              className="facilitator-planner-delete-button"
+              disabled={
+                selectedAgendaItem ===
+                  undefined ||
+                selectedAgendaItem
+                  .isDefault
+              }
+              onClick={
+                deleteSelectedAgendaItem
+              }
+            >
+              Delete Selected
+            </button>
+          </div>
+
+          <div className="facilitator-planner-table-frame">
+            <table className="facilitator-planner-table">
+              <thead>
+                <tr>
+                  <th>Agenda Item</th>
+                  <th>Name</th>
+                  <th>Duration</th>
+                  <th>Pacific Time</th>
+                  <th>Eastern Time</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {agendaItems.map(
+                  (
+                    agendaItem,
+                    itemIndex,
+                  ) => {
+                    const pacificMinutes =
+                      FACILITATOR_MEETING_START_MINUTES +
+                      agendaItems
+                        .slice(
+                          0,
+                          itemIndex,
+                        )
+                        .reduce(
+                          (
+                            total,
+                            item,
+                          ) =>
+                            total +
+                            item.durationMinutes,
+                          0,
+                        )
+
+                    const easternMinutes =
+                      pacificMinutes +
+                      FACILITATOR_EASTERN_OFFSET_MINUTES
+
+                    const isSelected =
+                      agendaItem.id ===
+                      selectedAgendaItemId
+
+                    return (
+                      <tr
+                        key={
+                          agendaItem.id
+                        }
+                        className={
+                          isSelected
+                            ? 'facilitator-planner-row-selected'
+                            : ''
+                        }
+                        onClick={() =>
+                          setSelectedAgendaItemId(
+                            agendaItem.id,
+                          )
+                        }
+                      >
+                        <td>
+                          <input
+                            value={
+                              agendaItem.agendaItem
+                            }
+                            aria-label="Agenda item"
+                            onFocus={() =>
+                              setSelectedAgendaItemId(
+                                agendaItem.id,
+                              )
+                            }
+                            onChange={(
+                              event,
+                            ) =>
+                              updateAgendaItemText(
+                                agendaItem.id,
+                                'agendaItem',
+                                event.target.value,
+                              )
+                            }
+                          />
+                        </td>
+
+                        <td>
+                          <input
+                            value={
+                              agendaItem.name
+                            }
+                            aria-label="Agenda item name"
+                            onFocus={() =>
+                              setSelectedAgendaItemId(
+                                agendaItem.id,
+                              )
+                            }
+                            onChange={(
+                              event,
+                            ) =>
+                              updateAgendaItemText(
+                                agendaItem.id,
+                                'name',
+                                event.target.value,
+                              )
+                            }
+                          />
+                        </td>
+
+                        <td>
+                          <label className="facilitator-planner-duration-input">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={
+                                agendaItem.durationMinutes
+                              }
+                              aria-label="Duration in minutes"
+                              onFocus={() =>
+                                setSelectedAgendaItemId(
+                                  agendaItem.id,
+                                )
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateAgendaItemDuration(
+                                  agendaItem.id,
+                                  event.target.value,
+                                )
+                              }
+                            />
+
+                            <span>mins</span>
+                          </label>
+                        </td>
+
+                        <td className="facilitator-planner-time-cell">
+                          {formatFacilitatorClockTime(
+                            pacificMinutes,
+                          )}
+                        </td>
+
+                        <td className="facilitator-planner-time-cell">
+                          {formatFacilitatorClockTime(
+                            easternMinutes,
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  },
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <section className="facilitator-planner-detail-editor">
+            <header>
+              <div>
+                <span>
+                  Agenda Item Details
+                </span>
+
+                <h2>
+                  {selectedAgendaItem ===
+                    undefined
+                    ? 'Select an agenda item'
+                    : getFacilitatorAgendaItemTitle(
+                      selectedAgendaItem.agendaItem,
+                    )}
+                </h2>
+              </div>
+
+              {selectedAgendaItem?.
+                isDefault ? (
+                <strong>
+                  Standard opening item
+                </strong>
+              ) : null}
+            </header>
+
+            <textarea
+              value={
+                selectedAgendaItem?.
+                  details ?? ''
+              }
+              disabled={
+                selectedAgendaItem ===
+                undefined
+              }
+              placeholder={[
+                'Add the supporting content that should appear in the Word agenda.',
+                'Start a line with • or - for a bullet.',
+                'Use Label: details when the label should be bold in Word.',
+              ].join('\n')}
+              onChange={(event) => {
+                if (
+                  selectedAgendaItem ===
+                  undefined
+                ) {
+                  return
+                }
+
+                updateAgendaItemText(
+                  selectedAgendaItem.id,
+                  'details',
+                  event.target.value,
+                )
+              }}
+            />
+
+            <p>
+              The selected agenda item becomes
+              the Word section heading. Bullet
+              lines and short labels before a
+              colon are formatted automatically.
+            </p>
+          </section>
+
+          <section className="facilitator-planner-housekeeping-editor">
+            <header>
+              <span>
+                Cohort Housekeeping
+              </span>
+
+              <strong>
+                One item per line
+              </strong>
+            </header>
+
+            <textarea
+              value={
+                housekeepingNotes
+              }
+              onChange={(event) =>
+                setHousekeepingNotes(
+                  event.target.value,
+                )
+              }
+            />
+          </section>
+
+          <div className="facilitator-planner-primary-actions">
+            <button
+              type="button"
+              className="facilitator-planner-save-button"
+              onClick={saveAgenda}
+            >
+              Save Agenda
+            </button>
+
+            <button
+              type="button"
+              className="facilitator-planner-generate-button"
+              onClick={() =>
+                void generateCurrentAgenda()
+              }
+            >
+              Generate Word
+            </button>
+
+            <span
+              className="facilitator-planner-action-message"
+              role="status"
+            >
+              {actionMessage}
+            </span>
+          </div>
+        </section>
+
+        <aside className="facilitator-planner-preview-panel">
+          <header>
+            <div>
+              <span>Live View</span>
+              <h2>Word Preview</h2>
+            </div>
+
+            <strong>
+              Same DOCX builder as download
+            </strong>
+          </header>
+
+          <div className="facilitator-planner-preview-shell">
+            {previewMessage ? (
+              <div className="facilitator-planner-preview-message">
+                {previewMessage}
+              </div>
+            ) : null}
+
+            <div
+              ref={previewRef}
+              className="facilitator-planner-docx-preview"
+            />
+          </div>
+        </aside>
+      </div>
+
+      <section className="facilitator-planner-saved-panel">
+        <header>
+          <div>
+            <span>
+              Saved Facilitator Agendas
+            </span>
+
+            <h2>
+              Past and In-Progress Agendas
+            </h2>
+          </div>
+
+          <strong>
+            {savedAgendaRows.length}{' '}
+            saved
+          </strong>
+        </header>
+
+        <div className="facilitator-planner-saved-table-frame">
+          <table className="facilitator-planner-saved-table">
+            <thead>
+              <tr>
+                <th>Agenda</th>
+                <th>Facilitator</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Last Saved</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {savedAgendaRows.length ===
+                0 ? (
+                <tr>
+                  <td
+                    className="facilitator-planner-saved-empty"
+                    colSpan={6}
+                  >
+                    No Facilitator Planner
+                    agendas have been saved
+                    yet.
+                  </td>
+                </tr>
+              ) : (
+                savedAgendaRows.map(
+                  ({
+                    agenda,
+                    meeting,
+                  }) => (
+                    <tr key={agenda.id}>
+                      <td>
+                        Cohort Agenda -{' '}
+                        {meeting.term}
+                        {' - '}
+                        {getFacilitatorMeetingNumberLabel(
+                          meeting.meetingNumber,
+                        )}
+                      </td>
+
+                      <td>
+                        {meeting.facilitator ||
+                          'TBD'}
+                      </td>
+
+                      <td>
+                        {formatFacilitatorMeetingDate(
+                          meeting.date,
+                        )}
+                      </td>
+
+                      <td>
+                        <strong>
+                          {agenda.status}
+                        </strong>
+                      </td>
+
+                      <td>
+                        {new Intl.DateTimeFormat(
+                          'en-US',
+                          {
+                            month:
+                              'short',
+                            day:
+                              'numeric',
+                            year:
+                              'numeric',
+                            hour:
+                              'numeric',
+                            minute:
+                              '2-digit',
+                          },
+                        ).format(
+                          new Date(
+                            agenda.savedAt,
+                          ),
+                        )}
+                      </td>
+
+                      <td>
+                        <div className="facilitator-planner-saved-actions">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              loadMeetingAgenda(
+                                meeting.id,
+                                agenda,
+                              )
+                            }
+                          >
+                            Open
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void generateSavedAgenda(
+                                agenda,
+                                meeting,
+                              )
+                            }
+                          >
+                            Generate
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   )
 }
@@ -15641,30 +18479,6 @@ function CoursePage({
 
             <label className="course-workspace-field">
               <span>
-                Professor Email
-              </span>
-
-              <input
-                type="email"
-                className="course-workspace-field-input"
-                placeholder="Enter professor email"
-                value={
-                  workspace.professorEmail
-                }
-                onChange={(
-                  event,
-                ) => {
-                  updateCourseWorkspace({
-                    professorEmail:
-                      event.target
-                        .value,
-                  })
-                }}
-              />
-            </label>
-
-            <label className="course-workspace-field">
-              <span>
                 Professor Phone #
               </span>
 
@@ -15693,6 +18507,30 @@ function CoursePage({
                           0,
                           10,
                         ),
+                  })
+                }}
+              />
+            </label>
+
+            <label className="course-workspace-field">
+              <span>
+                Professor Email
+              </span>
+
+              <input
+                type="email"
+                className="course-workspace-field-input"
+                placeholder="Enter professor email"
+                value={
+                  workspace.professorEmail
+                }
+                onChange={(
+                  event,
+                ) => {
+                  updateCourseWorkspace({
+                    professorEmail:
+                      event.target
+                        .value,
                   })
                 }}
               />
@@ -17681,6 +20519,124 @@ function App() {
                     />
                   </svg>
                 </span>
+              ) : item.path === '/facilitator-planner' ? (
+                <span
+                  className="nav-facilitator-planner-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    role="presentation"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="nav-facilitator-planner-gold"
+                        x1="0"
+                        y1="0"
+                        x2="1"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#FFD76A"
+                        />
+                        <stop
+                          offset="48%"
+                          stopColor="#F2B632"
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#C89214"
+                        />
+                      </linearGradient>
+                    </defs>
+
+                    <circle
+                      cx="9.2"
+                      cy="5.1"
+                      r="3.1"
+                      fill="url(#nav-facilitator-planner-gold)"
+                      stroke="#A66E08"
+                      strokeWidth="0.8"
+                    />
+
+                    <path
+                      d="M4.4 12.2c.5-2.8 2.3-4.5 4.8-4.5 2.6 0 4.4 1.7 4.9 4.5Z"
+                      fill="url(#nav-facilitator-planner-gold)"
+                      stroke="#A66E08"
+                      strokeWidth="0.8"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M14.6 8.7h2.2c1 0 1.8.8 1.8 1.8v1.3"
+                      fill="none"
+                      stroke="#C89214"
+                      strokeWidth="1.35"
+                      strokeLinecap="round"
+                    />
+
+                    <rect
+                      x="17.3"
+                      y="6.7"
+                      width="3.7"
+                      height="2.5"
+                      rx="1.25"
+                      transform="rotate(27 17.3 6.7)"
+                      fill="url(#nav-facilitator-planner-gold)"
+                      stroke="#A66E08"
+                      strokeWidth="0.7"
+                    />
+
+                    <path
+                      d="M3 11.8h13.8l-1.2 3.1H4.1Z"
+                      fill="url(#nav-facilitator-planner-gold)"
+                      stroke="#A66E08"
+                      strokeWidth="0.85"
+                      strokeLinejoin="round"
+                    />
+
+                    <rect
+                      x="5.1"
+                      y="14.2"
+                      width="9.8"
+                      height="7"
+                      rx="1.4"
+                      fill="url(#nav-facilitator-planner-gold)"
+                      stroke="#A66E08"
+                      strokeWidth="0.85"
+                    />
+
+                    <g
+                      fill="none"
+                      stroke="#8A5A05"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                    >
+                      <path d="M7.4 16.5h5.2" />
+                      <path d="M7.4 18.1h5.2" />
+                      <path d="M7.4 19.7h5.2" />
+                    </g>
+
+                    <path
+                      d="M4.4 12.3h11.1"
+                      fill="none"
+                      stroke="#FFE48A"
+                      strokeWidth="0.7"
+                      strokeLinecap="round"
+                      opacity="0.9"
+                    />
+
+                    <path
+                      d="M6.2 15.1h7.5"
+                      fill="none"
+                      stroke="#FFE48A"
+                      strokeWidth="0.55"
+                      strokeLinecap="round"
+                      opacity="0.82"
+                    />
+                  </svg>
+                </span>
               ) : item.path === '/attendance' ? (
                 <span
                   className="nav-attendance-icon"
@@ -18807,6 +21763,15 @@ function App() {
                   meetings={cohortMeetings}
                   onAddMeeting={addCohortMeeting}
                   onUpdateRole={updateCohortMeetingRole}
+                />
+              }
+            />
+
+            <Route
+              path="/facilitator-planner"
+              element={
+                <FacilitatorPlannerPage
+                  meetings={cohortMeetings}
                 />
               }
             />
