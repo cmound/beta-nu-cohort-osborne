@@ -2301,8 +2301,8 @@
 .facilitator-planner-workspace {
   display: grid;
   grid-template-columns:
-    minmax(0, 1.24fr)
-    minmax(0, 1fr);
+    minmax(560px, 0.8fr)
+    minmax(0, 1.2fr);
   gap: 10px;
   align-items: start;
 }
@@ -2310,27 +2310,27 @@
 .facilitator-planner-editor-panel {
   min-width: 0;
   overflow: hidden;
-  padding: 14px;
+  padding: 10px;
 }
 
 .facilitator-planner-time-cards {
   display: grid;
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 7px;
+  margin-bottom: 10px;
 }
 
 .facilitator-planner-time-cards > div {
   min-width: 0;
-  min-height: 68px;
+  min-height: 62px;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
-  padding: 10px 13px;
+  gap: 8px;
+  padding: 8px 9px;
   border: 1px solid #c89214;
   border-radius: 8px;
   color: #ffffff;
@@ -2362,31 +2362,31 @@
   > div
   > span {
   color: #f8fafc;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   line-height: 1.1;
 }
 
 .facilitator-planner-time-cards strong {
-  margin-top: 5px;
+  margin-top: 4px;
   color: #ffd200;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 900;
   line-height: 1;
 }
 
 .facilitator-planner-summary-icon {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   display: grid;
   place-items: center;
   color: #f2b632;
 }
 
 .facilitator-planner-summary-icon svg {
-  width: 31px;
-  height: 31px;
+  width: 26px;
+  height: 26px;
   display: block;
   filter:
     drop-shadow(
@@ -2417,8 +2417,8 @@
 }
 
 .facilitator-planner-time-track {
-  margin-bottom: 14px;
-  padding: 11px 13px 10px;
+  margin-bottom: 12px;
+  padding: 9px 10px 8px;
   border: 1px solid #476984;
   border-radius: 8px;
   background:
@@ -2610,11 +2610,11 @@
 }
 
 .facilitator-planner-table th:nth-child(1) {
-  width: 46%;
+  width: 50%;
 }
 
 .facilitator-planner-table th:nth-child(2) {
-  width: 16%;
+  width: 14%;
 }
 
 .facilitator-planner-table th:nth-child(3) {
@@ -2623,7 +2623,7 @@
 
 .facilitator-planner-table th:nth-child(4),
 .facilitator-planner-table th:nth-child(5) {
-  width: 13.5%;
+  width: 12.5%;
 }
 
 .facilitator-planner-table td {
@@ -2661,21 +2661,91 @@
   background: #fff8d8;
 }
 
+.facilitator-planner-row-dragging td {
+  opacity: 0.55;
+}
+
+.facilitator-planner-row-drop-target td {
+  border-top: 2px solid #f2b632;
+}
+
+.facilitator-planner-agenda-cell {
+  height: 31px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.facilitator-planner-agenda-cell > input {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.facilitator-planner-drag-handle {
+  position: relative;
+  width: 24px;
+  height: 31px;
+  flex: 0 0 24px;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid #cbd5e1;
+  border-radius: 0;
+  background: transparent;
+  cursor: grab;
+}
+
+.facilitator-planner-drag-handle::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 12px;
+  height: 18px;
+  background-image:
+    radial-gradient(
+      circle,
+      #475569 1.3px,
+      transparent 1.5px
+    );
+  background-size: 6px 6px;
+}
+
+.facilitator-planner-drag-handle:active {
+  cursor: grabbing;
+}
+
+.facilitator-planner-drag-handle:disabled {
+  opacity: 0.22;
+  cursor: default;
+}
+
 .facilitator-planner-duration-input {
   height: 31px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 3px;
+  gap: 2px;
   padding: 0 7px;
 }
 
 .facilitator-planner-duration-input input {
-  width: 30px;
-  min-width: 30px;
-  flex: 0 0 30px;
+  width: 3.5ch;
+  min-width: 3.5ch;
+  flex: 0 0 3.5ch;
   padding: 4px 0;
-  text-align: left;
+  appearance: textfield;
+  text-align: right;
+}
+
+.facilitator-planner-duration-input
+  input::-webkit-inner-spin-button,
+.facilitator-planner-duration-input
+  input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
 }
 
 .facilitator-planner-duration-input span {
@@ -2686,7 +2756,7 @@
 }
 
 .facilitator-planner-time-cell {
-  padding: 4px 8px !important;
+  padding: 4px 7px !important;
   color: #111827;
   font-size: 11px;
   font-weight: 900;

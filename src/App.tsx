@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type DragEvent as ReactDragEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
@@ -6937,6 +6938,54 @@ function getFacilitatorAgendaPersonLabel(
   )
 }
 
+function createBlankFacilitatorAgendaItem():
+  FacilitatorAgendaItemRecord {
+  return {
+    id: crypto.randomUUID(),
+    agendaItem: '',
+    name: '',
+    durationMinutes: 0,
+    details: '',
+    isDefault: false,
+  }
+}
+
+function isFacilitatorAgendaItemBlank(
+  agendaItem: FacilitatorAgendaItemRecord,
+): boolean {
+  return (
+    !agendaItem.isDefault &&
+    agendaItem.agendaItem.trim().length === 0 &&
+    agendaItem.name.trim().length === 0 &&
+    agendaItem.durationMinutes === 0 &&
+    agendaItem.details.trim().length === 0
+  )
+}
+
+function ensureFacilitatorAgendaBlankRow(
+  agendaItems:
+    readonly FacilitatorAgendaItemRecord[],
+): readonly FacilitatorAgendaItemRecord[] {
+  const lastAgendaItem =
+    agendaItems[
+    agendaItems.length - 1
+    ]
+
+  if (
+    lastAgendaItem !== undefined &&
+    isFacilitatorAgendaItemBlank(
+      lastAgendaItem,
+    )
+  ) {
+    return agendaItems
+  }
+
+  return [
+    ...agendaItems,
+    createBlankFacilitatorAgendaItem(),
+  ]
+}
+
 function createDefaultFacilitatorAgendaItems(
   meeting: CohortMeetingRecord,
 ): readonly FacilitatorAgendaItemRecord[] {
@@ -7349,12 +7398,20 @@ function createFacilitatorAgendaTable(
   agendaItems:
     readonly FacilitatorAgendaItemRecord[],
 ): Table {
+  const populatedAgendaItems =
+    agendaItems.filter(
+      (agendaItem) =>
+        !isFacilitatorAgendaItemBlank(
+          agendaItem,
+        ),
+    )
+
   const agendaRows =
-    agendaItems.map(
+    populatedAgendaItems.map(
       (item, itemIndex) => {
         const pacificMinutes =
           FACILITATOR_MEETING_START_MINUTES +
-          agendaItems
+          populatedAgendaItems
             .slice(0, itemIndex)
             .reduce(
               (total, agendaItem) =>
@@ -8382,32 +8439,15 @@ function FacilitatorPlannerPage({
       readonly FacilitatorAgendaItemRecord[]
     >(
       () =>
-        initialSavedAgenda?.agendaItems ??
-        (
-          initialMeeting ===
-            undefined
-            ? []
-            : createDefaultFacilitatorAgendaItems(
+        initialMeeting === undefined
+          ? []
+          : ensureFacilitatorAgendaBlankRow(
+            initialSavedAgenda?.agendaItems ??
+            createDefaultFacilitatorAgendaItems(
               initialMeeting,
-            )
-        ),
+            ),
+          ),
     )
-
-  const [
-    housekeepingNotes,
-    setHousekeepingNotes,
-  ] = useState(
-    () =>
-      initialSavedAgenda?.housekeepingNotes ??
-      (
-        initialMeeting ===
-          undefined
-          ? ''
-          : createDefaultFacilitatorHousekeepingNotes(
-            initialMeeting,
-          )
-      ),
-  )
 
   const [
     selectedAgendaItemId,
@@ -8422,6 +8462,16 @@ function FacilitatorPlannerPage({
   const [actionMessage, setActionMessage] =
     useState('')
 
+  const [
+    draggedAgendaItemId,
+    setDraggedAgendaItemId,
+  ] = useState<string | null>(null)
+
+  const [
+    dragOverAgendaItemId,
+    setDragOverAgendaItemId,
+  ] = useState<string | null>(null)
+
   const previewRef =
     useRef<HTMLDivElement | null>(
       null,
@@ -8434,12 +8484,27 @@ function FacilitatorPlannerPage({
         selectedMeetingId,
     )
 
+  const housekeepingNotes =
+    selectedMeeting === undefined
+      ? ''
+      : createDefaultFacilitatorHousekeepingNotes(
+        selectedMeeting,
+      )
+
   const selectedAgendaItem =
     agendaItems.find(
       (agendaItem) =>
         agendaItem.id ===
         selectedAgendaItemId,
     )
+
+  const agendaItemCount =
+    agendaItems.filter(
+      (agendaItem) =>
+        !isFacilitatorAgendaItemBlank(
+          agendaItem,
+        ),
+    ).length
 
   const plannedMinutes =
     agendaItems.reduce(
@@ -8605,9 +8670,11 @@ function FacilitatorPlannerPage({
       )
 
     const nextItems =
-      savedAgenda?.agendaItems ??
-      createDefaultFacilitatorAgendaItems(
-        meeting,
+      ensureFacilitatorAgendaBlankRow(
+        savedAgenda?.agendaItems ??
+        createDefaultFacilitatorAgendaItems(
+          meeting,
+        ),
       )
 
     setSelectedMeetingId(
@@ -8621,13 +8688,6 @@ function FacilitatorPlannerPage({
 
     setAgendaItems(
       nextItems,
-    )
-
-    setHousekeepingNotes(
-      savedAgenda?.housekeepingNotes ??
-      createDefaultFacilitatorHousekeepingNotes(
-        meeting,
-      ),
     )
 
     setSelectedAgendaItemId(
@@ -8694,16 +8754,49 @@ function FacilitatorPlannerPage({
     )
   }
 
+  function focusAgendaItemInput(
+    agendaItemId: string,
+  ): void {
+    window.setTimeout(() => {
+      const agendaItemInput =
+        document.getElementById(
+          `facilitator-agenda-item-${agendaItemId}`,
+        )
+
+      if (
+        agendaItemInput instanceof
+        HTMLInputElement
+      ) {
+        agendaItemInput.focus()
+      }
+    }, 0)
+  }
+
   function addAgendaItem(): void {
-    const newAgendaItem:
-      FacilitatorAgendaItemRecord = {
-      id: crypto.randomUUID(),
-      agendaItem: '',
-      name: '',
-      durationMinutes: 15,
-      details: '',
-      isDefault: false,
+    const lastAgendaItem =
+      agendaItems[
+      agendaItems.length - 1
+      ]
+
+    if (
+      lastAgendaItem !== undefined &&
+      isFacilitatorAgendaItemBlank(
+        lastAgendaItem,
+      )
+    ) {
+      setSelectedAgendaItemId(
+        lastAgendaItem.id,
+      )
+
+      focusAgendaItemInput(
+        lastAgendaItem.id,
+      )
+
+      return
     }
+
+    const newAgendaItem =
+      createBlankFacilitatorAgendaItem()
 
     setAgendaItems(
       (currentItems) => [
@@ -8714,6 +8807,233 @@ function FacilitatorPlannerPage({
 
     setSelectedAgendaItemId(
       newAgendaItem.id,
+    )
+
+    focusAgendaItemInput(
+      newAgendaItem.id,
+    )
+  }
+
+  function handleAgendaDurationKeyDown(
+    agendaItemId: string,
+    event:
+      ReactKeyboardEvent<HTMLInputElement>,
+  ): void {
+    if (
+      event.key !== 'Tab' ||
+      event.shiftKey
+    ) {
+      return
+    }
+
+    const currentIndex =
+      agendaItems.findIndex(
+        (agendaItem) =>
+          agendaItem.id ===
+          agendaItemId,
+      )
+
+    if (currentIndex === -1) {
+      return
+    }
+
+    event.preventDefault()
+
+    const nextAgendaItem =
+      agendaItems[
+      currentIndex + 1
+      ]
+
+    if (nextAgendaItem !== undefined) {
+      setSelectedAgendaItemId(
+        nextAgendaItem.id,
+      )
+
+      focusAgendaItemInput(
+        nextAgendaItem.id,
+      )
+
+      return
+    }
+
+    const newAgendaItem =
+      createBlankFacilitatorAgendaItem()
+
+    setAgendaItems(
+      (currentItems) => [
+        ...currentItems,
+        newAgendaItem,
+      ],
+    )
+
+    setSelectedAgendaItemId(
+      newAgendaItem.id,
+    )
+
+    focusAgendaItemInput(
+      newAgendaItem.id,
+    )
+  }
+
+  function moveAgendaItemBefore(
+    sourceAgendaItemId: string,
+    targetAgendaItemId: string,
+  ): void {
+    if (
+      sourceAgendaItemId ===
+      targetAgendaItemId
+    ) {
+      return
+    }
+
+    setAgendaItems(
+      (currentItems) => {
+        const sourceIndex =
+          currentItems.findIndex(
+            (agendaItem) =>
+              agendaItem.id ===
+              sourceAgendaItemId,
+          )
+
+        if (sourceIndex === -1) {
+          return currentItems
+        }
+
+        const sourceAgendaItem =
+          currentItems[sourceIndex]
+
+        if (
+          sourceAgendaItem === undefined ||
+          isFacilitatorAgendaItemBlank(
+            sourceAgendaItem,
+          )
+        ) {
+          return currentItems
+        }
+
+        const reorderedItems = [
+          ...currentItems,
+        ]
+
+        reorderedItems.splice(
+          sourceIndex,
+          1,
+        )
+
+        const targetIndex =
+          reorderedItems.findIndex(
+            (agendaItem) =>
+              agendaItem.id ===
+              targetAgendaItemId,
+          )
+
+        if (targetIndex === -1) {
+          return currentItems
+        }
+
+        reorderedItems.splice(
+          targetIndex,
+          0,
+          sourceAgendaItem,
+        )
+
+        return reorderedItems
+      },
+    )
+  }
+
+  function handleAgendaRowDragStart(
+    event:
+      ReactDragEvent<HTMLButtonElement>,
+    agendaItemId: string,
+  ): void {
+    setDraggedAgendaItemId(
+      agendaItemId,
+    )
+
+    setDragOverAgendaItemId(
+      null,
+    )
+
+    event.dataTransfer.effectAllowed =
+      'move'
+
+    event.dataTransfer.setData(
+      'text/plain',
+      agendaItemId,
+    )
+  }
+
+  function handleAgendaRowDragOver(
+    event:
+      ReactDragEvent<HTMLTableRowElement>,
+    agendaItemId: string,
+  ): void {
+    const sourceAgendaItemId =
+      draggedAgendaItemId ??
+      event.dataTransfer.getData(
+        'text/plain',
+      )
+
+    if (
+      sourceAgendaItemId.length === 0 ||
+      sourceAgendaItemId ===
+      agendaItemId
+    ) {
+      return
+    }
+
+    event.preventDefault()
+
+    event.dataTransfer.dropEffect =
+      'move'
+
+    setDragOverAgendaItemId(
+      agendaItemId,
+    )
+  }
+
+  function handleAgendaRowDrop(
+    event:
+      ReactDragEvent<HTMLTableRowElement>,
+    agendaItemId: string,
+  ): void {
+    event.preventDefault()
+
+    const sourceAgendaItemId =
+      draggedAgendaItemId ??
+      event.dataTransfer.getData(
+        'text/plain',
+      )
+
+    if (
+      sourceAgendaItemId.length > 0 &&
+      sourceAgendaItemId !==
+      agendaItemId
+    ) {
+      moveAgendaItemBefore(
+        sourceAgendaItemId,
+        agendaItemId,
+      )
+    }
+
+    setDraggedAgendaItemId(
+      null,
+    )
+
+    setDragOverAgendaItemId(
+      null,
+    )
+  }
+
+  function handleAgendaRowDragEnd():
+    void {
+    setDraggedAgendaItemId(
+      null,
+    )
+
+    setDragOverAgendaItemId(
+      null,
     )
   }
 
@@ -8773,7 +9093,13 @@ function FacilitatorPlannerPage({
       savedAt:
         new Date().toISOString(),
       housekeepingNotes,
-      agendaItems,
+      agendaItems:
+        agendaItems.filter(
+          (agendaItem) =>
+            !isFacilitatorAgendaItemBlank(
+              agendaItem,
+            ),
+        ),
     }
 
     const nextSavedAgendas =
@@ -8871,7 +9197,9 @@ function FacilitatorPlannerPage({
         await createFacilitatorAgendaBlob(
           meeting,
           savedAgenda.agendaItems,
-          savedAgenda.housekeepingNotes,
+          createDefaultFacilitatorHousekeepingNotes(
+            meeting,
+          ),
         )
 
       downloadFacilitatorAgendaBlob(
@@ -9380,7 +9708,7 @@ function FacilitatorPlannerPage({
                 <span>Agenda Items</span>
 
                 <strong>
-                  {agendaItems.length}
+                  {agendaItemCount}
                 </strong>
               </div>
             </div>
@@ -9508,43 +9836,116 @@ function FacilitatorPlannerPage({
                       agendaItem.id ===
                       selectedAgendaItemId
 
+                    const isBlankRow =
+                      isFacilitatorAgendaItemBlank(
+                        agendaItem,
+                      )
+
+                    const rowClassName = [
+                      isSelected
+                        ? 'facilitator-planner-row-selected'
+                        : '',
+                      draggedAgendaItemId ===
+                        agendaItem.id
+                        ? 'facilitator-planner-row-dragging'
+                        : '',
+                      dragOverAgendaItemId ===
+                        agendaItem.id &&
+                        draggedAgendaItemId !==
+                        agendaItem.id
+                        ? 'facilitator-planner-row-drop-target'
+                        : '',
+                    ]
+                      .filter(
+                        (className) =>
+                          className.length > 0,
+                      )
+                      .join(' ')
+
                     return (
                       <tr
                         key={
                           agendaItem.id
                         }
                         className={
-                          isSelected
-                            ? 'facilitator-planner-row-selected'
-                            : ''
+                          rowClassName
                         }
                         onClick={() =>
                           setSelectedAgendaItemId(
                             agendaItem.id,
                           )
                         }
+                        onDragOver={(
+                          event,
+                        ) =>
+                          handleAgendaRowDragOver(
+                            event,
+                            agendaItem.id,
+                          )
+                        }
+                        onDrop={(
+                          event,
+                        ) =>
+                          handleAgendaRowDrop(
+                            event,
+                            agendaItem.id,
+                          )
+                        }
                       >
                         <td>
-                          <input
-                            value={
-                              agendaItem.agendaItem
-                            }
-                            aria-label="Agenda item"
-                            onFocus={() =>
-                              setSelectedAgendaItemId(
-                                agendaItem.id,
-                              )
-                            }
-                            onChange={(
-                              event,
-                            ) =>
-                              updateAgendaItemText(
-                                agendaItem.id,
-                                'agendaItem',
-                                event.target.value,
-                              )
-                            }
-                          />
+                          <div className="facilitator-planner-agenda-cell">
+                            <button
+                              type="button"
+                              className="facilitator-planner-drag-handle"
+                              aria-label="Drag to reorder agenda item"
+                              title={
+                                isBlankRow
+                                  ? 'Enter agenda information before moving this row.'
+                                  : 'Drag to reorder'
+                              }
+                              draggable={
+                                !isBlankRow
+                              }
+                              disabled={
+                                isBlankRow
+                              }
+                              onDragStart={(
+                                event,
+                              ) =>
+                                handleAgendaRowDragStart(
+                                  event,
+                                  agendaItem.id,
+                                )
+                              }
+                              onDragEnd={
+                                handleAgendaRowDragEnd
+                              }
+                            />
+
+                            <input
+                              id={
+                                `facilitator-agenda-item-${agendaItem.id}`
+                              }
+                              value={
+                                agendaItem.agendaItem
+                              }
+                              aria-label="Agenda item"
+                              onFocus={() =>
+                                setSelectedAgendaItemId(
+                                  agendaItem.id,
+                                )
+                              }
+                              onChange={(
+                                event,
+                              ) =>
+                                updateAgendaItemText(
+                                  agendaItem.id,
+                                  'agendaItem',
+                                  event.target.value,
+                                )
+                              }
+                            />
+                          </div>
                         </td>
 
                         <td>
@@ -9577,7 +9978,10 @@ function FacilitatorPlannerPage({
                               min="0"
                               step="1"
                               value={
-                                agendaItem.durationMinutes
+                                agendaItem.durationMinutes ===
+                                  0
+                                  ? ''
+                                  : agendaItem.durationMinutes
                               }
                               aria-label="Duration in minutes"
                               onFocus={() =>
@@ -9593,9 +9997,20 @@ function FacilitatorPlannerPage({
                                   event.target.value,
                                 )
                               }
+                              onKeyDown={(
+                                event,
+                              ) =>
+                                handleAgendaDurationKeyDown(
+                                  agendaItem.id,
+                                  event,
+                                )
+                              }
                             />
 
-                            <span>mins</span>
+                            {agendaItem.durationMinutes >
+                              0 ? (
+                              <span>mins</span>
+                            ) : null}
                           </label>
                         </td>
 
@@ -9617,92 +10032,6 @@ function FacilitatorPlannerPage({
               </tbody>
             </table>
           </div>
-
-          <section className="facilitator-planner-detail-editor">
-            <header>
-              <div>
-                <span>
-                  Agenda Item Details
-                </span>
-
-                <h2>
-                  {selectedAgendaItem ===
-                    undefined
-                    ? 'Select an agenda item'
-                    : getFacilitatorAgendaItemTitle(
-                      selectedAgendaItem.agendaItem,
-                    )}
-                </h2>
-              </div>
-
-              {selectedAgendaItem?.
-                isDefault ? (
-                <strong>
-                  Standard opening item
-                </strong>
-              ) : null}
-            </header>
-
-            <textarea
-              value={
-                selectedAgendaItem?.
-                  details ?? ''
-              }
-              disabled={
-                selectedAgendaItem ===
-                undefined
-              }
-              placeholder={[
-                'Add the supporting content that should appear in the Word agenda.',
-                'Start a line with • or - for a bullet.',
-                'Use Label: details when the label should be bold in Word.',
-              ].join('\n')}
-              onChange={(event) => {
-                if (
-                  selectedAgendaItem ===
-                  undefined
-                ) {
-                  return
-                }
-
-                updateAgendaItemText(
-                  selectedAgendaItem.id,
-                  'details',
-                  event.target.value,
-                )
-              }}
-            />
-
-            <p>
-              The selected agenda item becomes
-              the Word section heading. Bullet
-              lines and short labels before a
-              colon are formatted automatically.
-            </p>
-          </section>
-
-          <section className="facilitator-planner-housekeeping-editor">
-            <header>
-              <span>
-                Cohort Housekeeping
-              </span>
-
-              <strong>
-                One item per line
-              </strong>
-            </header>
-
-            <textarea
-              value={
-                housekeepingNotes
-              }
-              onChange={(event) =>
-                setHousekeepingNotes(
-                  event.target.value,
-                )
-              }
-            />
-          </section>
 
           <div className="facilitator-planner-primary-actions">
             <button
