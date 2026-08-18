@@ -15119,10 +15119,6 @@ function CoursePage({
     event:
       ReactKeyboardEvent<HTMLTableElement>,
   ): void {
-    if (event.key !== 'Tab') {
-      return
-    }
-
     const target =
       event.target
 
@@ -15139,50 +15135,259 @@ function CoursePage({
       return
     }
 
-    const editableFields =
-      Array.from(
-        event.currentTarget
-          .querySelectorAll<
-            | HTMLInputElement
-            | HTMLSelectElement
-          >(
-            '.course-webinar-cell-input, .course-webinar-cell-select',
-          ),
-      )
-
-    const currentIndex =
-      editableFields.indexOf(
-        target,
-      )
-
-    if (currentIndex === -1) {
+    if (
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) {
       return
     }
 
-    const nextIndex =
-      event.shiftKey
-        ? currentIndex - 1
-        : currentIndex + 1
-
-    const nextField =
-      editableFields[nextIndex]
-
     if (
-      nextField === undefined
+      event.shiftKey &&
+      event.key !== 'Tab'
     ) {
       return
+    }
+
+    const table =
+      event.currentTarget
+
+    const currentRow =
+      target.closest(
+        'tr.course-webinar-row',
+      )
+
+    if (
+      !(
+        currentRow instanceof
+        HTMLTableRowElement
+      )
+    ) {
+      return
+    }
+
+    function getEditableFields(
+      row: HTMLTableRowElement,
+    ): (
+      | HTMLInputElement
+      | HTMLSelectElement
+    )[] {
+      return Array.from(
+        row.querySelectorAll<
+          | HTMLInputElement
+          | HTMLSelectElement
+        >(
+          '.course-webinar-cell-input, .course-webinar-cell-select',
+        ),
+      )
+    }
+
+    const rows =
+      Array.from(
+        table.querySelectorAll<HTMLTableRowElement>(
+          'tbody tr.course-webinar-row',
+        ),
+      )
+
+    const currentRowIndex =
+      rows.indexOf(
+        currentRow,
+      )
+
+    if (currentRowIndex === -1) {
+      return
+    }
+
+    const currentFields =
+      getEditableFields(
+        currentRow,
+      )
+
+    const currentColumnIndex =
+      currentFields.indexOf(
+        target,
+      )
+
+    if (
+      currentColumnIndex === -1
+    ) {
+      return
+    }
+
+    let nextRowIndex =
+      currentRowIndex
+
+    let nextColumnIndex =
+      currentColumnIndex
+
+    switch (event.key) {
+      case 'Tab':
+        if (event.shiftKey) {
+          if (
+            currentColumnIndex > 0
+          ) {
+            nextColumnIndex -= 1
+          } else {
+            nextRowIndex -= 1
+
+            if (nextRowIndex < 0) {
+              return
+            }
+
+            const previousFields =
+              getEditableFields(
+                rows[nextRowIndex],
+              )
+
+            nextColumnIndex =
+              previousFields.length - 1
+          }
+        } else if (
+          currentColumnIndex <
+          currentFields.length - 1
+        ) {
+          nextColumnIndex += 1
+        } else {
+          nextRowIndex += 1
+
+          if (
+            nextRowIndex >=
+            rows.length
+          ) {
+            return
+          }
+
+          nextColumnIndex = 0
+        }
+
+        break
+
+      case 'ArrowUp':
+        nextRowIndex -= 1
+
+        if (nextRowIndex < 0) {
+          return
+        }
+
+        break
+
+      case 'ArrowDown':
+        nextRowIndex += 1
+
+        if (
+          nextRowIndex >=
+          rows.length
+        ) {
+          return
+        }
+
+        break
+
+      case 'ArrowLeft':
+        if (
+          target instanceof
+          HTMLInputElement
+        ) {
+          if (
+            target.selectionStart !==
+            0 ||
+            target.selectionEnd !==
+            0
+          ) {
+            return
+          }
+        }
+
+        if (
+          currentColumnIndex === 0
+        ) {
+          return
+        }
+
+        nextColumnIndex -= 1
+        break
+
+      case 'ArrowRight':
+        if (
+          target instanceof
+          HTMLInputElement
+        ) {
+          const valueLength =
+            target.value.length
+
+          if (
+            target.selectionStart !==
+            valueLength ||
+            target.selectionEnd !==
+            valueLength
+          ) {
+            return
+          }
+        }
+
+        if (
+          currentColumnIndex >=
+          currentFields.length - 1
+        ) {
+          return
+        }
+
+        nextColumnIndex += 1
+        break
+
+      default:
+        return
     }
 
     event.preventDefault()
 
-    nextField.focus()
+    window.requestAnimationFrame(
+      () => {
+        const refreshedRows =
+          Array.from(
+            table.querySelectorAll<HTMLTableRowElement>(
+              'tbody tr.course-webinar-row',
+            ),
+          )
 
-    if (
-      nextField instanceof
-      HTMLInputElement
-    ) {
-      nextField.select()
-    }
+        const nextRow =
+          refreshedRows[
+          nextRowIndex
+          ]
+
+        if (
+          nextRow === undefined
+        ) {
+          return
+        }
+
+        const nextFields =
+          getEditableFields(
+            nextRow,
+          )
+
+        const nextField =
+          nextFields[
+          nextColumnIndex
+          ]
+
+        if (
+          nextField === undefined
+        ) {
+          return
+        }
+
+        nextField.focus()
+
+        if (
+          nextField instanceof
+          HTMLInputElement
+        ) {
+          nextField.select()
+        }
+      },
+    )
   }
 
   return (
@@ -16469,9 +16674,15 @@ function CoursePage({
           </div>
 
           <p className="course-meeting-readonly-note">
-            Cohort meeting dates and role
+            *Cohort meeting dates and role
             assignments are managed on the
-            Cohort Dates &amp; Roles page.
+            Cohort Dates &amp; Roles page.{' '}
+            <NavLink
+              className="course-meeting-readonly-link"
+              to="/cohort-dates-roles"
+            >
+              Click Here
+            </NavLink>
           </p>
         </section>
       </div>
