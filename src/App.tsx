@@ -15329,28 +15329,70 @@ function CoursePage({
               ) : null}
             </div>
 
-            <label className="course-workspace-field">
-              <span>
-                Zoom Link
-              </span>
+            <div className="course-link-copy-field">
+              <label className="course-workspace-field">
+                <span>
+                  Zoom Link
+                </span>
 
-              <input
-                type="url"
-                className="course-workspace-field-input"
-                placeholder="Paste full Zoom link"
-                value={
-                  workspace.webinarZoomUrl
-                }
-                onChange={(
-                  event,
-                ) => {
-                  updateCourseWorkspace({
-                    webinarZoomUrl:
-                      event.target.value,
-                  })
-                }}
-              />
-            </label>
+                <input
+                  type="url"
+                  className="course-workspace-field-input"
+                  placeholder="Paste full Zoom link"
+                  value={
+                    workspace.webinarZoomUrl
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    updateCourseWorkspace({
+                      webinarZoomUrl:
+                        event.target.value,
+                    })
+                  }}
+                />
+              </label>
+
+              {workspace.webinarZoomUrl
+                .trim()
+                .length > 0 ? (
+                <button
+                  type="button"
+                  className="course-link-copy-bubble"
+                  onMouseDown={(
+                    event,
+                  ) => {
+                    event.preventDefault()
+                  }}
+                  onClick={() => {
+                    const url =
+                      workspace.webinarZoomUrl
+                        .trim()
+
+                    if (
+                      navigator.clipboard ===
+                      undefined
+                    ) {
+                      window.alert(
+                        'Clipboard access is not available in this browser.',
+                      )
+
+                      return
+                    }
+
+                    void navigator.clipboard
+                      .writeText(url)
+                      .catch(() => {
+                        window.alert(
+                          'Unable to copy the Zoom Link URL.',
+                        )
+                      })
+                  }}
+                >
+                  Copy URL
+                </button>
+              ) : null}
+            </div>
           </div>
         </section>
 
@@ -15542,7 +15584,11 @@ function CoursePage({
                 <tr>
                   <th>ASN #</th>
                   <th>Assignment Name</th>
-                  <th>Week Due</th>
+                  <th>
+                    Week
+                    <br />
+                    Due
+                  </th>
                   <th>Due Date</th>
                   <th>Points</th>
                 </tr>
@@ -15919,7 +15965,7 @@ function CoursePage({
             </div>
           </header>
 
-          <div className="course-workspace-table-frame">
+          <div className="course-workspace-table-frame course-webinar-table-frame">
             <table
               className={
                 isSixteenWeekCourse
@@ -15958,11 +16004,19 @@ function CoursePage({
                   </th>
 
                   <th className="course-webinar-time-column">
-                    Start Time Pacific
+                    Start Time
+
+                    <span className="course-webinar-time-zone">
+                      Pacific
+                    </span>
                   </th>
 
                   <th className="course-webinar-time-column">
-                    Start Time Eastern
+                    Start Time
+
+                    <span className="course-webinar-time-zone">
+                      Eastern
+                    </span>
                   </th>
 
                   <th className="course-webinar-required-column">

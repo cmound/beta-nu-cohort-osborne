@@ -8405,14 +8405,16 @@
 
 .course-cohort-zoom {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
+  padding-bottom: 1px;
 }
 
 .course-cohort-zoom span {
   color: #cbd5e1;
   font-size: 9px;
   font-weight: 900;
+  line-height: 1;
   text-transform: uppercase;
 }
 
@@ -8420,6 +8422,7 @@
   color: #8fd3ff;
   font-size: 10px;
   font-weight: 800;
+  line-height: 1;
 }
 
 .course-cohort-zoom a:hover {
@@ -8575,21 +8578,24 @@
   font-weight: 900;
   line-height: 1.15;
   text-align: center;
+  vertical-align: bottom;
 }
 
 .course-progress-student-column,
 .course-progress-student-name {
   position: sticky;
   left: 0;
-  width: 205px;
-  min-width: 205px;
-  max-width: 205px;
+  width: 165px;
+  min-width: 165px;
+  max-width: 165px;
   border-right: 2px solid #0b1f3b !important;
 }
 
 .course-progress-student-column {
   z-index: 5;
+  font-size: 12px;
   text-align: left !important;
+  vertical-align: bottom;
 }
 
 .course-progress-student-name {
@@ -8598,6 +8604,7 @@
   padding: 6px 9px;
   color: #111827;
   background: #ffffff;
+  font-size: 11px;
   font-weight: 400;
   text-align: left;
   white-space: nowrap;
@@ -8608,6 +8615,12 @@
   width: 175px;
   min-width: 175px;
   max-width: 175px;
+}
+
+.course-progress-overall-column {
+  font-size: 12px;
+  text-align: left !important;
+  vertical-align: bottom;
 }
 
 .course-progress-overall-cell {
@@ -8627,13 +8640,13 @@
 
 .course-progress-overall-summary strong {
   color: #0b1f3b;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
 }
 
 .course-progress-overall-summary span {
   color: #475569;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -8683,7 +8696,7 @@
 
 .course-progress-assignment-asn {
   color: #003f8c;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.05;
 }
@@ -8704,11 +8717,14 @@
 
 .course-progress-assignment-due {
   margin-top: 5px;
-  color: #334155;
+  color: #ffffff;
   font-size: 9.5px;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.05;
   white-space: nowrap;
+  text-shadow:
+    0 1px 1px
+    rgba(0, 0, 0, 0.5);
 }
 
 .course-progress-status-cell {
@@ -8731,7 +8747,7 @@
   border-radius: 0;
   outline: 0;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.1;
   text-align: center;
@@ -9189,11 +9205,11 @@
    Course Workspace First-Test Adjustments
    ========================================================= */
 
-/* Professor Information remains on the larger left side. */
+/* Professor Information and Links share the existing top-row height. */
 .course-workspace-overview-grid {
   grid-template-columns:
-    minmax(0, 1.85fr)
-    minmax(360px, 0.85fr);
+    minmax(0, 0.92fr)
+    minmax(0, 1.08fr);
   align-items: stretch;
 }
 
@@ -9202,14 +9218,12 @@
   order: -1;
 }
 
-/* Professor fields display left-to-right in one row. */
+/* Professor fields use two columns and two rows. */
 .course-workspace-professor-grid {
   grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 1.35fr)
-    minmax(0, 0.85fr)
-    minmax(0, 1.55fr);
-  gap: 12px;
+    minmax(0, 0.82fr)
+    minmax(0, 1.18fr);
+  gap: 10px 12px;
   padding: 14px;
 }
 
@@ -9429,8 +9443,8 @@
 }
 
 .course-workspace-operations-grid
-  .course-workspace-table-frame {
-  overflow-x: auto;
+  .course-workspace-section-header {
+  align-items: flex-end;
 }
 
 /* Assignments remain compact, while long names wrap naturally. */
@@ -9444,25 +9458,25 @@
 .course-workspace-operations-grid
   .course-assignment-table
   th:nth-child(1) {
-  width: 10%;
+  width: 7%;
 }
 
 .course-workspace-operations-grid
   .course-assignment-table
   th:nth-child(2) {
-  width: 42%;
+  width: 50%;
 }
 
 .course-workspace-operations-grid
   .course-assignment-table
   th:nth-child(3) {
-  width: 13%;
+  width: 10%;
 }
 
 .course-workspace-operations-grid
   .course-assignment-table
   th:nth-child(4) {
-  width: 25%;
+  width: 23%;
 }
 
 .course-workspace-operations-grid
@@ -9474,15 +9488,17 @@
 .course-workspace-operations-grid
   .course-assignment-table
   th {
-  padding: 5px 6px;
-  font-size: 9px;
+  padding: 5px;
+  font-size: 10px;
+  line-height: 1.08;
+  vertical-align: bottom;
 }
 
 .course-workspace-operations-grid
   .course-assignment-table
   td {
-  padding: 5px 6px;
-  font-size: 9.5px;
+  padding: 5px;
+  font-size: 10.5px;
 }
 
 .course-workspace-operations-grid
@@ -9493,23 +9509,95 @@
   line-height: 1.25;
 }
 
-/* Webinars preserve all existing fields and scroll only within their panel. */
-.course-workspace-operations-grid
-  .course-webinar-table {
-  min-width: 600px;
+/* Important Webinars fits within its panel without a horizontal scrollbar. */
+.course-webinar-table-frame {
+  overflow-x: hidden;
 }
 
 .course-workspace-operations-grid
+  .course-webinar-table,
+.course-workspace-operations-grid
   .course-webinar-table-16 {
-  min-width: 760px;
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+/* 8-week Webinar table. */
+.course-workspace-operations-grid
+  .course-webinar-number-column {
+  width: 15%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-session-column {
+  width: 13%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-date-column {
+  width: 20%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-time-column {
+  width: 17%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-required-column {
+  width: 18%;
+}
+
+/* 16-week Webinar table includes the Topic column. */
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-number-column {
+  width: 12%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-session-column {
+  width: 11%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-topic-column {
+  width: 18%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-date-column {
+  width: 17%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-time-column {
+  width: 15%;
+}
+
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-required-column {
+  width: 12%;
 }
 
 .course-workspace-operations-grid
   .course-webinar-table
   th {
-  width: auto;
-  padding: 5px;
-  font-size: 8.5px;
+  padding: 5px 4px;
+  font-size: 10px;
+  line-height: 1.05;
+  vertical-align: bottom;
+}
+
+.course-webinar-time-zone {
+  display: block;
+  margin-top: 2px;
 }
 
 .course-workspace-operations-grid
@@ -9518,9 +9606,9 @@
   .course-webinar-cell-select,
 .course-workspace-operations-grid
   .course-webinar-derived-value {
-  padding-left: 5px;
-  padding-right: 5px;
-  font-size: 9.5px;
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 10.5px;
 }
 
 .course-webinar-header-actions {
@@ -9577,13 +9665,12 @@
 }
 
 .course-meeting-compact-header {
-  min-height: 31px;
+  min-height: 34px;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 5px 6px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
   border-bottom: 1px solid #0b1f3b;
   background:
     linear-gradient(
@@ -9594,19 +9681,29 @@
 }
 
 .course-meeting-compact-header strong {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 5px 7px;
+  border-right: 1px solid #0b1f3b;
   color: #111827;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 900;
   line-height: 1.1;
   white-space: nowrap;
 }
 
 .course-meeting-compact-header span {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  padding: 5px 7px;
   color: #111827;
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 800;
   line-height: 1.1;
-  text-align: right;
+  text-align: left;
 }
 
 .course-meeting-compact-roles {
@@ -9634,6 +9731,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 4px 5px;
+  font-size: 9.5px;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -9643,14 +9741,12 @@
   background: #f8fafc;
   border-right:
     1px solid #cbd5e1;
-  font-size: 8px;
   font-weight: 900;
 }
 
 .course-meeting-compact-roles dd {
   color: #111827;
   background: #ffffff;
-  font-size: 8.5px;
   font-weight: 400;
 }
 
