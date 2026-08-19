@@ -1419,6 +1419,11 @@
 
 /* Pale-yellow selected row */
 .nav-sub-link.nav-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  display: block;
+  width: auto;
   top: 2px;
   right: 6px;
   bottom: 2px;
@@ -1436,6 +1441,7 @@
       rgba(255, 255, 255, 0.85),
     0 1px 3px
       rgba(198, 146, 20, 0.2);
+  pointer-events: none;
 }
 
 /* Keep connector and content above selected fill */
