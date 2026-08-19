@@ -11979,6 +11979,198 @@ tbody td {
   font-weight: 900;
 }
 
+/* =========================================================
+   Dashboard - Today
+   ========================================================= */
+
+.dashboard-overview
+  .dashboard-today-card {
+  display: flex;
+  flex-direction: column;
+  padding: 17px 20px 18px;
+}
+
+/* Header */
+.dashboard-today-heading {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.dashboard-today-heading
+  .dashboard-card-label {
+  color: #0b1f3b;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+/* Gold 3D calendar icon */
+.dashboard-today-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d4a228;
+  border-radius: 7px;
+  color: #c69214;
+  background:
+    linear-gradient(
+      145deg,
+      #fffdf4 0%,
+      #fff7dc 48%,
+      #f4e5b8 100%
+    );
+  box-shadow:
+    inset 1px 1px 0
+      rgba(255, 255, 255, 0.95),
+    inset -2px -2px 3px
+      rgba(157, 113, 13, 0.18),
+    0 3px 6px
+      rgba(74, 53, 5, 0.22);
+}
+
+.dashboard-today-icon svg {
+  width: 27px;
+  height: 27px;
+  display: block;
+  filter:
+    drop-shadow(
+      0 1px 0 #8f6500
+    )
+    drop-shadow(
+      0 1px 1px
+      rgba(0, 0, 0, 0.18)
+    );
+}
+
+/* Current date */
+.dashboard-overview
+  .dashboard-today-card
+  .dashboard-current-date {
+  margin: 15px 0 13px;
+  color: #0b1f3b;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+/* Time boxes */
+.dashboard-today-time-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-today-time-box {
+  min-height: 64px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid #8298ad;
+  border-radius: 7px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f4f7fa 55%,
+      #edf2f6 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.98),
+    inset 0 -2px 4px
+      rgba(53, 82, 108, 0.1),
+    0 3px 6px
+      rgba(11, 31, 59, 0.13);
+}
+
+.dashboard-today-time-box
+  > span {
+  color: #005eb8;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.25px;
+  text-transform: uppercase;
+}
+
+.dashboard-today-time-box
+  > strong {
+  color: #0b1f3b;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Leadership quote */
+.dashboard-today-quote {
+  min-height: 56px;
+  display: grid;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr)
+    30px;
+  align-items: center;
+  column-gap: 4px;
+  margin: auto 0 0;
+  padding: 14px 4px 0;
+  border: 0;
+}
+
+.dashboard-today-quote p {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  color: #0b1f3b;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.dashboard-today-quote p
+  > span {
+  display: block;
+}
+
+.dashboard-today-quote-mark {
+  color: #c69214;
+  font-family:
+    Georgia,
+    'Times New Roman',
+    serif;
+  font-size: 39px;
+  font-weight: 900;
+  line-height: 0.75;
+  text-shadow:
+    0 1px 0
+      rgba(255, 255, 255, 0.85),
+    0 2px 2px
+      rgba(111, 76, 0, 0.16);
+}
+
+.dashboard-today-quote-mark-open {
+  align-self: start;
+  padding-top: 4px;
+  text-align: right;
+}
+
+.dashboard-today-quote-mark-close {
+  align-self: end;
+  padding-bottom: 1px;
+  text-align: left;
+}
+
 /* Keep middle-row birthday card consistent */
 .dashboard-overview
   .birthday-card {

@@ -5662,10 +5662,87 @@ function DashboardPage() {
           </section>
         </article>
 
-        <article className="dashboard-info-card dashboard-date-card">
-          <p className="dashboard-card-label">
-            Today
-          </p>
+        <article className="dashboard-info-card dashboard-date-card dashboard-today-card">
+          <div className="dashboard-today-heading">
+            <span
+              className="dashboard-today-icon"
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <rect
+                  x="4"
+                  y="5.5"
+                  width="16"
+                  height="14"
+                  rx="2"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
+
+                <path
+                  d="M8 3.5V7.5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M16 3.5V7.5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M4 9H20"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
+
+                <path
+                  d="M8 12H9"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M12 12H13"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M16 12H17"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M8 16H9"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M12 16H13"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+
+            <p className="dashboard-card-label">
+              Today
+            </p>
+          </div>
 
           <p className="dashboard-current-date">
             {pacificDateFormatter.format(
@@ -5673,19 +5750,52 @@ function DashboardPage() {
             )}
           </p>
 
-          <div className="dashboard-time-list">
-            <span>
-              {pacificTimeFormatter.format(
-                currentDate,
-              )}
+          <div className="dashboard-today-time-list">
+            <div className="dashboard-today-time-box">
+              <span>
+                Pacific Time
+              </span>
+
+              <strong>
+                {pacificTimeFormatter.format(
+                  currentDate,
+                )}
+              </strong>
+            </div>
+
+            <div className="dashboard-today-time-box">
+              <span>
+                Eastern Time
+              </span>
+
+              <strong>
+                {easternTimeFormatter.format(
+                  currentDate,
+                )}
+              </strong>
+            </div>
+          </div>
+
+          <blockquote className="dashboard-today-quote">
+            <span
+              className="dashboard-today-quote-mark dashboard-today-quote-mark-open"
+              aria-hidden="true"
+            >
+              “
             </span>
 
-            <span>
-              {easternTimeFormatter.format(
-                currentDate,
-              )}
+            <p>
+              <span>Lead with purpose.</span>
+              <span>Learn. Grow. Transform.</span>
+            </p>
+
+            <span
+              className="dashboard-today-quote-mark dashboard-today-quote-mark-close"
+              aria-hidden="true"
+            >
+              ”
             </span>
-          </div>
+          </blockquote>
         </article>
 
         <article className="dashboard-info-card dashboard-classes-card">
