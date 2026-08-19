@@ -5571,6 +5571,48 @@ function DashboardPage({
         }
       })
 
+  const dashboardTotalCourses =
+    dashboardAcademicPlan.length
+
+  const dashboardPendingCourses =
+    Math.max(
+      0,
+      dashboardTotalCourses -
+      dashboardActiveCourses.length -
+      completedAcademicPlanCount,
+    )
+
+  const dashboardActiveCourseShare =
+    dashboardTotalCourses === 0
+      ? 0
+      : (
+        dashboardActiveCourses.length /
+        dashboardTotalCourses
+      ) * 100
+
+  const dashboardCompletedCourseShareEnd =
+    dashboardTotalCourses === 0
+      ? 0
+      : dashboardActiveCourseShare +
+      (
+        completedAcademicPlanCount /
+        dashboardTotalCourses
+      ) * 100
+
+  const dashboardCourseStatusDonutBackground =
+    dashboardTotalCourses === 0
+      ? '#e2e8f0'
+      : `conic-gradient(
+          #168a32 0%
+          ${dashboardActiveCourseShare}%,
+          #13a9c7
+          ${dashboardActiveCourseShare}%
+          ${dashboardCompletedCourseShareEnd}%,
+          #005ecb
+          ${dashboardCompletedCourseShareEnd}%
+          100%
+        )`
+
   const dashboardActiveContacts =
     contacts.filter(
       (contact) =>
@@ -6647,9 +6689,120 @@ function DashboardPage({
         </article>
 
         <article className="dashboard-info-card dashboard-courses-status-card">
-          <p className="dashboard-card-label">
-            Courses Status
-          </p>
+          <div className="dashboard-courses-status-header">
+            <span
+              className="dashboard-courses-status-icon"
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M3.5 5.5C6.5 4.7 9 5.2 12 7.2V19C9.2 17.2 6.5 16.7 3.5 17.5V5.5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+
+                <path
+                  d="M20.5 5.5C17.5 4.7 15 5.2 12 7.2V19C14.8 17.2 17.5 16.7 20.5 17.5V5.5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+
+                <path
+                  d="M12 7.2V19"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+              </svg>
+            </span>
+
+            <p className="dashboard-card-label">
+              Courses Status
+            </p>
+          </div>
+
+          <div className="dashboard-courses-status-content">
+            <div className="dashboard-course-status-chart-column">
+              <div
+                className="dashboard-course-status-donut"
+                style={{
+                  background:
+                    dashboardCourseStatusDonutBackground,
+                }}
+                aria-label={`${dashboardActiveCourses.length} active courses, ${dashboardPendingCourses} pending courses, ${completedAcademicPlanCount} completed courses`}
+              >
+                <span className="dashboard-course-status-donut-center" />
+              </div>
+
+              <strong className="dashboard-course-status-total-label">
+                Total Courses
+              </strong>
+            </div>
+
+            <div className="dashboard-course-status-legend">
+              <div className="dashboard-course-status-row">
+                <span
+                  className="dashboard-course-status-dot dashboard-course-status-dot-active"
+                  aria-hidden="true"
+                />
+
+                <strong>
+                  ACTIVE
+                </strong>
+
+                <span className="dashboard-course-status-number">
+                  {dashboardActiveCourses.length}
+                </span>
+              </div>
+
+              <div className="dashboard-course-status-row">
+                <span
+                  className="dashboard-course-status-dot dashboard-course-status-dot-pending"
+                  aria-hidden="true"
+                />
+
+                <strong>
+                  PENDING
+                </strong>
+
+                <span className="dashboard-course-status-number">
+                  {dashboardPendingCourses}
+                </span>
+              </div>
+
+              <div className="dashboard-course-status-row">
+                <span
+                  className="dashboard-course-status-dot dashboard-course-status-dot-completed"
+                  aria-hidden="true"
+                />
+
+                <strong>
+                  COMPLETED
+                </strong>
+
+                <span className="dashboard-course-status-number">
+                  {completedAcademicPlanCount}
+                </span>
+              </div>
+
+              <div className="dashboard-course-status-total-row">
+                <span className="dashboard-course-status-number">
+                  {dashboardTotalCourses}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <NavLink
+            className="dashboard-view-all-courses-status"
+            to="/academic-plan"
+          >
+            View All Courses
+          </NavLink>
         </article>
       </div>
 
