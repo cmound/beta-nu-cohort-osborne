@@ -258,18 +258,31 @@ type CohortContactStatus = 'Active' | 'Inactive'
 
 type CohortContactStatusState = Record<string, CohortContactStatus>
 
+type CohortContactInactiveDateState =
+  Record<string, string>
+
 type CohortContactUpdate = Partial<
   Omit<CohortContactRecord, 'id' | 'isMentor'>
 >
 
 interface CohortContactPageProps {
-  readonly contacts: readonly CohortContactRecord[]
-  readonly contactStatuses: Readonly<CohortContactStatusState>
-  readonly onAddContact: (contact: CohortContactRecord) => void
+  readonly contacts:
+  readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
+
+  readonly contactInactiveDates:
+  Readonly<CohortContactInactiveDateState>
+
+  readonly onAddContact:
+  (contact: CohortContactRecord) => void
+
   readonly onUpdateContact: (
     contactId: string,
     updates: CohortContactUpdate,
   ) => void
+
   readonly onUpdateStatus: (
     contactId: string,
     status: CohortContactStatus,
@@ -3110,7 +3123,7 @@ const formerCohortMembers: readonly FormerCohortMemberRecord[] = [
     birthdayDay: 31,
     dissertationInterest:
       'Building High-Performance Music Programs: Applying Performance Psychology to Develop Organizational Leadership and Resilience in Student Musicians from Lower Socioeconomic Communities.',
-    inactiveAfterDate: '2026-07-26',
+    inactiveAfterDate: '2026-08-03',
   },
 ]
 
@@ -4939,6 +4952,29 @@ function formatBirthday(
   return `${monthLabel} ${birthdayDay}`
 }
 
+function formatInactiveContactDate(
+  dateValue: string,
+): string {
+  const inactiveDate =
+    new Date(
+      `${dateValue}T12:00:00Z`,
+    )
+
+  if (
+    Number.isNaN(
+      inactiveDate.getTime(),
+    )
+  ) {
+    return dateValue
+  }
+
+  return (
+    `${inactiveDate.getUTCMonth() + 1}/` +
+    `${inactiveDate.getUTCDate()}/` +
+    `${inactiveDate.getUTCFullYear()}`
+  )
+}
+
 function sortCohortContacts(
   contacts: readonly CohortContactRecord[],
 ): CohortContactRecord[] {
@@ -5508,6 +5544,7 @@ function DashboardPage() {
 function CohortContactPage({
   contacts,
   contactStatuses,
+  contactInactiveDates,
   onAddContact,
   onUpdateContact,
   onUpdateStatus,
@@ -5530,15 +5567,61 @@ function CohortContactPage({
       (contactStatuses[contact.id] ?? 'Active') === 'Inactive',
   )
 
-  const inactiveContactNames = [
-    ...new Set([
-      ...formerCohortMembers.map((member) => member.name),
-      ...inactiveContacts.map((contact) => contact.name),
-    ]),
-  ].sort((firstName, secondName) =>
-    firstName.localeCompare(secondName, 'en-US', {
-      sensitivity: 'base',
-    }),
+  const currentPacificDate =
+    getPacificDateKey(new Date())
+
+  const formerMemberNameKeys =
+    new Set(
+      formerCohortMembers.map(
+        (member) =>
+          member.name
+            .trim()
+            .toLocaleLowerCase(
+              'en-US',
+            ),
+      ),
+    )
+
+  const inactiveContactRows = [
+    ...formerCohortMembers.map(
+      (member) => ({
+        id: `former-${member.id}`,
+        name: member.name,
+        asOfDate:
+          member.inactiveAfterDate,
+      }),
+    ),
+    ...inactiveContacts
+      .filter(
+        (contact) =>
+          !formerMemberNameKeys.has(
+            contact.name
+              .trim()
+              .toLocaleLowerCase(
+                'en-US',
+              ),
+          ),
+      )
+      .map(
+        (contact) => ({
+          id: `contact-${contact.id}`,
+          name: contact.name,
+          asOfDate:
+            contactInactiveDates[
+            contact.id
+            ] ??
+            currentPacificDate,
+        }),
+      ),
+  ].sort(
+    (firstContact, secondContact) =>
+      firstContact.name.localeCompare(
+        secondContact.name,
+        'en-US',
+        {
+          sensitivity: 'base',
+        },
+      ),
   )
 
   function openAddContactModal(): void {
@@ -5945,20 +6028,46 @@ function CohortContactPage({
         aria-labelledby="inactive-contacts-title"
       >
         <div className="contacts-inactive-heading">
-          <h2 id="inactive-contacts-title">Inactive</h2>
-          <span>{inactiveContactNames.length}</span>
+          <h2 id="inactive-contacts-title">
+            Inactive
+          </h2>
+
+          <span>
+            {inactiveContactRows.length}
+          </span>
         </div>
 
-        {inactiveContactNames.length === 0 ? (
+        {inactiveContactRows.length === 0 ? (
           <p className="contacts-inactive-empty">
             No inactive cohort members.
           </p>
         ) : (
-          <ul className="contacts-inactive-list">
-            {inactiveContactNames.map((contactName) => (
-              <li key={contactName}>{contactName}</li>
-            ))}
-          </ul>
+          <table className="contacts-inactive-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>As of</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {inactiveContactRows.map(
+                (inactiveContact) => (
+                  <tr key={inactiveContact.id}>
+                    <td>
+                      {inactiveContact.name}
+                    </td>
+
+                    <td>
+                      {formatInactiveContactDate(
+                        inactiveContact.asOfDate,
+                      )}
+                    </td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+          </table>
         )}
       </section>
 
@@ -22252,6 +22361,13 @@ function App() {
   const [contactStatuses, setContactStatuses] =
     useState<CohortContactStatusState>(cohortContactStatusSeed)
 
+  const [
+    contactInactiveDates,
+    setContactInactiveDates,
+  ] = useState<
+    CohortContactInactiveDateState
+  >({})
+
   const [cohortMeetings, setCohortMeetings] =
     useState<readonly CohortMeetingRecord[]>(cohortMeetingsSeed)
 
@@ -22652,10 +22768,35 @@ function App() {
     contactId: string,
     status: CohortContactStatus,
   ): void {
-    setContactStatuses((currentStatuses) => ({
-      ...currentStatuses,
-      [contactId]: status,
-    }))
+    setContactStatuses(
+      (currentStatuses) => ({
+        ...currentStatuses,
+        [contactId]: status,
+      }),
+    )
+
+    setContactInactiveDates(
+      (currentDates) => {
+        if (status === 'Inactive') {
+          return {
+            ...currentDates,
+            [contactId]:
+              currentDates[contactId] ??
+              getPacificDateKey(
+                new Date(),
+              ),
+          }
+        }
+
+        const nextDates = {
+          ...currentDates,
+        }
+
+        delete nextDates[contactId]
+
+        return nextDates
+      },
+    )
   }
 
   function updateCohortAttendance(
@@ -24272,9 +24413,14 @@ function App() {
                 <CohortContactPage
                   contacts={contacts}
                   contactStatuses={contactStatuses}
+                  contactInactiveDates={
+                    contactInactiveDates
+                  }
                   onAddContact={addCohortContact}
                   onUpdateContact={updateCohortContact}
-                  onUpdateStatus={updateCohortContactStatus}
+                  onUpdateStatus={
+                    updateCohortContactStatus
+                  }
                 />
               }
             />
