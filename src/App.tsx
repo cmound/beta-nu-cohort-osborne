@@ -13,6 +13,7 @@ import {
   NavLink,
   Route,
   Routes,
+  useNavigate,
   useParams,
 } from 'react-router'
 import { renderAsync } from 'docx-preview'
@@ -8737,6 +8738,8 @@ function FacilitatorPlannerPage({
   meetings,
   contacts,
 }: FacilitatorPlannerPageProps) {
+  const navigate = useNavigate()
+
   const [savedAgendas, setSavedAgendas] =
     useState<
       readonly FacilitatorAgendaRecord[]
@@ -8829,6 +8832,11 @@ function FacilitatorPlannerPage({
     lastProtectedAt,
     setLastProtectedAt,
   ] = useState('')
+
+  const [
+    pendingNavigationPath,
+    setPendingNavigationPath,
+  ] = useState<string | null>(null)
 
   const [
     draggedAgendaItemId,
@@ -9101,6 +9109,75 @@ function FacilitatorPlannerPage({
       window.removeEventListener(
         'beforeunload',
         protectActiveAgenda,
+      )
+    }
+  }, [isBuildingAgenda])
+
+  useEffect(() => {
+    if (!isBuildingAgenda) {
+      return undefined
+    }
+
+    function interceptSidebarNavigation(
+      event: globalThis.MouseEvent,
+    ): void {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        !(event.target instanceof Element)
+      ) {
+        return
+      }
+
+      const link = event.target.closest(
+        '.sidebar-nav a[href]',
+      )
+
+      if (
+        !(link instanceof HTMLAnchorElement)
+      ) {
+        return
+      }
+
+      const destinationPath =
+        link.hash.replace(/^#/, '')
+
+      const currentPath =
+        window.location.hash.replace(
+          /^#/,
+          '',
+        )
+
+      if (
+        destinationPath.length === 0 ||
+        destinationPath === currentPath
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      setPendingNavigationPath(
+        destinationPath,
+      )
+    }
+
+    document.addEventListener(
+      'click',
+      interceptSidebarNavigation,
+      true,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'click',
+        interceptSidebarNavigation,
+        true,
       )
     }
   }, [isBuildingAgenda])
@@ -9847,11 +9924,15 @@ function FacilitatorPlannerPage({
     )
   }
 
-  function saveAgenda(): void {
+  function saveAgenda(
+    statusToSave:
+      FacilitatorAgendaStatus =
+      agendaStatus,
+  ): boolean {
     if (
       selectedMeeting === undefined
     ) {
-      return
+      return false
     }
 
     const savedAgenda:
@@ -9860,7 +9941,7 @@ function FacilitatorPlannerPage({
         `facilitator-agenda-${selectedMeeting.id}`,
       meetingId:
         selectedMeeting.id,
-      status: agendaStatus,
+      status: statusToSave,
       savedAt:
         new Date().toISOString(),
       housekeepingNotes,
@@ -9907,17 +9988,50 @@ function FacilitatorPlannerPage({
         nextSavedAgendas,
       )
 
+      setAgendaStatus(statusToSave)
       setIsBuildingAgenda(false)
       setLastProtectedAt('')
 
       setActionMessage(
-        `${agendaStatus} agenda saved.`,
+        `${statusToSave} agenda saved.`,
       )
+
+      return true
     } catch {
       setActionMessage(
         'Unable to save this agenda in the browser.',
       )
+
+      return false
     }
+  }
+
+  function finishPendingNavigation(
+    shouldSaveDraft: boolean,
+  ): void {
+    if (
+      pendingNavigationPath === null
+    ) {
+      return
+    }
+
+    const destinationPath =
+      pendingNavigationPath
+
+    if (
+      shouldSaveDraft &&
+      !saveAgenda('Draft')
+    ) {
+      return
+    }
+
+    if (!shouldSaveDraft) {
+      setIsBuildingAgenda(false)
+      setLastProtectedAt('')
+    }
+
+    setPendingNavigationPath(null)
+    navigate(destinationPath)
   }
 
   async function generateCurrentAgenda():
@@ -11132,7 +11246,9 @@ function FacilitatorPlannerPage({
             <button
               type="button"
               className="facilitator-planner-save-button"
-              onClick={saveAgenda}
+              onClick={() => {
+                saveAgenda()
+              }}
             >
               <svg
                 className="facilitator-planner-action-icon"
@@ -11356,6 +11472,66 @@ function FacilitatorPlannerPage({
           </table>
         </div>
       </section>
+
+      {pendingNavigationPath !== null ? (
+        <div className="facilitator-planner-navigation-overlay">
+          <section
+            className="facilitator-planner-navigation-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="facilitator-planner-navigation-title"
+          >
+            <h2 id="facilitator-planner-navigation-title">
+              Save Draft Before Leaving?
+            </h2>
+
+            <p>
+              You are currently building an
+              agenda. Would you like to save
+              it as a draft before opening
+              another page?
+            </p>
+
+            <small>
+              Your automatic recovery copy
+              remains protected if you leave
+              without creating a saved draft.
+            </small>
+
+            <div className="facilitator-planner-navigation-actions">
+              <button
+                type="button"
+                className="facilitator-planner-navigation-save"
+                onClick={() =>
+                  finishPendingNavigation(true)
+                }
+              >
+                Save Draft &amp; Leave
+              </button>
+
+              <button
+                type="button"
+                className="facilitator-planner-navigation-continue"
+                onClick={() =>
+                  setPendingNavigationPath(null)
+                }
+              >
+                Continue Building
+              </button>
+
+              <button
+                type="button"
+                className="facilitator-planner-navigation-leave"
+                onClick={() =>
+                  finishPendingNavigation(false)
+                }
+              >
+                Leave Without Draft Save
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   )
 }
