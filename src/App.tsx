@@ -618,7 +618,7 @@ const navigationItems: readonly NavigationItem[] = [
     parentId: 'cohort-dates',
   },
   {
-    label: 'Groups - by Dr. CMO',
+    label: 'Group Assignments',
     path: '/groups-assigned-by-member',
     parentId: 'cohort-dates',
     isLastInGroup: true,
@@ -20715,24 +20715,754 @@ function CohortCourseWaiversPage({
   )
 }
 
+const COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY =
+  'beta-nu-group-assignments-v1'
 
-function CohortSectionPlaceholderPage({
-  title,
-  description,
-}: PlaceholderPageProps) {
+const MAX_COHORT_ASSIGNMENT_GROUPS = 4
+
+interface CohortGroupAssignmentRecord {
+  readonly id: string
+  readonly memberIds: readonly string[]
+}
+
+interface CohortGroupAssignmentState {
+  readonly activityDate: string
+  readonly groups:
+  readonly CohortGroupAssignmentRecord[]
+}
+
+type CohortGroupDraftState =
+  Record<string, string>
+
+interface CohortGroupAssignmentsPageProps {
+  readonly contacts:
+  readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
+}
+
+function createEmptyCohortGroupAssignmentState():
+  CohortGroupAssignmentState {
+  return {
+    activityDate: '',
+    groups: [],
+  }
+}
+
+function isCohortGroupStorageRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
+  )
+}
+
+function readStoredCohortGroupAssignments():
+  CohortGroupAssignmentState {
+  const emptyState =
+    createEmptyCohortGroupAssignmentState()
+
+  try {
+    const storedValue = localStorage.getItem(
+      COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY,
+    )
+
+    if (storedValue === null) {
+      return emptyState
+    }
+
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !isCohortGroupStorageRecord(
+        parsedValue,
+      )
+    ) {
+      return emptyState
+    }
+
+    const storedActivityDate =
+      parsedValue.activityDate
+
+    const activityDate =
+      typeof storedActivityDate ===
+        'string' &&
+        (
+          storedActivityDate === '' ||
+          /^\d{4}-\d{2}-\d{2}$/.test(
+            storedActivityDate,
+          )
+        )
+        ? storedActivityDate
+        : ''
+
+    if (
+      !Array.isArray(
+        parsedValue.groups,
+      )
+    ) {
+      return {
+        activityDate,
+        groups: [],
+      }
+    }
+
+    const usedMemberIds =
+      new Set<string>()
+
+    const storedGroups:
+      CohortGroupAssignmentRecord[] = []
+
+    for (
+      const groupValue
+      of parsedValue.groups.slice(
+        0,
+        MAX_COHORT_ASSIGNMENT_GROUPS,
+      )
+    ) {
+      if (
+        !isCohortGroupStorageRecord(
+          groupValue,
+        ) ||
+        !Array.isArray(
+          groupValue.memberIds,
+        )
+      ) {
+        continue
+      }
+
+      const memberIds: string[] = []
+
+      for (
+        const memberId
+        of groupValue.memberIds
+      ) {
+        if (
+          typeof memberId === 'string' &&
+          !usedMemberIds.has(memberId)
+        ) {
+          usedMemberIds.add(memberId)
+          memberIds.push(memberId)
+        }
+      }
+
+      storedGroups.push({
+        id:
+          `group-${storedGroups.length + 1}`,
+        memberIds,
+      })
+    }
+
+    return {
+      activityDate,
+      groups: storedGroups,
+    }
+  } catch {
+    return emptyState
+  }
+}
+
+function CohortGroupAssignmentsPage({
+  contacts,
+  contactStatuses,
+}: CohortGroupAssignmentsPageProps) {
+  const [
+    groupAssignmentState,
+    setGroupAssignmentState,
+  ] =
+    useState<CohortGroupAssignmentState>(
+      readStoredCohortGroupAssignments,
+    )
+
+  const [
+    groupCountInput,
+    setGroupCountInput,
+  ] = useState(() =>
+    groupAssignmentState.groups.length > 0
+      ? String(
+        groupAssignmentState.groups
+          .length,
+      )
+      : '4',
+  )
+
+  const [
+    groupDrafts,
+    setGroupDrafts,
+  ] = useState<CohortGroupDraftState>({})
+
+  useEffect(() => {
+    localStorage.setItem(
+      COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY,
+      JSON.stringify(
+        groupAssignmentState,
+      ),
+    )
+  }, [groupAssignmentState])
+
+  const activeStudents =
+    sortCohortContacts(contacts).filter(
+      (contact) =>
+        !contact.isMentor &&
+        (
+          contactStatuses[contact.id] ??
+          'Active'
+        ) === 'Active',
+    )
+
+  const activeStudentById =
+    new Map<
+      string,
+      CohortContactRecord
+    >()
+
+  for (
+    const student
+    of activeStudents
+  ) {
+    activeStudentById.set(
+      student.id,
+      student,
+    )
+  }
+
+  const assignedStudentIds =
+    new Set<string>()
+
+  for (
+    const group
+    of groupAssignmentState.groups
+  ) {
+    for (
+      const memberId
+      of group.memberIds
+    ) {
+      if (
+        activeStudentById.has(memberId)
+      ) {
+        assignedStudentIds.add(
+          memberId,
+        )
+      }
+    }
+  }
+
+  const availableStudents =
+    activeStudents.filter(
+      (student) =>
+        !assignedStudentIds.has(
+          student.id,
+        ),
+    )
+
+  const requestedGroupCount =
+    Number(groupCountInput)
+
+  const groupCountIsValid =
+    Number.isInteger(
+      requestedGroupCount,
+    ) &&
+    requestedGroupCount >= 1 &&
+    requestedGroupCount <=
+    MAX_COHORT_ASSIGNMENT_GROUPS
+
+  const groupsCreated =
+    groupAssignmentState.groups
+      .length > 0
+
+  const hasDraftText =
+    Object.values(groupDrafts).some(
+      (draftValue) =>
+        draftValue.trim().length > 0,
+    )
+
+  const hasPageData =
+    groupAssignmentState.activityDate !==
+    '' ||
+    groupsCreated ||
+    hasDraftText ||
+    groupCountInput !== '4'
+
+  function createGroups(): void {
+    if (
+      !groupCountIsValid ||
+      groupsCreated
+    ) {
+      return
+    }
+
+    setGroupAssignmentState(
+      (currentState) => ({
+        ...currentState,
+        groups: Array.from(
+          {
+            length:
+              requestedGroupCount,
+          },
+          (_, groupIndex) => ({
+            id:
+              `group-${groupIndex + 1}`,
+            memberIds: [],
+          }),
+        ),
+      }),
+    )
+
+    setGroupDrafts({})
+  }
+
+  function updateGroupDraft(
+    groupId: string,
+    rawValue: string,
+  ): void {
+    setGroupDrafts(
+      (currentDrafts) => ({
+        ...currentDrafts,
+        [groupId]: rawValue,
+      }),
+    )
+
+    const normalizedName =
+      rawValue
+        .trim()
+        .toLocaleLowerCase('en-US')
+
+    if (
+      normalizedName.length === 0
+    ) {
+      return
+    }
+
+    const matchedStudent =
+      activeStudents.find(
+        (student) =>
+          student.name
+            .toLocaleLowerCase(
+              'en-US',
+            ) === normalizedName,
+      )
+
+    if (
+      matchedStudent === undefined ||
+      assignedStudentIds.has(
+        matchedStudent.id,
+      )
+    ) {
+      return
+    }
+
+    setGroupAssignmentState(
+      (currentState) => {
+        const studentAlreadyAssigned =
+          currentState.groups.some(
+            (group) =>
+              group.memberIds.includes(
+                matchedStudent.id,
+              ),
+          )
+
+        if (studentAlreadyAssigned) {
+          return currentState
+        }
+
+        return {
+          ...currentState,
+          groups:
+            currentState.groups.map(
+              (group) =>
+                group.id === groupId
+                  ? {
+                    ...group,
+                    memberIds: [
+                      ...group.memberIds,
+                      matchedStudent.id,
+                    ],
+                  }
+                  : group,
+            ),
+        }
+      },
+    )
+
+    setGroupDrafts(
+      (currentDrafts) => ({
+        ...currentDrafts,
+        [groupId]: '',
+      }),
+    )
+  }
+
+  function removeStudentFromGroup(
+    groupId: string,
+    studentId: string,
+  ): void {
+    setGroupAssignmentState(
+      (currentState) => ({
+        ...currentState,
+        groups:
+          currentState.groups.map(
+            (group) =>
+              group.id === groupId
+                ? {
+                  ...group,
+                  memberIds:
+                    group.memberIds.filter(
+                      (memberId) =>
+                        memberId !==
+                        studentId,
+                    ),
+                }
+                : group,
+          ),
+      }),
+    )
+  }
+
+  function clearGroupAssignments():
+    void {
+    setGroupAssignmentState(
+      createEmptyCohortGroupAssignmentState(),
+    )
+
+    setGroupCountInput('4')
+    setGroupDrafts({})
+  }
+
   return (
     <section className="page-shell">
       <header className="dashboard-page-heading cohort-contacts-page-heading">
-        <h1>{title}</h1>
+        <h1>Group Assignments</h1>
       </header>
 
-      <div className="content-panel">
-        <div className="placeholder-content">
-          <p className="panel-eyebrow">Page Structure Created</p>
-          <h2>{title}</h2>
-          <p>{description}</p>
+      <section className="cohort-groups-panel">
+        <div className="cohort-groups-toolbar">
+          <label className="cohort-groups-field cohort-groups-date-field">
+            <span>Activity Date</span>
+
+            <input
+              type="date"
+              value={
+                groupAssignmentState
+                  .activityDate
+              }
+              onChange={(event) => {
+                const activityDate =
+                  event.currentTarget.value
+
+                setGroupAssignmentState(
+                  (currentState) => ({
+                    ...currentState,
+                    activityDate,
+                  }),
+                )
+              }}
+            />
+          </label>
+
+          <label className="cohort-groups-field cohort-groups-count-field">
+            <span>
+              Number of Groups
+            </span>
+
+            <input
+              type="number"
+              min={1}
+              max={
+                MAX_COHORT_ASSIGNMENT_GROUPS
+              }
+              step={1}
+              value={groupCountInput}
+              disabled={groupsCreated}
+              onChange={(event) => {
+                setGroupCountInput(
+                  event.currentTarget.value,
+                )
+              }}
+            />
+          </label>
+
+          <button
+            type="button"
+            className="cohort-groups-create-button"
+            disabled={
+              !groupCountIsValid ||
+              groupsCreated
+            }
+            title={
+              groupsCreated
+                ? 'Select Clear before creating a new set of groups.'
+                : 'Create the requested group boxes.'
+            }
+            onClick={createGroups}
+          >
+            + Create Group
+          </button>
+
+          <button
+            type="button"
+            className="cohort-groups-clear-button"
+            disabled={!hasPageData}
+            onClick={
+              clearGroupAssignments
+            }
+          >
+            Clear
+          </button>
         </div>
-      </div>
+
+        <div className="cohort-groups-guidance">
+          Create one to four groups, then
+          type or select a complete student
+          name inside a group. Assigned
+          students are crossed out on the
+          active roster and removed from all
+          remaining name suggestions.
+        </div>
+
+        <div className="cohort-groups-layout">
+          <aside
+            className="cohort-groups-roster"
+            aria-labelledby="cohort-groups-roster-heading"
+          >
+            <div className="cohort-groups-roster-heading">
+              <h2 id="cohort-groups-roster-heading">
+                Active Students
+              </h2>
+
+              <span>
+                {activeStudents.length}
+              </span>
+            </div>
+
+            <p className="cohort-groups-roster-summary">
+              {assignedStudentIds.size} of{' '}
+              {activeStudents.length} assigned
+            </p>
+
+            <ul className="cohort-groups-roster-list">
+              {activeStudents.map(
+                (student) => {
+                  const isAssigned =
+                    assignedStudentIds.has(
+                      student.id,
+                    )
+
+                  return (
+                    <li
+                      key={student.id}
+                      className={
+                        isAssigned
+                          ? 'cohort-groups-roster-item cohort-groups-roster-item-assigned'
+                          : 'cohort-groups-roster-item'
+                      }
+                      aria-label={
+                        `${student.name}, ` +
+                        (
+                          isAssigned
+                            ? 'assigned'
+                            : 'available'
+                        )
+                      }
+                    >
+                      <span
+                        className="cohort-groups-roster-dot"
+                        aria-hidden="true"
+                      />
+
+                      <span>
+                        {student.name}
+                      </span>
+                    </li>
+                  )
+                },
+              )}
+            </ul>
+          </aside>
+
+          <section className="cohort-groups-workspace">
+            {groupsCreated ? (
+              <>
+                <div className="cohort-groups-workspace-heading">
+                  <strong>
+                    {
+                      groupAssignmentState
+                        .groups.length
+                    }{' '}
+                    Groups
+                  </strong>
+
+                  <span>
+                    {assignedStudentIds.size} of{' '}
+                    {activeStudents.length}{' '}
+                    active students assigned
+                  </span>
+                </div>
+
+                <div className="cohort-group-cards-frame">
+                  <div
+                    className={
+                      'cohort-group-cards ' +
+                      `cohort-group-cards-${groupAssignmentState.groups.length}`
+                    }
+                  >
+                    {groupAssignmentState.groups.map(
+                      (
+                        group,
+                        groupIndex,
+                      ) => {
+                        const groupStudents =
+                          group.memberIds
+                            .map(
+                              (memberId) =>
+                                activeStudentById.get(
+                                  memberId,
+                                ),
+                            )
+                            .filter(
+                              (
+                                student,
+                              ): student is CohortContactRecord =>
+                                student !==
+                                undefined,
+                            )
+
+                        return (
+                          <section
+                            key={group.id}
+                            className="cohort-group-card"
+                          >
+                            <header className="cohort-group-card-heading">
+                              <h3>
+                                Group{' '}
+                                {groupIndex + 1}
+                              </h3>
+
+                              <span>
+                                {
+                                  groupStudents
+                                    .length
+                                }
+                              </span>
+                            </header>
+
+                            <div className="cohort-group-card-body">
+                              {groupStudents.length ===
+                                0 ? (
+                                <p className="cohort-group-empty-message">
+                                  No students assigned
+                                </p>
+                              ) : (
+                                <ul className="cohort-group-member-list">
+                                  {groupStudents.map(
+                                    (student) => (
+                                      <li
+                                        key={
+                                          student.id
+                                        }
+                                      >
+                                        <span>
+                                          {
+                                            student.name
+                                          }
+                                        </span>
+
+                                        <button
+                                          type="button"
+                                          aria-label={
+                                            `Remove ${student.name} ` +
+                                            `from Group ${groupIndex + 1}`
+                                          }
+                                          onClick={() => {
+                                            removeStudentFromGroup(
+                                              group.id,
+                                              student.id,
+                                            )
+                                          }}
+                                        >
+                                          Remove
+                                        </button>
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              )}
+
+                              <label className="cohort-group-member-entry">
+                                <span>
+                                  Add Student
+                                </span>
+
+                                <input
+                                  type="text"
+                                  list="cohort-group-student-options"
+                                  value={
+                                    groupDrafts[
+                                    group.id
+                                    ] ?? ''
+                                  }
+                                  placeholder={
+                                    availableStudents
+                                      .length === 0
+                                      ? 'All students assigned'
+                                      : 'Type a student name'
+                                  }
+                                  autoComplete="off"
+                                  disabled={
+                                    availableStudents
+                                      .length === 0
+                                  }
+                                  onChange={(
+                                    event,
+                                  ) => {
+                                    updateGroupDraft(
+                                      group.id,
+                                      event
+                                        .currentTarget
+                                        .value,
+                                    )
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </section>
+                        )
+                      },
+                    )}
+                  </div>
+                </div>
+
+                <datalist id="cohort-group-student-options">
+                  {availableStudents.map(
+                    (student) => (
+                      <option
+                        key={student.id}
+                        value={student.name}
+                      />
+                    ),
+                  )}
+                </datalist>
+              </>
+            ) : (
+              <div className="cohort-groups-empty-workspace">
+                <strong>
+                  No groups created
+                </strong>
+
+                <p>
+                  Select between one and four
+                  groups, optionally enter the
+                  activity date, and then select
+                  Create Group.
+                </p>
+              </div>
+            )}
+          </section>
+        </div>
+      </section>
     </section>
   )
 }
@@ -25735,9 +26465,11 @@ function App() {
             <Route
               path="/groups-assigned-by-member"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Groups - by Dr. CMO"
-                  description="Course group assignments and member participation will be organized here."
+                <CohortGroupAssignmentsPage
+                  contacts={contacts}
+                  contactStatuses={
+                    contactStatuses
+                  }
                 />
               }
             />

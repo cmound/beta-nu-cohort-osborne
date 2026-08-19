@@ -6727,6 +6727,506 @@
 }
 
 /* =========================================================
+   Beta Nu Cohort Group Assignments
+   ========================================================= */
+
+.cohort-groups-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #8da1b5;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(242, 247, 251, 0.98) 0%,
+      rgba(221, 232, 241, 0.98) 100%
+    );
+  box-shadow:
+    0 8px 22px
+      rgba(0, 0, 0, 0.24);
+}
+
+.cohort-groups-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+
+.cohort-groups-field {
+  display: grid;
+  gap: 5px;
+  color: #0b1f3b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cohort-groups-date-field {
+  width: 185px;
+}
+
+.cohort-groups-count-field {
+  width: 135px;
+}
+
+.cohort-groups-field input {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 2px solid #557898;
+  border-radius: 5px;
+  color: #061321;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  box-shadow:
+    inset 0 1px 3px
+      rgba(0, 0, 0, 0.12);
+}
+
+.cohort-groups-field input:focus {
+  border-color: #0077c8;
+  outline: 3px solid
+    rgba(0, 119, 200, 0.22);
+  outline-offset: 1px;
+}
+
+.cohort-groups-field input:disabled {
+  color: #64748b;
+  background: #dce4eb;
+  cursor: default;
+}
+
+.cohort-groups-create-button,
+.cohort-groups-clear-button {
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 0 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.58),
+    0 3px 6px
+      rgba(0, 0, 0, 0.24);
+}
+
+.cohort-groups-create-button {
+  border: 1px solid #8f6810;
+  color: #1f1a12;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd95a 0%,
+      #e7ac00 100%
+    );
+}
+
+.cohort-groups-clear-button {
+  margin-left: auto;
+  border: 1px solid #65798c;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #244d72 0%,
+      #0b2948 100%
+    );
+}
+
+.cohort-groups-create-button:hover,
+.cohort-groups-clear-button:hover {
+  filter: brightness(1.08);
+}
+
+.cohort-groups-create-button:focus-visible,
+.cohort-groups-clear-button:focus-visible,
+.cohort-group-member-list button:focus-visible {
+  outline: 2px solid #0077c8;
+  outline-offset: 2px;
+}
+
+.cohort-groups-create-button:disabled,
+.cohort-groups-clear-button:disabled {
+  border-color: #94a3b8;
+  color: #64748b;
+  background: #d9e0e7;
+  box-shadow: none;
+  cursor: default;
+  filter: none;
+}
+
+.cohort-groups-guidance {
+  padding: 9px 12px;
+  border: 1px solid #c69214;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #123d6c 0%,
+      #082747 100%
+    );
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.cohort-groups-layout {
+  display: grid;
+  grid-template-columns:
+    235px
+    minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.cohort-groups-roster {
+  overflow: hidden;
+  border: 1px solid #557898;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow:
+    0 5px 14px
+      rgba(0, 0, 0, 0.18);
+}
+
+.cohort-groups-roster-heading,
+.cohort-groups-workspace-heading {
+  min-height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  border-bottom: 2px solid #c69214;
+  color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #123d6c 0%,
+      #082747 100%
+    );
+}
+
+.cohort-groups-roster-heading h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.cohort-groups-roster-heading > span {
+  min-width: 30px;
+  box-sizing: border-box;
+  padding: 3px 7px;
+  border: 1px solid #8f6810;
+  border-radius: 12px;
+  color: #061321;
+  background: #ffd200;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.cohort-groups-roster-summary {
+  margin: 0;
+  padding: 7px 10px;
+  border-bottom: 1px solid #91a4b8;
+  color: #334155;
+  background: #eaf2f8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cohort-groups-roster-list {
+  max-height: 575px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cohort-groups-roster-item {
+  min-height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-bottom: 1px solid #c4d0db;
+  color: #061321;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.cohort-groups-roster-item:nth-child(even) {
+  background: #f1f6fa;
+}
+
+.cohort-groups-roster-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border: 1px solid #a87408;
+  border-radius: 50%;
+  background: #ffd200;
+}
+
+.cohort-groups-roster-item-assigned {
+  color: #64748b;
+  background: #dce4eb;
+  text-decoration-line: line-through;
+  text-decoration-color: #061321;
+  text-decoration-thickness: 2px;
+}
+
+.cohort-groups-roster-item-assigned:nth-child(even) {
+  background: #d4dde6;
+}
+
+.cohort-groups-roster-item-assigned
+  .cohort-groups-roster-dot {
+  border-color: #64748b;
+  background: #94a3b8;
+}
+
+.cohort-groups-workspace {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #557898;
+  border-radius: 7px;
+  background: #eef3f7;
+  box-shadow:
+    0 5px 14px
+      rgba(0, 0, 0, 0.18);
+}
+
+.cohort-groups-workspace-heading strong {
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.cohort-groups-workspace-heading span {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.cohort-group-cards-frame {
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.cohort-group-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.cohort-group-cards-1 {
+  grid-template-columns:
+    minmax(260px, 1fr);
+}
+
+.cohort-group-cards-2 {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(250px, 1fr)
+    );
+}
+
+.cohort-group-cards-3 {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(240px, 1fr)
+    );
+}
+
+.cohort-group-cards-4 {
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(230px, 1fr)
+    );
+}
+
+.cohort-group-card {
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid #557898;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow:
+    0 4px 10px
+      rgba(0, 0, 0, 0.17);
+}
+
+.cohort-group-card-heading {
+  min-height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 2px solid #8f6810;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd95a 0%,
+      #e7ac00 100%
+    );
+}
+
+.cohort-group-card-heading h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.cohort-group-card-heading span {
+  min-width: 27px;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid #557898;
+  border-radius: 11px;
+  color: #ffffff;
+  background: #0b2948;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.cohort-group-card-body {
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  padding: 10px;
+}
+
+.cohort-group-empty-message {
+  min-height: 72px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed #94a3b8;
+  border-radius: 5px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.cohort-group-member-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cohort-group-member-list li {
+  min-height: 34px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 7px;
+  border: 1px solid #91a4b8;
+  border-radius: 4px;
+  color: #061321;
+  background: #eaf2f8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cohort-group-member-list button {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid #65798c;
+  border-radius: 4px;
+  color: #ffffff;
+  background: #244d72;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cohort-group-member-entry {
+  display: grid;
+  gap: 5px;
+}
+
+.cohort-group-member-entry > span {
+  color: #0b1f3b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.cohort-group-member-entry input {
+  width: 100%;
+  min-height: 38px;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 2px solid #557898;
+  border-radius: 5px;
+  color: #061321;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.cohort-group-member-entry input:focus {
+  border-color: #0077c8;
+  outline: 3px solid
+    rgba(0, 119, 200, 0.22);
+  outline-offset: 1px;
+}
+
+.cohort-group-member-entry input:disabled {
+  color: #64748b;
+  background: #dce4eb;
+}
+
+.cohort-groups-empty-workspace {
+  min-height: 330px;
+  box-sizing: border-box;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 30px;
+  color: #334155;
+  text-align: center;
+}
+
+.cohort-groups-empty-workspace strong {
+  color: #0b1f3b;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.cohort-groups-empty-workspace p {
+  max-width: 520px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================================================
    Beta Nu Cohort Course Waivers
    ========================================================= */
 
