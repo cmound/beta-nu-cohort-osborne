@@ -2053,21 +2053,21 @@
   justify-content: center;
   gap: 8px;
   padding: 8px 15px;
-  border: 1px solid #c89214;
+  border: 1px solid #527a99;
   border-radius: 8px;
   color: #061321;
   background:
     linear-gradient(
       180deg,
-      #ffd76a 0%,
-      #f2b632 58%,
-      #c89214 100%
+      #dceaf5 0%,
+      #c4d9ea 48%,
+      #aac8de 100%
     );
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.72),
+      rgba(255, 255, 255, 0.92),
     inset 0 -3px 3px
-      rgba(104, 67, 0, 0.24),
+      rgba(44, 78, 107, 0.2),
     0 3px 7px
       rgba(0, 0, 0, 0.3);
   font-family: inherit;
@@ -2091,15 +2091,17 @@
 
 .facilitator-planner-start-button-active,
 .facilitator-planner-start-button:disabled {
-  color: #ffffff;
-  border-color: #32c5ff;
-  background:
-    linear-gradient(
-      180deg,
-      #1268a5 0%,
-      #084779 55%,
-      #052f57 100%
-    );
+  color: #0000ff;
+  border-color: #c89214;
+  background: #ffd200;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.62),
+    inset 0 -3px 3px
+      rgba(138, 101, 0, 0.24),
+    0 3px 7px
+      rgba(0, 0, 0, 0.32);
+  font-weight: 900;
   cursor: default;
   opacity: 1;
 }
@@ -2401,34 +2403,46 @@
 }
 
 .facilitator-planner-building-status {
-  min-height: 42px;
+  min-height: 48px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   margin-bottom: 9px;
-  padding: 7px 11px;
-  border: 1px solid #2b9ed1;
+  padding: 8px 12px;
+  border: 1px solid #527a99;
+  border-left: 4px solid #ffd200;
   border-radius: 7px;
-  color: #ffffff;
+  color: #061321;
   background:
     linear-gradient(
       180deg,
-      #0d416b 0%,
-      #072c4f 100%
+      #f8fafc 0%,
+      #edf2f7 48%,
+      #dce6ef 100%
     );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.96),
+    inset 0 -2px 3px
+      rgba(44, 78, 107, 0.14),
+    0 3px 7px
+      rgba(0, 0, 0, 0.26);
 }
 
 .facilitator-planner-building-status-dot {
-  width: 11px;
-  height: 11px;
-  flex: 0 0 11px;
-  border: 2px solid #d8f5ff;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  box-sizing: border-box;
+  border: 2px solid #000000;
   border-radius: 50%;
-  background: #29c5ff;
+  background: #57e964;
   box-shadow:
-    0 0 7px
-      rgba(41, 197, 255, 0.72);
+    0 0 0 2px
+      rgba(87, 233, 100, 0.24),
+    0 2px 4px
+      rgba(0, 0, 0, 0.25);
 }
 
 .facilitator-planner-building-status div {
@@ -2439,17 +2453,17 @@
 }
 
 .facilitator-planner-building-status strong {
-  color: #ffd200;
-  font-size: 11px;
+  color: #061321;
+  font-size: 14px;
   font-weight: 900;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .facilitator-planner-building-status div span {
-  color: #dbeafe;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1.1;
+  color: #29465d;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15;
 }
 
 .facilitator-planner-time-cards {

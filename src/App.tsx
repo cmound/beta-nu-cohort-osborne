@@ -10412,7 +10412,7 @@ function FacilitatorPlannerPage({
 
               <div>
                 <strong>
-                  Editing in progress
+                  Editing in Progress
                 </strong>
 
                 <span>
