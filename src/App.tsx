@@ -20117,6 +20117,583 @@ function CohortAcademicPlanPage() {
   )
 }
 
+const COHORT_COURSE_WAIVERS_STORAGE_KEY =
+  'beta-nu-course-waivers-v1'
+
+const cohortCourseWaiverCourseCodes = [
+  'EDDP 700',
+  'EDDP 740',
+  'EDDP 706',
+  'EDDP 742',
+  'EDDP 707',
+  'EDDP 743',
+  'EDDP 708',
+  'EDDP 741',
+  'EDDP 705',
+  'EDDP 781',
+  'EDDP 720',
+  'EDDP 709',
+  'EDDP 783',
+  'EDDP 721',
+  'EDDP 723',
+  'EDDP 782',
+  'EDDP 724',
+  'EDDP 791',
+  'EDDP 792',
+] as const
+
+type CohortCourseWaiverCode =
+  (typeof cohortCourseWaiverCourseCodes)[number]
+
+type CohortCourseWaiverState = Record<string, 'W'>
+
+interface CohortCourseWaiversPageProps {
+  readonly contacts: readonly CohortContactRecord[]
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
+}
+
+function getCohortCourseWaiverKey(
+  contactId: string,
+  courseCode: CohortCourseWaiverCode,
+): string {
+  return `${contactId}::${courseCode}`
+}
+
+function readStoredCohortCourseWaivers():
+  CohortCourseWaiverState {
+  try {
+    const storedValue = localStorage.getItem(
+      COHORT_COURSE_WAIVERS_STORAGE_KEY,
+    )
+
+    if (storedValue === null) {
+      return {}
+    }
+
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      typeof parsedValue !== 'object' ||
+      parsedValue === null ||
+      Array.isArray(parsedValue)
+    ) {
+      return {}
+    }
+
+    const storedWaivers:
+      CohortCourseWaiverState = {}
+
+    for (
+      const [waiverKey, waiverValue]
+      of Object.entries(parsedValue)
+    ) {
+      if (waiverValue === 'W') {
+        storedWaivers[waiverKey] = 'W'
+      }
+    }
+
+    return storedWaivers
+  } catch {
+    return {}
+  }
+}
+
+function CohortCourseWaiversPage({
+  contacts,
+  contactStatuses,
+}: CohortCourseWaiversPageProps) {
+  const [courseWaivers, setCourseWaivers] =
+    useState<CohortCourseWaiverState>(
+      readStoredCohortCourseWaivers,
+    )
+
+  const [nameSearch, setNameSearch] =
+    useState('')
+
+  const [
+    focusedWaiverKey,
+    setFocusedWaiverKey,
+  ] = useState<string | null>(null)
+
+  const waiverTableFrameRef =
+    useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    localStorage.setItem(
+      COHORT_COURSE_WAIVERS_STORAGE_KEY,
+      JSON.stringify(courseWaivers),
+    )
+  }, [courseWaivers])
+
+  const activeStudents = contacts
+    .filter(
+      (contact) =>
+        !contact.isMentor &&
+        (
+          contactStatuses[contact.id] ??
+          'Active'
+        ) === 'Active',
+    )
+    .sort((firstContact, secondContact) =>
+      firstContact.name.localeCompare(
+        secondContact.name,
+        'en-US',
+        {
+          sensitivity: 'base',
+        },
+      ),
+    )
+
+  const normalizedSearch =
+    nameSearch
+      .trim()
+      .toLocaleLowerCase('en-US')
+
+  const visibleStudents =
+    normalizedSearch.length === 0
+      ? activeStudents
+      : activeStudents.filter((contact) =>
+        contact.name
+          .toLocaleLowerCase('en-US')
+          .includes(normalizedSearch),
+      )
+
+  function updateCourseWaiver(
+    contactId: string,
+    courseCode: CohortCourseWaiverCode,
+    rawValue: string,
+  ): void {
+    const normalizedValue =
+      rawValue.trim().toUpperCase()
+
+    if (
+      normalizedValue !== '' &&
+      normalizedValue !== 'W'
+    ) {
+      window.alert(
+        'Only "W" is accepted for a waived course. ' +
+        'Leave the cell blank if the course is not waived.',
+      )
+      return
+    }
+
+    const waiverKey =
+      getCohortCourseWaiverKey(
+        contactId,
+        courseCode,
+      )
+
+    setCourseWaivers((currentWaivers) => {
+      const nextWaivers = {
+        ...currentWaivers,
+      }
+
+      if (normalizedValue === 'W') {
+        nextWaivers[waiverKey] = 'W'
+      } else {
+        delete nextWaivers[waiverKey]
+      }
+
+      return nextWaivers
+    })
+  }
+
+  function focusCourseWaiverCell(
+    requestedRowIndex: number,
+    requestedColumnIndex: number,
+  ): void {
+    if (visibleStudents.length === 0) {
+      return
+    }
+
+    const rowIndex = Math.min(
+      Math.max(requestedRowIndex, 0),
+      visibleStudents.length - 1,
+    )
+
+    const columnIndex = Math.min(
+      Math.max(requestedColumnIndex, 0),
+      cohortCourseWaiverCourseCodes.length - 1,
+    )
+
+    const nextInput =
+      waiverTableFrameRef.current
+        ?.querySelector<HTMLInputElement>(
+          `[data-course-waiver-row="${rowIndex}"]` +
+          `[data-course-waiver-column="${columnIndex}"]`,
+        )
+
+    if (
+      nextInput === undefined ||
+      nextInput === null
+    ) {
+      return
+    }
+
+    nextInput.focus()
+    nextInput.select()
+    nextInput.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+    })
+  }
+
+  function handleCourseWaiverKeyDown(
+    event: ReactKeyboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    columnIndex: number,
+  ): void {
+    if (
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) {
+      return
+    }
+
+    let nextRowIndex = rowIndex
+    let nextColumnIndex = columnIndex
+
+    switch (event.key) {
+      case 'ArrowUp':
+        nextRowIndex -= 1
+        break
+
+      case 'ArrowDown':
+        nextRowIndex += 1
+        break
+
+      case 'ArrowLeft':
+        nextColumnIndex -= 1
+        break
+
+      case 'ArrowRight':
+        nextColumnIndex += 1
+        break
+
+      case 'Enter':
+        nextRowIndex += event.shiftKey
+          ? -1
+          : 1
+        break
+
+      default:
+        return
+    }
+
+    event.preventDefault()
+
+    focusCourseWaiverCell(
+      nextRowIndex,
+      nextColumnIndex,
+    )
+  }
+
+  function getWaivedCourseNumbers(
+    contactId: string,
+  ): string[] {
+    return cohortCourseWaiverCourseCodes
+      .filter(
+        (courseCode) =>
+          courseWaivers[
+          getCohortCourseWaiverKey(
+            contactId,
+            courseCode,
+          )
+          ] === 'W',
+      )
+      .map((courseCode) =>
+        courseCode.replace('EDDP ', ''),
+      )
+  }
+
+  return (
+    <section className="page-shell">
+      <header className="dashboard-page-heading cohort-contacts-page-heading">
+        <h1>Beta Nu Cohort Course Waivers</h1>
+      </header>
+
+      <section className="course-waivers-panel">
+        <div className="course-waivers-toolbar">
+          <label className="course-waivers-search">
+            <span>Name Search</span>
+
+            <input
+              className="course-waivers-search-input"
+              type="search"
+              value={nameSearch}
+              placeholder="Search by cohort member name"
+              autoComplete="off"
+              onChange={(event) => {
+                setNameSearch(
+                  event.currentTarget.value,
+                )
+              }}
+            />
+          </label>
+
+          <p className="course-waivers-result-count">
+            Showing {visibleStudents.length} of{' '}
+            {activeStudents.length} students
+          </p>
+        </div>
+
+        <div
+          id="course-waiver-entry-help"
+          className="course-waivers-entry-help"
+        >
+          Click a course cell and enter
+          <strong> W </strong>
+          if that course was waived. Leave the
+          cell blank if it was not waived. Use
+          Tab, Shift+Tab, Enter, or the arrow keys
+          to move between cells.
+        </div>
+
+        <div
+          ref={waiverTableFrameRef}
+          className="course-waivers-table-frame"
+        >
+          <table
+            className="course-waivers-table"
+            aria-label="Beta Nu Cohort course waiver matrix"
+          >
+            <thead>
+              <tr>
+                <th
+                  className="course-waiver-name-cell"
+                  scope="col"
+                >
+                  Name
+                </th>
+
+                {cohortCourseWaiverCourseCodes.map(
+                  (courseCode) => (
+                    <th
+                      key={courseCode}
+                      className="course-waiver-course-heading"
+                      scope="col"
+                    >
+                      {courseCode}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+
+            <tbody>
+              {visibleStudents.length === 0 ? (
+                <tr>
+                  <td
+                    className="course-waivers-empty"
+                    colSpan={
+                      cohortCourseWaiverCourseCodes
+                        .length + 1
+                    }
+                  >
+                    No cohort members match this
+                    search.
+                  </td>
+                </tr>
+              ) : (
+                visibleStudents.map(
+                  (
+                    student,
+                    studentRowIndex,
+                  ) => (
+                    <tr key={student.id}>
+                      <th
+                        className="course-waiver-name-cell"
+                        scope="row"
+                      >
+                        {student.name}
+                      </th>
+
+                      {cohortCourseWaiverCourseCodes.map(
+                        (
+                          courseCode,
+                          courseColumnIndex,
+                        ) => {
+                          const waiverKey =
+                            getCohortCourseWaiverKey(
+                              student.id,
+                              courseCode,
+                            )
+
+                          const isFilled =
+                            courseWaivers[
+                            waiverKey
+                            ] === 'W' &&
+                            focusedWaiverKey !==
+                            waiverKey
+
+                          return (
+                            <td
+                              key={waiverKey}
+                              className="course-waiver-cell"
+                            >
+                              <input
+                                className={
+                                  isFilled
+                                    ? 'course-waiver-input course-waiver-input-filled'
+                                    : 'course-waiver-input'
+                                }
+                                type="text"
+                                value={
+                                  courseWaivers[
+                                  waiverKey
+                                  ] ?? ''
+                                }
+                                maxLength={1}
+                                autoComplete="off"
+                                aria-label={
+                                  `${student.name}, ` +
+                                  `${courseCode}`
+                                }
+                                aria-describedby="course-waiver-entry-help"
+                                title={
+                                  'Enter "W" if ' +
+                                  'this course was waived.'
+                                }
+                                data-course-waiver-row={
+                                  studentRowIndex
+                                }
+                                data-course-waiver-column={
+                                  courseColumnIndex
+                                }
+                                onClick={(
+                                  event,
+                                ) => {
+                                  window.alert(
+                                    'Enter "W" if this course ' +
+                                    'was waived. Leave the ' +
+                                    'cell blank if it was not waived.',
+                                  )
+
+                                  event.currentTarget.select()
+                                }}
+                                onChange={(
+                                  event,
+                                ) => {
+                                  updateCourseWaiver(
+                                    student.id,
+                                    courseCode,
+                                    event.currentTarget
+                                      .value,
+                                  )
+                                }}
+                                onFocus={(
+                                  event,
+                                ) => {
+                                  setFocusedWaiverKey(
+                                    waiverKey,
+                                  )
+
+                                  event.currentTarget.select()
+                                }}
+                                onBlur={() => {
+                                  setFocusedWaiverKey(
+                                    (
+                                      currentWaiverKey,
+                                    ) =>
+                                      currentWaiverKey ===
+                                        waiverKey
+                                        ? null
+                                        : currentWaiverKey,
+                                  )
+                                }}
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  handleCourseWaiverKeyDown(
+                                    event,
+                                    studentRowIndex,
+                                    courseColumnIndex,
+                                  )
+                                }}
+                              />
+                            </td>
+                          )
+                        },
+                      )}
+                    </tr>
+                  ),
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <section
+          className="course-waiver-summary-panel"
+          aria-labelledby="course-waiver-summary-heading"
+        >
+          <div className="course-waiver-summary-heading">
+            <h2 id="course-waiver-summary-heading">
+              Courses Waived by Cohort Member
+            </h2>
+          </div>
+
+          <div className="course-waiver-summary-table-frame">
+            <table className="course-waiver-summary-table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">
+                    Courses Waived
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {visibleStudents.length === 0 ? (
+                  <tr>
+                    <td
+                      className="course-waivers-empty"
+                      colSpan={2}
+                    >
+                      No cohort members match this
+                      search.
+                    </td>
+                  </tr>
+                ) : (
+                  visibleStudents.map(
+                    (student) => {
+                      const waivedCourses =
+                        getWaivedCourseNumbers(
+                          student.id,
+                        )
+
+                      return (
+                        <tr key={student.id}>
+                          <th scope="row">
+                            {student.name}
+                          </th>
+
+                          <td>
+                            {waivedCourses.length > 0
+                              ? waivedCourses.join(
+                                ', ',
+                              )
+                              : 'None'}
+                          </td>
+                        </tr>
+                      )
+                    },
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </section>
+  )
+}
+
+
 function CohortSectionPlaceholderPage({
   title,
   description,
@@ -25124,9 +25701,11 @@ function App() {
             <Route
               path="/transfer-courses"
               element={
-                <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Course Waivers"
-                  description="Approved course waivers and cohort member transfer-credit information will be organized here."
+                <CohortCourseWaiversPage
+                  contacts={contacts}
+                  contactStatuses={
+                    contactStatuses
+                  }
                 />
               }
             />
