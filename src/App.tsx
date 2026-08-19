@@ -6047,6 +6047,7 @@ function CohortContactPage({
               <tr>
                 <th>Name</th>
                 <th>As of</th>
+                <th>Status</th>
               </tr>
             </thead>
 
@@ -6062,6 +6063,10 @@ function CohortContactPage({
                       {formatInactiveContactDate(
                         inactiveContact.asOfDate,
                       )}
+                    </td>
+
+                    <td>
+                      Inactive
                     </td>
                   </tr>
                 ),
