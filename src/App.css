@@ -1114,11 +1114,364 @@
       rgba(86, 201, 107, 0.3);
 }
 
+.nav-sub-link {
+  width: 100%;
+  min-height: 31px;
+  margin-top: -5px;
+  margin-left: 0;
+  padding: 0 10px 0 64px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: #0b1f3b;
+  background: #f4f6f8;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 650;
+  transform: none;
+}
+
+.nav-sub-link-last {
+  margin-bottom: 7px;
+}
+
+.nav-sub-link::before {
+  content: '';
+  position: absolute;
+  inset: auto;
+  left: 23px;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  border-radius: 0;
+  background: #244c73;
+  box-shadow: none;
+}
+
+.nav-sub-link-last::before {
+  bottom: 50%;
+}
+
+.nav-sub-item-dot {
+  position: absolute;
+  left: 43px;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 1px solid #a87408;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 55%,
+      #c69214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.65),
+    0 1px 2px
+      rgba(0, 0, 0, 0.32);
+}
+
+.nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 20px;
+  height: 1px;
+  background: #244c73;
+  transform: translateY(-50%);
+}
+
+.nav-sub-link:hover {
+  border-color: #c9d3dc;
+  color: #0b1f3b;
+  background: #e8edf1;
+  box-shadow: none;
+  transform: none;
+}
+
+.nav-sub-link.nav-link-active {
+  border: 1px solid #d7a91f;
+  border-radius: 6px;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      90deg,
+      #fff6cf 0%,
+      #fff1b8 55%,
+      #ffedaa 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.85),
+    0 1px 4px
+      rgba(198, 146, 20, 0.24);
+  font-weight: 900;
+}
+
+.nav-sub-link.nav-link-active::after {
+  display: none;
+}
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot {
+  border-color: #9e6d06;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #ffd200 55%,
+      #c69214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    0 0 5px
+      rgba(198, 146, 20, 0.45);
+}
+
+.courses-status-panel {
+  position: relative;
+  box-sizing: border-box;
+  margin: 0 0 8px;
+  padding: 12px 10px 15px 31px;
+  border: 1px solid #b4c2cc;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  background:
+    linear-gradient(
+      90deg,
+      #f7f8f8 0%,
+      #eef2f4 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.9),
+    0 3px 6px
+      rgba(0, 0, 0, 0.16);
+}
+
+.courses-status-panel::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 0;
+  bottom: 21px;
+  width: 1px;
+  background: #244c73;
+}
+
+.course-status-group {
+  min-width: 0;
+}
+
+.course-status-heading {
+  position: relative;
+  min-height: 31px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 14px;
+  border: 1px solid;
+  border-radius: 7px;
+  color: #0b1f3b;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.55),
+    0 1px 3px
+      rgba(0, 0, 0, 0.15);
+}
+
+.course-status-heading strong {
+  color: #0b1f3b;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.course-status-heading-node {
+  display: none;
+}
+
+.course-status-heading::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 13px;
+  height: 1px;
+  background: #244c73;
+}
+
+.course-status-group-active
+  .course-status-heading {
+  border-color: #9c700c;
+  background: #c69214;
+}
+
+.course-status-group-pending
+  .course-status-heading {
+  border-color: #8799a7;
+  background: #b4c2cc;
+}
+
+.course-status-group-completed
+  .course-status-heading {
+  border-color: #58b99b;
+  background: #bfe7d8;
+}
+
+.course-status-group-active
+  .course-status-heading strong,
+.course-status-group-pending
+  .course-status-heading strong,
+.course-status-group-completed
+  .course-status-heading strong {
+  color: #0b1f3b;
+}
+
+.course-count-badge {
+  min-width: 38px;
+  box-sizing: border-box;
+  margin-left: auto;
+  padding: 3px 9px;
+  border: 1px solid;
+  border-radius: 8px;
+  color: #0b1f3b;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.55),
+    0 1px 3px
+      rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.course-status-group-active
+  .course-count-badge {
+  border-color: #a87408;
+  background: #ffd200;
+}
+
+.course-status-group-pending
+  .course-count-badge {
+  border-color: #8799a7;
+  background: #d5dee5;
+}
+
+.course-status-group-completed
+  .course-count-badge {
+  border-color: #49a98c;
+  background: #82d7bd;
+}
+
+.course-status-tree {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: 3px;
+}
+
+.course-status-tree::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: 13px;
+  left: 8px;
+  width: 1px;
+  background: #244c73;
+}
+
+.course-status-link {
+  position: relative;
+  min-height: 26px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 5px 3px 30px;
+  border-radius: 4px;
+  color: #0b1f3b;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-decoration: none;
+}
+
+.course-status-group-pending
+  .course-status-link {
+  color: #111111;
+}
+
+.course-status-link::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 17px;
+  height: 1px;
+  background: #244c73;
+}
+
+.course-status-link:hover {
+  color: #0b1f3b;
+  background:
+    rgba(11, 31, 59, 0.07);
+}
+
+.course-status-link-active {
+  color: #0b1f3b;
+  background: #fff1b8;
+  box-shadow:
+    inset 0 0 0 1px
+      rgba(198, 146, 20, 0.48);
+}
+
+.course-status-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-radius: 50%;
+}
+
+.course-status-group-active
+  .course-status-dot {
+  border-color: #118267;
+  background: #21b892;
+  box-shadow:
+    0 0 4px
+      rgba(33, 184, 146, 0.35);
+}
+
+.course-status-group-pending
+  .course-status-dot {
+  border-color: #1879b9;
+  background: #29a9ef;
+  box-shadow:
+    0 0 4px
+      rgba(41, 169, 239, 0.32);
+}
+
+.course-status-group-completed
+  .course-status-dot {
+  border-color: #118267;
+  background: #21b892;
+  box-shadow:
+    0 0 4px
+      rgba(33, 184, 146, 0.32);
+}
+
 .course-status-divider {
-  margin: 12px 0;
-  border-top:
-    1px solid
-    rgba(135, 165, 190, 0.35);
+  height: 0;
+  margin: 10px 0;
+  border: 0;
 }
 
 .app-main {
