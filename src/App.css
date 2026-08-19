@@ -21,10 +21,10 @@
   --umass-navy: #0B1F3B;
   --umass-gold: #C69214;
 
-  min-width: 1180px;
+  min-width: 1205px;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-columns: 275px minmax(0, 1fr);
   color: var(--text-main);
   background-image:
     linear-gradient(
@@ -75,7 +75,7 @@
 .sidebar-collapse-button {
   position: fixed;
   top: 12px;
-  left: 240px;
+  left: 265px;
   z-index: 30;
   width: 20px;
   height: 20px;
@@ -106,7 +106,7 @@
 .sidebar:not(.sidebar-collapsed) .sidebar-collapse-button {
   width: 18px;
   height: 18px;
-  left: 241px;
+  left: 266px;
   border: 1px solid #94a3b8;
   border-radius: 3px;
   color: #061321;
@@ -191,6 +191,11 @@
     border-color 0.15s ease,
     box-shadow 0.15s ease,
     transform 0.1s ease;
+}
+
+.nav-link > span:not([aria-hidden='true']),
+.nav-group-button > span:not([aria-hidden='true']) {
+  white-space: nowrap;
 }
 
 .nav-link::before,
