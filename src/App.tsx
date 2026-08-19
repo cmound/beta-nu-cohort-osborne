@@ -376,6 +376,7 @@ interface CohortDatesRolesPageProps {
 
 interface FacilitatorPlannerPageProps {
   readonly meetings: readonly CohortMeetingRecord[]
+  readonly contacts: readonly CohortContactRecord[]
 }
 
 type FacilitatorAgendaStatus =
@@ -6865,6 +6866,12 @@ function CohortDatesRolesPage({
 const FACILITATOR_AGENDAS_STORAGE_KEY =
   'beta-nu-facilitator-agendas-v1'
 
+const FACILITATOR_AGENDA_RECOVERY_STORAGE_PREFIX =
+  'beta-nu-facilitator-agenda-recovery-v1::'
+
+const FACILITATOR_AGENDA_CUSTOM_NAMES_STORAGE_KEY =
+  'beta-nu-facilitator-agenda-custom-names-v1'
+
 const FACILITATOR_MEETING_START_MINUTES =
   13 * 60 + 30
 
@@ -6914,15 +6921,48 @@ const facilitatorAgendaValues = [
 function getFacilitatorAgendaPersonLabel(
   value: string,
 ): string {
-  const normalizedValue = value.trim()
+  const normalizedValue =
+    value
+      .trim()
+      .replace(
+        /\s+\(Mentor\)\s*$/i,
+        '',
+      )
 
   if (normalizedValue.length === 0) {
     return 'TBD'
   }
 
+  const normalizedKey =
+    normalizedValue.toLocaleLowerCase()
+
   if (
-    normalizedValue === 'Dr. CMO' ||
-    normalizedValue.startsWith('Dr. ')
+    normalizedKey === 'dr. cmo' ||
+    normalizedKey.includes(
+      'cheryl-marie osborne',
+    )
+  ) {
+    return 'Dr. CMO'
+  }
+
+  if (
+    normalizedKey ===
+    'jessica jackson'
+  ) {
+    return 'Jessica J'
+  }
+
+  if (
+    normalizedKey ===
+    'jessica leon'
+  ) {
+    return 'Jessica L'
+  }
+
+  if (
+    normalizedValue.startsWith(
+      'Dr. ',
+    )
   ) {
     return normalizedValue
   }
@@ -6938,6 +6978,163 @@ function getFacilitatorAgendaPersonLabel(
     0,
     firstSpaceIndex,
   )
+}
+
+function readStoredFacilitatorAgendaCustomNames():
+  readonly string[] {
+  const storedValue =
+    window.localStorage.getItem(
+      FACILITATOR_AGENDA_CUSTOM_NAMES_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return []
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (!Array.isArray(parsedValue)) {
+      return []
+    }
+
+    const storedNames: string[] = []
+
+    for (const value of parsedValue) {
+      if (typeof value !== 'string') {
+        return []
+      }
+
+      const trimmedValue =
+        value.trim()
+
+      if (
+        trimmedValue.length > 0 &&
+        !storedNames.some(
+          (storedName) =>
+            storedName.toLocaleLowerCase() ===
+            trimmedValue.toLocaleLowerCase(),
+        )
+      ) {
+        storedNames.push(
+          trimmedValue,
+        )
+      }
+    }
+
+    return storedNames.sort(
+      (firstName, secondName) =>
+        firstName.localeCompare(
+          secondName,
+        ),
+    )
+  } catch {
+    return []
+  }
+}
+
+function getFacilitatorAgendaNameOptions(
+  contacts:
+    readonly CohortContactRecord[],
+  customNames:
+    readonly string[],
+): readonly string[] {
+  const nameOptions: string[] = []
+
+  for (const contact of contacts) {
+    const contactLabel =
+      getFacilitatorAgendaPersonLabel(
+        contact.name,
+      )
+
+    if (
+      contactLabel !== 'TBD' &&
+      !nameOptions.some(
+        (existingName) =>
+          existingName.toLocaleLowerCase() ===
+          contactLabel.toLocaleLowerCase(),
+      )
+    ) {
+      nameOptions.push(
+        contactLabel,
+      )
+    }
+  }
+
+  for (const customName of customNames) {
+    const trimmedName =
+      customName.trim()
+
+    if (
+      trimmedName.length > 0 &&
+      !nameOptions.some(
+        (existingName) =>
+          existingName.toLocaleLowerCase() ===
+          trimmedName.toLocaleLowerCase(),
+      )
+    ) {
+      nameOptions.push(
+        trimmedName,
+      )
+    }
+  }
+
+  return nameOptions.sort(
+    (firstName, secondName) =>
+      firstName.localeCompare(
+        secondName,
+      ),
+  )
+}
+
+function normalizeFacilitatorAgendaNameInput(
+  value: string,
+  contacts:
+    readonly CohortContactRecord[],
+): string {
+  const trimmedValue =
+    value.trim()
+
+  if (trimmedValue.length === 0) {
+    return ''
+  }
+
+  const normalizedInput =
+    trimmedValue.toLocaleLowerCase()
+
+  const matchingContact =
+    contacts.find(
+      (contact) => {
+        const fullName =
+          contact.name
+            .trim()
+            .replace(
+              /\s+\(Mentor\)\s*$/i,
+              '',
+            )
+
+        const displayName =
+          getFacilitatorAgendaPersonLabel(
+            contact.name,
+          )
+
+        return (
+          normalizedInput ===
+          fullName.toLocaleLowerCase() ||
+          normalizedInput ===
+          displayName.toLocaleLowerCase()
+        )
+      },
+    )
+
+  if (matchingContact !== undefined) {
+    return getFacilitatorAgendaPersonLabel(
+      matchingContact.name,
+    )
+  }
+
+  return trimmedValue
 }
 
 function createBlankFacilitatorAgendaItem():
@@ -7134,6 +7331,59 @@ function readStoredFacilitatorAgendas():
   } catch {
     return []
   }
+}
+
+function getFacilitatorAgendaRecoveryStorageKey(
+  meetingId: string,
+): string {
+  return (
+    FACILITATOR_AGENDA_RECOVERY_STORAGE_PREFIX +
+    meetingId
+  )
+}
+
+function readStoredFacilitatorAgendaRecovery(
+  meetingId: string,
+): FacilitatorAgendaRecord | null {
+  const storedValue =
+    window.localStorage.getItem(
+      getFacilitatorAgendaRecoveryStorageKey(
+        meetingId,
+      ),
+    )
+
+  if (storedValue === null) {
+    return null
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !isStoredFacilitatorAgenda(
+        parsedValue,
+      ) ||
+      parsedValue.meetingId !==
+      meetingId
+    ) {
+      return null
+    }
+
+    return parsedValue
+  } catch {
+    return null
+  }
+}
+
+function clearFacilitatorAgendaRecovery(
+  meetingId: string,
+): void {
+  window.localStorage.removeItem(
+    getFacilitatorAgendaRecoveryStorageKey(
+      meetingId,
+    ),
+  )
 }
 
 function getDefaultFacilitatorMeetingId(
@@ -7480,7 +7730,7 @@ function createFacilitatorAgendaTable(
                   ],
                 }),
               ],
-              7027,
+              1126,
               rowShading,
             ),
             createFacilitatorAgendaTableCell(
@@ -7515,6 +7765,7 @@ function createFacilitatorAgendaTable(
                 }),
               ],
               7027,
+              rowShading,
             ),
             createFacilitatorAgendaTableCell(
               [
@@ -8120,7 +8371,7 @@ function createFacilitatorAgendaDocument(
             },
           },
         },
-         headers: {
+        headers: {
           default: new Header({
             children: [
               new Paragraph({
@@ -8484,6 +8735,7 @@ function downloadFacilitatorAgendaBlob(
 
 function FacilitatorPlannerPage({
   meetings,
+  contacts,
 }: FacilitatorPlannerPageProps) {
   const [savedAgendas, setSavedAgendas] =
     useState<
@@ -8511,12 +8763,32 @@ function FacilitatorPlannerPage({
         initialMeetingId,
     )
 
+  const initialRecoveryAgenda =
+    initialMeetingId.length === 0
+      ? null
+      : readStoredFacilitatorAgendaRecovery(
+        initialMeetingId,
+      )
+
+  const initialAgendaSource =
+    initialRecoveryAgenda ??
+    initialSavedAgenda
+
+  const [
+    customAgendaNames,
+    setCustomAgendaNames,
+  ] = useState<
+    readonly string[]
+  >(
+    readStoredFacilitatorAgendaCustomNames,
+  )
+
   const [selectedMeetingId, setSelectedMeetingId] =
     useState(initialMeetingId)
 
   const [agendaStatus, setAgendaStatus] =
     useState<FacilitatorAgendaStatus>(
-      initialSavedAgenda?.status ??
+      initialAgendaSource?.status ??
       'Draft',
     )
 
@@ -8528,7 +8800,7 @@ function FacilitatorPlannerPage({
         initialMeeting === undefined
           ? []
           : ensureFacilitatorAgendaBlankRow(
-            initialSavedAgenda?.agendaItems ??
+            initialAgendaSource?.agendaItems ??
             createDefaultFacilitatorAgendaItems(
               initialMeeting,
             ),
@@ -8591,6 +8863,12 @@ function FacilitatorPlannerPage({
           agendaItem,
         ),
     ).length
+
+  const facilitatorAgendaNameOptions =
+    getFacilitatorAgendaNameOptions(
+      contacts,
+      customAgendaNames,
+    )
 
   const plannedMinutes =
     agendaItems.reduce(
@@ -8731,6 +9009,54 @@ function FacilitatorPlannerPage({
     selectedMeeting,
   ])
 
+  useEffect(() => {
+    if (
+      selectedMeeting === undefined
+    ) {
+      return
+    }
+
+    const recoveryAgenda:
+      FacilitatorAgendaRecord = {
+      id:
+        `facilitator-agenda-recovery-${selectedMeeting.id}`,
+      meetingId:
+        selectedMeeting.id,
+      status:
+        agendaStatus,
+      savedAt:
+        new Date().toISOString(),
+      housekeepingNotes,
+      agendaItems:
+        agendaItems.filter(
+          (agendaItem) =>
+            !isFacilitatorAgendaItemBlank(
+              agendaItem,
+            ),
+        ),
+    }
+
+    try {
+      window.localStorage.setItem(
+        getFacilitatorAgendaRecoveryStorageKey(
+          selectedMeeting.id,
+        ),
+        JSON.stringify(
+          recoveryAgenda,
+        ),
+      )
+    } catch {
+      setActionMessage(
+        'Automatic draft recovery is unavailable in this browser.',
+      )
+    }
+  }, [
+    agendaItems,
+    agendaStatus,
+    housekeepingNotes,
+    selectedMeeting,
+  ])
+
   function loadMeetingAgenda(
     meetingId: string,
     preferredSavedAgenda?:
@@ -8748,16 +9074,28 @@ function FacilitatorPlannerPage({
     }
 
     const savedAgenda =
-      preferredSavedAgenda ??
       savedAgendas.find(
         (agenda) =>
           agenda.meetingId ===
           meetingId,
       )
 
+    const recoveryAgenda =
+      preferredSavedAgenda ===
+        undefined
+        ? readStoredFacilitatorAgendaRecovery(
+          meetingId,
+        )
+        : null
+
+    const agendaSource =
+      preferredSavedAgenda ??
+      recoveryAgenda ??
+      savedAgenda
+
     const nextItems =
       ensureFacilitatorAgendaBlankRow(
-        savedAgenda?.agendaItems ??
+        agendaSource?.agendaItems ??
         createDefaultFacilitatorAgendaItems(
           meeting,
         ),
@@ -8768,7 +9106,7 @@ function FacilitatorPlannerPage({
     )
 
     setAgendaStatus(
-      savedAgenda?.status ??
+      agendaSource?.status ??
       'Draft',
     )
 
@@ -8804,6 +9142,83 @@ function FacilitatorPlannerPage({
               : agendaItem,
         ),
     )
+  }
+
+  function commitAgendaItemName(
+    agendaItemId: string,
+    value: string,
+  ): void {
+    const normalizedName =
+      normalizeFacilitatorAgendaNameInput(
+        value,
+        contacts,
+      )
+
+    updateAgendaItemText(
+      agendaItemId,
+      'name',
+      normalizedName,
+    )
+
+    if (
+      normalizedName.length === 0
+    ) {
+      return
+    }
+
+    const cohortNameOptions =
+      getFacilitatorAgendaNameOptions(
+        contacts,
+        [],
+      )
+
+    const isCohortName =
+      cohortNameOptions.some(
+        (option) =>
+          option.toLocaleLowerCase() ===
+          normalizedName.toLocaleLowerCase(),
+      )
+
+    const isRememberedName =
+      customAgendaNames.some(
+        (option) =>
+          option.toLocaleLowerCase() ===
+          normalizedName.toLocaleLowerCase(),
+      )
+
+    if (
+      isCohortName ||
+      isRememberedName
+    ) {
+      return
+    }
+
+    const nextCustomNames = [
+      ...customAgendaNames,
+      normalizedName,
+    ].sort(
+      (firstName, secondName) =>
+        firstName.localeCompare(
+          secondName,
+        ),
+    )
+
+    try {
+      window.localStorage.setItem(
+        FACILITATOR_AGENDA_CUSTOM_NAMES_STORAGE_KEY,
+        JSON.stringify(
+          nextCustomNames,
+        ),
+      )
+
+      setCustomAgendaNames(
+        nextCustomNames,
+      )
+    } catch {
+      setActionMessage(
+        'Unable to remember this agenda name.',
+      )
+    }
   }
 
   function updateAgendaItemDuration(
@@ -9436,6 +9851,10 @@ function FacilitatorPlannerPage({
         ),
       )
 
+      clearFacilitatorAgendaRecovery(
+        selectedMeeting.id,
+      )
+
       setSavedAgendas(
         nextSavedAgendas,
       )
@@ -10023,35 +10442,121 @@ function FacilitatorPlannerPage({
           </div>
 
           <div className="facilitator-planner-time-track">
-            <div className="facilitator-planner-time-track-labels">
-              <span>
-                {formatFacilitatorClockTime(
-                  FACILITATOR_MEETING_START_MINUTES,
-                )}
-              </span>
+            <div className="facilitator-planner-time-track-top">
+              <div className="facilitator-planner-time-label">
+                <strong>
+                  {formatFacilitatorClockTime(
+                    FACILITATOR_MEETING_START_MINUTES,
+                  )}
+                </strong>
 
-              <strong>
-                Planned finish:{' '}
-                {formatFacilitatorClockTime(
-                  plannedFinishMinutes,
-                )}
-              </strong>
+                <span>
+                  Pacific Time
+                </span>
+              </div>
 
-              <span>
-                {formatFacilitatorClockTime(
-                  FACILITATOR_MEETING_START_MINUTES +
-                  FACILITATOR_MEETING_LENGTH_MINUTES,
-                )}
-              </span>
+              <div className="facilitator-planner-time-label facilitator-planner-time-label-right">
+                <strong>
+                  {formatFacilitatorClockTime(
+                    FACILITATOR_MEETING_START_MINUTES +
+                    FACILITATOR_MEETING_LENGTH_MINUTES,
+                  )}
+                </strong>
+
+                <span>
+                  Pacific Time
+                </span>
+              </div>
             </div>
 
-            <div className="facilitator-planner-time-track-bar">
+            <div className="facilitator-planner-time-track-bar-row">
               <span
+                className="facilitator-planner-time-endpoint"
+                aria-hidden="true"
+              />
+
+              <div className="facilitator-planner-time-track-bar">
+                <span
+                  className="facilitator-planner-time-track-fill"
+                  style={{
+                    width:
+                      `${plannedPercent}%`,
+                  }}
+                />
+              </div>
+
+              <span
+                className="facilitator-planner-time-endpoint"
+                aria-hidden="true"
+              />
+
+              <div
+                className="facilitator-planner-time-marker"
                 style={{
-                  width:
+                  left:
                     `${plannedPercent}%`,
                 }}
+              >
+                <strong>
+                  Planned finish:{' '}
+                  {formatFacilitatorClockTime(
+                    plannedFinishMinutes,
+                  )}
+                </strong>
+
+                <span
+                  className="facilitator-planner-time-marker-line"
+                  aria-hidden="true"
+                />
+
+                <span
+                  className="facilitator-planner-time-marker-dot"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+
+            <div className="facilitator-planner-time-track-bottom">
+              <div className="facilitator-planner-time-label">
+                <strong>
+                  {formatFacilitatorClockTime(
+                    FACILITATOR_MEETING_START_MINUTES +
+                    FACILITATOR_EASTERN_OFFSET_MINUTES,
+                  )}
+                </strong>
+
+                <span>
+                  Eastern Time
+                </span>
+              </div>
+
+              <span
+                className="facilitator-planner-time-guide"
+                aria-hidden="true"
               />
+
+              <strong className="facilitator-planner-eastern-badge">
+                Eastern Time
+              </strong>
+
+              <span
+                className="facilitator-planner-time-guide"
+                aria-hidden="true"
+              />
+
+              <div className="facilitator-planner-time-label facilitator-planner-time-label-right">
+                <strong>
+                  {formatFacilitatorClockTime(
+                    FACILITATOR_MEETING_START_MINUTES +
+                    FACILITATOR_MEETING_LENGTH_MINUTES +
+                    FACILITATOR_EASTERN_OFFSET_MINUTES,
+                  )}
+                </strong>
+
+                <span>
+                  Eastern Time
+                </span>
+              </div>
             </div>
 
             {remainingMinutes < 0 ? (
@@ -10270,10 +10775,12 @@ function FacilitatorPlannerPage({
                             id={
                               `facilitator-agenda-name-${agendaItem.id}`
                             }
+                            list="facilitator-agenda-name-options"
                             value={
                               agendaItem.name
                             }
                             aria-label="Agenda item name"
+                            autoComplete="off"
                             onFocus={() =>
                               setSelectedAgendaItemId(
                                 agendaItem.id,
@@ -10285,6 +10792,14 @@ function FacilitatorPlannerPage({
                               updateAgendaItemText(
                                 agendaItem.id,
                                 'name',
+                                event.target.value,
+                              )
+                            }
+                            onBlur={(
+                              event,
+                            ) =>
+                              commitAgendaItemName(
+                                agendaItem.id,
                                 event.target.value,
                               )
                             }
@@ -10364,6 +10879,17 @@ function FacilitatorPlannerPage({
                 )}
               </tbody>
             </table>
+
+            <datalist id="facilitator-agenda-name-options">
+              {facilitatorAgendaNameOptions.map(
+                (nameOption) => (
+                  <option
+                    key={nameOption}
+                    value={nameOption}
+                  />
+                ),
+              )}
+            </datalist>
           </div>
 
           <div className="facilitator-planner-primary-actions">
@@ -22713,6 +23239,7 @@ function App() {
               element={
                 <FacilitatorPlannerPage
                   meetings={cohortMeetings}
+                  contacts={contacts}
                 />
               }
             />

@@ -2418,53 +2418,120 @@
 
 .facilitator-planner-time-track {
   margin-bottom: 12px;
-  padding: 9px 10px 8px;
+  padding: 11px 12px 9px;
   border: 1px solid #476984;
-  border-radius: 8px;
+  border-radius: 9px;
   background:
     linear-gradient(
       180deg,
-      rgba(3, 20, 43, 0.94) 0%,
-      rgba(1, 12, 28, 0.94) 100%
+      rgba(3, 20, 43, 0.97) 0%,
+      rgba(1, 12, 28, 0.97) 100%
     );
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.08),
     0 3px 7px
-      rgba(0, 0, 0, 0.2);
+      rgba(0, 0, 0, 0.22);
 }
 
-.facilitator-planner-time-track-labels {
-  display: grid;
-  grid-template-columns:
-    90px 1fr 90px;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-  color: #cbd5e1;
-  font-size: 9px;
-  font-weight: 800;
+.facilitator-planner-time-track-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 31px;
 }
 
-.facilitator-planner-time-track-labels strong {
-  color: #ffffff;
-  font-size: 10px;
-  text-align: center;
+.facilitator-planner-time-label {
+  min-width: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
 }
 
-.facilitator-planner-time-track-labels span:last-child {
+.facilitator-planner-time-label-right {
+  align-items: flex-end;
   text-align: right;
 }
 
-.facilitator-planner-time-track-bar {
+.facilitator-planner-time-label strong {
+  min-width: 74px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  border: 1px solid #4f7ba4;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #12365d 0%,
+      #071e3b 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.facilitator-planner-time-label span {
+  color: #63d4ff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.facilitator-planner-time-track-bar-row {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    12px minmax(0, 1fr) 12px;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px;
+}
+
+.facilitator-planner-time-endpoint {
+  width: 12px;
   height: 12px;
+  box-sizing: border-box;
+  display: block;
+  border: 1px solid #d7e0ea;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #dbe2ea 100%
+    );
+  box-shadow:
+    0 1px 3px
+      rgba(0, 0, 0, 0.35);
+}
+
+.facilitator-planner-time-track-bar {
+  height: 10px;
   overflow: hidden;
   border: 1px solid #64748b;
   border-radius: 999px;
-  background: #dbe2ea;
+  background:
+    linear-gradient(
+      180deg,
+      #f5f7fa 0%,
+      #dbe2ea 100%
+    );
+  box-shadow:
+    inset 0 1px 2px
+      rgba(0, 0, 0, 0.16);
 }
 
-.facilitator-planner-time-track-bar > span {
+.facilitator-planner-time-track-fill {
   display: block;
   height: 100%;
   border-right: 1px solid #8a6500;
@@ -2477,11 +2544,124 @@
     );
 }
 
+.facilitator-planner-time-marker {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  transform:
+    translate(
+      -50%,
+      -50%
+    );
+}
+
+.facilitator-planner-time-marker > strong {
+  position: absolute;
+  left: 50%;
+  bottom: 23px;
+  min-width: 142px;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid #4f7ba4;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #12365d 0%,
+      #071e3b 100%
+    );
+  box-shadow:
+    0 2px 5px
+      rgba(0, 0, 0, 0.3);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  transform:
+    translateX(-50%);
+}
+
+.facilitator-planner-time-marker-line {
+  position: absolute;
+  left: -1px;
+  bottom: 7px;
+  width: 2px;
+  height: 17px;
+  background: #f8fafc;
+  box-shadow:
+    0 0 2px
+      rgba(255, 255, 255, 0.45);
+}
+
+.facilitator-planner-time-marker-dot {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid #c89214;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      145deg,
+      #ffd76a 0%,
+      #f2b632 60%,
+      #c89214 100%
+    );
+  box-shadow:
+    0 2px 4px
+      rgba(0, 0, 0, 0.35);
+}
+
+.facilitator-planner-time-track-bottom {
+  display: grid;
+  grid-template-columns:
+    auto minmax(20px, 1fr)
+    auto
+    minmax(20px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.facilitator-planner-time-guide {
+  min-width: 0;
+  border-top: 2px dotted #29a9ef;
+}
+
+.facilitator-planner-eastern-badge {
+  min-width: 104px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border: 1px solid #4f7ba4;
+  border-radius: 5px;
+  color: #63d4ff;
+  background:
+    linear-gradient(
+      180deg,
+      #12365d 0%,
+      #071e3b 100%
+    );
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .facilitator-planner-time-track p {
-  margin: 9px 0 0;
+  margin: 8px 0 0;
   color: #e2e8f0;
   font-size: 10px;
   font-weight: 700;
+  line-height: 1.2;
   text-align: center;
 }
 
