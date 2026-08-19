@@ -164,8 +164,7 @@ interface UpcomingMeetingDashboardItem {
 interface BirthdayDashboardItem {
   readonly name: string
   readonly dateLabel: string
-  readonly daysAwayLabel: string
-  readonly isToday: boolean
+  readonly sortTime: number
 }
 
 interface CohortValueDashboardItem {
@@ -430,6 +429,12 @@ interface CohortMeetingFormState {
 interface DashboardPageProps {
   readonly meetings:
   readonly CohortMeetingRecord[]
+
+  readonly contacts:
+  readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
 }
 
 interface CohortDatesRolesPageProps {
@@ -770,6 +775,15 @@ const dashboardCourseDateFormatter = new Intl.DateTimeFormat(
   },
 )
 
+const dashboardBirthdayDateFormatter = new Intl.DateTimeFormat(
+  'en-US',
+  {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  },
+)
+
 const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
   {
     code: 'EDDP 781',
@@ -805,8 +819,6 @@ const upcomingMeetingDashboard: UpcomingMeetingDashboardItem = {
     },
   ],
 }
-
-const nextBirthdayDashboard: BirthdayDashboardItem | null = null
 
 const cohortVision =
   'The vision of Beta Nu is to build an inclusive and empowering community that inspires personal and professional growth through creativity, courage, and authenticity, while practicing transformational leadership grounded in ethical action, empathy, accountability, and a strong sense of belonging.'
@@ -5480,6 +5492,8 @@ function PageShell({
 
 function DashboardPage({
   meetings,
+  contacts,
+  contactStatuses,
 }: DashboardPageProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
@@ -5556,6 +5570,110 @@ function DashboardPage({
             record.className,
         }
       })
+
+  const dashboardActiveContacts =
+    contacts.filter(
+      (contact) =>
+        contact.isMentor ||
+        (
+          contactStatuses[
+          contact.id
+          ] ?? 'Active'
+        ) === 'Active',
+    )
+
+  const dashboardMeetingsCompleted =
+    meetings.filter(
+      (meeting) =>
+        meeting.date <
+        currentPacificDate,
+    ).length
+
+  const currentPacificDateTime =
+    Date.parse(
+      `${currentPacificDate}T00:00:00Z`,
+    )
+
+  const dashboardDaysUntilNextMeeting =
+    dashboardUpcomingMeeting === undefined
+      ? '—'
+      : Math.max(
+        0,
+        Math.round(
+          (
+            Date.parse(
+              `${dashboardUpcomingMeeting.date}T00:00:00Z`,
+            ) -
+            currentPacificDateTime
+          ) /
+          (
+            24 *
+            60 *
+            60 *
+            1000
+          ),
+        ),
+      )
+
+  const currentPacificYear =
+    new Date(
+      currentPacificDateTime,
+    ).getUTCFullYear()
+
+  const dashboardUpcomingBirthdays:
+    readonly BirthdayDashboardItem[] =
+    dashboardActiveContacts
+      .flatMap((contact) => {
+        if (
+          contact.birthdayMonth === null ||
+          contact.birthdayDay === null
+        ) {
+          return []
+        }
+
+        let birthdayTime =
+          Date.UTC(
+            currentPacificYear,
+            contact.birthdayMonth - 1,
+            contact.birthdayDay,
+          )
+
+        if (
+          birthdayTime <
+          currentPacificDateTime
+        ) {
+          birthdayTime =
+            Date.UTC(
+              currentPacificYear + 1,
+              contact.birthdayMonth - 1,
+              contact.birthdayDay,
+            )
+        }
+
+        return [
+          {
+            name:
+              contact.name.replace(
+                ' (Mentor)',
+                '',
+              ),
+            dateLabel:
+              dashboardBirthdayDateFormatter.format(
+                new Date(
+                  birthdayTime,
+                ),
+              ),
+            sortTime:
+              birthdayTime,
+          },
+        ]
+      })
+      .sort(
+        (firstBirthday, secondBirthday) =>
+          firstBirthday.sortTime -
+          secondBirthday.sortTime,
+      )
+      .slice(0, 4)
 
   return (
     <section className="page-shell dashboard-overview">
@@ -6345,57 +6463,187 @@ function DashboardPage({
         </article>
 
         <article className="dashboard-info-card dashboard-snapshot-card">
-          <p className="dashboard-card-label">
-            Cohort Snapshot
-          </p>
-        </article>
+          <div className="dashboard-snapshot-header">
+            <span
+              className="dashboard-snapshot-icon"
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  cx="9"
+                  cy="8"
+                  r="3"
+                  fill="currentColor"
+                />
 
-        <article
-          className={`dashboard-info-card birthday-card dashboard-birthdays-card${nextBirthdayDashboard?.isToday
-            ? ' birthday-card-today'
-            : ''
-            }`}
-        >
-          <p className="dashboard-card-label">
-            Upcoming Birthdays
-          </p>
+                <circle
+                  cx="16.5"
+                  cy="9"
+                  r="2.5"
+                  fill="currentColor"
+                  opacity="0.82"
+                />
 
-          {nextBirthdayDashboard ? (
-            <div className="birthday-content">
-              <span className="birthday-status">
-                {nextBirthdayDashboard.isToday
-                  ? "Today's Birthday"
-                  : 'Next Birthday'}
+                <path
+                  d="M3.5 18C3.5 14.8 5.8 12.5 9 12.5C12.2 12.5 14.5 14.8 14.5 18"
+                  fill="currentColor"
+                />
+
+                <path
+                  d="M14 13.5C17.7 13.5 20 15.3 20 18"
+                  fill="currentColor"
+                  opacity="0.82"
+                />
+              </svg>
+            </span>
+
+            <p className="dashboard-card-label">
+              Cohort Snapshot
+            </p>
+          </div>
+
+          <div className="dashboard-snapshot-metrics">
+            <div className="dashboard-snapshot-row">
+              <span>Active Members</span>
+
+              <strong>
+                {dashboardActiveContacts.length}
+              </strong>
+            </div>
+
+            <div className="dashboard-snapshot-row">
+              <span>Active Classes</span>
+
+              <strong>
+                {dashboardActiveCourses.length}
+              </strong>
+            </div>
+
+            <div className="dashboard-snapshot-row">
+              <span>Meetings Completed</span>
+
+              <strong>
+                {dashboardMeetingsCompleted}
+                {' / '}
+                {meetings.length}
+              </strong>
+            </div>
+
+            <div className="dashboard-snapshot-row">
+              <span>Program Progress</span>
+
+              <strong>
+                {programProgress}%
+              </strong>
+            </div>
+
+            <div className="dashboard-snapshot-row">
+              <span>
+                Days Until Next Meeting
               </span>
-
-              <h2>
-                {nextBirthdayDashboard.name}
-              </h2>
 
               <strong>
                 {
-                  nextBirthdayDashboard.dateLabel
+                  dashboardDaysUntilNextMeeting
                 }
               </strong>
-
-              <p>
-                {nextBirthdayDashboard.isToday
-                  ? 'Happy Birthday!'
-                  : nextBirthdayDashboard.daysAwayLabel}
-              </p>
             </div>
-          ) : (
-            <div className="birthday-empty-state">
-              <strong>
-                Birthday data will appear here.
-              </strong>
+          </div>
 
-              <p>
-                Upcoming birthdays will populate
-                from the Cohort Contact page.
-              </p>
-            </div>
-          )}
+          <NavLink
+            className="dashboard-view-cohort-contacts"
+            to="/cohort-contact"
+          >
+            View Cohort Contacts
+          </NavLink>
+        </article>
+
+        <article className="dashboard-info-card dashboard-birthdays-card">
+          <div className="dashboard-birthdays-header">
+            <span
+              className="dashboard-birthdays-icon"
+              aria-hidden="true"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M5 11H19V18H5V11Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+
+                <path
+                  d="M4 18H20"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M7 11V8H17V11"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+
+                <path
+                  d="M8 5V8M12 5V8M16 5V8"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                />
+
+                <path
+                  d="M8 3.5C8.6 4 8.7 4.7 8 5M12 3.5C12.6 4 12.7 4.7 12 5M16 3.5C16.6 4 16.7 4.7 16 5"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+
+            <p className="dashboard-card-label">
+              Upcoming Birthdays
+            </p>
+          </div>
+
+          <div className="dashboard-birthday-list">
+            {dashboardUpcomingBirthdays.length > 0 ? (
+              dashboardUpcomingBirthdays.map(
+                (birthday) => (
+                  <div
+                    className="dashboard-birthday-row"
+                    key={`${birthday.name}-${birthday.sortTime}`}
+                  >
+                    <span>
+                      {birthday.name}
+                    </span>
+
+                    <strong>
+                      {birthday.dateLabel}
+                    </strong>
+                  </div>
+                ),
+              )
+            ) : (
+              <div className="dashboard-birthdays-empty">
+                No upcoming birthdays are available.
+              </div>
+            )}
+          </div>
+
+          <NavLink
+            className="dashboard-view-all-birthdays"
+            to="/cohort-contact"
+          >
+            View All Birthdays
+          </NavLink>
         </article>
 
         <article className="dashboard-info-card dashboard-courses-status-card">
@@ -28254,6 +28502,8 @@ function App() {
               element={
                 <DashboardPage
                   meetings={cohortMeetings}
+                  contacts={contacts}
+                  contactStatuses={contactStatuses}
                 />
               }
             />

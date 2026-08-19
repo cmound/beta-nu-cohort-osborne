@@ -12775,6 +12775,262 @@ tbody td {
   text-align: center;
 }
 
+/* =========================================================
+   Dashboard - Cohort Snapshot
+   ========================================================= */
+
+.dashboard-overview
+  .dashboard-snapshot-card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 17px 18px 16px;
+}
+
+.dashboard-snapshot-header,
+.dashboard-birthdays-header {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard-snapshot-header
+  .dashboard-card-label,
+.dashboard-birthdays-header
+  .dashboard-card-label {
+  color: #0b1f3b;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+/* Gold Cohort Snapshot icon */
+.dashboard-snapshot-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  color: #c69214;
+}
+
+.dashboard-snapshot-icon svg {
+  width: 29px;
+  height: 29px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0
+      #8f6500
+    )
+    drop-shadow(
+      0 2px 2px
+      rgba(0, 0, 0, 0.18)
+    );
+}
+
+/* Snapshot metric rows */
+.dashboard-snapshot-metrics {
+  display: flex;
+  flex-direction: column;
+  margin-top: 7px;
+}
+
+.dashboard-snapshot-row {
+  min-height: 35px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px;
+  border-bottom: 1px solid #96a9ba;
+}
+
+.dashboard-snapshot-row
+  > span {
+  min-width: 0;
+  color: #0b1f3b;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.dashboard-snapshot-row
+  > strong {
+  flex: 0 0 auto;
+  color: #0b1f3b;
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Dashboard - Upcoming Birthdays
+   ========================================================= */
+
+.dashboard-overview
+  .dashboard-birthdays-card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 17px 18px 16px;
+}
+
+/* Gold birthday cake icon */
+.dashboard-birthdays-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  color: #c69214;
+}
+
+.dashboard-birthdays-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+  overflow: visible;
+  filter:
+    drop-shadow(
+      0 1px 0
+      #8f6500
+    )
+    drop-shadow(
+      0 2px 2px
+      rgba(0, 0, 0, 0.18)
+    );
+}
+
+/* Birthday rows */
+.dashboard-birthday-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 7px;
+}
+
+.dashboard-birthday-row {
+  min-height: 39px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 2px;
+  border-bottom: 1px solid #96a9ba;
+}
+
+.dashboard-birthday-row
+  > span {
+  min-width: 0;
+  color: #0b1f3b;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.dashboard-birthday-row
+  > strong {
+  flex: 0 0 auto;
+  color: #0b1f3b;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dashboard-birthdays-empty {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* =========================================================
+   Shared Snapshot / Birthday navigation buttons
+   ========================================================= */
+
+.dashboard-view-cohort-contacts,
+.dashboard-view-all-birthdays {
+  min-width: 170px;
+  min-height: 35px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin: auto auto 0;
+  padding: 7px 16px;
+  border: 1px solid #7f96ad;
+  border-radius: 6px;
+  color: #004fc4;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f6f8fa 52%,
+      #e8edf3 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.98),
+    inset 0 -2px 3px
+      rgba(49, 87, 122, 0.1),
+    0 4px 7px
+      rgba(11, 31, 59, 0.18);
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dashboard-view-cohort-contacts:hover,
+.dashboard-view-all-birthdays:hover {
+  border-color: #005eb8;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f1f6fb 50%,
+      #e2edf7 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.98),
+    0 5px 9px
+      rgba(11, 31, 59, 0.22);
+  transform: translateY(-1px);
+}
+
+.dashboard-view-cohort-contacts:active,
+.dashboard-view-all-birthdays:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 4px
+      rgba(49, 87, 122, 0.18),
+    0 1px 3px
+      rgba(11, 31, 59, 0.16);
+}
+
+.dashboard-view-cohort-contacts:focus-visible,
+.dashboard-view-all-birthdays:focus-visible {
+  outline: 2px solid #c69214;
+  outline-offset: 2px;
+}
+
 /* Keep middle-row birthday card consistent */
 .dashboard-overview
   .birthday-card {
