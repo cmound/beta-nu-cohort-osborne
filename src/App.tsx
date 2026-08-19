@@ -10570,7 +10570,7 @@ function FacilitatorPlannerPage({
           </div>
 
           <div className="facilitator-planner-time-track">
-            <div className="facilitator-planner-time-track-top">
+            <div className="facilitator-planner-time-track-header">
               <div className="facilitator-planner-time-label">
                 <strong>
                   {formatFacilitatorClockTime(
@@ -10581,6 +10581,21 @@ function FacilitatorPlannerPage({
                 <span>
                   Pacific Time
                 </span>
+              </div>
+
+              <div
+                className={
+                  remainingMinutes < 0
+                    ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-over'
+                    : remainingMinutes === 0
+                      ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-full'
+                      : 'facilitator-planner-planned-finish'
+                }
+              >
+                Planned finish:{' '}
+                {formatFacilitatorClockTime(
+                  plannedFinishMinutes,
+                )}
               </div>
 
               <div className="facilitator-planner-time-label facilitator-planner-time-label-right">
@@ -10597,21 +10612,6 @@ function FacilitatorPlannerPage({
               </div>
             </div>
 
-            <div
-              className={
-                remainingMinutes < 0
-                  ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-over'
-                  : remainingMinutes === 0
-                    ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-full'
-                    : 'facilitator-planner-planned-finish'
-              }
-            >
-              Planned finish:{' '}
-              {formatFacilitatorClockTime(
-                plannedFinishMinutes,
-              )}
-            </div>
-
             <div className="facilitator-planner-time-track-bar-row">
               <span
                 className="facilitator-planner-time-endpoint"
@@ -10620,7 +10620,11 @@ function FacilitatorPlannerPage({
 
               <div className="facilitator-planner-time-track-bar">
                 <span
-                  className="facilitator-planner-time-track-fill"
+                  className={
+                    remainingMinutes < 0
+                      ? 'facilitator-planner-time-track-fill facilitator-planner-time-track-fill-over'
+                      : 'facilitator-planner-time-track-fill'
+                  }
                   style={{
                     width:
                       `${plannedPercent}%`,
@@ -10628,28 +10632,32 @@ function FacilitatorPlannerPage({
                 />
               </div>
 
-              <span
-                className="facilitator-planner-time-endpoint"
-                aria-hidden="true"
-              />
+              {remainingMinutes > 0 ? (
+                <>
+                  <span
+                    className="facilitator-planner-time-endpoint"
+                    aria-hidden="true"
+                  />
 
-              <div
-                className="facilitator-planner-time-marker"
-                style={{
-                  left:
-                    `${plannedPercent}%`,
-                }}
-              >
-                <span
-                  className="facilitator-planner-time-marker-line"
-                  aria-hidden="true"
-                />
+                  <div
+                    className="facilitator-planner-time-marker"
+                    style={{
+                      left:
+                        `${plannedPercent}%`,
+                    }}
+                  >
+                    <span
+                      className="facilitator-planner-time-marker-line"
+                      aria-hidden="true"
+                    />
 
-                <span
-                  className="facilitator-planner-time-marker-dot"
-                  aria-hidden="true"
-                />
-              </div>
+                    <span
+                      className="facilitator-planner-time-marker-dot"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </>
+              ) : null}
             </div>
 
             <div className="facilitator-planner-time-track-bottom">
@@ -10696,7 +10704,7 @@ function FacilitatorPlannerPage({
             </div>
 
             {remainingMinutes < 0 ? (
-              <p>
+              <p className="facilitator-planner-over-schedule-message">
                 OVER SCHEDULE BY{' '}
                 {Math.abs(
                   remainingMinutes,
