@@ -10405,10 +10405,102 @@ function FacilitatorPlannerPage({
         >
           {isBuildingAgenda ? (
             <div className="facilitator-planner-building-status">
-              <span
-                className="facilitator-planner-building-status-dot"
+              <svg
+                className="facilitator-planner-building-status-gear"
+                viewBox="0 0 24 24"
                 aria-hidden="true"
-              />
+              >
+                <g
+                  fill="currentColor"
+                  stroke="#000000"
+                  strokeWidth="1.2"
+                  strokeLinejoin="round"
+                >
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(45 12 12)"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(90 12 12)"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(135 12 12)"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(180 12 12)"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(225 12 12)"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(270 12 12)"
+                  />
+
+                  <rect
+                    x="10"
+                    y="1"
+                    width="4"
+                    height="6"
+                    rx="1"
+                    transform="rotate(315 12 12)"
+                  />
+
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="7"
+                  />
+                </g>
+
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="2.7"
+                  fill="#000000"
+                />
+              </svg>
 
               <div>
                 <strong>

@@ -2410,39 +2410,60 @@
   gap: 11px;
   margin-bottom: 9px;
   padding: 8px 12px;
-  border: 1px solid #527a99;
-  border-left: 4px solid #ffd200;
+  border: 1px solid #c89214;
+  border-left: 4px solid #061321;
   border-radius: 7px;
   color: #061321;
   background:
     linear-gradient(
       180deg,
-      #f8fafc 0%,
-      #edf2f7 48%,
-      #dce6ef 100%
+      #fff8bf 0%,
+      #ffe978 52%,
+      #ffd84d 100%
     );
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.96),
-    inset 0 -2px 3px
-      rgba(44, 78, 107, 0.14),
+      rgba(255, 255, 255, 0.78),
+    inset 0 -3px 3px
+      rgba(138, 101, 0, 0.2),
     0 3px 7px
-      rgba(0, 0, 0, 0.26);
+      rgba(0, 0, 0, 0.28);
 }
 
-.facilitator-planner-building-status-dot {
-  width: 13px;
-  height: 13px;
-  flex: 0 0 13px;
-  box-sizing: border-box;
-  border: 2px solid #000000;
-  border-radius: 50%;
-  background: #57e964;
-  box-shadow:
-    0 0 0 2px
-      rgba(87, 233, 100, 0.24),
-    0 2px 4px
-      rgba(0, 0, 0, 0.25);
+.facilitator-planner-building-status-gear {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  display: block;
+  overflow: visible;
+  color: #57e964;
+  filter:
+    drop-shadow(
+      0 2px 2px
+      rgba(0, 0, 0, 0.28)
+    );
+  transform-origin: center;
+  animation:
+    facilitator-planner-gear-spin
+    1.8s
+    linear
+    infinite;
+}
+
+@keyframes facilitator-planner-gear-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .facilitator-planner-building-status-gear {
+    animation: none;
+  }
 }
 
 .facilitator-planner-building-status div {
