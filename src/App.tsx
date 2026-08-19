@@ -755,6 +755,16 @@ const dashboardMilestoneDateFormatter = new Intl.DateTimeFormat(
   },
 )
 
+const dashboardCourseDateFormatter = new Intl.DateTimeFormat(
+  'en-US',
+  {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  },
+)
+
 const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
   {
     code: 'EDDP 781',
@@ -5509,6 +5519,30 @@ function DashboardPage() {
       )
       .slice(0, 3)
 
+  const dashboardActiveCourses =
+    dashboardAcademicPlan
+      .filter(
+        (record) =>
+          getCohortAcademicPlanStatus(
+            record.startDate,
+            record.endDate,
+          ) === 'In Progress',
+      )
+      .map((record) => {
+        const dashboardCourse =
+          activeCoursesDashboard.find(
+            (course) =>
+              course.code === record.code,
+          )
+
+        return {
+          ...record,
+          className:
+            dashboardCourse?.title ??
+            record.className,
+        }
+      })
+
   return (
     <section className="page-shell dashboard-overview">
       <div className="dashboard-overview-row dashboard-overview-top-row">
@@ -5799,29 +5833,113 @@ function DashboardPage() {
         </article>
 
         <article className="dashboard-info-card dashboard-classes-card">
-          <div className="dashboard-card-heading-row">
-            <p className="dashboard-card-label">
-              Active Classes / Current Courses
-            </p>
+          <div className="dashboard-active-classes-header">
+            <div className="dashboard-active-classes-title-group">
+              <span
+                className="dashboard-active-classes-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"
+                    fill="currentColor"
+                    stroke="#A87408"
+                    strokeWidth="1.1"
+                    strokeLinejoin="round"
+                  />
 
-            <strong>
-              {activeCoursesDashboard.length} Active
-            </strong>
+                  <path
+                    d="M6.5 10.5V15.5C6.5 17.2 9 18.7 12 18.7C15 18.7 17.5 17.2 17.5 15.5V10.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M21.5 8.5V14"
+                    stroke="#8F6500"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+
+                  <circle
+                    cx="21.5"
+                    cy="15.6"
+                    r="1.2"
+                    fill="#FFD76A"
+                    stroke="#8F6500"
+                    strokeWidth="0.8"
+                  />
+
+                  <path
+                    d="M5 8.5L12 5.4L19 8.5"
+                    fill="none"
+                    stroke="#FFD76A"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+
+              <p className="dashboard-card-label">
+                Active Classes / Current Courses
+              </p>
+            </div>
+
+            <span className="dashboard-active-count-badge">
+              {dashboardActiveCourses.length} Active
+            </span>
           </div>
 
           <div className="active-course-list">
-            {activeCoursesDashboard.map(
+            {dashboardActiveCourses.map(
               (course) => (
                 <div
                   className="active-course-item"
-                  key={course.code}
+                  key={course.id}
                 >
-                  <span>{course.code}</span>
-                  <strong>{course.title}</strong>
+                  <span className="dashboard-active-course-code">
+                    {course.code}
+                  </span>
+
+                  <div className="dashboard-active-course-details">
+                    <strong className="dashboard-active-course-title">
+                      {course.className}
+                    </strong>
+
+                    <p className="dashboard-active-course-meta">
+                      {course.termYear}
+                      {' | '}
+                      {dashboardCourseDateFormatter.format(
+                        new Date(
+                          `${course.startDate}T00:00:00Z`,
+                        ),
+                      )}
+                      {' - '}
+                      {dashboardCourseDateFormatter.format(
+                        new Date(
+                          `${course.endDate}T00:00:00Z`,
+                        ),
+                      )}
+                    </p>
+                  </div>
                 </div>
               ),
             )}
           </div>
+
+          <NavLink
+            className="dashboard-view-all-classes"
+            to="/academic-plan"
+          >
+            View All Classes
+          </NavLink>
         </article>
       </div>
 
