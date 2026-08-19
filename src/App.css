@@ -6727,6 +6727,409 @@
 }
 
 /* =========================================================
+   Beta Nu Cohort Course Waivers
+   ========================================================= */
+
+.course-waivers-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #8da1b5;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(242, 247, 251, 0.98) 0%,
+      rgba(221, 232, 241, 0.98) 100%
+    );
+  box-shadow:
+    0 8px 22px
+      rgba(0, 0, 0, 0.22);
+}
+
+.course-waivers-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.course-waivers-search {
+  display: grid;
+  gap: 6px;
+  width: min(430px, 100%);
+  color: #0b1f3b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.course-waivers-search-input {
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 2px solid #557898;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #061321;
+  font: inherit;
+  font-weight: 650;
+  box-shadow:
+    inset 0 1px 3px
+      rgba(0, 0, 0, 0.12);
+}
+
+.course-waivers-search-input:focus {
+  border-color: #0077c8;
+  outline: 3px solid
+    rgba(0, 119, 200, 0.22);
+  outline-offset: 1px;
+}
+
+.course-waivers-result-count {
+  margin: 0 0 9px;
+  color: #0b1f3b;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.course-waivers-entry-help {
+  padding: 10px 14px;
+  border: 1px solid #c69214;
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      #123d6c 0%,
+      #082747 100%
+    );
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow:
+    0 3px 8px
+      rgba(0, 0, 0, 0.2);
+}
+
+.course-waivers-entry-help strong {
+  color: #ffd200;
+  font-size: 16px;
+}
+
+.course-waivers-table-frame {
+  width: 100%;
+  max-height: 620px;
+  overflow: auto;
+  border: 1px solid #557898;
+  border-radius: 6px;
+  background: #ffffff;
+  scrollbar-gutter: stable;
+  box-shadow:
+    inset 0 0 0 1px
+      rgba(255, 255, 255, 0.55);
+}
+
+.course-waivers-table {
+  width: 100%;
+  min-width: 2020px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: #ffffff;
+  color: #061321;
+}
+
+.course-waivers-table th,
+.course-waivers-table td {
+  box-sizing: border-box;
+  border-right: 1px solid #91a4b8;
+  border-bottom: 1px solid #91a4b8;
+}
+
+.course-waivers-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 52px;
+  padding: 7px 6px;
+  border-bottom: 2px solid #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd95a 0%,
+      #e7ac00 100%
+    );
+  color: #061321;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow:
+    0 2px 4px
+      rgba(0, 0, 0, 0.18);
+}
+
+.course-waiver-name-cell {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+}
+
+.course-waivers-table thead
+.course-waiver-name-cell {
+  left: 0;
+  z-index: 5;
+  padding-left: 12px;
+  text-align: left;
+}
+
+.course-waivers-table tbody
+.course-waiver-name-cell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  height: 42px;
+  padding: 7px 12px;
+  border-right: 2px solid #244d72;
+  background: #f8fbfd;
+  color: #061321;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.course-waivers-table tbody
+tr:nth-child(even)
+.course-waiver-name-cell {
+  background: #eaf2f8;
+}
+
+.course-waiver-course-heading {
+  width: 94px;
+  min-width: 94px;
+  max-width: 94px;
+  text-align: center;
+}
+
+.course-waiver-cell {
+  position: relative;
+  z-index: 1;
+  width: 94px;
+  min-width: 94px;
+  max-width: 94px;
+  height: 42px;
+  overflow: visible;
+  padding: 0;
+  background: #ffffff;
+  text-align: center;
+}
+
+.course-waiver-cell-hint {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 7px);
+  z-index: 30;
+  min-width: 118px;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  transform: translateY(-50%);
+  border: 1px solid #c69214;
+  border-radius: 5px;
+  background: #fff4b8;
+  color: #061321;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow:
+    0 3px 8px
+      rgba(0, 0, 0, 0.24);
+}
+
+.course-waiver-cell-hint::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border-top: 5px solid transparent;
+  border-right: 6px solid #c69214;
+  border-bottom: 5px solid transparent;
+}
+
+.course-waiver-cell-hint strong {
+  color: #0000ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.course-waiver-cell:focus-within {
+  z-index: 20;
+}
+
+.course-waiver-input {
+  display: block;
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  color: #061321;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 42px;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: text;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.course-waiver-input:hover {
+  background: #fff7cf;
+}
+
+.course-waiver-input:focus {
+  position: relative;
+  z-index: 1;
+  outline: none;
+  background: #fff9dc;
+  color: #061321;
+  box-shadow:
+    inset 0 0 0 3px #0077c8;
+}
+
+.course-waiver-input-filled {
+  background: #ffd200;
+  color: #061321;
+  box-shadow:
+    inset 0 0 0 1px #b58b00;
+}
+
+.course-waiver-input-filled:hover {
+  background: #ffdd3f;
+}
+
+.course-waivers-empty {
+  height: 54px;
+  padding: 12px;
+  background: #ffffff;
+  color: #47596b;
+  font-weight: 700;
+  text-align: center;
+}
+
+.course-waiver-summary-panel {
+  width: min(720px, 100%);
+  overflow: hidden;
+  border: 1px solid #557898;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow:
+    0 5px 14px
+      rgba(0, 0, 0, 0.18);
+}
+
+.course-waiver-summary-heading {
+  padding: 10px 14px;
+  border-bottom: 2px solid #c69214;
+  background:
+    linear-gradient(
+      180deg,
+      #123d6c 0%,
+      #082747 100%
+    );
+}
+
+.course-waiver-summary-heading h2 {
+  margin: 0;
+  color: #ffd200;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.course-waiver-summary-table-frame {
+  overflow-x: auto;
+}
+
+.course-waiver-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  color: #061321;
+}
+
+.course-waiver-summary-table th,
+.course-waiver-summary-table td {
+  padding: 9px 12px;
+  border-right: 1px solid #91a4b8;
+  border-bottom: 1px solid #91a4b8;
+  font-size: 13px;
+}
+
+.course-waiver-summary-table thead th {
+  background:
+    linear-gradient(
+      180deg,
+      #ffd95a 0%,
+      #e7ac00 100%
+    );
+  color: #061321;
+  font-weight: 900;
+  text-align: left;
+}
+
+.course-waiver-summary-table thead
+th:last-child {
+  text-align: center;
+}
+
+.course-waiver-summary-table tbody th {
+  width: 48%;
+  background: #f8fbfd;
+  color: #061321;
+  font-weight: 750;
+  text-align: left;
+}
+
+.course-waiver-summary-table tbody td {
+  color: #061321;
+  font-weight: 750;
+  text-align: center;
+}
+
+.course-waiver-summary-table tbody
+tr:nth-child(even) th,
+.course-waiver-summary-table tbody
+tr:nth-child(even) td {
+  background: #eaf2f8;
+}
+
+.course-waiver-summary-table
+tr:last-child th,
+.course-waiver-summary-table
+tr:last-child td {
+  border-bottom: 0;
+}
+
+.course-waiver-summary-table
+th:last-child,
+.course-waiver-summary-table
+td:last-child {
+  border-right: 0;
+}
+
+/* =========================================================
    Beta Nu Cohort Academic Plan
    ========================================================= */
 

@@ -634,7 +634,7 @@ const navigationItems: readonly NavigationItem[] = [
     parentId: 'academic-plan',
   },
   {
-    label: 'Course Waivers',
+    label: 'Courses Waived',
     path: '/transfer-courses',
     parentId: 'academic-plan',
   },
@@ -20272,10 +20272,6 @@ function CohortCourseWaiversPage({
       normalizedValue !== '' &&
       normalizedValue !== 'W'
     ) {
-      window.alert(
-        'Only "W" is accepted for a waived course. ' +
-        'Leave the cell blank if the course is not waived.',
-      )
       return
     }
 
@@ -20412,7 +20408,7 @@ function CohortCourseWaiversPage({
   return (
     <section className="page-shell">
       <header className="dashboard-page-heading cohort-contacts-page-heading">
-        <h1>Beta Nu Cohort Course Waivers</h1>
+        <h1>Beta Nu Cohort Courses Waived</h1>
       </header>
 
       <section className="course-waivers-panel">
@@ -20563,17 +20559,6 @@ function CohortCourseWaiversPage({
                                 data-course-waiver-column={
                                   courseColumnIndex
                                 }
-                                onClick={(
-                                  event,
-                                ) => {
-                                  window.alert(
-                                    'Enter "W" if this course ' +
-                                    'was waived. Leave the ' +
-                                    'cell blank if it was not waived.',
-                                  )
-
-                                  event.currentTarget.select()
-                                }}
                                 onChange={(
                                   event,
                                 ) => {
@@ -20614,6 +20599,18 @@ function CohortCourseWaiversPage({
                                   )
                                 }}
                               />
+
+                              {focusedWaiverKey ===
+                                waiverKey ? (
+                                <span
+                                  className="course-waiver-cell-hint"
+                                  role="status"
+                                >
+                                  Enter
+                                  <strong> W </strong>
+                                  if waived
+                                </span>
+                              ) : null}
                             </td>
                           )
                         },
