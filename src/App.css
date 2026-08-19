@@ -11698,3 +11698,158 @@
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
+
+.facilitator-planner-table-toolbar
+  .facilitator-planner-manage-names-button {
+  margin-left: auto;
+  border-color: #527a99;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #dceaf5 0%,
+      #aac8de 100%
+    );
+}
+
+.facilitator-planner-name-manager-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    rgba(1, 8, 20, 0.76);
+  backdrop-filter: blur(2px);
+}
+
+.facilitator-planner-name-manager-dialog {
+  width: 430px;
+  max-width: calc(100vw - 48px);
+  box-sizing: border-box;
+  padding: 18px;
+  border: 2px solid #ffd200;
+  border-radius: 10px;
+  color: #f8fafc;
+  background:
+    linear-gradient(
+      180deg,
+      #123c6a 0%,
+      #0b2d54 50%,
+      #061d3b 100%
+    );
+  box-shadow:
+    0 18px 42px
+      rgba(0, 0, 0, 0.58);
+}
+
+.facilitator-planner-name-manager-dialog
+  > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.facilitator-planner-name-manager-dialog
+  h2 {
+  margin: 0;
+  color: #ffd200;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.facilitator-planner-name-manager-dialog
+  > header
+  > button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 5px;
+  color: #ffffff;
+  background: #8b1e1e;
+  font-size: 21px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.facilitator-planner-name-manager-dialog
+  > p {
+  margin: 12px 0;
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.facilitator-planner-name-manager-list {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-right: 3px;
+}
+
+.facilitator-planner-name-manager-row {
+  min-height: 40px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid #527a99;
+  border-radius: 6px;
+  color: #061321;
+  background: #edf4fa;
+}
+
+.facilitator-planner-name-manager-row
+  strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.facilitator-planner-name-manager-row
+  button {
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid #ffd200;
+  border-radius: 4px;
+  color: #ffd200;
+  background: #8b1e1e;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.facilitator-planner-name-manager-empty {
+  padding: 18px;
+  border: 1px solid #527a99;
+  border-radius: 6px;
+  color: #061321;
+  background: #edf4fa;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.facilitator-planner-name-manager-done {
+  min-height: 36px;
+  margin-top: 14px;
+  padding: 7px 18px;
+  border: 1px solid #c89214;
+  border-radius: 5px;
+  color: #061321;
+  background: #ffd200;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}

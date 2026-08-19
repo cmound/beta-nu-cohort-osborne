@@ -7012,6 +7012,8 @@ function readStoredFacilitatorAgendaCustomNames():
 
       if (
         trimmedValue.length > 0 &&
+        trimmedValue.toLocaleLowerCase() !==
+        'all' &&
         !storedNames.some(
           (storedName) =>
             storedName.toLocaleLowerCase() ===
@@ -7041,7 +7043,9 @@ function getFacilitatorAgendaNameOptions(
   customNames:
     readonly string[],
 ): readonly string[] {
-  const nameOptions: string[] = []
+  const nameOptions: string[] = [
+    'All',
+  ]
 
   for (const contact of contacts) {
     const contactLabel =
@@ -8786,6 +8790,11 @@ function FacilitatorPlannerPage({
     readStoredFacilitatorAgendaCustomNames,
   )
 
+  const [
+    isManagingAgendaNames,
+    setIsManagingAgendaNames,
+  ] = useState(false)
+
   const [selectedMeetingId, setSelectedMeetingId] =
     useState(initialMeetingId)
 
@@ -9254,19 +9263,71 @@ function FacilitatorPlannerPage({
       | 'details',
     value: string,
   ): void {
+    const isBreakAgendaItem =
+      field === 'agendaItem' &&
+      value.trim().toLocaleLowerCase() ===
+      'break'
+
     setAgendaItems(
-      (currentItems) =>
-        currentItems.map(
-          (agendaItem) =>
-            agendaItem.id ===
-              agendaItemId
-              ? {
-                ...agendaItem,
-                [field]: value,
-              }
-              : agendaItem,
-        ),
+      (currentItems) => {
+        const updatedItems =
+          currentItems.map(
+            (agendaItem) =>
+              agendaItem.id ===
+                agendaItemId
+                ? isBreakAgendaItem
+                  ? {
+                    ...agendaItem,
+                    agendaItem: value,
+                    name: 'All',
+                    durationMinutes: 10,
+                  }
+                  : {
+                    ...agendaItem,
+                    [field]: value,
+                  }
+                : agendaItem,
+          )
+
+        return isBreakAgendaItem
+          ? ensureFacilitatorAgendaBlankRow(
+            updatedItems,
+          )
+          : updatedItems
+      },
     )
+  }
+
+  function deleteRememberedAgendaName(
+    nameToDelete: string,
+  ): void {
+    const nextCustomNames =
+      customAgendaNames.filter(
+        (customName) =>
+          customName.toLocaleLowerCase() !==
+          nameToDelete.toLocaleLowerCase(),
+      )
+
+    try {
+      window.localStorage.setItem(
+        FACILITATOR_AGENDA_CUSTOM_NAMES_STORAGE_KEY,
+        JSON.stringify(
+          nextCustomNames,
+        ),
+      )
+
+      setCustomAgendaNames(
+        nextCustomNames,
+      )
+
+      setActionMessage(
+        `"${nameToDelete}" removed from remembered names.`,
+      )
+    } catch {
+      setActionMessage(
+        'Unable to update remembered agenda names.',
+      )
+    }
   }
 
   function commitAgendaItemName(
@@ -10954,6 +11015,19 @@ function FacilitatorPlannerPage({
             >
               Delete Selected
             </button>
+
+            <button
+              type="button"
+              className="facilitator-planner-manage-names-button"
+              onClick={() =>
+                setIsManagingAgendaNames(true)
+              }
+            >
+              Manage Names
+              {' ('}
+              {customAgendaNames.length}
+              {')'}
+            </button>
           </div>
 
           <div className="facilitator-planner-table-frame">
@@ -11472,6 +11546,84 @@ function FacilitatorPlannerPage({
           </table>
         </div>
       </section>
+
+      {isManagingAgendaNames ? (
+        <div className="facilitator-planner-name-manager-overlay">
+          <section
+            className="facilitator-planner-name-manager-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="facilitator-planner-name-manager-title"
+          >
+            <header>
+              <h2 id="facilitator-planner-name-manager-title">
+                Manage Remembered Names
+              </h2>
+
+              <button
+                type="button"
+                aria-label="Close remembered-name manager"
+                onClick={() =>
+                  setIsManagingAgendaNames(false)
+                }
+              >
+                ×
+              </button>
+            </header>
+
+            <p>
+              Remove unwanted names that were
+              manually entered and remembered.
+              Cohort Contact names and All are
+              protected.
+            </p>
+
+            <div className="facilitator-planner-name-manager-list">
+              {customAgendaNames.length ===
+                0 ? (
+                <div className="facilitator-planner-name-manager-empty">
+                  No custom names are currently
+                  remembered.
+                </div>
+              ) : (
+                customAgendaNames.map(
+                  (customName) => (
+                    <div
+                      key={customName}
+                      className="facilitator-planner-name-manager-row"
+                    >
+                      <strong>
+                        {customName}
+                      </strong>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          deleteRememberedAgendaName(
+                            customName,
+                          )
+                        }
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ),
+                )
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="facilitator-planner-name-manager-done"
+              onClick={() =>
+                setIsManagingAgendaNames(false)
+              }
+            >
+              Done
+            </button>
+          </section>
+        </div>
+      ) : null}
 
       {pendingNavigationPath !== null ? (
         <div className="facilitator-planner-navigation-overlay">
