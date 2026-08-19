@@ -671,7 +671,7 @@ const navigationItems: readonly NavigationItem[] = [
     groupId: 'shared-files',
   },
   {
-    label: 'Beta Nu Seal & Zoom Images',
+    label: 'BNF Seal & Zoom Images',
     path: '/beta-nu-fall-icons',
     parentId: 'shared-files',
     isLastInGroup: true,
@@ -17416,7 +17416,7 @@ function CohortImagesPage() {
       <section className="cohort-images-toolbar">
         <div className="cohort-images-toolbar-brand">
           <div className="cohort-images-toolbar-copy">
-            <h2>Beta Nu Seal &amp; Zoom Images</h2>
+            <h2>BNF Seal &amp; Zoom Images</h2>
 
             <p>
               Approved Beta Nu Fall seals and
