@@ -745,6 +745,16 @@ const cohortMeetingWeekdayFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
 })
 
+const dashboardMilestoneDateFormatter = new Intl.DateTimeFormat(
+  'en-US',
+  {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  },
+)
+
 const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
   {
     code: 'EDDP 781',
@@ -5466,40 +5476,126 @@ function DashboardPage() {
     }
   }, [])
 
-  const programProgress = calculateProgramProgress(currentDate)
+  const programProgress =
+    calculateProgramProgress(currentDate)
+
+  const dashboardAcademicPlan =
+    readStoredCohortAcademicPlan()
+
+  const completedAcademicPlanCount =
+    dashboardAcademicPlan.filter(
+      (record) =>
+        getCohortAcademicPlanStatus(
+          record.startDate,
+          record.endDate,
+        ) === 'Done',
+    ).length
+
+  const currentPacificDate =
+    getPacificDateKey(currentDate)
+
+  const dashboardUpcomingMilestones =
+    [...dashboardAcademicPlan]
+      .filter(
+        (record) =>
+          record.startDate >=
+          currentPacificDate,
+      )
+      .sort(
+        (firstRecord, secondRecord) =>
+          firstRecord.startDate.localeCompare(
+            secondRecord.startDate,
+          ),
+      )
+      .slice(0, 3)
 
   return (
     <section className="page-shell dashboard-overview">
       <div className="dashboard-overview-row dashboard-overview-top-row">
         <article className="dashboard-info-card dashboard-progress-card">
-          <div className="dashboard-card-heading-row">
-            <p className="dashboard-card-label">
-              Program Progress
-            </p>
+          <div className="dashboard-progress-heading">
+            <div className="dashboard-progress-title-group">
+              <span
+                className="dashboard-progress-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M4 19V5"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
 
-            <strong>{programProgress}%</strong>
+                  <path
+                    d="M4 19H20"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M7 15L11 11L14 13L19 7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M15.5 7H19V10.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+
+              <p className="dashboard-card-label">
+                Program Progress
+              </p>
+            </div>
+
+            <NavLink
+              className="dashboard-progress-page-link"
+              to="/academic-plan"
+              aria-label="View Academic Plan"
+              title="View Academic Plan"
+            >
+              ›
+            </NavLink>
           </div>
 
-          <div
-            className="program-progress-track"
-            role="progressbar"
-            aria-label="Beta Nu program timeline progress"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={programProgress}
-          >
+          <div className="dashboard-progress-bar-row">
             <div
-              className="program-progress-fill"
-              style={{
-                width: `${programProgress}%`,
-              }}
-            />
+              className="program-progress-track"
+              role="progressbar"
+              aria-label="Beta Nu program timeline progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={programProgress}
+            >
+              <div
+                className="program-progress-fill"
+                style={{
+                  width: `${programProgress}%`,
+                }}
+              />
+            </div>
+
+            <strong className="dashboard-progress-percentage">
+              {programProgress}%
+            </strong>
           </div>
 
           <div className="program-progress-dates">
             <div>
               <span>Program Start</span>
-              <strong>August 25, 2025</strong>
+              <strong>Aug 25, 2025</strong>
             </div>
 
             <div className="program-progress-current">
@@ -5510,10 +5606,60 @@ function DashboardPage() {
             </div>
 
             <div>
+              <span>Completed</span>
+              <strong>
+                {completedAcademicPlanCount} /{' '}
+                {dashboardAcademicPlan.length}
+              </strong>
+            </div>
+
+            <div>
               <span>Projected End</span>
-              <strong>June 27, 2027</strong>
+              <strong>Jun 27, 2027</strong>
             </div>
           </div>
+
+          <section className="dashboard-progress-milestones">
+            <h3>Upcoming Term Milestones</h3>
+
+            <div className="dashboard-progress-milestone-list">
+              {dashboardUpcomingMilestones.map(
+                (milestone) => (
+                  <div
+                    className="dashboard-progress-milestone"
+                    key={milestone.id}
+                  >
+                    <span
+                      className="dashboard-progress-milestone-dot"
+                      aria-hidden="true"
+                    />
+
+                    <time
+                      dateTime={milestone.startDate}
+                    >
+                      {dashboardMilestoneDateFormatter.format(
+                        new Date(
+                          `${milestone.startDate}T00:00:00Z`,
+                        ),
+                      )}
+                    </time>
+
+                    <span className="dashboard-progress-milestone-description">
+                      <strong>
+                        {milestone.code}
+                      </strong>
+
+                      <span aria-hidden="true">
+                        {' – '}
+                      </span>
+
+                      {milestone.className}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          </section>
         </article>
 
         <article className="dashboard-info-card dashboard-date-card">
