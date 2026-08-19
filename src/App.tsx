@@ -20718,7 +20718,7 @@ function CohortCourseWaiversPage({
 const COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY =
   'beta-nu-group-assignments-v1'
 
-const MAX_COHORT_ASSIGNMENT_GROUPS = 4
+const MAX_COHORT_ASSIGNMENT_GROUPS = 10
 
 interface CohortGroupAssignmentRecord {
   readonly id: string
@@ -22120,15 +22120,6 @@ function CohortGroupAssignmentsPage({
           >
             Clear
           </button>
-        </div>
-
-        <div className="cohort-groups-guidance">
-          Create one to four groups, then
-          type or select a complete student
-          name inside a group. Assigned
-          students are crossed out on the
-          active roster and removed from all
-          remaining name suggestions.
         </div>
 
         <div className="cohort-groups-layout">

@@ -7123,6 +7123,17 @@
     );
 }
 
+.cohort-group-cards-5,
+.cohort-group-cards-6,
+.cohort-group-cards-7,
+.cohort-group-cards-8,
+.cohort-group-cards-9,
+.cohort-group-cards-10 {
+  grid-auto-flow: column;
+  grid-auto-columns:
+    minmax(220px, 1fr);
+}
+
 .cohort-group-card {
   min-height: 300px;
   overflow: hidden;
