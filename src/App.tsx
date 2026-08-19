@@ -20866,6 +20866,187 @@ function readStoredCohortGroupAssignments():
   }
 }
 
+function createCohortGroupIsoDate(
+  month: number,
+  day: number,
+  year: number,
+): string | null {
+  if (
+    year < 1900 ||
+    year > 9999
+  ) {
+    return null
+  }
+
+  const dateCandidate =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day,
+      ),
+    )
+
+  if (
+    dateCandidate.getUTCFullYear() !==
+    year ||
+    dateCandidate.getUTCMonth() !==
+    month - 1 ||
+    dateCandidate.getUTCDate() !==
+    day
+  ) {
+    return null
+  }
+
+  return (
+    `${String(year).padStart(4, '0')}-` +
+    `${String(month).padStart(2, '0')}-` +
+    `${String(day).padStart(2, '0')}`
+  )
+}
+
+function parseCohortGroupActivityDate(
+  rawValue: string,
+): string | null {
+  const trimmedValue =
+    rawValue.trim()
+
+  if (trimmedValue === '') {
+    return ''
+  }
+
+  const isoMatch =
+    trimmedValue.match(
+      /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+    )
+
+  if (isoMatch !== null) {
+    return createCohortGroupIsoDate(
+      Number(isoMatch[2]),
+      Number(isoMatch[3]),
+      Number(isoMatch[1]),
+    )
+  }
+
+  const separatedMatch =
+    trimmedValue.match(
+      /^(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2}|\d{4}))?$/,
+    )
+
+  if (separatedMatch !== null) {
+    const yearText =
+      separatedMatch[3]
+
+    const year =
+      yearText === undefined
+        ? new Date().getFullYear()
+        : yearText.length === 2
+          ? 2000 + Number(yearText)
+          : Number(yearText)
+
+    return createCohortGroupIsoDate(
+      Number(separatedMatch[1]),
+      Number(separatedMatch[2]),
+      year,
+    )
+  }
+
+  if (!/^\d+$/.test(trimmedValue)) {
+    return null
+  }
+
+  let monthText = ''
+  let dayText = ''
+  let yearText: string | undefined
+
+  switch (trimmedValue.length) {
+    case 3:
+      monthText =
+        trimmedValue.slice(0, 1)
+      dayText =
+        trimmedValue.slice(1, 3)
+      break
+
+    case 4:
+      monthText =
+        trimmedValue.slice(0, 2)
+      dayText =
+        trimmedValue.slice(2, 4)
+      break
+
+    case 5:
+      monthText =
+        trimmedValue.slice(0, 1)
+      dayText =
+        trimmedValue.slice(1, 3)
+      yearText =
+        trimmedValue.slice(3, 5)
+      break
+
+    case 6:
+      monthText =
+        trimmedValue.slice(0, 2)
+      dayText =
+        trimmedValue.slice(2, 4)
+      yearText =
+        trimmedValue.slice(4, 6)
+      break
+
+    case 7:
+      monthText =
+        trimmedValue.slice(0, 1)
+      dayText =
+        trimmedValue.slice(1, 3)
+      yearText =
+        trimmedValue.slice(3, 7)
+      break
+
+    case 8:
+      monthText =
+        trimmedValue.slice(0, 2)
+      dayText =
+        trimmedValue.slice(2, 4)
+      yearText =
+        trimmedValue.slice(4, 8)
+      break
+
+    default:
+      return null
+  }
+
+  const year =
+    yearText === undefined
+      ? new Date().getFullYear()
+      : yearText.length === 2
+        ? 2000 + Number(yearText)
+        : Number(yearText)
+
+  return createCohortGroupIsoDate(
+    Number(monthText),
+    Number(dayText),
+    year,
+  )
+}
+
+function formatCohortGroupActivityDate(
+  isoDate: string,
+): string {
+  const dateMatch =
+    isoDate.match(
+      /^(\d{4})-(\d{2})-(\d{2})$/,
+    )
+
+  if (dateMatch === null) {
+    return ''
+  }
+
+  return (
+    `${Number(dateMatch[2])}/` +
+    `${Number(dateMatch[3])}/` +
+    `${dateMatch[1]}`
+  )
+}
+
 function CohortGroupAssignmentsPage({
   contacts,
   contactStatuses,
@@ -20877,6 +21058,15 @@ function CohortGroupAssignmentsPage({
     useState<CohortGroupAssignmentState>(
       readStoredCohortGroupAssignments,
     )
+
+  const [
+    activityDateInput,
+    setActivityDateInput,
+  ] = useState(() =>
+    formatCohortGroupActivityDate(
+      groupAssignmentState.activityDate,
+    ),
+  )
 
   const [
     groupCountInput,
@@ -20981,11 +21171,42 @@ function CohortGroupAssignmentsPage({
     )
 
   const hasPageData =
-    groupAssignmentState.activityDate !==
-    '' ||
+    activityDateInput.trim() !== '' ||
     groupsCreated ||
     hasDraftText ||
     groupCountInput !== '4'
+
+  function commitActivityDateInput():
+    void {
+    const parsedDate =
+      parseCohortGroupActivityDate(
+        activityDateInput,
+      )
+
+    if (parsedDate === null) {
+      setActivityDateInput(
+        formatCohortGroupActivityDate(
+          groupAssignmentState
+            .activityDate,
+        ),
+      )
+
+      return
+    }
+
+    setGroupAssignmentState(
+      (currentState) => ({
+        ...currentState,
+        activityDate: parsedDate,
+      }),
+    )
+
+    setActivityDateInput(
+      formatCohortGroupActivityDate(
+        parsedDate,
+      ),
+    )
+  }
 
   function createGroups(): void {
     if (
@@ -21128,6 +21349,7 @@ function CohortGroupAssignmentsPage({
       createEmptyCohortGroupAssignmentState(),
     )
 
+    setActivityDateInput('')
     setGroupCountInput('4')
     setGroupDrafts({})
   }
@@ -21144,21 +21366,29 @@ function CohortGroupAssignmentsPage({
             <span>Activity Date</span>
 
             <input
-              type="date"
-              value={
-                groupAssignmentState
-                  .activityDate
+              type="text"
+              value={activityDateInput}
+              placeholder="M/D/YYYY"
+              maxLength={10}
+              autoComplete="off"
+              spellCheck={false}
+              title={
+                'Examples: 819, 0819, ' +
+                '81926, or 081926'
               }
               onChange={(event) => {
-                const activityDate =
-                  event.currentTarget.value
-
-                setGroupAssignmentState(
-                  (currentState) => ({
-                    ...currentState,
-                    activityDate,
-                  }),
+                setActivityDateInput(
+                  event.currentTarget.value,
                 )
+              }}
+              onBlur={
+                commitActivityDateInput
+              }
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  event.currentTarget.blur()
+                }
               }}
             />
           </label>
