@@ -36,9 +36,24 @@ import {
 import * as XLSX from 'xlsx'
 import './App.css'
 
+type SidebarNavigationGroupId =
+  | 'cohort-dates'
+  | 'academic-plan'
+  | 'cohort-identity'
+  | 'shared-files'
+
+type SidebarNavigationGroupState = Record<
+  SidebarNavigationGroupId,
+  boolean
+>
+
 interface NavigationItem {
   readonly label: string
   readonly path: string
+  readonly groupId?: SidebarNavigationGroupId
+  readonly parentId?: SidebarNavigationGroupId
+  readonly navigationOnly?: boolean
+  readonly isLastInGroup?: boolean
 }
 
 interface CourseNavigationItem {
@@ -265,6 +280,24 @@ type CohortContactUpdate = Partial<
   Omit<CohortContactRecord, 'id' | 'isMentor'>
 >
 
+interface InactiveFormerContactRecord
+  extends CohortContactRecord {
+  readonly inactiveDate: string
+}
+
+type InactiveFormerContactUpdate = Partial<
+  Omit<
+    InactiveFormerContactRecord,
+    'id' | 'isMentor'
+  >
+>
+
+interface InactiveContactRow {
+  readonly source: 'former' | 'contact'
+  readonly contact: CohortContactRecord
+  readonly inactiveDate: string
+}
+
 interface CohortContactPageProps {
   readonly contacts:
   readonly CohortContactRecord[]
@@ -274,6 +307,9 @@ interface CohortContactPageProps {
 
   readonly contactInactiveDates:
   Readonly<CohortContactInactiveDateState>
+
+  readonly inactiveFormerContacts:
+  readonly InactiveFormerContactRecord[]
 
   readonly onAddContact:
   (contact: CohortContactRecord) => void
@@ -286,6 +322,20 @@ interface CohortContactPageProps {
   readonly onUpdateStatus: (
     contactId: string,
     status: CohortContactStatus,
+  ) => void
+
+  readonly onUpdateInactiveDate: (
+    contactId: string,
+    inactiveDate: string,
+  ) => void
+
+  readonly onUpdateInactiveFormerContact: (
+    contactId: string,
+    updates: InactiveFormerContactUpdate,
+  ) => void
+
+  readonly onReactivateInactiveFormerContact: (
+    contactId: string,
   ) => void
 }
 
@@ -539,33 +589,92 @@ type AppBackgroundStyle = CSSProperties & {
 }
 
 const navigationItems: readonly NavigationItem[] = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Cohort Contacts', path: '/cohort-contact' },
-  { label: 'Cohort Dates & Roles', path: '/cohort-dates-roles' },
-  { label: 'Facilitator Planner', path: '/facilitator-planner' },
-  { label: 'Attendance', path: '/attendance' },
-  { label: 'Norms', path: '/norms' },
-  { label: 'Values and Vision', path: '/values-vision' },
-  { label: 'Purpose & Research', path: '/purpose-research' },
-  { label: 'Data Survey', path: '/data-survey' },
-  { label: 'TLSI Dates', path: '/tlsi-dates' },
-  { label: 'Book List', path: '/book-list' },
-  { label: 'Transfer Courses', path: '/transfer-courses' },
+  {
+    label: 'Dashboard',
+    path: '/',
+  },
+  {
+    label: 'Cohort Contacts',
+    path: '/cohort-contact',
+  },
+  {
+    label: 'Cohort Dates & Roles',
+    path: '/cohort-dates-roles',
+    groupId: 'cohort-dates',
+  },
+  {
+    label: 'Facilitator Planner',
+    path: '/facilitator-planner',
+    parentId: 'cohort-dates',
+  },
+  {
+    label: 'Cohort Availability',
+    path: '/data-survey',
+    parentId: 'cohort-dates',
+  },
+  {
+    label: 'Attendance',
+    path: '/attendance',
+    parentId: 'cohort-dates',
+  },
   {
     label: 'Groups - by Dr. CMO',
     path: '/groups-assigned-by-member',
-  },
-  {
-    label: 'Beta Nu Fall Images',
-    path: '/beta-nu-fall-icons',
-  },
-  {
-    label: 'Shared Files',
-    path: '/shared-files',
+    parentId: 'cohort-dates',
+    isLastInGroup: true,
   },
   {
     label: 'Academic Plan',
     path: '/academic-plan',
+    groupId: 'academic-plan',
+  },
+  {
+    label: 'Book List',
+    path: '/book-list',
+    parentId: 'academic-plan',
+  },
+  {
+    label: 'Course Waivers',
+    path: '/transfer-courses',
+    parentId: 'academic-plan',
+  },
+  {
+    label: 'TLSi Dates',
+    path: '/tlsi-dates',
+    parentId: 'academic-plan',
+    isLastInGroup: true,
+  },
+  {
+    label: 'Dissertation Purpose',
+    path: '/purpose-research',
+  },
+  {
+    label: 'Cohort Identity',
+    path: '/cohort-identity',
+    groupId: 'cohort-identity',
+    navigationOnly: true,
+  },
+  {
+    label: 'Norms',
+    path: '/norms',
+    parentId: 'cohort-identity',
+  },
+  {
+    label: 'Values and Vision',
+    path: '/values-vision',
+    parentId: 'cohort-identity',
+    isLastInGroup: true,
+  },
+  {
+    label: 'Shared Files',
+    path: '/shared-files',
+    groupId: 'shared-files',
+  },
+  {
+    label: 'Beta Nu Seal & Zoom Images',
+    path: '/beta-nu-fall-icons',
+    parentId: 'shared-files',
+    isLastInGroup: true,
   },
 ]
 
@@ -3127,6 +3236,24 @@ const formerCohortMembers: readonly FormerCohortMemberRecord[] = [
   },
 ]
 
+const inactiveFormerContactsSeed:
+  readonly InactiveFormerContactRecord[] =
+  formerCohortMembers.map((member) => ({
+    id: member.id,
+    name: member.name,
+    timeZone: member.timeZone,
+    phoneDigits:
+      member.phoneNumber.replace(/\D/g, ''),
+    email: member.email,
+    industry: member.industry,
+    birthdayMonth: member.birthdayMonth,
+    birthdayDay: member.birthdayDay,
+    dissertationInterest:
+      member.dissertationInterest,
+    isMentor: false,
+    inactiveDate: member.inactiveAfterDate,
+  }))
+
 const cohortMeetingsSeed: readonly CohortMeetingRecord[] = [
   {
     id: 'meeting-2025-09-21',
@@ -5545,9 +5672,13 @@ function CohortContactPage({
   contacts,
   contactStatuses,
   contactInactiveDates,
+  inactiveFormerContacts,
   onAddContact,
   onUpdateContact,
   onUpdateStatus,
+  onUpdateInactiveDate,
+  onUpdateInactiveFormerContact,
+  onReactivateInactiveFormerContact,
 }: CohortContactPageProps) {
   const [isAddContactOpen, setIsAddContactOpen] = useState(false)
   const [newContact, setNewContact] = useState(createEmptyContactForm)
@@ -5570,59 +5701,49 @@ function CohortContactPage({
   const currentPacificDate =
     getPacificDateKey(new Date())
 
-  const formerMemberNameKeys =
+  const inactiveFormerContactIds =
     new Set(
-      formerCohortMembers.map(
-        (member) =>
-          member.name
-            .trim()
-            .toLocaleLowerCase(
-              'en-US',
-            ),
+      inactiveFormerContacts.map(
+        (contact) => contact.id,
       ),
     )
 
-  const inactiveContactRows = [
-    ...formerCohortMembers.map(
-      (member) => ({
-        id: `former-${member.id}`,
-        name: member.name,
-        asOfDate:
-          member.inactiveAfterDate,
-      }),
-    ),
-    ...inactiveContacts
-      .filter(
-        (contact) =>
-          !formerMemberNameKeys.has(
-            contact.name
-              .trim()
-              .toLocaleLowerCase(
-                'en-US',
-              ),
-          ),
-      )
-      .map(
-        (contact) => ({
-          id: `contact-${contact.id}`,
-          name: contact.name,
-          asOfDate:
-            contactInactiveDates[
-            contact.id
-            ] ??
-            currentPacificDate,
+  const inactiveContactRows:
+    readonly InactiveContactRow[] = [
+      ...inactiveFormerContacts.map(
+        (contact): InactiveContactRow => ({
+          source: 'former',
+          contact,
+          inactiveDate: contact.inactiveDate,
         }),
       ),
-  ].sort(
-    (firstContact, secondContact) =>
-      firstContact.name.localeCompare(
-        secondContact.name,
-        'en-US',
-        {
-          sensitivity: 'base',
-        },
-      ),
-  )
+      ...inactiveContacts
+        .filter(
+          (contact) =>
+            !inactiveFormerContactIds.has(
+              contact.id,
+            ),
+        )
+        .map(
+          (contact): InactiveContactRow => ({
+            source: 'contact',
+            contact,
+            inactiveDate:
+              contactInactiveDates[
+              contact.id
+              ] ?? currentPacificDate,
+          }),
+        ),
+    ].sort(
+      (firstContact, secondContact) =>
+        firstContact.contact.name.localeCompare(
+          secondContact.contact.name,
+          'en-US',
+          {
+            sensitivity: 'base',
+          },
+        ),
+    )
 
   function openAddContactModal(): void {
     setNewContact(createEmptyContactForm())
@@ -6054,19 +6175,146 @@ function CohortContactPage({
             <tbody>
               {inactiveContactRows.map(
                 (inactiveContact) => (
-                  <tr key={inactiveContact.id}>
+                  <tr
+                    key={
+                      `${inactiveContact.source}-${inactiveContact.contact.id}`
+                    }
+                  >
                     <td>
-                      {inactiveContact.name}
+                      <input
+                        type="text"
+                        className={
+                          'contacts-inactive-input ' +
+                          'contacts-inactive-name-input'
+                        }
+                        defaultValue={
+                          inactiveContact.contact.name
+                        }
+                        aria-label={
+                          `${inactiveContact.contact.name} name`
+                        }
+                        onBlur={(event) => {
+                          const nextName =
+                            event.currentTarget.value.trim()
+
+                          if (!nextName) {
+                            event.currentTarget.value =
+                              inactiveContact.contact.name
+                            return
+                          }
+
+                          event.currentTarget.value =
+                            nextName
+
+                          if (
+                            nextName ===
+                            inactiveContact.contact.name
+                          ) {
+                            return
+                          }
+
+                          if (
+                            inactiveContact.source ===
+                            'former'
+                          ) {
+                            onUpdateInactiveFormerContact(
+                              inactiveContact.contact.id,
+                              {
+                                name: nextName,
+                              },
+                            )
+                            return
+                          }
+
+                          onUpdateContact(
+                            inactiveContact.contact.id,
+                            {
+                              name: nextName,
+                            },
+                          )
+                        }}
+                      />
                     </td>
 
                     <td>
-                      {formatInactiveContactDate(
-                        inactiveContact.asOfDate,
-                      )}
+                      <input
+                        type="date"
+                        className="contacts-inactive-input"
+                        value={
+                          inactiveContact.inactiveDate
+                        }
+                        aria-label={
+                          `${inactiveContact.contact.name} inactive date, ` +
+                          formatInactiveContactDate(
+                            inactiveContact.inactiveDate,
+                          )
+                        }
+                        onChange={(event) => {
+                          const nextDate =
+                            event.currentTarget.value
+
+                          if (
+                            inactiveContact.source ===
+                            'former'
+                          ) {
+                            onUpdateInactiveFormerContact(
+                              inactiveContact.contact.id,
+                              {
+                                inactiveDate: nextDate,
+                              },
+                            )
+                            return
+                          }
+
+                          onUpdateInactiveDate(
+                            inactiveContact.contact.id,
+                            nextDate,
+                          )
+                        }}
+                      />
                     </td>
 
                     <td>
-                      Inactive
+                      <select
+                        className={
+                          'contacts-inactive-status-select'
+                        }
+                        value="Inactive"
+                        aria-label={
+                          `${inactiveContact.contact.name} status`
+                        }
+                        onChange={(event) => {
+                          if (
+                            event.currentTarget.value !==
+                            'Active'
+                          ) {
+                            return
+                          }
+
+                          if (
+                            inactiveContact.source ===
+                            'former'
+                          ) {
+                            onReactivateInactiveFormerContact(
+                              inactiveContact.contact.id,
+                            )
+                            return
+                          }
+
+                          onUpdateStatus(
+                            inactiveContact.contact.id,
+                            'Active',
+                          )
+                        }}
+                      >
+                        <option value="Inactive">
+                          Inactive
+                        </option>
+
+                        <option value="Active">
+                          Active
+                        </option>
+                      </select>
                     </td>
                   </tr>
                 ),
@@ -12506,7 +12754,7 @@ function CohortDataSurveyPage({
   return (
     <section className="page-shell">
       <header className="dashboard-page-heading cohort-contacts-page-heading">
-        <h1>Beta Nu Cohort Data Survey</h1>
+        <h1>Beta Nu Cohort Availability</h1>
       </header>
 
       <div className="data-survey-workspace">
@@ -12543,7 +12791,7 @@ function CohortDataSurveyPage({
 
         <div
           className="data-survey-key"
-          aria-label="Data Survey availability codes"
+          aria-label="Cohort Availability codes"
         >
           <span>
             <strong className="data-survey-key-preferred">
@@ -14523,7 +14771,7 @@ function CohortPurposeResearchPage({
     }
 
     const confirmed = window.confirm(
-      'Delete this Purpose & Research row? This cannot be undone during the current session.',
+      'Delete this Dissertation Purpose row? This cannot be undone during the current session.',
     )
 
     if (!confirmed) {
@@ -15115,7 +15363,7 @@ function CohortPurposeResearchPage({
       onClick={() => setContextMenu(null)}
     >
       <header className="dashboard-page-heading cohort-contacts-page-heading">
-        <h1>Beta Nu Cohort Purpose &amp; Research</h1>
+        <h1>Beta Nu Cohort Dissertation Purpose</h1>
       </header>
 
       <section
@@ -17168,7 +17416,7 @@ function CohortImagesPage() {
       <section className="cohort-images-toolbar">
         <div className="cohort-images-toolbar-brand">
           <div className="cohort-images-toolbar-copy">
-            <h2>Beta Nu Fall Image Library</h2>
+            <h2>Beta Nu Seal &amp; Zoom Images</h2>
 
             <p>
               Approved Beta Nu Fall seals and
@@ -22350,6 +22598,28 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const [
+    sidebarGroupsOpen,
+    setSidebarGroupsOpen,
+  ] = useState<SidebarNavigationGroupState>({
+    'cohort-dates': true,
+    'academic-plan': true,
+    'cohort-identity': true,
+    'shared-files': true,
+  })
+
+  function toggleSidebarGroup(
+    groupId: SidebarNavigationGroupId,
+  ): void {
+    setSidebarGroupsOpen(
+      (currentGroups) => ({
+        ...currentGroups,
+        [groupId]:
+          !currentGroups[groupId],
+      }),
+    )
+  }
+
+  const [
     sidebarAcademicPlan,
     setSidebarAcademicPlan,
   ] =
@@ -22372,6 +22642,13 @@ function App() {
   ] = useState<
     CohortContactInactiveDateState
   >({})
+
+  const [
+    inactiveFormerContacts,
+    setInactiveFormerContacts,
+  ] = useState<
+    readonly InactiveFormerContactRecord[]
+  >(inactiveFormerContactsSeed)
 
   const [cohortMeetings, setCohortMeetings] =
     useState<readonly CohortMeetingRecord[]>(cohortMeetingsSeed)
@@ -22804,6 +23081,112 @@ function App() {
     )
   }
 
+  function updateCohortContactInactiveDate(
+    contactId: string,
+    inactiveDate: string,
+  ): void {
+    setContactInactiveDates(
+      (currentDates) => ({
+        ...currentDates,
+        [contactId]: inactiveDate,
+      }),
+    )
+  }
+
+  function updateInactiveFormerContact(
+    contactId: string,
+    updates: InactiveFormerContactUpdate,
+  ): void {
+    setInactiveFormerContacts(
+      (currentContacts) =>
+        currentContacts.map((contact) =>
+          contact.id === contactId
+            ? {
+              ...contact,
+              ...updates,
+            }
+            : contact,
+        ),
+    )
+  }
+
+  function reactivateInactiveFormerContact(
+    contactId: string,
+  ): void {
+    const inactiveContact =
+      inactiveFormerContacts.find(
+        (contact) =>
+          contact.id === contactId,
+      )
+
+    if (inactiveContact === undefined) {
+      return
+    }
+
+    const reactivatedContact:
+      CohortContactRecord = {
+      id: inactiveContact.id,
+      name: inactiveContact.name,
+      timeZone: inactiveContact.timeZone,
+      phoneDigits:
+        inactiveContact.phoneDigits,
+      email: inactiveContact.email,
+      industry: inactiveContact.industry,
+      birthdayMonth:
+        inactiveContact.birthdayMonth,
+      birthdayDay:
+        inactiveContact.birthdayDay,
+      dissertationInterest:
+        inactiveContact.dissertationInterest,
+      isMentor: inactiveContact.isMentor,
+    }
+
+    setContacts((currentContacts) => {
+      const contactAlreadyExists =
+        currentContacts.some(
+          (contact) =>
+            contact.id ===
+            reactivatedContact.id,
+        )
+
+      if (contactAlreadyExists) {
+        return currentContacts
+      }
+
+      return [
+        ...currentContacts,
+        reactivatedContact,
+      ]
+    })
+
+    setContactStatuses(
+      (currentStatuses) => ({
+        ...currentStatuses,
+        [contactId]: 'Active',
+      }),
+    )
+
+    setContactInactiveDates(
+      (currentDates) => {
+        const nextDates = {
+          ...currentDates,
+        }
+
+        delete nextDates[contactId]
+
+        return nextDates
+      },
+    )
+
+    setInactiveFormerContacts(
+      (currentContacts) =>
+        currentContacts.filter(
+          (contact) =>
+            contact.id !== contactId,
+        ),
+    )
+  }
+
   function updateCohortAttendance(
     contactId: string,
     meetingId: string,
@@ -23029,360 +23412,552 @@ function App() {
         <div className="sidebar-divider" />
 
         <nav className="sidebar-nav" aria-label="Beta Nu Fall navigation">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/'}
-              className={({ isActive }) =>
-                isActive ? 'nav-link nav-link-active' : 'nav-link'
-              }
-            >
-              {item.path === '/' ? (
-                <span
-                  className="nav-dashboard-icon"
-                  aria-hidden="true"
+          {navigationItems.map((item) => {
+            if (
+              item.parentId !== undefined &&
+              !sidebarGroupsOpen[
+              item.parentId
+              ]
+            ) {
+              return null
+            }
+
+            if (
+              item.navigationOnly === true
+            ) {
+              const groupIsOpen =
+                item.groupId !== undefined &&
+                sidebarGroupsOpen[
+                item.groupId
+                ]
+
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  className="nav-group-button"
+                  aria-expanded={groupIsOpen}
+                  onClick={() => {
+                    if (
+                      item.groupId !== undefined
+                    ) {
+                      toggleSidebarGroup(
+                        item.groupId,
+                      )
+                    }
+                  }}
                 >
-                  <span />
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              ) : item.path === '/cohort-contact' ? (
-                <span
-                  className="nav-contacts-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                  <span
+                    className={
+                      'nav-cohort-identity-icon'
+                    }
+                    aria-hidden="true"
                   >
-                    <defs>
-                      <linearGradient
-                        id="nav-contacts-gold"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <defs>
+                        <linearGradient
+                          id={
+                            'nav-cohort-identity-gold'
+                          }
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#FFD76A"
+                          />
+
+                          <stop
+                            offset="52%"
+                            stopColor="#F2B632"
+                          />
+
+                          <stop
+                            offset="100%"
+                            stopColor="#C89214"
+                          />
+                        </linearGradient>
+                      </defs>
+
+                      <circle
+                        cx="12"
+                        cy="6.5"
+                        r="3.2"
+                        fill={
+                          'url(#nav-cohort-identity-gold)'
+                        }
+                        stroke="#A66E08"
+                        strokeWidth="0.8"
+                      />
+
+                      <circle
+                        cx="5.5"
+                        cy="9"
+                        r="2.4"
+                        fill={
+                          'url(#nav-cohort-identity-gold)'
+                        }
+                        stroke="#A66E08"
+                        strokeWidth="0.7"
+                      />
+
+                      <circle
+                        cx="18.5"
+                        cy="9"
+                        r="2.4"
+                        fill={
+                          'url(#nav-cohort-identity-gold)'
+                        }
+                        stroke="#A66E08"
+                        strokeWidth="0.7"
+                      />
+
+                      <path
+                        d="M6.5 20v-1.6c0-3.1 2.5-5.6 5.5-5.6s5.5 2.5 5.5 5.6V20"
+                        fill={
+                          'url(#nav-cohort-identity-gold)'
+                        }
+                        stroke="#A66E08"
+                        strokeWidth="0.9"
+                        strokeLinejoin="round"
+                      />
+
+                      <path
+                        d="M1.8 19.5v-1.1c0-2.3 1.7-4.2 4-4.6"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+
+                      <path
+                        d="M22.2 19.5v-1.1c0-2.3-1.7-4.2-4-4.6"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+
+                  <span>{item.label}</span>
+
+                  <span
+                    className="nav-chevron"
+                    aria-hidden="true"
+                  >
+                    {groupIsOpen ? '⌄' : '›'}
+                  </span>
+                </button>
+              )
+            }
+
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/'}
+                aria-expanded={
+                  item.groupId === undefined
+                    ? undefined
+                    : sidebarGroupsOpen[
+                    item.groupId
+                    ]
+                }
+                onClick={() => {
+                  if (
+                    item.groupId !== undefined
+                  ) {
+                    toggleSidebarGroup(
+                      item.groupId,
+                    )
+                  }
+                }}
+                className={({ isActive }) => {
+                  const classNames = [
+                    'nav-link',
+                  ]
+
+                  if (
+                    item.parentId !== undefined
+                  ) {
+                    classNames.push(
+                      'nav-sub-link',
+                    )
+                  }
+
+                  if (
+                    item.isLastInGroup === true
+                  ) {
+                    classNames.push(
+                      'nav-sub-link-last',
+                    )
+                  }
+
+                  if (isActive) {
+                    classNames.push(
+                      'nav-link-active',
+                    )
+                  }
+
+                  return classNames.join(' ')
+                }}
+              >
+                {item.parentId !== undefined ? (
+                  <span
+                    className="nav-sub-item-dot"
+                    aria-hidden="true"
+                  />
+                ) : item.path === '/' ? (
+                  <span
+                    className="nav-dashboard-icon"
+                    aria-hidden="true"
+                  >
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                ) : item.path === '/cohort-contact' ? (
+                  <span
+                    className="nav-contacts-icon"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <defs>
+                        <linearGradient
+                          id="nav-contacts-gold"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#FFD76A"
+                          />
+                          <stop
+                            offset="52%"
+                            stopColor="#F2B632"
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#C89214"
+                          />
+                        </linearGradient>
+                      </defs>
+
+                      <circle
+                        cx="8"
+                        cy="7"
+                        r="3.5"
+                      />
+
+                      <path
+                        d="M2 21v-2.2C2 15.6 4.6 13 7.8 13h.4c3.2 0 5.8 2.6 5.8 5.8V21"
+                      />
+
+                      <path
+                        d="M15.5 3.7a3.5 3.5 0 0 1 0 6.6"
+                      />
+
+                      <path
+                        d="M17 13.4c2.9.5 5 2.8 5 5.6v2"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/cohort-dates-roles' ? (
+                  <span
+                    className="nav-dates-roles-icon"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <g
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.25"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
-                        <stop
-                          offset="0%"
-                          stopColor="#FFD76A"
+                        <rect
+                          x="3"
+                          y="5"
+                          width="18"
+                          height="16"
+                          rx="2.3"
                         />
-                        <stop
-                          offset="52%"
-                          stopColor="#F2B632"
+
+                        <path d="M3 9.5h18" />
+
+                        <path d="M7 2.5v5" />
+                        <path d="M17 2.5v5" />
+                      </g>
+
+                      <g fill="#FFD76A">
+                        <rect
+                          x="6"
+                          y="12"
+                          width="2.5"
+                          height="2.5"
+                          rx="0.5"
                         />
-                        <stop
-                          offset="100%"
-                          stopColor="#C89214"
+
+                        <rect
+                          x="10.75"
+                          y="12"
+                          width="2.5"
+                          height="2.5"
+                          rx="0.5"
                         />
-                      </linearGradient>
-                    </defs>
 
-                    <circle
-                      cx="8"
-                      cy="7"
-                      r="3.5"
-                    />
+                        <rect
+                          x="15.5"
+                          y="12"
+                          width="2.5"
+                          height="2.5"
+                          rx="0.5"
+                        />
 
-                    <path
-                      d="M2 21v-2.2C2 15.6 4.6 13 7.8 13h.4c3.2 0 5.8 2.6 5.8 5.8V21"
-                    />
+                        <rect
+                          x="6"
+                          y="16.25"
+                          width="2.5"
+                          height="2.5"
+                          rx="0.5"
+                        />
 
-                    <path
-                      d="M15.5 3.7a3.5 3.5 0 0 1 0 6.6"
-                    />
+                        <rect
+                          x="10.75"
+                          y="16.25"
+                          width="2.5"
+                          height="2.5"
+                          rx="0.5"
+                        />
 
-                    <path
-                      d="M17 13.4c2.9.5 5 2.8 5 5.6v2"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/cohort-dates-roles' ? (
-                <span
-                  className="nav-dates-roles-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        <rect
+                          x="15.5"
+                          y="16.25"
+                          width="2.5"
+                          height="2.5"
+                          rx="0.5"
+                        />
+                      </g>
+
+                      <path
+                        d="M4.5 6.2h15"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.8"
+                        strokeLinecap="round"
+                        opacity="0.75"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/facilitator-planner' ? (
+                  <span
+                    className="nav-facilitator-planner-icon"
+                    aria-hidden="true"
                   >
-                    <g
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.25"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <defs>
+                        <linearGradient
+                          id="nav-facilitator-planner-gold"
+                          x1="0"
+                          y1="0"
+                          x2="1"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#FFD76A"
+                          />
+                          <stop
+                            offset="48%"
+                            stopColor="#F2B632"
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#C89214"
+                          />
+                        </linearGradient>
+                      </defs>
+
+                      <circle
+                        cx="9.2"
+                        cy="5.1"
+                        r="3.1"
+                        fill="url(#nav-facilitator-planner-gold)"
+                        stroke="#A66E08"
+                        strokeWidth="0.8"
+                      />
+
+                      <path
+                        d="M4.4 12.2c.5-2.8 2.3-4.5 4.8-4.5 2.6 0 4.4 1.7 4.9 4.5Z"
+                        fill="url(#nav-facilitator-planner-gold)"
+                        stroke="#A66E08"
+                        strokeWidth="0.8"
+                        strokeLinejoin="round"
+                      />
+
+                      <path
+                        d="M14.6 8.7h2.2c1 0 1.8.8 1.8 1.8v1.3"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="1.35"
+                        strokeLinecap="round"
+                      />
+
+                      <rect
+                        x="17.3"
+                        y="6.7"
+                        width="3.7"
+                        height="2.5"
+                        rx="1.25"
+                        transform="rotate(27 17.3 6.7)"
+                        fill="url(#nav-facilitator-planner-gold)"
+                        stroke="#A66E08"
+                        strokeWidth="0.7"
+                      />
+
+                      <path
+                        d="M3 11.8h13.8l-1.2 3.1H4.1Z"
+                        fill="url(#nav-facilitator-planner-gold)"
+                        stroke="#A66E08"
+                        strokeWidth="0.85"
+                        strokeLinejoin="round"
+                      />
+
+                      <rect
+                        x="5.1"
+                        y="14.2"
+                        width="9.8"
+                        height="7"
+                        rx="1.4"
+                        fill="url(#nav-facilitator-planner-gold)"
+                        stroke="#A66E08"
+                        strokeWidth="0.85"
+                      />
+
+                      <g
+                        fill="none"
+                        stroke="#8A5A05"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                      >
+                        <path d="M7.4 16.5h5.2" />
+                        <path d="M7.4 18.1h5.2" />
+                        <path d="M7.4 19.7h5.2" />
+                      </g>
+
+                      <path
+                        d="M4.4 12.3h11.1"
+                        fill="none"
+                        stroke="#FFE48A"
+                        strokeWidth="0.7"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+
+                      <path
+                        d="M6.2 15.1h7.5"
+                        fill="none"
+                        stroke="#FFE48A"
+                        strokeWidth="0.55"
+                        strokeLinecap="round"
+                        opacity="0.82"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/attendance' ? (
+                  <span
+                    className="nav-attendance-icon"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
                     >
                       <rect
-                        x="3"
-                        y="5"
-                        width="18"
-                        height="16"
-                        rx="2.3"
-                      />
-
-                      <path d="M3 9.5h18" />
-
-                      <path d="M7 2.5v5" />
-                      <path d="M17 2.5v5" />
-                    </g>
-
-                    <g fill="#FFD76A">
-                      <rect
-                        x="6"
-                        y="12"
-                        width="2.5"
-                        height="2.5"
-                        rx="0.5"
+                        x="5"
+                        y="4"
+                        width="14"
+                        height="17"
+                        rx="2.4"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.2"
                       />
 
                       <rect
-                        x="10.75"
-                        y="12"
-                        width="2.5"
-                        height="2.5"
-                        rx="0.5"
+                        x="8"
+                        y="2.5"
+                        width="8"
+                        height="4.5"
+                        rx="1.5"
+                        fill="#FFD76A"
+                        stroke="#C89214"
+                        strokeWidth="1.3"
                       />
 
-                      <rect
-                        x="15.5"
-                        y="12"
-                        width="2.5"
-                        height="2.5"
-                        rx="0.5"
+                      <path
+                        d="M8.5 11.5h7"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2"
+                        strokeLinecap="round"
                       />
 
-                      <rect
-                        x="6"
-                        y="16.25"
-                        width="2.5"
-                        height="2.5"
-                        rx="0.5"
+                      <path
+                        d="M8.5 15h7"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2"
+                        strokeLinecap="round"
                       />
 
-                      <rect
-                        x="10.75"
-                        y="16.25"
-                        width="2.5"
-                        height="2.5"
-                        rx="0.5"
+                      <path
+                        d="M8.5 18.5h5"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2"
+                        strokeLinecap="round"
                       />
 
-                      <rect
-                        x="15.5"
-                        y="16.25"
-                        width="2.5"
-                        height="2.5"
-                        rx="0.5"
+                      <path
+                        d="M6 20h12"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.8"
                       />
-                    </g>
-
-                    <path
-                      d="M4.5 6.2h15"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                      opacity="0.75"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/facilitator-planner' ? (
-                <span
-                  className="nav-facilitator-planner-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                    </svg>
+                  </span>
+                ) : item.path === '/norms' ? (
+                  <span
+                    className="nav-norms-icon"
+                    aria-hidden="true"
                   >
-                    <defs>
-                      <linearGradient
-                        id="nav-facilitator-planner-gold"
-                        x1="0"
-                        y1="0"
-                        x2="1"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#FFD76A"
-                        />
-                        <stop
-                          offset="48%"
-                          stopColor="#F2B632"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#C89214"
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    <circle
-                      cx="9.2"
-                      cy="5.1"
-                      r="3.1"
-                      fill="url(#nav-facilitator-planner-gold)"
-                      stroke="#A66E08"
-                      strokeWidth="0.8"
-                    />
-
-                    <path
-                      d="M4.4 12.2c.5-2.8 2.3-4.5 4.8-4.5 2.6 0 4.4 1.7 4.9 4.5Z"
-                      fill="url(#nav-facilitator-planner-gold)"
-                      stroke="#A66E08"
-                      strokeWidth="0.8"
-                      strokeLinejoin="round"
-                    />
-
-                    <path
-                      d="M14.6 8.7h2.2c1 0 1.8.8 1.8 1.8v1.3"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="1.35"
-                      strokeLinecap="round"
-                    />
-
-                    <rect
-                      x="17.3"
-                      y="6.7"
-                      width="3.7"
-                      height="2.5"
-                      rx="1.25"
-                      transform="rotate(27 17.3 6.7)"
-                      fill="url(#nav-facilitator-planner-gold)"
-                      stroke="#A66E08"
-                      strokeWidth="0.7"
-                    />
-
-                    <path
-                      d="M3 11.8h13.8l-1.2 3.1H4.1Z"
-                      fill="url(#nav-facilitator-planner-gold)"
-                      stroke="#A66E08"
-                      strokeWidth="0.85"
-                      strokeLinejoin="round"
-                    />
-
-                    <rect
-                      x="5.1"
-                      y="14.2"
-                      width="9.8"
-                      height="7"
-                      rx="1.4"
-                      fill="url(#nav-facilitator-planner-gold)"
-                      stroke="#A66E08"
-                      strokeWidth="0.85"
-                    />
-
-                    <g
-                      fill="none"
-                      stroke="#8A5A05"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
                     >
-                      <path d="M7.4 16.5h5.2" />
-                      <path d="M7.4 18.1h5.2" />
-                      <path d="M7.4 19.7h5.2" />
-                    </g>
-
-                    <path
-                      d="M4.4 12.3h11.1"
-                      fill="none"
-                      stroke="#FFE48A"
-                      strokeWidth="0.7"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
-
-                    <path
-                      d="M6.2 15.1h7.5"
-                      fill="none"
-                      stroke="#FFE48A"
-                      strokeWidth="0.55"
-                      strokeLinecap="round"
-                      opacity="0.82"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/attendance' ? (
-                <span
-                  className="nav-attendance-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
-                  >
-                    <rect
-                      x="5"
-                      y="4"
-                      width="14"
-                      height="17"
-                      rx="2.4"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.2"
-                    />
-
-                    <rect
-                      x="8"
-                      y="2.5"
-                      width="8"
-                      height="4.5"
-                      rx="1.5"
-                      fill="#FFD76A"
-                      stroke="#C89214"
-                      strokeWidth="1.3"
-                    />
-
-                    <path
-                      d="M8.5 11.5h7"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-
-                    <path
-                      d="M8.5 15h7"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-
-                    <path
-                      d="M8.5 18.5h5"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-
-                    <path
-                      d="M6 20h12"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.8"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/norms' ? (
-                <span
-                  className="nav-norms-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
-                  >
-                    <path
-                      d="M12 2.5
+                      <path
+                        d="M12 2.5
                          19 5.4
                          V11
                          C19 15.7
@@ -23393,47 +23968,47 @@ function App() {
                          5 11
                          V5.4
                          Z"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M12 3.9
+                      <path
+                        d="M12 3.9
                          17.5 6.2"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="1"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
 
-                    <path
-                      d="M7.4 16.4
+                      <path
+                        d="M7.4 16.4
                          C8.5 18
                          10 19.2
                          12 20.2"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                      opacity="0.85"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/values-vision' ? (
-                <span
-                  className="nav-values-vision-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="1"
+                        strokeLinecap="round"
+                        opacity="0.85"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/values-vision' ? (
+                  <span
+                    className="nav-values-vision-icon"
+                    aria-hidden="true"
                   >
-                    <path
-                      d="M2.5 12
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <path
+                        d="M2.5 12
                          C4.8 8.2 8.1 6
                          12 6
                          C15.9 6 19.2 8.2
@@ -23442,509 +24017,509 @@ function App() {
                          12 18
                          C8.1 18 4.8 15.8
                          2.5 12Z"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.35"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.35"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3.1"
-                      fill="#F2B632"
-                      stroke="#FFD76A"
-                      strokeWidth="1"
-                    />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="3.1"
+                        fill="#F2B632"
+                        stroke="#FFD76A"
+                        strokeWidth="1"
+                      />
 
-                    <path
-                      d="M4.6 10.2
+                      <path
+                        d="M4.6 10.2
                          C6.5 7.8 9 6.8 12 6.8"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
 
-                    <path
-                      d="M14.5 16.8
+                      <path
+                        d="M14.5 16.8
                          C17 16.2 18.8 14.6 20.2 12.5"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/purpose-research' ? (
-                <span
-                  className="nav-purpose-research-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/purpose-research' ? (
+                  <span
+                    className="nav-purpose-research-icon"
+                    aria-hidden="true"
                   >
-                    <circle
-                      cx="11"
-                      cy="13"
-                      r="7"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.2"
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <circle
+                        cx="11"
+                        cy="13"
+                        r="7"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.2"
+                      />
 
-                    <circle
-                      cx="11"
-                      cy="13"
-                      r="4"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2"
-                    />
+                      <circle
+                        cx="11"
+                        cy="13"
+                        r="4"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2"
+                      />
 
-                    <circle
-                      cx="11"
-                      cy="13"
-                      r="1.7"
-                      fill="#FFD76A"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                    />
+                      <circle
+                        cx="11"
+                        cy="13"
+                        r="1.7"
+                        fill="#FFD76A"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                      />
 
-                    <path
-                      d="M14.3 9.7 20.2 3.8"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                    />
+                      <path
+                        d="M14.3 9.7 20.2 3.8"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M20.2 3.8 18.5 4.1"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
+                      <path
+                        d="M20.2 3.8 18.5 4.1"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M20.2 3.8 19.9 5.5"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
+                      <path
+                        d="M20.2 3.8 19.9 5.5"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M4.8 18.8
+                      <path
+                        d="M4.8 18.8
                          C6 20 8 21 11 21"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.85"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/data-survey' ? (
-                <span
-                  className="nav-data-survey-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.85"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/data-survey' ? (
+                  <span
+                    className="nav-data-survey-icon"
+                    aria-hidden="true"
                   >
-                    <rect
-                      x="4"
-                      y="12.5"
-                      width="4"
-                      height="7.5"
-                      rx="0.9"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <rect
+                        x="4"
+                        y="12.5"
+                        width="4"
+                        height="7.5"
+                        rx="0.9"
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                      />
 
-                    <rect
-                      x="10"
-                      y="8.5"
-                      width="4"
-                      height="11.5"
-                      rx="0.9"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                    />
+                      <rect
+                        x="10"
+                        y="8.5"
+                        width="4"
+                        height="11.5"
+                        rx="0.9"
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                      />
 
-                    <rect
-                      x="16"
-                      y="4.5"
-                      width="4"
-                      height="15.5"
-                      rx="0.9"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                    />
+                      <rect
+                        x="16"
+                        y="4.5"
+                        width="4"
+                        height="15.5"
+                        rx="0.9"
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                      />
 
-                    <path
-                      d="M4.8 13.6h2.4"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                    />
+                      <path
+                        d="M4.8 13.6h2.4"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M10.8 9.6h2.4"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                    />
+                      <path
+                        d="M10.8 9.6h2.4"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M16.8 5.6h2.4"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/tlsi-dates' ? (
-                <span
-                  className="nav-tlsi-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                      <path
+                        d="M16.8 5.6h2.4"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/tlsi-dates' ? (
+                  <span
+                    className="nav-tlsi-icon"
+                    aria-hidden="true"
                   >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="8.7"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.3"
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="8.7"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.3"
+                      />
 
-                    <path
-                      d="M12 7.2v5.1h4.3"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                      <path
+                        d="M12 7.2v5.1h4.3"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M6.2 7.2
+                      <path
+                        d="M6.2 7.2
                          C7.7 5.5 9.7 4.5 12 4.5"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.95"
+                      />
 
-                    <path
-                      d="M17.8 16.7
+                      <path
+                        d="M17.8 16.7
                          C16.3 18.4 14.3 19.4 12 19.4"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/book-list' ? (
-                <span
-                  className="nav-book-list-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/book-list' ? (
+                  <span
+                    className="nav-book-list-icon"
+                    aria-hidden="true"
                   >
-                    <path
-                      d="M3 5.2
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <path
+                        d="M3 5.2
                          C6.4 4.1 9.2 4.7 12 6.6
                          V20
                          C9.3 18.2 6.3 17.6 3 18.7
                          Z"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="1.2"
-                      strokeLinejoin="round"
-                    />
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="1.2"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M21 5.2
+                      <path
+                        d="M21 5.2
                          C17.6 4.1 14.8 4.7 12 6.6
                          V20
                          C14.7 18.2 17.7 17.6 21 18.7
                          Z"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="1.2"
-                      strokeLinejoin="round"
-                    />
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="1.2"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M4.7 6.2
+                      <path
+                        d="M4.7 6.2
                          C7.1 5.6 9.2 6 11.1 7.2"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.95"
+                      />
 
-                    <path
-                      d="M19.3 6.2
+                      <path
+                        d="M19.3 6.2
                          C16.9 5.6 14.8 6 12.9 7.2"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.95"
+                      />
 
-                    <path
-                      d="M12 6.6v13.2"
-                      fill="none"
-                      stroke="#9B6C08"
-                      strokeWidth="1.1"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/transfer-courses' ? (
-                <span
-                  className="nav-transfer-courses-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                      <path
+                        d="M12 6.6v13.2"
+                        fill="none"
+                        stroke="#9B6C08"
+                        strokeWidth="1.1"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/transfer-courses' ? (
+                  <span
+                    className="nav-transfer-courses-icon"
+                    aria-hidden="true"
                   >
-                    <path
-                      d="M4 8h14"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <path
+                        d="M4 8h14"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="m15 5 3 3-3 3"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                      <path
+                        d="m15 5 3 3-3 3"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M20 16H6"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                      <path
+                        d="M20 16H6"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="m9 13-3 3 3 3"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                      <path
+                        d="m9 13-3 3 3 3"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M5 7h11"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
+                      <path
+                        d="M5 7h11"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.8"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
 
-                    <path
-                      d="M19 17H8"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/groups-assigned-by-member' ? (
-                <span
-                  className="nav-groups-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                      <path
+                        d="M19 17H8"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="0.8"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/groups-assigned-by-member' ? (
+                  <span
+                    className="nav-groups-icon"
+                    aria-hidden="true"
                   >
-                    <circle
-                      cx="12"
-                      cy="7"
-                      r="3"
-                      fill="#F2B632"
-                      stroke="#FFD76A"
-                      strokeWidth="0.8"
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <circle
+                        cx="12"
+                        cy="7"
+                        r="3"
+                        fill="#F2B632"
+                        stroke="#FFD76A"
+                        strokeWidth="0.8"
+                      />
 
-                    <circle
-                      cx="5.5"
-                      cy="9"
-                      r="2.4"
-                      fill="#F2B632"
-                      stroke="#FFD76A"
-                      strokeWidth="0.7"
-                    />
+                      <circle
+                        cx="5.5"
+                        cy="9"
+                        r="2.4"
+                        fill="#F2B632"
+                        stroke="#FFD76A"
+                        strokeWidth="0.7"
+                      />
 
-                    <circle
-                      cx="18.5"
-                      cy="9"
-                      r="2.4"
-                      fill="#F2B632"
-                      stroke="#FFD76A"
-                      strokeWidth="0.7"
-                    />
+                      <circle
+                        cx="18.5"
+                        cy="9"
+                        r="2.4"
+                        fill="#F2B632"
+                        stroke="#FFD76A"
+                        strokeWidth="0.7"
+                      />
 
-                    <path
-                      d="M7.2 20
+                      <path
+                        d="M7.2 20
                          v-2.3
                          c0-3 2.1-5.2 4.8-5.2
                          s4.8 2.2 4.8 5.2
                          V20"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="1"
-                      strokeLinejoin="round"
-                    />
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="1"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M2.5 19
+                      <path
+                        d="M2.5 19
                          v-1.6
                          c0-2.5 1.5-4.3 3.6-4.7
                          1.1-.2 2 .1 2.8.6"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M21.5 19
+                      <path
+                        d="M21.5 19
                          v-1.6
                          c0-2.5-1.5-4.3-3.6-4.7
                          -1.1-.2-2 .1-2.8.6"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M9 14.5
+                      <path
+                        d="M9 14.5
                          c.8-.7 1.8-1 3-1"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/beta-nu-fall-icons' ? (
-                <span
-                  className="nav-images-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.8"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/beta-nu-fall-icons' ? (
+                  <span
+                    className="nav-images-icon"
+                    aria-hidden="true"
                   >
-                    <rect
-                      x="3"
-                      y="4"
-                      width="18"
-                      height="16"
-                      rx="2"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.2"
-                      strokeLinejoin="round"
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <rect
+                        x="3"
+                        y="4"
+                        width="18"
+                        height="16"
+                        rx="2"
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.2"
+                        strokeLinejoin="round"
+                      />
 
-                    <circle
-                      cx="8"
-                      cy="9"
-                      r="1.8"
-                      fill="#FFD76A"
-                      stroke="#C89214"
-                      strokeWidth="0.7"
-                    />
+                      <circle
+                        cx="8"
+                        cy="9"
+                        r="1.8"
+                        fill="#FFD76A"
+                        stroke="#C89214"
+                        strokeWidth="0.7"
+                      />
 
-                    <path
-                      d="M4.8 18
+                      <path
+                        d="M4.8 18
                          9.2 13.6
                          12.2 16.3
                          15.4 12.5
                          19.3 17.1"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="2.1"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="2.1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M4.5 5.3h15"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
+                      <path
+                        d="M4.5 5.3h15"
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.8"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
 
-                    <path
-                      d="M5 19h14"
-                      fill="none"
-                      stroke="#C89214"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/shared-files' ? (
-                <span
-                  className="nav-shared-files-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                      <path
+                        d="M5 19h14"
+                        fill="none"
+                        stroke="#C89214"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/shared-files' ? (
+                  <span
+                    className="nav-shared-files-icon"
+                    aria-hidden="true"
                   >
-                    <path
-                      className="nav-shared-files-folder-body"
-                      d="M3 7
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <path
+                        className="nav-shared-files-folder-body"
+                        d="M3 7
                          C3 5.9 3.9 5 5 5
                          H9.1
                          L11 7
@@ -23955,57 +24530,57 @@ function App() {
                          H5
                          C3.9 20.5 3 19.6 3 18.5
                          Z"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="1.2"
-                      strokeLinejoin="round"
-                    />
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="1.2"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      className="nav-shared-files-folder-highlight"
-                      d="M4.5 8.3
+                      <path
+                        className="nav-shared-files-folder-highlight"
+                        d="M4.5 8.3
                          H19.3"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="1"
+                        strokeLinecap="round"
+                        opacity="0.95"
+                      />
 
-                    <path
-                      d="M4.5 19
+                      <path
+                        d="M4.5 19
                          H19.5"
-                      fill="none"
-                      stroke="#A87308"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.8"
-                    />
-                  </svg>
-                </span>
-              ) : item.path === '/academic-plan' ? (
-                <span
-                  className="nav-academic-plan-icon"
-                  aria-hidden="true"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    role="presentation"
+                        fill="none"
+                        stroke="#A87308"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.8"
+                      />
+                    </svg>
+                  </span>
+                ) : item.path === '/academic-plan' ? (
+                  <span
+                    className="nav-academic-plan-icon"
+                    aria-hidden="true"
                   >
-                    <path
-                      d="M2.5 8.2
+                    <svg
+                      viewBox="0 0 24 24"
+                      role="presentation"
+                    >
+                      <path
+                        d="M2.5 8.2
                          12 3.8
                          21.5 8.2
                          12 12.7
                          Z"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="1.1"
-                      strokeLinejoin="round"
-                    />
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="1.1"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M6.5 10.3
+                      <path
+                        d="M6.5 10.3
                          V15.2
                          C8.2 17
                          10 17.8
@@ -24014,96 +24589,112 @@ function App() {
                          15.8 17
                          17.5 15.2
                          V10.3"
-                      fill="#F2B632"
-                      stroke="#C89214"
-                      strokeWidth="1.1"
-                      strokeLinejoin="round"
-                    />
+                        fill="#F2B632"
+                        stroke="#C89214"
+                        strokeWidth="1.1"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M4.4 7.6
+                      <path
+                        d="M4.4 7.6
                          12 4.8
                          18.5 7.8"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      opacity="0.95"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        opacity="0.95"
+                      />
 
-                    <path
-                      d="M18.7 8.8
+                      <path
+                        d="M18.7 8.8
                          V14.6"
-                      fill="none"
-                      stroke="#F2B632"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
+                        fill="none"
+                        stroke="#F2B632"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
 
-                    <circle
-                      cx="18.7"
-                      cy="16.1"
-                      r="1.2"
-                      fill="#FFD76A"
-                      stroke="#C89214"
-                      strokeWidth="0.6"
-                    />
+                      <circle
+                        cx="18.7"
+                        cy="16.1"
+                        r="1.2"
+                        fill="#FFD76A"
+                        stroke="#C89214"
+                        strokeWidth="0.6"
+                      />
 
-                    <path
-                      d="M8 16.3
+                      <path
+                        d="M8 16.3
                          C9.2 17.1
                          10.5 17.4
                          12 17.4"
-                      fill="none"
-                      stroke="#FFD76A"
-                      strokeWidth="0.8"
-                      strokeLinecap="round"
-                    />
+                        fill="none"
+                        stroke="#FFD76A"
+                        strokeWidth="0.8"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M6.8 10.5
+                      <path
+                        d="M6.8 10.5
                          12 12.8
                          17.2 10.5"
-                      fill="none"
-                      stroke="#8F6500"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                        fill="none"
+                        stroke="#8F6500"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
 
-                    <path
-                      d="M8.2 14.6
+                      <path
+                        d="M8.2 14.6
                          C10.5 15.7
                          13.5 15.7
                          15.8 14.6"
-                      fill="none"
-                      stroke="#9B6C08"
-                      strokeWidth="0.85"
-                      strokeLinecap="round"
-                    />
+                        fill="none"
+                        stroke="#9B6C08"
+                        strokeWidth="0.85"
+                        strokeLinecap="round"
+                      />
 
-                    <path
-                      d="M6.2 7.5
+                      <path
+                        d="M6.2 7.5
                          12 5.4
                          17.8 7.5"
-                      fill="none"
-                      stroke="#FFE58A"
-                      strokeWidth="0.7"
-                      strokeLinecap="round"
-                      opacity="0.9"
-                    />
-                  </svg>
-                </span>
-              ) : (
-                <span
-                  className="nav-marker"
-                  aria-hidden="true"
-                />
-              )}
+                        fill="none"
+                        stroke="#FFE58A"
+                        strokeWidth="0.7"
+                        strokeLinecap="round"
+                        opacity="0.9"
+                      />
+                    </svg>
+                  </span>
+                ) : (
+                  <span
+                    className="nav-marker"
+                    aria-hidden="true"
+                  />
+                )}
 
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
+                <span>{item.label}</span>
+
+                {item.groupId !== undefined ? (
+                  <span
+                    className="nav-chevron"
+                    aria-hidden="true"
+                  >
+                    {
+                      sidebarGroupsOpen[
+                        item.groupId
+                      ]
+                        ? '⌄'
+                        : '›'
+                    }
+                  </span>
+                ) : null}
+              </NavLink>
+            )
+          })}
 
           <div className="nav-group">
             <button
@@ -24421,10 +25012,24 @@ function App() {
                   contactInactiveDates={
                     contactInactiveDates
                   }
+                  inactiveFormerContacts={
+                    inactiveFormerContacts
+                  }
                   onAddContact={addCohortContact}
-                  onUpdateContact={updateCohortContact}
+                  onUpdateContact={
+                    updateCohortContact
+                  }
                   onUpdateStatus={
                     updateCohortContactStatus
+                  }
+                  onUpdateInactiveDate={
+                    updateCohortContactInactiveDate
+                  }
+                  onUpdateInactiveFormerContact={
+                    updateInactiveFormerContact
+                  }
+                  onReactivateInactiveFormerContact={
+                    reactivateInactiveFormerContact
                   }
                 />
               }
@@ -24520,8 +25125,8 @@ function App() {
               path="/transfer-courses"
               element={
                 <CohortSectionPlaceholderPage
-                  title="Beta Nu Cohort Transfer Courses"
-                  description="Approved transfer courses and cohort member transfer-credit information will be organized here."
+                  title="Beta Nu Cohort Course Waivers"
+                  description="Approved course waivers and cohort member transfer-credit information will be organized here."
                 />
               }
             />
