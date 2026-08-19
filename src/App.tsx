@@ -10597,7 +10597,15 @@ function FacilitatorPlannerPage({
               </div>
             </div>
 
-            <div className="facilitator-planner-planned-finish">
+            <div
+              className={
+                remainingMinutes < 0
+                  ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-over'
+                  : remainingMinutes === 0
+                    ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-full'
+                    : 'facilitator-planner-planned-finish'
+              }
+            >
               Planned finish:{' '}
               {formatFacilitatorClockTime(
                 plannedFinishMinutes,
