@@ -5469,36 +5469,14 @@ function DashboardPage() {
   const programProgress = calculateProgramProgress(currentDate)
 
   return (
-    <section className="page-shell">
-      <header className="dashboard-page-heading">
-        <h1>Beta Nu Cohort Dashboard</h1>
-
-        <span className="dashboard-chair-name">
-          Dr. Cheryl-Marie Osborne
-        </span>
-
-        <span className="dashboard-program-name">
-          Ed.D. Organizational Leadership
-        </span>
-      </header>
-
-      <div className="dashboard-primary-grid">
-        <article className="dashboard-info-card dashboard-date-card">
-          <p className="dashboard-card-label">Today's Date & Time</p>
-
-          <p className="dashboard-current-date">
-            {pacificDateFormatter.format(currentDate)}
-          </p>
-
-          <div className="dashboard-time-list">
-            <span>{pacificTimeFormatter.format(currentDate)}</span>
-            <span>{easternTimeFormatter.format(currentDate)}</span>
-          </div>
-        </article>
-
+    <section className="page-shell dashboard-overview">
+      <div className="dashboard-overview-row dashboard-overview-top-row">
         <article className="dashboard-info-card dashboard-progress-card">
           <div className="dashboard-card-heading-row">
-            <p className="dashboard-card-label">Program Progress</p>
+            <p className="dashboard-card-label">
+              Program Progress
+            </p>
+
             <strong>{programProgress}%</strong>
           </div>
 
@@ -5512,7 +5490,9 @@ function DashboardPage() {
           >
             <div
               className="program-progress-fill"
-              style={{ width: `${programProgress}%` }}
+              style={{
+                width: `${programProgress}%`,
+              }}
             />
           </div>
 
@@ -5524,7 +5504,9 @@ function DashboardPage() {
 
             <div className="program-progress-current">
               <span>Current Progress</span>
-              <strong>{programProgress}% Complete</strong>
+              <strong>
+                {programProgress}% Complete
+              </strong>
             </div>
 
             <div>
@@ -5534,48 +5516,101 @@ function DashboardPage() {
           </div>
         </article>
 
+        <article className="dashboard-info-card dashboard-date-card">
+          <p className="dashboard-card-label">
+            Today
+          </p>
+
+          <p className="dashboard-current-date">
+            {pacificDateFormatter.format(
+              currentDate,
+            )}
+          </p>
+
+          <div className="dashboard-time-list">
+            <span>
+              {pacificTimeFormatter.format(
+                currentDate,
+              )}
+            </span>
+
+            <span>
+              {easternTimeFormatter.format(
+                currentDate,
+              )}
+            </span>
+          </div>
+        </article>
+
         <article className="dashboard-info-card dashboard-classes-card">
           <div className="dashboard-card-heading-row">
-            <p className="dashboard-card-label">Active Classes</p>
-            <strong>{activeCoursesDashboard.length} Active</strong>
+            <p className="dashboard-card-label">
+              Active Classes / Current Courses
+            </p>
+
+            <strong>
+              {activeCoursesDashboard.length} Active
+            </strong>
           </div>
 
           <div className="active-course-list">
-            {activeCoursesDashboard.map((course) => (
-              <div className="active-course-item" key={course.code}>
-                <span>{course.code}</span>
-                <strong>{course.title}</strong>
-              </div>
-            ))}
+            {activeCoursesDashboard.map(
+              (course) => (
+                <div
+                  className="active-course-item"
+                  key={course.code}
+                >
+                  <span>{course.code}</span>
+                  <strong>{course.title}</strong>
+                </div>
+              ),
+            )}
           </div>
         </article>
       </div>
 
-      <div className="dashboard-secondary-grid">
+      <div className="dashboard-overview-row dashboard-overview-middle-row">
         <article className="dashboard-info-card dashboard-meeting-card">
           <div className="dashboard-card-heading-row">
-            <p className="dashboard-card-label">Upcoming Cohort Meeting</p>
-            <span className="meeting-status">Next Meeting</span>
+            <p className="dashboard-card-label">
+              Upcoming Cohort Meeting
+            </p>
+
+            <span className="meeting-status">
+              Next Meeting
+            </span>
           </div>
 
           <div className="meeting-details">
-            <h2>{upcomingMeetingDashboard.date}</h2>
+            <h2>
+              {upcomingMeetingDashboard.date}
+            </h2>
 
             <div className="meeting-time-grid">
               <div>
                 <span>Pacific</span>
-                <strong>{upcomingMeetingDashboard.pacificTime}</strong>
+                <strong>
+                  {
+                    upcomingMeetingDashboard.pacificTime
+                  }
+                </strong>
               </div>
 
               <div>
                 <span>Eastern</span>
-                <strong>{upcomingMeetingDashboard.easternTime}</strong>
+                <strong>
+                  {
+                    upcomingMeetingDashboard.easternTime
+                  }
+                </strong>
               </div>
             </div>
 
             <a
               className="meeting-zoom-link"
-              href={upcomingMeetingDashboard.zoomUrl}
+              href={
+                upcomingMeetingDashboard.zoomUrl
+              }
               target="_blank"
               rel="noreferrer"
             >
@@ -5591,23 +5626,36 @@ function DashboardPage() {
                   <th>Assigned Member</th>
                 </tr>
               </thead>
+
               <tbody>
-                {upcomingMeetingDashboard.roles.map((meetingRole) => (
-                  <tr key={meetingRole.role}>
-                    <td>{meetingRole.role}</td>
-                    <td>{meetingRole.member}</td>
-                  </tr>
-                ))}
+                {upcomingMeetingDashboard.roles.map(
+                  (meetingRole) => (
+                    <tr key={meetingRole.role}>
+                      <td>{meetingRole.role}</td>
+                      <td>{meetingRole.member}</td>
+                    </tr>
+                  ),
+                )}
               </tbody>
             </table>
           </div>
         </article>
 
+        <article className="dashboard-info-card dashboard-snapshot-card">
+          <p className="dashboard-card-label">
+            Cohort Snapshot
+          </p>
+        </article>
+
         <article
-          className={`dashboard-info-card birthday-card${nextBirthdayDashboard?.isToday ? ' birthday-card-today' : ''
+          className={`dashboard-info-card birthday-card dashboard-birthdays-card${nextBirthdayDashboard?.isToday
+            ? ' birthday-card-today'
+            : ''
             }`}
         >
-          <p className="dashboard-card-label">Birthday Board</p>
+          <p className="dashboard-card-label">
+            Upcoming Birthdays
+          </p>
 
           {nextBirthdayDashboard ? (
             <div className="birthday-content">
@@ -5617,8 +5665,16 @@ function DashboardPage() {
                   : 'Next Birthday'}
               </span>
 
-              <h2>{nextBirthdayDashboard.name}</h2>
-              <strong>{nextBirthdayDashboard.dateLabel}</strong>
+              <h2>
+                {nextBirthdayDashboard.name}
+              </h2>
+
+              <strong>
+                {
+                  nextBirthdayDashboard.dateLabel
+                }
+              </strong>
+
               <p>
                 {nextBirthdayDashboard.isToday
                   ? 'Happy Birthday!'
@@ -5627,43 +5683,56 @@ function DashboardPage() {
             </div>
           ) : (
             <div className="birthday-empty-state">
-              <strong>Birthday data will appear here.</strong>
+              <strong>
+                Birthday data will appear here.
+              </strong>
+
               <p>
-                Upcoming birthdays will populate from the Cohort Contact page.
+                Upcoming birthdays will populate
+                from the Cohort Contact page.
               </p>
             </div>
           )}
         </article>
+
+        <article className="dashboard-info-card dashboard-courses-status-card">
+          <p className="dashboard-card-label">
+            Courses Status
+          </p>
+        </article>
       </div>
 
-      <article className="dashboard-vision-values">
-        <section className="dashboard-vision-section">
-          <div className="vision-title-row">
-            <span />
-            <h2>Our Vision</h2>
-            <span />
-          </div>
+      <div className="dashboard-overview-row dashboard-overview-bottom-row">
+        <article className="dashboard-info-card dashboard-academic-highlights-card">
+          <p className="dashboard-card-label">
+            Academic Plan Highlights
+          </p>
+        </article>
 
-          <p>{cohortVision}</p>
-        </section>
+        <article className="dashboard-info-card dashboard-shared-resources-card">
+          <p className="dashboard-card-label">
+            Shared Files / Image Library
+          </p>
+        </article>
 
-        <section className="dashboard-values-section">
-          <div className="vision-title-row">
-            <span />
-            <h2>Our Values</h2>
-            <span />
-          </div>
+        <article className="dashboard-info-card dashboard-identity-card">
+          <p className="dashboard-card-label">
+            Our Cohort Identity
+          </p>
 
-          <div className="dashboard-values-list">
+          <p className="dashboard-identity-preview">
+            {cohortVision}
+          </p>
+
+          <div className="dashboard-identity-values-preview">
             {cohortValues.map((value) => (
-              <div className="dashboard-value-item" key={value.name}>
-                <strong>{value.name}:</strong>
-                <span>{value.description}</span>
-              </div>
+              <span key={value.name}>
+                {value.name}
+              </span>
             ))}
           </div>
-        </section>
-      </article>
+        </article>
+      </div>
     </section >
   )
 }
