@@ -784,6 +784,15 @@ const dashboardBirthdayDateFormatter = new Intl.DateTimeFormat(
   },
 )
 
+const dashboardCompactCourseDateFormatter = new Intl.DateTimeFormat(
+  'en-US',
+  {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  },
+)
+
 const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
   {
     code: 'EDDP 781',
@@ -5613,6 +5622,34 @@ function DashboardPage({
           100%
         )`
 
+  const dashboardCurrentTerm =
+    dashboardActiveCourses.find(
+      (course) =>
+        !course.termYear.includes('&'),
+    )?.termYear ??
+    dashboardActiveCourses[0]?.termYear ??
+    'Between Terms'
+
+  const dashboardAcademicHighlightCourses =
+    (
+      dashboardActiveCourses.length > 0
+        ? dashboardActiveCourses
+        : [...dashboardAcademicPlan]
+          .filter(
+            (record) =>
+              getCohortAcademicPlanStatus(
+                record.startDate,
+                record.endDate,
+              ) === 'Pending',
+          )
+          .sort(
+            (firstRecord, secondRecord) =>
+              firstRecord.startDate.localeCompare(
+                secondRecord.startDate,
+              ),
+          )
+    ).slice(0, 2)
+
   const dashboardActiveContacts =
     contacts.filter(
       (contact) =>
@@ -6808,9 +6845,174 @@ function DashboardPage({
 
       <div className="dashboard-overview-row dashboard-overview-bottom-row">
         <article className="dashboard-info-card dashboard-academic-highlights-card">
-          <p className="dashboard-card-label">
-            Academic Plan Highlights
-          </p>
+          <div className="dashboard-academic-highlights-header">
+            <div className="dashboard-academic-highlights-title-group">
+              <span
+                className="dashboard-academic-highlights-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M3.5 5.5C6.5 4.7 9 5.2 12 7.2V19C9.2 17.2 6.5 16.7 3.5 17.5V5.5Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M20.5 5.5C17.5 4.7 15 5.2 12 7.2V19C14.8 17.2 17.5 16.7 20.5 17.5V5.5Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M12 7.2V19"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                </svg>
+              </span>
+
+              <p className="dashboard-card-label">
+                Academic Plan Highlights
+              </p>
+            </div>
+
+            <NavLink
+              className="dashboard-view-my-plan"
+              to="/academic-plan"
+            >
+              View My Plan
+            </NavLink>
+          </div>
+
+          <div className="dashboard-academic-current-term">
+            <span>
+              Current Term:
+            </span>
+
+            <strong>
+              {dashboardCurrentTerm}
+            </strong>
+          </div>
+
+          <div className="dashboard-academic-highlights-content">
+            <div className="dashboard-academic-stats">
+              <div className="dashboard-academic-stat-row">
+                <span>
+                  Total Classes
+                </span>
+
+                <strong>
+                  22
+                </strong>
+              </div>
+
+              <div className="dashboard-academic-stat-row">
+                <span>
+                  Completed
+                </span>
+
+                <strong>
+                  {completedAcademicPlanCount}
+                </strong>
+              </div>
+
+              <div className="dashboard-academic-stat-row">
+                <span>
+                  In Progress
+                </span>
+
+                <strong>
+                  {dashboardActiveCourses.length}
+                </strong>
+              </div>
+
+              <div className="dashboard-academic-stat-row">
+                <span>
+                  Pending
+                </span>
+
+                <strong>
+                  10
+                </strong>
+              </div>
+            </div>
+
+            <div className="dashboard-academic-next-up">
+              <strong className="dashboard-academic-next-up-heading">
+                Next Up
+              </strong>
+
+              <div className="dashboard-academic-next-course-list">
+                {dashboardAcademicHighlightCourses.length > 0 ? (
+                  dashboardAcademicHighlightCourses.map(
+                    (course) => {
+                      const courseStatus =
+                        getCohortAcademicPlanStatus(
+                          course.startDate,
+                          course.endDate,
+                        )
+
+                      return (
+                        <div
+                          className="dashboard-academic-next-course"
+                          key={course.id}
+                        >
+                          <strong className="dashboard-academic-next-course-code">
+                            {course.code}
+                          </strong>
+
+                          <span className="dashboard-academic-next-course-title">
+                            {course.className}
+                          </span>
+
+                          <div className="dashboard-academic-next-course-footer">
+                            <span className="dashboard-academic-next-course-dates">
+                              {dashboardCompactCourseDateFormatter.format(
+                                new Date(
+                                  `${course.startDate}T00:00:00Z`,
+                                ),
+                              )}
+                              {' - '}
+                              {dashboardCompactCourseDateFormatter.format(
+                                new Date(
+                                  `${course.endDate}T00:00:00Z`,
+                                ),
+                              )}
+                              {', '}
+                              {new Date(
+                                `${course.endDate}T00:00:00Z`,
+                              ).getUTCFullYear()}
+                            </span>
+
+                            <span
+                              className={
+                                courseStatus ===
+                                  'In Progress'
+                                  ? 'dashboard-academic-next-status dashboard-academic-next-status-progress'
+                                  : 'dashboard-academic-next-status dashboard-academic-next-status-pending'
+                              }
+                            >
+                              {courseStatus}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    },
+                  )
+                ) : (
+                  <div className="dashboard-academic-next-empty">
+                    No upcoming courses.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </article>
 
         <article className="dashboard-info-card dashboard-shared-resources-card">
