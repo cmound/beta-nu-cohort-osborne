@@ -20723,6 +20723,7 @@ const MAX_COHORT_ASSIGNMENT_GROUPS = 4
 interface CohortGroupAssignmentRecord {
   readonly id: string
   readonly memberIds: readonly string[]
+  readonly targetSize: number
 }
 
 interface CohortGroupAssignmentState {
@@ -20850,10 +20851,22 @@ function readStoredCohortGroupAssignments():
         }
       }
 
+      const storedTargetSize =
+        groupValue.targetSize
+
       storedGroups.push({
         id:
           `group-${storedGroups.length + 1}`,
         memberIds,
+        targetSize:
+          typeof storedTargetSize ===
+            'number' &&
+            Number.isInteger(
+              storedTargetSize,
+            ) &&
+            storedTargetSize >= 0
+            ? storedTargetSize
+            : 0,
       })
     }
 
@@ -21047,6 +21060,198 @@ function formatCohortGroupActivityDate(
   )
 }
 
+function calculateBalancedCohortGroupTargets(
+  totalStudents: number,
+  minimumTargets: readonly number[],
+): number[] {
+  if (minimumTargets.length === 0) {
+    return []
+  }
+
+  const targets =
+    minimumTargets.map(
+      (minimumTarget) =>
+        Math.max(
+          0,
+          Math.floor(minimumTarget),
+        ),
+    )
+
+  let remainingStudents =
+    Math.max(
+      0,
+      totalStudents -
+      targets.reduce(
+        (total, target) =>
+          total + target,
+        0,
+      ),
+    )
+
+  while (remainingStudents > 0) {
+    let smallestTargetIndex = 0
+
+    for (
+      let targetIndex = 1;
+      targetIndex < targets.length;
+      targetIndex += 1
+    ) {
+      if (
+        (
+          targets[targetIndex] ?? 0
+        ) <
+        (
+          targets[
+          smallestTargetIndex
+          ] ?? 0
+        )
+      ) {
+        smallestTargetIndex =
+          targetIndex
+      }
+    }
+
+    targets[smallestTargetIndex] =
+      (
+        targets[
+        smallestTargetIndex
+        ] ?? 0
+      ) + 1
+
+    remainingStudents -= 1
+  }
+
+  return targets
+}
+
+function rebalanceCohortGroupTargets(
+  groups:
+    readonly CohortGroupAssignmentRecord[],
+  changedGroupId: string,
+  requestedTarget: number,
+  totalStudents: number,
+): number[] {
+  const changedGroupIndex =
+    groups.findIndex(
+      (group) =>
+        group.id === changedGroupId,
+    )
+
+  if (changedGroupIndex < 0) {
+    return groups.map(
+      (group) => group.targetSize,
+    )
+  }
+
+  if (groups.length === 1) {
+    return [totalStudents]
+  }
+
+  const minimumTargets =
+    groups.map(
+      (group) =>
+        group.memberIds.length,
+    )
+
+  const changedMinimum =
+    minimumTargets[
+    changedGroupIndex
+    ] ?? 0
+
+  const otherMinimumTotal =
+    minimumTargets.reduce(
+      (
+        total,
+        minimumTarget,
+        targetIndex,
+      ) =>
+        targetIndex ===
+          changedGroupIndex
+          ? total
+          : total + minimumTarget,
+      0,
+    )
+
+  const maximumChangedTarget =
+    Math.max(
+      changedMinimum,
+      totalStudents -
+      otherMinimumTotal,
+    )
+
+  const changedTarget =
+    Math.min(
+      Math.max(
+        requestedTarget,
+        changedMinimum,
+      ),
+      maximumChangedTarget,
+    )
+
+  const targets =
+    [...minimumTargets]
+
+  targets[changedGroupIndex] =
+    changedTarget
+
+  let remainingStudents =
+    totalStudents -
+    targets.reduce(
+      (total, target) =>
+        total + target,
+      0,
+    )
+
+  const adjustableGroupIndexes =
+    groups
+      .map((_, groupIndex) =>
+        groupIndex,
+      )
+      .filter(
+        (groupIndex) =>
+          groupIndex !==
+          changedGroupIndex,
+      )
+
+  while (
+    remainingStudents > 0 &&
+    adjustableGroupIndexes.length > 0
+  ) {
+    let selectedGroupIndex =
+      adjustableGroupIndexes[0] ?? 0
+
+    for (
+      const groupIndex
+      of adjustableGroupIndexes
+    ) {
+      if (
+        (
+          targets[groupIndex] ?? 0
+        ) <
+        (
+          targets[
+          selectedGroupIndex
+          ] ?? 0
+        )
+      ) {
+        selectedGroupIndex =
+          groupIndex
+      }
+    }
+
+    targets[selectedGroupIndex] =
+      (
+        targets[
+        selectedGroupIndex
+        ] ?? 0
+      ) + 1
+
+    remainingStudents -= 1
+  }
+
+  return targets
+}
+
 function CohortGroupAssignmentsPage({
   contacts,
   contactStatuses,
@@ -21103,6 +21308,113 @@ function CohortGroupAssignmentsPage({
           'Active'
         ) === 'Active',
     )
+
+  const activeStudentIdSignature =
+    activeStudents
+      .map((student) => student.id)
+      .join('\u001f')
+
+  useEffect(() => {
+    const activeStudentIds =
+      new Set<string>(
+        activeStudentIdSignature === ''
+          ? []
+          : activeStudentIdSignature
+            .split('\u001f'),
+      )
+
+    setGroupAssignmentState(
+      (currentState) => {
+        if (
+          currentState.groups.length ===
+          0
+        ) {
+          return currentState
+        }
+
+        let membershipChanged = false
+
+        const sanitizedGroups =
+          currentState.groups.map(
+            (group) => {
+              const activeMemberIds =
+                group.memberIds.filter(
+                  (memberId) =>
+                    activeStudentIds.has(
+                      memberId,
+                    ),
+                )
+
+              if (
+                activeMemberIds.length !==
+                group.memberIds.length
+              ) {
+                membershipChanged = true
+              }
+
+              return {
+                ...group,
+                memberIds:
+                  activeMemberIds,
+              }
+            },
+          )
+
+        const targetTotal =
+          sanitizedGroups.reduce(
+            (total, group) =>
+              total +
+              group.targetSize,
+            0,
+          )
+
+        const targetsAreValid =
+          targetTotal ===
+          activeStudents.length &&
+          sanitizedGroups.every(
+            (group) =>
+              Number.isInteger(
+                group.targetSize,
+              ) &&
+              group.targetSize >=
+              group.memberIds.length,
+          )
+
+        if (
+          !membershipChanged &&
+          targetsAreValid
+        ) {
+          return currentState
+        }
+
+        const recalculatedTargets =
+          calculateBalancedCohortGroupTargets(
+            activeStudents.length,
+            sanitizedGroups.map(
+              (group) =>
+                group.memberIds.length,
+            ),
+          )
+
+        return {
+          ...currentState,
+          groups:
+            sanitizedGroups.map(
+              (group, groupIndex) => ({
+                ...group,
+                targetSize:
+                  recalculatedTargets[
+                  groupIndex
+                  ] ?? 0,
+              }),
+            ),
+        }
+      },
+    )
+  }, [
+    activeStudentIdSignature,
+    activeStudents.length,
+  ])
 
   const activeStudentById =
     new Map<
@@ -21216,6 +21528,18 @@ function CohortGroupAssignmentsPage({
       return
     }
 
+    const recommendedTargets =
+      calculateBalancedCohortGroupTargets(
+        activeStudents.length,
+        Array.from(
+          {
+            length:
+              requestedGroupCount,
+          },
+          () => 0,
+        ),
+      )
+
     setGroupAssignmentState(
       (currentState) => ({
         ...currentState,
@@ -21228,12 +21552,64 @@ function CohortGroupAssignmentsPage({
             id:
               `group-${groupIndex + 1}`,
             memberIds: [],
+            targetSize:
+              recommendedTargets[
+              groupIndex
+              ] ?? 0,
           }),
         ),
       }),
     )
 
     setGroupDrafts({})
+  }
+
+  function updateGroupTarget(
+    groupId: string,
+    rawValue: string,
+  ): void {
+    if (rawValue.trim() === '') {
+      return
+    }
+
+    const requestedTarget =
+      Number(rawValue)
+
+    if (
+      !Number.isInteger(
+        requestedTarget,
+      ) ||
+      requestedTarget < 0
+    ) {
+      return
+    }
+
+    setGroupAssignmentState(
+      (currentState) => {
+        const rebalancedTargets =
+          rebalanceCohortGroupTargets(
+            currentState.groups,
+            groupId,
+            requestedTarget,
+            activeStudents.length,
+          )
+
+        return {
+          ...currentState,
+          groups:
+            currentState.groups.map(
+              (group, groupIndex) => ({
+                ...group,
+                targetSize:
+                  rebalancedTargets[
+                  groupIndex
+                  ] ??
+                  group.targetSize,
+              }),
+            ),
+        }
+      },
+    )
   }
 
   function updateGroupDraft(
@@ -21267,11 +21643,20 @@ function CohortGroupAssignmentsPage({
             ) === normalizedName,
       )
 
+    const selectedGroup =
+      groupAssignmentState.groups.find(
+        (group) =>
+          group.id === groupId,
+      )
+
     if (
       matchedStudent === undefined ||
       assignedStudentIds.has(
         matchedStudent.id,
-      )
+      ) ||
+      selectedGroup === undefined ||
+      selectedGroup.memberIds.length >=
+      selectedGroup.targetSize
     ) {
       return
     }
@@ -21287,6 +21672,20 @@ function CohortGroupAssignmentsPage({
           )
 
         if (studentAlreadyAssigned) {
+          return currentState
+        }
+
+        const targetGroup =
+          currentState.groups.find(
+            (group) =>
+              group.id === groupId,
+          )
+
+        if (
+          targetGroup === undefined ||
+          targetGroup.memberIds.length >=
+          targetGroup.targetSize
+        ) {
           return currentState
         }
 
@@ -21560,6 +21959,10 @@ function CohortGroupAssignmentsPage({
                                 undefined,
                             )
 
+                        const targetReached =
+                          groupStudents.length >=
+                          group.targetSize
+
                         return (
                           <section
                             key={group.id}
@@ -21571,55 +21974,127 @@ function CohortGroupAssignmentsPage({
                                 {groupIndex + 1}
                               </h3>
 
-                              <span>
-                                {
-                                  groupStudents
-                                    .length
-                                }
-                              </span>
+                              <label className="cohort-group-target-control">
+                                <span>
+                                  Recommended
+                                </span>
+
+                                <input
+                                  type="number"
+                                  min={
+                                    groupStudents
+                                      .length
+                                  }
+                                  max={
+                                    activeStudents
+                                      .length
+                                  }
+                                  step={1}
+                                  value={
+                                    group.targetSize
+                                  }
+                                  aria-label={
+                                    `Recommended size for ` +
+                                    `Group ${groupIndex + 1}`
+                                  }
+                                  onFocus={(
+                                    event,
+                                  ) => {
+                                    event
+                                      .currentTarget
+                                      .select()
+                                  }}
+                                  onChange={(
+                                    event,
+                                  ) => {
+                                    updateGroupTarget(
+                                      group.id,
+                                      event
+                                        .currentTarget
+                                        .value,
+                                    )
+                                  }}
+                                />
+                              </label>
                             </header>
 
                             <div className="cohort-group-card-body">
-                              {groupStudents.length ===
-                                0 ? (
-                                <p className="cohort-group-empty-message">
-                                  No students assigned
-                                </p>
-                              ) : (
-                                <ul className="cohort-group-member-list">
-                                  {groupStudents.map(
-                                    (student) => (
-                                      <li
+                              <div className="cohort-group-slots">
+                                {Array.from(
+                                  {
+                                    length:
+                                      group.targetSize,
+                                  },
+                                  (
+                                    _,
+                                    slotIndex,
+                                  ) => {
+                                    const student =
+                                      groupStudents[
+                                      slotIndex
+                                      ]
+
+                                    return (
+                                      <div
                                         key={
-                                          student.id
+                                          student
+                                            ?.id ??
+                                          `${group.id}-slot-${slotIndex}`
+                                        }
+                                        className={
+                                          student ===
+                                            undefined
+                                            ? 'cohort-group-slot cohort-group-slot-empty'
+                                            : 'cohort-group-slot'
                                         }
                                       >
-                                        <span>
-                                          {
-                                            student.name
-                                          }
+                                        <span className="cohort-group-slot-number">
+                                          {slotIndex +
+                                            1}
                                         </span>
 
-                                        <button
-                                          type="button"
-                                          aria-label={
-                                            `Remove ${student.name} ` +
-                                            `from Group ${groupIndex + 1}`
-                                          }
-                                          onClick={() => {
-                                            removeStudentFromGroup(
-                                              group.id,
-                                              student.id,
-                                            )
-                                          }}
-                                        >
-                                          Remove
-                                        </button>
-                                      </li>
-                                    ),
-                                  )}
-                                </ul>
-                              )}
+                                        {student ===
+                                          undefined ? (
+                                          <span className="cohort-group-open-slot">
+                                            Open slot
+                                          </span>
+                                        ) : (
+                                          <>
+                                            <span className="cohort-group-slot-name">
+                                              {
+                                                student.name
+                                              }
+                                            </span>
+
+                                            <button
+                                              type="button"
+                                              className="cohort-group-slot-remove-button"
+                                              aria-label={
+                                                `Remove ${student.name} ` +
+                                                `from Group ${groupIndex + 1}`
+                                              }
+                                              onClick={() => {
+                                                removeStudentFromGroup(
+                                                  group.id,
+                                                  student.id,
+                                                )
+                                              }}
+                                            >
+                                              Remove
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )
+                                  },
+                                )}
+                              </div>
+
+                              <p className="cohort-group-assignment-summary">
+                                {groupStudents.length} of{' '}
+                                {group.targetSize}{' '}
+                                assigned
+                              </p>
 
                               <label className="cohort-group-member-entry">
                                 <span>
@@ -21635,13 +22110,17 @@ function CohortGroupAssignmentsPage({
                                     ] ?? ''
                                   }
                                   placeholder={
-                                    availableStudents
-                                      .length === 0
-                                      ? 'All students assigned'
-                                      : 'Type a student name'
+                                    targetReached
+                                      ? 'Recommended size reached'
+                                      : availableStudents
+                                        .length ===
+                                        0
+                                        ? 'All students assigned'
+                                        : 'Type a student name'
                                   }
                                   autoComplete="off"
                                   disabled={
+                                    targetReached ||
                                     availableStudents
                                       .length === 0
                                   }

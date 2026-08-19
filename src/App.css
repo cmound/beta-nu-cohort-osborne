@@ -6846,7 +6846,8 @@
 
 .cohort-groups-create-button:focus-visible,
 .cohort-groups-clear-button:focus-visible,
-.cohort-group-member-list button:focus-visible {
+.cohort-group-target-control input:focus-visible,
+.cohort-group-slot-remove-button:focus-visible {
   outline: 2px solid #0077c8;
   outline-offset: 2px;
 }
@@ -7093,17 +7094,38 @@
   font-weight: 900;
 }
 
-.cohort-group-card-heading span {
-  min-width: 27px;
+.cohort-group-target-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cohort-group-target-control > span {
+  color: #061321;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.cohort-group-target-control input {
+  width: 46px;
+  height: 27px;
   box-sizing: border-box;
-  padding: 2px 6px;
+  padding: 2px 4px;
   border: 1px solid #557898;
-  border-radius: 11px;
+  border-radius: 5px;
   color: #ffffff;
   background: #0b2948;
-  font-size: 11px;
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 900;
   text-align: center;
+}
+
+.cohort-group-target-control input:focus {
+  border-color: #0077c8;
+  outline: 2px solid
+    rgba(0, 119, 200, 0.28);
+  outline-offset: 1px;
 }
 
 .cohort-group-card-body {
@@ -7111,6 +7133,89 @@
   align-content: start;
   gap: 11px;
   padding: 10px;
+}
+
+.cohort-group-slots {
+  overflow: hidden;
+  border: 1px solid #91a4b8;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.cohort-group-slot {
+  min-height: 36px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns:
+    25px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  border-bottom: 1px solid #91a4b8;
+  color: #061321;
+  background: #eaf2f8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cohort-group-slot:last-child {
+  border-bottom: 0;
+}
+
+.cohort-group-slot:nth-child(even) {
+  background: #f8fbfd;
+}
+
+.cohort-group-slot-empty {
+  color: #64748b;
+  background: #ffffff;
+}
+
+.cohort-group-slot-number {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #8f6810;
+  border-radius: 50%;
+  color: #061321;
+  background: #ffd200;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.cohort-group-open-slot {
+  font-style: italic;
+  font-weight: 700;
+}
+
+.cohort-group-slot-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cohort-group-slot-remove-button {
+  padding: 3px 6px;
+  border: 1px solid #65798c;
+  border-radius: 4px;
+  color: #ffffff;
+  background: #244d72;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cohort-group-assignment-summary {
+  margin: -3px 0 0;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: right;
 }
 
 .cohort-group-empty-message {
