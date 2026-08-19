@@ -20728,12 +20728,19 @@ interface CohortGroupAssignmentRecord {
 
 interface CohortGroupAssignmentState {
   readonly activityDate: string
+  readonly excludedStudentIds:
+  readonly string[]
   readonly groups:
   readonly CohortGroupAssignmentRecord[]
 }
 
 type CohortGroupDraftState =
   Record<string, string>
+
+interface CohortDraggedGroupMember {
+  readonly sourceGroupId: string
+  readonly studentId: string
+}
 
 interface CohortGroupAssignmentsPageProps {
   readonly contacts:
@@ -20747,6 +20754,7 @@ function createEmptyCohortGroupAssignmentState():
   CohortGroupAssignmentState {
   return {
     activityDate: '',
+    excludedStudentIds: [],
     groups: [],
   }
 }
@@ -20801,6 +20809,25 @@ function readStoredCohortGroupAssignments():
         ? storedActivityDate
         : ''
 
+    const excludedStudentIds =
+      Array.isArray(
+        parsedValue.excludedStudentIds,
+      )
+        ? Array.from(
+          new Set(
+            parsedValue
+              .excludedStudentIds
+              .filter(
+                (
+                  studentId,
+                ): studentId is string =>
+                  typeof studentId ===
+                  'string',
+              ),
+          ),
+        )
+        : []
+
     if (
       !Array.isArray(
         parsedValue.groups,
@@ -20808,6 +20835,7 @@ function readStoredCohortGroupAssignments():
     ) {
       return {
         activityDate,
+        excludedStudentIds,
         groups: [],
       }
     }
@@ -20872,6 +20900,7 @@ function readStoredCohortGroupAssignments():
 
     return {
       activityDate,
+      excludedStudentIds,
       groups: storedGroups,
     }
   } catch {
@@ -21290,6 +21319,19 @@ function CohortGroupAssignmentsPage({
     setGroupDrafts,
   ] = useState<CohortGroupDraftState>({})
 
+  const [
+    draggedGroupMember,
+    setDraggedGroupMember,
+  ] =
+    useState<CohortDraggedGroupMember | null>(
+      null,
+    )
+
+  const [
+    dropTargetGroupId,
+    setDropTargetGroupId,
+  ] = useState<string | null>(null)
+
   useEffect(() => {
     localStorage.setItem(
       COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY,
@@ -21307,6 +21349,20 @@ function CohortGroupAssignmentsPage({
           contactStatuses[contact.id] ??
           'Active'
         ) === 'Active',
+    )
+
+  const excludedStudentIdSet =
+    new Set(
+      groupAssignmentState
+        .excludedStudentIds,
+    )
+
+  const participatingStudents =
+    activeStudents.filter(
+      (student) =>
+        !excludedStudentIdSet.has(
+          student.id,
+        ),
     )
 
   const activeStudentIdSignature =
@@ -21327,26 +21383,60 @@ function CohortGroupAssignmentsPage({
       (currentState) => {
         if (
           currentState.groups.length ===
-          0
+          0 &&
+          currentState
+            .excludedStudentIds
+            .every((studentId) =>
+              activeStudentIds.has(
+                studentId,
+              ),
+            )
         ) {
           return currentState
         }
 
-        let membershipChanged = false
+        const sanitizedExcludedIds =
+          currentState
+            .excludedStudentIds
+            .filter((studentId) =>
+              activeStudentIds.has(
+                studentId,
+              ),
+            )
+
+        const excludedIds =
+          new Set(
+            sanitizedExcludedIds,
+          )
+
+        const participatingIds =
+          new Set(
+            [...activeStudentIds].filter(
+              (studentId) =>
+                !excludedIds.has(
+                  studentId,
+                ),
+            ),
+          )
+
+        let membershipChanged =
+          sanitizedExcludedIds.length !==
+          currentState
+            .excludedStudentIds.length
 
         const sanitizedGroups =
           currentState.groups.map(
             (group) => {
-              const activeMemberIds =
+              const participantMemberIds =
                 group.memberIds.filter(
                   (memberId) =>
-                    activeStudentIds.has(
+                    participatingIds.has(
                       memberId,
                     ),
                 )
 
               if (
-                activeMemberIds.length !==
+                participantMemberIds.length !==
                 group.memberIds.length
               ) {
                 membershipChanged = true
@@ -21355,7 +21445,7 @@ function CohortGroupAssignmentsPage({
               return {
                 ...group,
                 memberIds:
-                  activeMemberIds,
+                  participantMemberIds,
               }
             },
           )
@@ -21370,7 +21460,7 @@ function CohortGroupAssignmentsPage({
 
         const targetsAreValid =
           targetTotal ===
-          activeStudents.length &&
+          participatingIds.size &&
           sanitizedGroups.every(
             (group) =>
               Number.isInteger(
@@ -21389,7 +21479,7 @@ function CohortGroupAssignmentsPage({
 
         const recalculatedTargets =
           calculateBalancedCohortGroupTargets(
-            activeStudents.length,
+            participatingIds.size,
             sanitizedGroups.map(
               (group) =>
                 group.memberIds.length,
@@ -21398,6 +21488,8 @@ function CohortGroupAssignmentsPage({
 
         return {
           ...currentState,
+          excludedStudentIds:
+            sanitizedExcludedIds,
           groups:
             sanitizedGroups.map(
               (group, groupIndex) => ({
@@ -21454,7 +21546,7 @@ function CohortGroupAssignmentsPage({
   }
 
   const availableStudents =
-    activeStudents.filter(
+    participatingStudents.filter(
       (student) =>
         !assignedStudentIds.has(
           student.id,
@@ -21484,6 +21576,8 @@ function CohortGroupAssignmentsPage({
 
   const hasPageData =
     activityDateInput.trim() !== '' ||
+    groupAssignmentState
+      .excludedStudentIds.length > 0 ||
     groupsCreated ||
     hasDraftText ||
     groupCountInput !== '4'
@@ -21520,6 +21614,80 @@ function CohortGroupAssignmentsPage({
     )
   }
 
+  function updateStudentParticipation(
+    studentId: string,
+    isParticipating: boolean,
+  ): void {
+    setGroupAssignmentState(
+      (currentState) => {
+        const excludedIds =
+          new Set(
+            currentState
+              .excludedStudentIds,
+          )
+
+        if (isParticipating) {
+          excludedIds.delete(studentId)
+        } else {
+          excludedIds.add(studentId)
+        }
+
+        const nextGroups =
+          currentState.groups.map(
+            (group) => ({
+              ...group,
+              memberIds:
+                isParticipating
+                  ? group.memberIds
+                  : group.memberIds.filter(
+                    (memberId) =>
+                      memberId !==
+                      studentId,
+                  ),
+            }),
+          )
+
+        const participatingCount =
+          activeStudents.reduce(
+            (total, student) =>
+              excludedIds.has(
+                student.id,
+              )
+                ? total
+                : total + 1,
+            0,
+          )
+
+        const recalculatedTargets =
+          calculateBalancedCohortGroupTargets(
+            participatingCount,
+            nextGroups.map(
+              (group) =>
+                group.memberIds.length,
+            ),
+          )
+
+        return {
+          ...currentState,
+          excludedStudentIds: [
+            ...excludedIds,
+          ],
+          groups:
+            nextGroups.map(
+              (group, groupIndex) => ({
+                ...group,
+                targetSize:
+                  recalculatedTargets[
+                  groupIndex
+                  ] ??
+                  group.targetSize,
+              }),
+            ),
+        }
+      },
+    )
+  }
+
   function createGroups(): void {
     if (
       !groupCountIsValid ||
@@ -21530,7 +21698,7 @@ function CohortGroupAssignmentsPage({
 
     const recommendedTargets =
       calculateBalancedCohortGroupTargets(
-        activeStudents.length,
+        participatingStudents.length,
         Array.from(
           {
             length:
@@ -21591,7 +21759,7 @@ function CohortGroupAssignmentsPage({
             currentState.groups,
             groupId,
             requestedTarget,
-            activeStudents.length,
+            participatingStudents.length,
           )
 
         return {
@@ -21635,7 +21803,7 @@ function CohortGroupAssignmentsPage({
     }
 
     const matchedStudent =
-      activeStudents.find(
+      participatingStudents.find(
         (student) =>
           student.name
             .toLocaleLowerCase(
@@ -21714,6 +21882,117 @@ function CohortGroupAssignmentsPage({
         [groupId]: '',
       }),
     )
+  }
+
+  function moveStudentBetweenGroups(
+    sourceGroupId: string,
+    targetGroupId: string,
+    studentId: string,
+  ): void {
+    if (
+      sourceGroupId === targetGroupId
+    ) {
+      return
+    }
+
+    setGroupAssignmentState(
+      (currentState) => {
+        const sourceGroup =
+          currentState.groups.find(
+            (group) =>
+              group.id ===
+              sourceGroupId,
+          )
+
+        const targetGroup =
+          currentState.groups.find(
+            (group) =>
+              group.id ===
+              targetGroupId,
+          )
+
+        if (
+          sourceGroup === undefined ||
+          targetGroup === undefined ||
+          !sourceGroup.memberIds.includes(
+            studentId,
+          ) ||
+          targetGroup.memberIds.includes(
+            studentId,
+          ) ||
+          targetGroup.memberIds.length >=
+          targetGroup.targetSize
+        ) {
+          return currentState
+        }
+
+        return {
+          ...currentState,
+          groups:
+            currentState.groups.map(
+              (group) => {
+                if (
+                  group.id ===
+                  sourceGroupId
+                ) {
+                  return {
+                    ...group,
+                    memberIds:
+                      group.memberIds.filter(
+                        (memberId) =>
+                          memberId !==
+                          studentId,
+                      ),
+                  }
+                }
+
+                if (
+                  group.id ===
+                  targetGroupId
+                ) {
+                  return {
+                    ...group,
+                    memberIds: [
+                      ...group.memberIds,
+                      studentId,
+                    ],
+                  }
+                }
+
+                return group
+              },
+            ),
+        }
+      },
+    )
+  }
+
+  function startDraggingGroupMember(
+    event:
+      ReactDragEvent<HTMLDivElement>,
+    sourceGroupId: string,
+    studentId: string,
+  ): void {
+    event.dataTransfer.effectAllowed =
+      'move'
+
+    event.dataTransfer.setData(
+      'text/plain',
+      `${sourceGroupId}::${studentId}`,
+    )
+
+    setDraggedGroupMember({
+      sourceGroupId,
+      studentId,
+    })
+
+    setDropTargetGroupId(null)
+  }
+
+  function finishDraggingGroupMember():
+    void {
+    setDraggedGroupMember(null)
+    setDropTargetGroupId(null)
   }
 
   function removeStudentFromGroup(
@@ -21869,8 +22148,14 @@ function CohortGroupAssignmentsPage({
 
             <p className="cohort-groups-roster-summary">
               {assignedStudentIds.size} of{' '}
-              {activeStudents.length} assigned
+              {participatingStudents.length}{' '}
+              participants assigned
             </p>
+
+            <div className="cohort-groups-roster-columns">
+              <span>Name</span>
+              <span>In</span>
+            </div>
 
             <ul className="cohort-groups-roster-list">
               {activeStudents.map(
@@ -21880,20 +22165,25 @@ function CohortGroupAssignmentsPage({
                       student.id,
                     )
 
+                  const isParticipating =
+                    !excludedStudentIdSet.has(
+                      student.id,
+                    )
+
                   return (
                     <li
                       key={student.id}
                       className={
-                        isAssigned
-                          ? 'cohort-groups-roster-item cohort-groups-roster-item-assigned'
-                          : 'cohort-groups-roster-item'
-                      }
-                      aria-label={
-                        `${student.name}, ` +
+                        `cohort-groups-roster-item` +
                         (
                           isAssigned
-                            ? 'assigned'
-                            : 'available'
+                            ? ' cohort-groups-roster-item-assigned'
+                            : ''
+                        ) +
+                        (
+                          !isParticipating
+                            ? ' cohort-groups-roster-item-excluded'
+                            : ''
                         )
                       }
                     >
@@ -21902,9 +22192,37 @@ function CohortGroupAssignmentsPage({
                         aria-hidden="true"
                       />
 
-                      <span>
+                      <span className="cohort-groups-roster-name">
                         {student.name}
                       </span>
+
+                      <input
+                        className="cohort-groups-participation-checkbox"
+                        type="checkbox"
+                        checked={
+                          isParticipating
+                        }
+                        aria-label={
+                          isParticipating
+                            ? `${student.name} is participating`
+                            : `${student.name} is not participating`
+                        }
+                        title={
+                          isParticipating
+                            ? 'Participating in this group activity'
+                            : 'Not participating in this group activity'
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          updateStudentParticipation(
+                            student.id,
+                            event
+                              .currentTarget
+                              .checked,
+                          )
+                        }}
+                      />
                     </li>
                   )
                 },
@@ -21926,8 +22244,8 @@ function CohortGroupAssignmentsPage({
 
                   <span>
                     {assignedStudentIds.size} of{' '}
-                    {activeStudents.length}{' '}
-                    active students assigned
+                    {participatingStudents.length}{' '}
+                    participating students assigned
                   </span>
                 </div>
 
@@ -21963,10 +22281,81 @@ function CohortGroupAssignmentsPage({
                           groupStudents.length >=
                           group.targetSize
 
+                        const canAcceptDraggedMember =
+                          draggedGroupMember !==
+                          null &&
+                          draggedGroupMember
+                            .sourceGroupId !==
+                          group.id &&
+                          groupStudents.length <
+                          group.targetSize
+
+                        const isDropTarget =
+                          canAcceptDraggedMember &&
+                          dropTargetGroupId ===
+                          group.id
+
                         return (
                           <section
                             key={group.id}
-                            className="cohort-group-card"
+                            className={
+                              isDropTarget
+                                ? 'cohort-group-card cohort-group-card-drop-target'
+                                : 'cohort-group-card'
+                            }
+                            onDragOver={(
+                              event,
+                            ) => {
+                              if (
+                                !canAcceptDraggedMember
+                              ) {
+                                return
+                              }
+
+                              event.preventDefault()
+
+                              event.dataTransfer
+                                .dropEffect =
+                                'move'
+
+                              setDropTargetGroupId(
+                                group.id,
+                              )
+                            }}
+                            onDragLeave={() => {
+                              setDropTargetGroupId(
+                                (
+                                  currentGroupId,
+                                ) =>
+                                  currentGroupId ===
+                                    group.id
+                                    ? null
+                                    : currentGroupId,
+                              )
+                            }}
+                            onDrop={(
+                              event,
+                            ) => {
+                              event.preventDefault()
+
+                              if (
+                                !canAcceptDraggedMember ||
+                                draggedGroupMember ===
+                                null
+                              ) {
+                                return
+                              }
+
+                              moveStudentBetweenGroups(
+                                draggedGroupMember
+                                  .sourceGroupId,
+                                group.id,
+                                draggedGroupMember
+                                  .studentId,
+                              )
+
+                              finishDraggingGroupMember()
+                            }}
                           >
                             <header className="cohort-group-card-heading">
                               <h3>
@@ -21986,7 +22375,7 @@ function CohortGroupAssignmentsPage({
                                       .length
                                   }
                                   max={
-                                    activeStudents
+                                    participatingStudents
                                       .length
                                   }
                                   step={1}
@@ -22042,12 +22431,70 @@ function CohortGroupAssignmentsPage({
                                           `${group.id}-slot-${slotIndex}`
                                         }
                                         className={
+                                          `cohort-group-slot` +
+                                          (
+                                            student ===
+                                              undefined
+                                              ? ' cohort-group-slot-empty'
+                                              : ''
+                                          ) +
+                                          (
+                                            student !==
+                                              undefined &&
+                                              draggedGroupMember
+                                                ?.studentId ===
+                                              student.id &&
+                                              draggedGroupMember
+                                                .sourceGroupId ===
+                                              group.id
+                                              ? ' cohort-group-slot-dragging'
+                                              : ''
+                                          )
+                                        }
+                                        draggable={
+                                          student !==
+                                          undefined
+                                        }
+                                        onDragStart={
                                           student ===
                                             undefined
-                                            ? 'cohort-group-slot cohort-group-slot-empty'
-                                            : 'cohort-group-slot'
+                                            ? undefined
+                                            : (
+                                              event,
+                                            ) => {
+                                              startDraggingGroupMember(
+                                                event,
+                                                group.id,
+                                                student.id,
+                                              )
+                                            }
+                                        }
+                                        onDragEnd={
+                                          student ===
+                                            undefined
+                                            ? undefined
+                                            : finishDraggingGroupMember
                                         }
                                       >
+                                        {student ===
+                                          undefined ? (
+                                          <span
+                                            className="cohort-group-drag-spacer"
+                                            aria-hidden="true"
+                                          />
+                                        ) : (
+                                          <span
+                                            className="cohort-group-drag-handle"
+                                            title={
+                                              `Drag ${student.name} ` +
+                                              'to another group'
+                                            }
+                                            aria-hidden="true"
+                                          >
+                                            ⠿
+                                          </span>
+                                        )}
+
                                         <span className="cohort-group-slot-number">
                                           {slotIndex +
                                             1}
