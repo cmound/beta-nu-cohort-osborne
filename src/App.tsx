@@ -403,6 +403,14 @@ interface FacilitatorAgendaRecord {
   readonly FacilitatorAgendaItemRecord[]
 }
 
+interface FacilitatorAgendaNameMenuState {
+  readonly agendaItemId: string
+  readonly left: number
+  readonly top: number
+  readonly width: number
+  readonly highlightedIndex: number
+}
+
 interface CohortPurposeResearchRecord {
   readonly id: string
   readonly developmentNote: string
@@ -8795,6 +8803,13 @@ function FacilitatorPlannerPage({
     setIsManagingAgendaNames,
   ] = useState(false)
 
+  const [
+    agendaNameMenu,
+    setAgendaNameMenu,
+  ] = useState<
+    FacilitatorAgendaNameMenuState | null
+  >(null)
+
   const [selectedMeetingId, setSelectedMeetingId] =
     useState(initialMeetingId)
 
@@ -8869,6 +8884,11 @@ function FacilitatorPlannerPage({
         selectedMeetingId,
     )
 
+  const isSelectedMeetingInPast =
+    selectedMeeting !== undefined &&
+    selectedMeeting.date <
+    getPacificDateKey(new Date())
+
   const housekeepingNotes =
     selectedMeeting === undefined
       ? ''
@@ -8896,6 +8916,35 @@ function FacilitatorPlannerPage({
       contacts,
       customAgendaNames,
     )
+
+  const activeAgendaNameItem =
+    agendaNameMenu === null
+      ? undefined
+      : agendaItems.find(
+        (agendaItem) =>
+          agendaItem.id ===
+          agendaNameMenu.agendaItemId,
+      )
+
+  const agendaNameFilter =
+    activeAgendaNameItem?.name
+      .trim()
+      .toLocaleLowerCase() ?? ''
+
+  const visibleAgendaNameOptions =
+    agendaNameFilter.length === 0
+      ? facilitatorAgendaNameOptions
+      : facilitatorAgendaNameOptions.filter(
+        (nameOption) =>
+          nameOption
+            .toLocaleLowerCase()
+            .includes(
+              agendaNameFilter,
+            ),
+      )
+
+  const isAgendaNameMenuOpen =
+    agendaNameMenu !== null
 
   const plannedMinutes =
     agendaItems.reduce(
@@ -8959,6 +9008,55 @@ function FacilitatorPlannerPage({
               firstRecord.meeting.date,
             ),
       )
+
+  useEffect(() => {
+    if (!isAgendaNameMenuOpen) {
+      return undefined
+    }
+
+    function closeAgendaNameMenu(): void {
+      setAgendaNameMenu(null)
+    }
+
+    function closeAgendaNameMenuOnScroll(
+      event: Event,
+    ): void {
+      if (
+        event.target instanceof Element &&
+        event.target.closest(
+          '.facilitator-planner-name-suggestions',
+        ) !== null
+      ) {
+        return
+      }
+
+      closeAgendaNameMenu()
+    }
+
+    window.addEventListener(
+      'resize',
+      closeAgendaNameMenu,
+    )
+
+    window.addEventListener(
+      'scroll',
+      closeAgendaNameMenuOnScroll,
+      true,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'resize',
+        closeAgendaNameMenu,
+      )
+
+      window.removeEventListener(
+        'scroll',
+        closeAgendaNameMenuOnScroll,
+        true,
+      )
+    }
+  }, [isAgendaNameMenuOpen])
 
   useEffect(() => {
     const previewElement =
@@ -9255,6 +9353,71 @@ function FacilitatorPlannerPage({
     setActionMessage('')
   }
 
+  function openAgendaNameMenu(
+    agendaItemId: string,
+    inputElement: HTMLInputElement,
+  ): void {
+    const inputBounds =
+      inputElement.getBoundingClientRect()
+
+    const menuWidth =
+      Math.min(
+        Math.max(
+          inputBounds.width,
+          300,
+        ),
+        Math.max(
+          300,
+          window.innerWidth - 16,
+        ),
+      )
+
+    const estimatedMenuHeight =
+      Math.min(
+        260,
+        facilitatorAgendaNameOptions.length *
+        40 +
+        12,
+      )
+
+    const hasRoomBelow =
+      window.innerHeight -
+      inputBounds.bottom >=
+      estimatedMenuHeight + 8
+
+    const menuTop =
+      hasRoomBelow
+        ? inputBounds.bottom + 4
+        : Math.max(
+          8,
+          inputBounds.top -
+          estimatedMenuHeight -
+          4,
+        )
+
+    const menuLeft =
+      Math.min(
+        Math.max(
+          8,
+          inputBounds.left,
+        ),
+        Math.max(
+          8,
+          window.innerWidth -
+          menuWidth -
+          8,
+        ),
+      )
+
+    setAgendaNameMenu({
+      agendaItemId,
+      left: menuLeft,
+      top: menuTop,
+      width: menuWidth,
+      highlightedIndex: -1,
+    })
+  }
+
   function updateAgendaItemText(
     agendaItemId: string,
     field:
@@ -9405,6 +9568,66 @@ function FacilitatorPlannerPage({
         'Unable to remember this agenda name.',
       )
     }
+  }
+
+  function selectAgendaNameOption(
+    agendaItemId: string,
+    nameOption: string,
+  ): void {
+    commitAgendaItemName(
+      agendaItemId,
+      nameOption,
+    )
+
+    setAgendaNameMenu(null)
+  }
+
+  function removeAgendaNameFromMenu(
+    nameToDelete: string,
+  ): void {
+    const activeAgendaItemId =
+      agendaNameMenu?.agendaItemId
+
+    deleteRememberedAgendaName(
+      nameToDelete,
+    )
+
+    if (
+      activeAgendaItemId !== undefined
+    ) {
+      const activeAgendaItem =
+        agendaItems.find(
+          (agendaItem) =>
+            agendaItem.id ===
+            activeAgendaItemId,
+        )
+
+      if (
+        activeAgendaItem !== undefined &&
+        activeAgendaItem.name
+          .trim()
+          .toLocaleLowerCase() ===
+        nameToDelete
+          .trim()
+          .toLocaleLowerCase()
+      ) {
+        updateAgendaItemText(
+          activeAgendaItemId,
+          'name',
+          '',
+        )
+      }
+    }
+
+    setAgendaNameMenu(
+      (currentMenu) =>
+        currentMenu === null
+          ? null
+          : {
+            ...currentMenu,
+            highlightedIndex: -1,
+          },
+    )
   }
 
   function updateAgendaItemDuration(
@@ -9781,6 +10004,117 @@ function FacilitatorPlannerPage({
     moveToField(
       currentIndex + 1,
       'agendaItem',
+    )
+  }
+
+  function handleAgendaNameKeyDown(
+    agendaItemId: string,
+    event:
+      ReactKeyboardEvent<HTMLInputElement>,
+  ): void {
+    const isCurrentMenu =
+      agendaNameMenu?.agendaItemId ===
+      agendaItemId
+
+    if (!isCurrentMenu) {
+      handleAgendaTableKeyDown(
+        agendaItemId,
+        'name',
+        event,
+      )
+
+      return
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      setAgendaNameMenu(null)
+      return
+    }
+
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'ArrowUp'
+    ) {
+      event.preventDefault()
+
+      if (
+        visibleAgendaNameOptions.length ===
+        0
+      ) {
+        return
+      }
+
+      const isMovingDown =
+        event.key === 'ArrowDown'
+
+      setAgendaNameMenu(
+        (currentMenu) => {
+          if (
+            currentMenu === null ||
+            currentMenu.agendaItemId !==
+            agendaItemId
+          ) {
+            return currentMenu
+          }
+
+          const optionCount =
+            visibleAgendaNameOptions.length
+
+          const nextIndex =
+            currentMenu.highlightedIndex ===
+              -1
+              ? isMovingDown
+                ? 0
+                : optionCount - 1
+              : (
+                currentMenu.highlightedIndex +
+                (isMovingDown ? 1 : -1) +
+                optionCount
+              ) % optionCount
+
+          return {
+            ...currentMenu,
+            highlightedIndex:
+              nextIndex,
+          }
+        },
+      )
+
+      return
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault()
+
+      const highlightedName =
+        visibleAgendaNameOptions[
+        agendaNameMenu.highlightedIndex
+        ]
+
+      if (
+        highlightedName !== undefined
+      ) {
+        selectAgendaNameOption(
+          agendaItemId,
+          highlightedName,
+        )
+      } else {
+        commitAgendaItemName(
+          agendaItemId,
+          event.currentTarget.value,
+        )
+
+        setAgendaNameMenu(null)
+      }
+
+      return
+    }
+
+    handleAgendaTableKeyDown(
+      agendaItemId,
+      'name',
+      event,
     )
   }
 
@@ -10216,7 +10550,11 @@ function FacilitatorPlannerPage({
             <span>Meeting</span>
 
             <select
-              className="facilitator-planner-meeting-dropdown"
+              className={
+                isSelectedMeetingInPast
+                  ? 'facilitator-planner-meeting-dropdown facilitator-planner-meeting-dropdown-past'
+                  : 'facilitator-planner-meeting-dropdown'
+              }
               value={selectedMeetingId}
               onChange={(event) => {
                 const nextMeetingId =
@@ -11019,14 +11357,31 @@ function FacilitatorPlannerPage({
             <button
               type="button"
               className="facilitator-planner-manage-names-button"
+              aria-label="Manage remembered agenda names"
+              title={
+                `Manage Names (${customAgendaNames.length})`
+              }
               onClick={() =>
                 setIsManagingAgendaNames(true)
               }
             >
-              Manage Names
-              {' ('}
-              {customAgendaNames.length}
-              {')'}
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                />
+
+                <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.1A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4.2 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H2.4V9.6h.1A1.7 1.7 0 0 0 4.2 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.66 3.8l.06.06A1.7 1.7 0 0 0 8.6 4.2a1.7 1.7 0 0 0 1-.6A1.7 1.7 0 0 0 10 2.5v-.1h4v.1a1.7 1.7 0 0 0 1 1.7 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 8.6a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1.1.4h.1v4h-.1a1.7 1.7 0 0 0-1.7 1Z" />
+              </svg>
             </button>
           </div>
 
@@ -11199,40 +11554,70 @@ function FacilitatorPlannerPage({
                             id={
                               `facilitator-agenda-name-${agendaItem.id}`
                             }
-                            list="facilitator-agenda-name-options"
                             value={
                               agendaItem.name
                             }
                             aria-label="Agenda item name"
+                            aria-autocomplete="list"
+                            aria-haspopup="listbox"
+                            aria-expanded={
+                              agendaNameMenu?.agendaItemId ===
+                              agendaItem.id
+                            }
+                            aria-controls={
+                              agendaNameMenu?.agendaItemId ===
+                                agendaItem.id
+                                ? 'facilitator-agenda-name-suggestions'
+                                : undefined
+                            }
+                            aria-activedescendant={
+                              agendaNameMenu?.agendaItemId ===
+                                agendaItem.id &&
+                                agendaNameMenu.highlightedIndex >=
+                                0
+                                ? `facilitator-agenda-name-option-${agendaNameMenu.highlightedIndex}`
+                                : undefined
+                            }
                             autoComplete="off"
-                            onFocus={() =>
+                            onFocus={(event) => {
                               setSelectedAgendaItemId(
                                 agendaItem.id,
                               )
+
+                              openAgendaNameMenu(
+                                agendaItem.id,
+                                event.currentTarget,
+                              )
+                            }}
+                            onClick={(event) =>
+                              openAgendaNameMenu(
+                                agendaItem.id,
+                                event.currentTarget,
+                              )
                             }
-                            onChange={(
-                              event,
-                            ) =>
+                            onChange={(event) => {
                               updateAgendaItemText(
                                 agendaItem.id,
                                 'name',
                                 event.target.value,
                               )
-                            }
-                            onBlur={(
-                              event,
-                            ) =>
+
+                              openAgendaNameMenu(
+                                agendaItem.id,
+                                event.currentTarget,
+                              )
+                            }}
+                            onBlur={(event) => {
                               commitAgendaItemName(
                                 agendaItem.id,
                                 event.target.value,
                               )
-                            }
-                            onKeyDown={(
-                              event,
-                            ) =>
-                              handleAgendaTableKeyDown(
+
+                              setAgendaNameMenu(null)
+                            }}
+                            onKeyDown={(event) =>
+                              handleAgendaNameKeyDown(
                                 agendaItem.id,
-                                'name',
                                 event,
                               )
                             }
@@ -11304,16 +11689,6 @@ function FacilitatorPlannerPage({
               </tbody>
             </table>
 
-            <datalist id="facilitator-agenda-name-options">
-              {facilitatorAgendaNameOptions.map(
-                (nameOption) => (
-                  <option
-                    key={nameOption}
-                    value={nameOption}
-                  />
-                ),
-              )}
-            </datalist>
           </div>
 
           <div className="facilitator-planner-primary-actions">
@@ -11546,6 +11921,122 @@ function FacilitatorPlannerPage({
           </table>
         </div>
       </section>
+
+      {agendaNameMenu !== null ? (
+        <div
+          id="facilitator-agenda-name-suggestions"
+          className="facilitator-planner-name-suggestions"
+          style={{
+            left: agendaNameMenu.left,
+            top: agendaNameMenu.top,
+            width: agendaNameMenu.width,
+          }}
+          role="listbox"
+          aria-label="Agenda item name suggestions"
+        >
+          {visibleAgendaNameOptions.length ===
+            0 ? (
+            <div className="facilitator-planner-name-suggestions-empty">
+              No matching names
+            </div>
+          ) : (
+            visibleAgendaNameOptions.map(
+              (
+                nameOption,
+                nameOptionIndex,
+              ) => {
+                const isCustomName =
+                  customAgendaNames.some(
+                    (customName) =>
+                      customName
+                        .toLocaleLowerCase() ===
+                      nameOption
+                        .toLocaleLowerCase(),
+                  )
+
+                const isHighlighted =
+                  agendaNameMenu
+                    .highlightedIndex ===
+                  nameOptionIndex
+
+                return (
+                  <div
+                    key={nameOption}
+                    className={
+                      isHighlighted
+                        ? 'facilitator-planner-name-suggestion-row facilitator-planner-name-suggestion-row-highlighted'
+                        : 'facilitator-planner-name-suggestion-row'
+                    }
+                    onMouseEnter={() =>
+                      setAgendaNameMenu(
+                        (currentMenu) =>
+                          currentMenu === null
+                            ? null
+                            : {
+                              ...currentMenu,
+                              highlightedIndex:
+                                nameOptionIndex,
+                            },
+                      )
+                    }
+                  >
+                    <button
+                      id={
+                        `facilitator-agenda-name-option-${nameOptionIndex}`
+                      }
+                      type="button"
+                      className="facilitator-planner-name-suggestion-value"
+                      role="option"
+                      aria-selected={
+                        isHighlighted
+                      }
+                      tabIndex={-1}
+                      onMouseDown={(
+                        event,
+                      ) =>
+                        event.preventDefault()
+                      }
+                      onClick={() =>
+                        selectAgendaNameOption(
+                          agendaNameMenu
+                            .agendaItemId,
+                          nameOption,
+                        )
+                      }
+                    >
+                      {nameOption}
+                    </button>
+
+                    {isCustomName ? (
+                      <button
+                        type="button"
+                        className="facilitator-planner-name-suggestion-remove"
+                        aria-label={
+                          `Remove ${nameOption} from remembered names`
+                        }
+                        title="Remove remembered name"
+                        tabIndex={-1}
+                        onMouseDown={(
+                          event,
+                        ) =>
+                          event.preventDefault()
+                        }
+                        onClick={() =>
+                          removeAgendaNameFromMenu(
+                            nameOption,
+                          )
+                        }
+                      >
+                        X
+                      </button>
+                    ) : null}
+                  </div>
+                )
+              },
+            )
+          )}
+        </div>
+      ) : null}
 
       {isManagingAgendaNames ? (
         <div className="facilitator-planner-name-manager-overlay">

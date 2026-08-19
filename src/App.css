@@ -2155,6 +2155,27 @@
       rgba(0, 0, 0, 0.3);
 }
 
+.facilitator-planner-meeting-dropdown-past {
+  border-color: #527a99;
+  color: #000000;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23061321' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"),
+    linear-gradient(
+      180deg,
+      #e5f0f8 0%,
+      #bdd7ee 55%,
+      #a9c9e1 100%
+    );
+  box-shadow:
+    inset 1px 1px 1px
+      rgba(255, 255, 255, 0.85),
+    inset -2px -3px 3px
+      rgba(47, 82, 111, 0.18),
+    0 3px 7px
+      rgba(0, 0, 0, 0.3);
+  font-weight: 900;
+}
+
 .facilitator-planner-status-select {
   border: 1px solid #94a3b8;
   background-image:
@@ -11701,15 +11722,110 @@
 
 .facilitator-planner-table-toolbar
   .facilitator-planner-manage-names-button {
+  width: 36px;
+  min-width: 36px;
+  height: 34px;
+  min-height: 34px;
   margin-left: auto;
+  padding: 0;
   border-color: #527a99;
   color: #061321;
   background:
     linear-gradient(
       180deg,
       #dceaf5 0%,
+      #bdd7ee 52%,
       #aac8de 100%
     );
+}
+
+.facilitator-planner-manage-names-button
+  svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  transition:
+    transform 160ms ease;
+}
+
+.facilitator-planner-manage-names-button:hover
+  svg {
+  transform: rotate(24deg);
+}
+
+.facilitator-planner-name-suggestions {
+  position: fixed;
+  z-index: 1200;
+  max-height: 260px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #202020;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.facilitator-planner-name-suggestion-row {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 5px;
+}
+
+.facilitator-planner-name-suggestion-row:hover,
+.facilitator-planner-name-suggestion-row-highlighted {
+  background: #363636;
+}
+
+.facilitator-planner-name-suggestion-value {
+  min-width: 0;
+  min-height: 36px;
+  flex: 1;
+  padding: 8px 10px;
+  border: 0;
+  color: #ffffff;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.facilitator-planner-name-suggestion-remove {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #ffd200;
+  border-radius: 5px;
+  color: #ffd200;
+  background: #8b1e1e;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.facilitator-planner-name-suggestion-remove:hover {
+  color: #061321;
+  background: #ffd200;
+}
+
+.facilitator-planner-name-suggestions-empty {
+  padding: 12px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .facilitator-planner-name-manager-overlay {
