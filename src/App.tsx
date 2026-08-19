@@ -7756,7 +7756,7 @@ function createFacilitatorAgendaTable(
                         `${getFacilitatorDurationLabel(
                           item.durationMinutes,
                         )})`,
-                      bold: true,
+                      bold: false,
                       font:
                         'Playfair Display',
                       size: 24,
