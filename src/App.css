@@ -2044,6 +2044,66 @@
   width: 220px;
 }
 
+.facilitator-planner-start-button {
+  min-width: 192px;
+  height: 44px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 15px;
+  border: 1px solid #c89214;
+  border-radius: 8px;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 58%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    inset 0 -3px 3px
+      rgba(104, 67, 0, 0.24),
+    0 3px 7px
+      rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.facilitator-planner-start-button svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+
+.facilitator-planner-start-button:hover:not(:disabled) {
+  border-color: #ffe477;
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.facilitator-planner-start-button-active,
+.facilitator-planner-start-button:disabled {
+  color: #ffffff;
+  border-color: #32c5ff;
+  background:
+    linear-gradient(
+      180deg,
+      #1268a5 0%,
+      #084779 55%,
+      #052f57 100%
+    );
+  cursor: default;
+  opacity: 1;
+}
+
 .facilitator-planner-meeting-select label > span {
   color: #f8fafc;
   font-size: 13px;
@@ -2195,10 +2255,11 @@
 
 .facilitator-planner-role-card {
   min-width: 0;
-  min-height: 108px;
+  min-height: 112px;
   box-sizing: border-box;
-  padding: 12px 13px 13px;
-  border: 1px solid #0b1f3b;
+  overflow: hidden;
+  padding: 0 13px 13px;
+  border: 1px solid #31577a;
   border-radius: 8px;
   background:
     linear-gradient(
@@ -2217,10 +2278,24 @@
 }
 
 .facilitator-planner-role-heading {
-  min-height: 42px;
+  min-height: 52px;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
+  margin: 0 -13px;
+  padding: 5px 12px;
+  background:
+    linear-gradient(
+      180deg,
+      #123c6a 0%,
+      #0b2d54 55%,
+      #061d3b 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.12),
+    inset 0 -2px 2px
+      rgba(0, 0, 0, 0.25);
 }
 
 .facilitator-planner-role-icon {
@@ -2272,26 +2347,27 @@
 }
 
 .facilitator-planner-role-title {
-  color: #0b1f3b;
-  font-size: 12px;
+  color: #ffd200;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.15;
+  letter-spacing: 0.15px;
   text-transform: uppercase;
 }
 
 .facilitator-planner-role-divider {
-  width: 66%;
+  width: 100%;
   display: block;
-  margin: 8px auto 8px;
-  border-top: 2px dotted #0066cc;
+  margin: 8px 0;
+  border-top: 2px solid #c89214;
 }
 
 .facilitator-planner-role-name {
   display: block;
   box-sizing: border-box;
   margin: 0;
-  padding-left: 51px;
-  color: #000000;
+  padding-left: 4px;
+  color: #061321;
   font-size: 16px;
   font-weight: 900;
   line-height: 1.2;
@@ -2311,6 +2387,69 @@
   min-width: 0;
   overflow: hidden;
   padding: 10px;
+}
+
+.facilitator-planner-editor-panel-active {
+  border-color: #f2b632;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.08),
+    0 0 0 1px
+      rgba(242, 182, 50, 0.22),
+    0 7px 18px
+      rgba(0, 0, 0, 0.28);
+}
+
+.facilitator-planner-building-status {
+  min-height: 42px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+  padding: 7px 11px;
+  border: 1px solid #2b9ed1;
+  border-radius: 7px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #0d416b 0%,
+      #072c4f 100%
+    );
+}
+
+.facilitator-planner-building-status-dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  border: 2px solid #d8f5ff;
+  border-radius: 50%;
+  background: #29c5ff;
+  box-shadow:
+    0 0 7px
+      rgba(41, 197, 255, 0.72);
+}
+
+.facilitator-planner-building-status div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.facilitator-planner-building-status strong {
+  color: #ffd200;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.facilitator-planner-building-status div span {
+  color: #dbeafe;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .facilitator-planner-time-cards {
@@ -2362,9 +2501,10 @@
   > div
   > span {
   color: #f8fafc;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 900;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .facilitator-planner-time-cards strong {
@@ -2495,6 +2635,31 @@
   align-items: center;
   gap: 6px;
   margin: 0 4px;
+}
+
+.facilitator-planner-planned-finish {
+  width: max-content;
+  min-width: 142px;
+  box-sizing: border-box;
+  margin: -25px auto 12px;
+  padding: 5px 8px;
+  border: 1px solid #4f7ba4;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #12365d 0%,
+      #071e3b 100%
+    );
+  box-shadow:
+    0 2px 5px
+      rgba(0, 0, 0, 0.3);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .facilitator-planner-time-endpoint {

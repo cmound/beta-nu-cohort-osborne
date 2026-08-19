@@ -8821,6 +8821,16 @@ function FacilitatorPlannerPage({
     useState('')
 
   const [
+    isBuildingAgenda,
+    setIsBuildingAgenda,
+  ] = useState(false)
+
+  const [
+    lastProtectedAt,
+    setLastProtectedAt,
+  ] = useState('')
+
+  const [
     draggedAgendaItemId,
     setDraggedAgendaItemId,
   ] = useState<string | null>(null)
@@ -9045,6 +9055,18 @@ function FacilitatorPlannerPage({
           recoveryAgenda,
         ),
       )
+
+      if (isBuildingAgenda) {
+        setLastProtectedAt(
+          new Intl.DateTimeFormat(
+            'en-US',
+            {
+              hour: 'numeric',
+              minute: '2-digit',
+            },
+          ).format(new Date()),
+        )
+      }
     } catch {
       setActionMessage(
         'Automatic draft recovery is unavailable in this browser.',
@@ -9054,8 +9076,34 @@ function FacilitatorPlannerPage({
     agendaItems,
     agendaStatus,
     housekeepingNotes,
+    isBuildingAgenda,
     selectedMeeting,
   ])
+
+  useEffect(() => {
+    if (!isBuildingAgenda) {
+      return undefined
+    }
+
+    function protectActiveAgenda(
+      event: BeforeUnloadEvent,
+    ): void {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener(
+      'beforeunload',
+      protectActiveAgenda,
+    )
+
+    return () => {
+      window.removeEventListener(
+        'beforeunload',
+        protectActiveAgenda,
+      )
+    }
+  }, [isBuildingAgenda])
 
   function loadMeetingAgenda(
     meetingId: string,
@@ -9859,6 +9907,9 @@ function FacilitatorPlannerPage({
         nextSavedAgendas,
       )
 
+      setIsBuildingAgenda(false)
+      setLastProtectedAt('')
+
       setActionMessage(
         `${agendaStatus} agenda saved.`,
       )
@@ -9992,11 +10043,26 @@ function FacilitatorPlannerPage({
             <select
               className="facilitator-planner-meeting-dropdown"
               value={selectedMeetingId}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextMeetingId =
+                  event.target.value
+
+                if (
+                  isBuildingAgenda &&
+                  !window.confirm(
+                    'Your latest changes are automatically protected. Open another meeting and leave this active agenda?',
+                  )
+                ) {
+                  return
+                }
+
+                setIsBuildingAgenda(false)
+                setLastProtectedAt('')
+
                 loadMeetingAgenda(
-                  event.target.value,
+                  nextMeetingId,
                 )
-              }
+              }}
             >
               {meetings.map(
                 (meeting) => (
@@ -10050,6 +10116,40 @@ function FacilitatorPlannerPage({
               </option>
             </select>
           </label>
+
+          <button
+            type="button"
+            className={
+              isBuildingAgenda
+                ? 'facilitator-planner-start-button facilitator-planner-start-button-active'
+                : 'facilitator-planner-start-button'
+            }
+            disabled={isBuildingAgenda}
+            onClick={() => {
+              setIsBuildingAgenda(true)
+              setActionMessage(
+                'Agenda-building session started.',
+              )
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+              <path d="m13 7 4 4" />
+              <path d="M4 16l4 4" />
+            </svg>
+
+            {isBuildingAgenda
+              ? 'Building Agenda'
+              : 'Start Building Agenda'}
+          </button>
         </div>
 
         <div className="facilitator-planner-meeting-summary">
@@ -10296,7 +10396,35 @@ function FacilitatorPlannerPage({
       </section>
 
       <div className="facilitator-planner-workspace">
-        <section className="facilitator-planner-editor-panel">
+        <section
+          className={
+            isBuildingAgenda
+              ? 'facilitator-planner-editor-panel facilitator-planner-editor-panel-active'
+              : 'facilitator-planner-editor-panel'
+          }
+        >
+          {isBuildingAgenda ? (
+            <div className="facilitator-planner-building-status">
+              <span
+                className="facilitator-planner-building-status-dot"
+                aria-hidden="true"
+              />
+
+              <div>
+                <strong>
+                  Editing in progress
+                </strong>
+
+                <span>
+                  Changes automatically protected
+                  {lastProtectedAt.length > 0
+                    ? ` · Last protected: ${lastProtectedAt}`
+                    : ''}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           <div className="facilitator-planner-time-cards">
             <div>
               <span
@@ -10469,6 +10597,13 @@ function FacilitatorPlannerPage({
               </div>
             </div>
 
+            <div className="facilitator-planner-planned-finish">
+              Planned finish:{' '}
+              {formatFacilitatorClockTime(
+                plannedFinishMinutes,
+              )}
+            </div>
+
             <div className="facilitator-planner-time-track-bar-row">
               <span
                 className="facilitator-planner-time-endpoint"
@@ -10497,13 +10632,6 @@ function FacilitatorPlannerPage({
                     `${plannedPercent}%`,
                 }}
               >
-                <strong>
-                  Planned finish:{' '}
-                  {formatFacilitatorClockTime(
-                    plannedFinishMinutes,
-                  )}
-                </strong>
-
                 <span
                   className="facilitator-planner-time-marker-line"
                   aria-hidden="true"
@@ -10918,7 +11046,9 @@ function FacilitatorPlannerPage({
                 />
               </svg>
 
-              Save Agenda
+              {agendaStatus === 'Final'
+                ? 'Save Final Agenda'
+                : 'Save as Draft'}
             </button>
 
             <button
