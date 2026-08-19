@@ -427,6 +427,11 @@ interface CohortMeetingFormState {
   readonly meetingNumber: string
 }
 
+interface DashboardPageProps {
+  readonly meetings:
+  readonly CohortMeetingRecord[]
+}
+
 interface CohortDatesRolesPageProps {
   readonly contacts: readonly CohortContactRecord[]
   readonly meetings: readonly CohortMeetingRecord[]
@@ -5473,7 +5478,9 @@ function PageShell({
   )
 }
 
-function DashboardPage() {
+function DashboardPage({
+  meetings,
+}: DashboardPageProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
   useEffect(() => {
@@ -5503,6 +5510,13 @@ function DashboardPage() {
 
   const currentPacificDate =
     getPacificDateKey(currentDate)
+
+  const dashboardUpcomingMeeting =
+    meetings.find(
+      (meeting) =>
+        meeting.date >=
+        currentPacificDate,
+    )
 
   const dashboardUpcomingMilestones =
     [...dashboardAcademicPlan]
@@ -5945,74 +5959,389 @@ function DashboardPage() {
 
       <div className="dashboard-overview-row dashboard-overview-middle-row">
         <article className="dashboard-info-card dashboard-meeting-card">
-          <div className="dashboard-card-heading-row">
-            <p className="dashboard-card-label">
-              Upcoming Cohort Meeting
-            </p>
+          <div className="dashboard-meeting-header">
+            <div className="dashboard-meeting-title-group">
+              <span
+                className="dashboard-meeting-header-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    cx="9"
+                    cy="8"
+                    r="3"
+                    fill="currentColor"
+                  />
 
-            <span className="meeting-status">
-              Next Meeting
-            </span>
-          </div>
+                  <circle
+                    cx="16.5"
+                    cy="9"
+                    r="2.5"
+                    fill="currentColor"
+                    opacity="0.82"
+                  />
 
-          <div className="meeting-details">
-            <h2>
-              {upcomingMeetingDashboard.date}
-            </h2>
+                  <path
+                    d="M3.5 18C3.5 14.8 5.8 12.5 9 12.5C12.2 12.5 14.5 14.8 14.5 18"
+                    fill="currentColor"
+                  />
 
-            <div className="meeting-time-grid">
-              <div>
-                <span>Pacific</span>
-                <strong>
-                  {
-                    upcomingMeetingDashboard.pacificTime
-                  }
-                </strong>
-              </div>
+                  <path
+                    d="M14 13.5C17.7 13.5 20 15.3 20 18"
+                    fill="currentColor"
+                    opacity="0.82"
+                  />
+                </svg>
+              </span>
 
-              <div>
-                <span>Eastern</span>
-                <strong>
-                  {
-                    upcomingMeetingDashboard.easternTime
-                  }
-                </strong>
-              </div>
+              <p className="dashboard-card-label">
+                Upcoming Cohort Meeting
+              </p>
             </div>
 
-            <a
-              className="meeting-zoom-link"
-              href={
-                upcomingMeetingDashboard.zoomUrl
-              }
-              target="_blank"
-              rel="noreferrer"
+            <NavLink
+              className="dashboard-view-all-meetings"
+              to="/cohort-dates-roles"
             >
-              Zoom Meeting
-            </a>
+              View All Meetings
+            </NavLink>
           </div>
 
-          <div className="meeting-role-table-wrap">
-            <table className="meeting-role-table">
-              <thead>
-                <tr>
-                  <th>Role</th>
-                  <th>Assigned Member</th>
-                </tr>
-              </thead>
+          {dashboardUpcomingMeeting !== undefined ? (
+            <>
+              <div className="dashboard-meeting-date-row">
+                <span
+                  className="dashboard-meeting-date-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <rect
+                      x="4"
+                      y="5.5"
+                      width="16"
+                      height="14"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
 
-              <tbody>
-                {upcomingMeetingDashboard.roles.map(
-                  (meetingRole) => (
-                    <tr key={meetingRole.role}>
-                      <td>{meetingRole.role}</td>
-                      <td>{meetingRole.member}</td>
-                    </tr>
-                  ),
-                )}
-              </tbody>
-            </table>
-          </div>
+                    <path
+                      d="M8 3.5V7.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M16 3.5V7.5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M4 9H20"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+
+                    <path
+                      d="M8 12H9M12 12H13M16 12H17M8 16H9M12 16H13"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+
+                <strong>
+                  {formatFacilitatorMeetingDate(
+                    dashboardUpcomingMeeting.date,
+                  )}
+                </strong>
+              </div>
+
+              <div className="dashboard-meeting-time-grid">
+                <div className="dashboard-meeting-time-box">
+                  <span>Pacific</span>
+
+                  <strong>
+                    {
+                      upcomingMeetingDashboard.pacificTime
+                    }
+                  </strong>
+                </div>
+
+                <div className="dashboard-meeting-time-box">
+                  <span>Eastern</span>
+
+                  <strong>
+                    {
+                      upcomingMeetingDashboard.easternTime
+                    }
+                  </strong>
+                </div>
+              </div>
+
+              <div className="dashboard-meeting-roles-section">
+                <div className="dashboard-meeting-roles-heading">
+                  Assigned Roles
+                </div>
+
+                <div className="dashboard-meeting-role-grid">
+                  <div className="dashboard-meeting-role-card">
+                    <div className="dashboard-meeting-role-header">
+                      <span
+                        className="dashboard-meeting-role-icon"
+                        aria-hidden="true"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            cx="12"
+                            cy="7.5"
+                            r="3.2"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          />
+
+                          <path
+                            d="M6.5 19C6.8 14.9 8.8 12.5 12 12.5C15.2 12.5 17.2 14.9 17.5 19"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+
+                      <strong>
+                        Facilitator
+                      </strong>
+                    </div>
+
+                    <span className="dashboard-meeting-role-divider" />
+
+                    <span className="dashboard-meeting-role-name">
+                      {dashboardUpcomingMeeting.facilitator ||
+                        'Unassigned'}
+                    </span>
+                  </div>
+
+                  <div className="dashboard-meeting-role-card">
+                    <div className="dashboard-meeting-role-header">
+                      <span
+                        className="dashboard-meeting-role-icon"
+                        aria-hidden="true"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            cx="9"
+                            cy="8"
+                            r="2.5"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                          />
+
+                          <circle
+                            cx="16"
+                            cy="9"
+                            r="2.2"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                          />
+
+                          <path
+                            d="M4.5 18C4.7 14.8 6.5 13 9 13C11.5 13 13.3 14.8 13.5 18"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                          />
+
+                          <path
+                            d="M14 13.5C17.2 13.5 19 15 19.5 17.5"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+
+                      <strong>
+                        Community Builder
+                      </strong>
+                    </div>
+
+                    <span className="dashboard-meeting-role-divider" />
+
+                    <span className="dashboard-meeting-role-name">
+                      {dashboardUpcomingMeeting.communityBuilder ||
+                        'Unassigned'}
+                    </span>
+                  </div>
+
+                  <div className="dashboard-meeting-role-card">
+                    <div className="dashboard-meeting-role-header">
+                      <span
+                        className="dashboard-meeting-role-icon"
+                        aria-hidden="true"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            cx="12"
+                            cy="13"
+                            r="6"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          />
+
+                          <path
+                            d="M12 10V13L14 15"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+
+                          <path
+                            d="M9 4H15"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+
+                          <path
+                            d="M12 4V7"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          />
+                        </svg>
+                      </span>
+
+                      <strong>
+                        Timekeeper
+                      </strong>
+                    </div>
+
+                    <span className="dashboard-meeting-role-divider" />
+
+                    <span className="dashboard-meeting-role-name">
+                      {dashboardUpcomingMeeting.timeKeeper ||
+                        'Unassigned'}
+                    </span>
+                  </div>
+
+                  <div className="dashboard-meeting-role-card">
+                    <div className="dashboard-meeting-role-header">
+                      <span
+                        className="dashboard-meeting-role-icon"
+                        aria-hidden="true"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            cx="10"
+                            cy="10"
+                            r="5"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          />
+
+                          <path
+                            d="M13.8 13.8L19 19"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+
+                          <circle
+                            cx="10"
+                            cy="10"
+                            r="1.5"
+                            fill="currentColor"
+                          />
+                        </svg>
+                      </span>
+
+                      <strong>
+                        Process Observer
+                      </strong>
+                    </div>
+
+                    <span className="dashboard-meeting-role-divider" />
+
+                    <span className="dashboard-meeting-role-name">
+                      {dashboardUpcomingMeeting.processObserver ||
+                        'Unassigned'}
+                    </span>
+                  </div>
+
+                  <div className="dashboard-meeting-role-card">
+                    <div className="dashboard-meeting-role-header">
+                      <span
+                        className="dashboard-meeting-role-icon"
+                        aria-hidden="true"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <path
+                            d="M6 18L7 13L16 4L20 8L11 17L6 18Z"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinejoin="round"
+                          />
+
+                          <path
+                            d="M14.5 5.5L18.5 9.5"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          />
+
+                          <path
+                            d="M5 20H19"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+
+                      <strong>
+                        Recorder
+                      </strong>
+                    </div>
+
+                    <span className="dashboard-meeting-role-divider" />
+
+                    <span className="dashboard-meeting-role-name">
+                      {dashboardUpcomingMeeting.recorder ||
+                        'Unassigned'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="dashboard-meeting-empty">
+              No upcoming cohort meeting is currently scheduled.
+            </div>
+          )}
         </article>
 
         <article className="dashboard-info-card dashboard-snapshot-card">
@@ -27920,7 +28249,14 @@ function App() {
       <div className="app-main">
         <main className="page-content">
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
+            <Route
+              path="/"
+              element={
+                <DashboardPage
+                  meetings={cohortMeetings}
+                />
+              }
+            />
 
             <Route
               path="/cohort-contact"
