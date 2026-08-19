@@ -20122,22 +20122,22 @@ const COHORT_COURSE_WAIVERS_STORAGE_KEY =
 
 const cohortCourseWaiverCourseCodes = [
   'EDDP 700',
-  'EDDP 740',
-  'EDDP 706',
-  'EDDP 742',
-  'EDDP 707',
-  'EDDP 743',
-  'EDDP 708',
-  'EDDP 741',
   'EDDP 705',
-  'EDDP 781',
-  'EDDP 720',
+  'EDDP 706',
+  'EDDP 707',
+  'EDDP 708',
   'EDDP 709',
-  'EDDP 783',
+  'EDDP 720',
   'EDDP 721',
   'EDDP 723',
-  'EDDP 782',
   'EDDP 724',
+  'EDDP 740',
+  'EDDP 741',
+  'EDDP 742',
+  'EDDP 743',
+  'EDDP 781',
+  'EDDP 782',
+  'EDDP 783',
   'EDDP 791',
   'EDDP 792',
 ] as const
@@ -20405,6 +20405,24 @@ function CohortCourseWaiversPage({
       )
   }
 
+  const visibleStudentsWithWaivers =
+    visibleStudents
+      .filter(
+        (student) =>
+          getWaivedCourseNumbers(
+            student.id,
+          ).length > 0,
+      )
+      .sort((firstStudent, secondStudent) =>
+        firstStudent.name.localeCompare(
+          secondStudent.name,
+          'en-US',
+          {
+            sensitivity: 'base',
+          },
+        ),
+      )
+
   return (
     <section className="page-shell">
       <header className="dashboard-page-heading cohort-contacts-page-heading">
@@ -20471,8 +20489,15 @@ function CohortCourseWaiversPage({
                       key={courseCode}
                       className="course-waiver-course-heading"
                       scope="col"
+                      aria-label={courseCode}
                     >
-                      {courseCode}
+                      <span>EDDP</span>
+                      <span>
+                        {courseCode.replace(
+                          'EDDP ',
+                          '',
+                        )}
+                      </span>
                     </th>
                   ),
                 )}
@@ -20645,18 +20670,20 @@ function CohortCourseWaiversPage({
               </thead>
 
               <tbody>
-                {visibleStudents.length === 0 ? (
+                {visibleStudentsWithWaivers
+                  .length === 0 ? (
                   <tr>
                     <td
                       className="course-waivers-empty"
                       colSpan={2}
                     >
-                      No cohort members match this
-                      search.
+                      {visibleStudents.length === 0
+                        ? 'No cohort members match this search.'
+                        : 'No waived courses have been recorded for the displayed cohort members.'}
                     </td>
                   </tr>
                 ) : (
-                  visibleStudents.map(
+                  visibleStudentsWithWaivers.map(
                     (student) => {
                       const waivedCourses =
                         getWaivedCourseNumbers(
@@ -20670,11 +20697,9 @@ function CohortCourseWaiversPage({
                           </th>
 
                           <td>
-                            {waivedCourses.length > 0
-                              ? waivedCourses.join(
-                                ', ',
-                              )
-                              : 'None'}
+                            {waivedCourses.join(
+                              ', ',
+                            )}
                           </td>
                         </tr>
                       )

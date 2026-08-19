@@ -6831,7 +6831,7 @@
 
 .course-waivers-table {
   width: 100%;
-  min-width: 2020px;
+  min-width: 1520px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -6908,18 +6908,38 @@ tr:nth-child(even)
 }
 
 .course-waiver-course-heading {
-  width: 94px;
-  min-width: 94px;
-  max-width: 94px;
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+  padding: 5px 3px;
   text-align: center;
+  white-space: normal;
+}
+
+.course-waiver-course-heading span {
+  display: block;
+  text-align: center;
+}
+
+.course-waiver-course-heading
+span:first-child {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.course-waiver-course-heading
+span:last-child {
+  margin-top: 3px;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .course-waiver-cell {
   position: relative;
   z-index: 1;
-  width: 94px;
-  min-width: 94px;
-  max-width: 94px;
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
   height: 42px;
   overflow: visible;
   padding: 0;
@@ -7091,7 +7111,7 @@ tr:nth-child(even)
 
 .course-waiver-summary-table thead
 th:last-child {
-  text-align: center;
+  text-align: left;
 }
 
 .course-waiver-summary-table tbody th {
@@ -7105,7 +7125,7 @@ th:last-child {
 .course-waiver-summary-table tbody td {
   color: #061321;
   font-weight: 750;
-  text-align: center;
+  text-align: left;
 }
 
 .course-waiver-summary-table tbody
@@ -7127,6 +7147,187 @@ th:last-child,
 .course-waiver-summary-table
 td:last-child {
   border-right: 0;
+}
+
+/* =========================================================
+   Compact Courses Waived Layout
+   ========================================================= */
+
+.course-waivers-panel {
+  grid-template-columns:
+    max-content
+    minmax(360px, 1fr);
+  grid-template-areas:
+    'waiver-toolbar waiver-toolbar'
+    'waiver-help waiver-help'
+    'waiver-matrix waiver-report';
+  align-items: start;
+  column-gap: 14px;
+  row-gap: 12px;
+}
+
+.course-waivers-toolbar {
+  grid-area: waiver-toolbar;
+}
+
+.course-waivers-entry-help {
+  grid-area: waiver-help;
+}
+
+.course-waivers-table-frame {
+  grid-area: waiver-matrix;
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.course-waiver-summary-panel {
+  grid-area: waiver-report;
+  width: 100%;
+  min-width: 0;
+  align-self: start;
+}
+
+/* Main waiver table width */
+
+.course-waivers-table {
+  width: 1105px;
+  min-width: 1105px;
+  max-width: 1105px;
+}
+
+/* Narrower frozen Name column */
+
+.course-waiver-name-cell {
+  width: 155px;
+  min-width: 155px;
+  max-width: 155px;
+}
+
+.course-waivers-table thead
+.course-waiver-name-cell {
+  padding-left: 8px;
+}
+
+.course-waivers-table tbody
+.course-waiver-name-cell {
+  height: 36px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+/* Narrower course columns */
+
+.course-waiver-course-heading {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  padding: 4px 2px;
+}
+
+.course-waiver-course-heading
+span:first-child {
+  font-size: 10px;
+}
+
+.course-waiver-course-heading
+span:last-child {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
+.course-waiver-cell {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  height: 36px;
+}
+
+/* Slightly shorter editable rows */
+
+.course-waiver-input {
+  height: 36px;
+  font-size: 15px;
+  line-height: 36px;
+}
+
+/* Compact report table */
+
+.course-waiver-summary-heading {
+  display: flex;
+  align-items: center;
+  height: 27px;
+  box-sizing: border-box;
+  padding: 3px 10px;
+}
+
+.course-waiver-summary-heading h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.course-waiver-summary-table {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.course-waiver-summary-table thead th {
+  height: 25px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.course-waivers-table tbody tr,
+.course-waiver-summary-table tbody tr {
+  height: 36px;
+}
+
+.course-waiver-summary-table tbody th,
+.course-waiver-summary-table tbody td {
+  height: 36px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.course-waiver-summary-table
+thead th:first-child,
+.course-waiver-summary-table
+tbody th {
+  width: 190px;
+  white-space: nowrap;
+}
+
+.course-waiver-summary-table
+thead th:last-child,
+.course-waiver-summary-table
+tbody td {
+  width: auto;
+  text-align: left;
+}
+
+/* Stack the report below the matrix on smaller screens */
+
+@media (max-width: 1450px) {
+  .course-waivers-panel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'waiver-toolbar'
+      'waiver-help'
+      'waiver-matrix'
+      'waiver-report';
+  }
+
+  .course-waiver-summary-panel {
+    width: min(430px, 100%);
+  }
 }
 
 /* =========================================================
