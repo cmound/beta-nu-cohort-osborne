@@ -12435,7 +12435,7 @@ tbody td {
 /* Leadership quote - high-gloss polished glass plaque */
 .dashboard-today-quote {
   position: relative;
-  min-height: 80px;
+  min-height: 100px;
   box-sizing: border-box;
   display: grid;
   grid-template-columns:
@@ -12583,7 +12583,7 @@ tbody td {
   position: relative;
   z-index: 2;
   min-width: 0;
-  height: 60px;
+  height: 78px;
   overflow: hidden;
 }
 
@@ -12630,15 +12630,15 @@ tbody td {
 
 /* Character-length sizing */
 .dashboard-today-quote-size-large {
-  font-size: 12.5px;
+  font-size: 13.5px;
 }
 
 .dashboard-today-quote-size-medium {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .dashboard-today-quote-size-small {
-  font-size: 9.5px;
+  font-size: 10.5px;
 }
 
 /* Slide transition */
