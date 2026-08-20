@@ -10606,8 +10606,17 @@ tbody td {
 .contact-cell-input,
 .contact-cell-select,
 .contact-status-select {
-  min-height: 42px;
-  padding: 6px 9px;
+  height: 30px;
+  min-height: 30px;
+  padding: 4px 9px;
+  line-height: 1.35;
+  text-align: left;
+  vertical-align: top;
+}
+
+.contact-cell-select,
+.contact-status-select {
+  text-align-last: left;
 }
 
 .contact-cell-textarea {
