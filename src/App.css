@@ -11513,11 +11513,12 @@ tbody td {
   box-sizing: border-box;
   display: grid;
   grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 1fr)
-    minmax(0, 1fr);
+    minmax(520px, 1.3fr)
+    minmax(300px, 0.62fr)
+    minmax(480px, 1.05fr);
+  gap: 10px;
   align-items: center;
-  padding: 0 18px;
+  padding: 0;
   border: 1px solid #31577a;
   border-bottom-color: #527a99;
   border-radius: 5px;
@@ -11549,6 +11550,7 @@ tbody td {
 
 .dashboard-top-bar-title {
   justify-self: start;
+  padding-left: 18px;
   color: #c69214;
 }
 
@@ -11560,6 +11562,7 @@ tbody td {
 
 .dashboard-top-bar-program {
   justify-self: end;
+  padding-right: 18px;
   color: #ffffff;
   text-align: right;
 }
@@ -11606,8 +11609,9 @@ tbody td {
   background:
     linear-gradient(
       180deg,
-      #ffffff 0%,
-      #f4f7fa 100%
+      #e2eaf2 0%,
+      #d7e2ec 55%,
+      #cbd9e5 100%
     );
   box-shadow:
     inset 0 1px 0
@@ -12318,6 +12322,11 @@ tbody td {
   line-height: 1.1;
 }
 
+.dashboard-today-heading-date {
+  min-width: 0;
+  white-space: nowrap;
+}
+
 /* Gold 3D calendar icon */
 .dashboard-today-icon {
   width: 40px;
@@ -12375,6 +12384,7 @@ tbody td {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .dashboard-today-time-box {
@@ -12425,7 +12435,7 @@ tbody td {
 /* Leadership quote - high-gloss polished glass plaque */
 .dashboard-today-quote {
   position: relative;
-  min-height: 58px;
+  min-height: 80px;
   box-sizing: border-box;
   display: grid;
   grid-template-columns:
@@ -12573,7 +12583,7 @@ tbody td {
   position: relative;
   z-index: 2;
   min-width: 0;
-  height: 44px;
+  height: 60px;
   overflow: hidden;
 }
 
@@ -14792,7 +14802,7 @@ tbody td {
 
 .dashboard-identity-value-name {
   min-width: 0;
-  color: #C69214;
+  color: #0B1F3B;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;

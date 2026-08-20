@@ -6232,16 +6232,12 @@ function DashboardPage({
               </svg>
             </span>
 
-            <p className="dashboard-card-label">
-              Today
+            <p className="dashboard-card-label dashboard-today-heading-date">
+              {pacificDateFormatter.format(
+                currentDate,
+              )}
             </p>
           </div>
-
-          <p className="dashboard-current-date">
-            {pacificDateFormatter.format(
-              currentDate,
-            )}
-          </p>
 
           <div className="dashboard-today-time-list">
             <div className="dashboard-today-time-box">
