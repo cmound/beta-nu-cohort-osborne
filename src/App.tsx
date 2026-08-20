@@ -27989,7 +27989,7 @@ function App() {
                     className="nav-chevron"
                     aria-hidden="true"
                   >
-                    {groupIsOpen ? '⌄' : '›'}
+                    {groupIsOpen ? '[-]' : '[+]'}
                   </span>
                 </button>
               )
@@ -29125,8 +29125,8 @@ function App() {
                       sidebarGroupsOpen[
                         item.groupId
                       ]
-                        ? '⌄'
-                        : '›'
+                        ? '[-]'
+                        : '[+]'
                     }
                   </span>
                 ) : null}
