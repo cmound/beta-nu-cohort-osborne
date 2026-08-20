@@ -5972,6 +5972,20 @@ function DashboardPage({
 
   return (
     <section className="page-shell dashboard-overview">
+      <header className="dashboard-top-bar">
+        <strong className="dashboard-top-bar-title">
+          Beta Nu Cohort Hub
+        </strong>
+
+        <strong className="dashboard-top-bar-mentor">
+          Dr. Cheryl-Marie Osborne
+        </strong>
+
+        <strong className="dashboard-top-bar-program">
+          Ed.D. Organizational Leadership
+        </strong>
+      </header>
+
       <div className="dashboard-overview-row dashboard-overview-top-row">
         <article className="dashboard-info-card dashboard-progress-card">
           <div className="dashboard-progress-heading">
