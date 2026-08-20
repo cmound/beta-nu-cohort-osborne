@@ -9646,7 +9646,10 @@ function normalizeFacilitatorAgendaNameInput(
     )
   }
 
-  return trimmedValue
+  return (
+    trimmedValue.charAt(0).toLocaleUpperCase() +
+    trimmedValue.slice(1)
+  )
 }
 
 function createBlankFacilitatorAgendaItem():
@@ -11442,9 +11445,6 @@ function FacilitatorPlannerPage({
             ),
       )
 
-  const isAgendaNameMenuOpen =
-    agendaNameMenu !== null
-
   const plannedMinutes =
     agendaItems.reduce(
       (total, agendaItem) =>
@@ -11507,55 +11507,6 @@ function FacilitatorPlannerPage({
               firstRecord.meeting.date,
             ),
       )
-
-  useEffect(() => {
-    if (!isAgendaNameMenuOpen) {
-      return undefined
-    }
-
-    function closeAgendaNameMenu(): void {
-      setAgendaNameMenu(null)
-    }
-
-    function closeAgendaNameMenuOnScroll(
-      event: Event,
-    ): void {
-      if (
-        event.target instanceof Element &&
-        event.target.closest(
-          '.facilitator-planner-name-suggestions',
-        ) !== null
-      ) {
-        return
-      }
-
-      closeAgendaNameMenu()
-    }
-
-    window.addEventListener(
-      'resize',
-      closeAgendaNameMenu,
-    )
-
-    window.addEventListener(
-      'scroll',
-      closeAgendaNameMenuOnScroll,
-      true,
-    )
-
-    return () => {
-      window.removeEventListener(
-        'resize',
-        closeAgendaNameMenu,
-      )
-
-      window.removeEventListener(
-        'scroll',
-        closeAgendaNameMenuOnScroll,
-        true,
-      )
-    }
-  }, [isAgendaNameMenuOpen])
 
   useEffect(() => {
     const previewElement =
@@ -12200,6 +12151,39 @@ function FacilitatorPlannerPage({
       agendaItemId,
       'agendaItem',
     )
+  }
+
+  function focusNextAgendaItemInput(
+    agendaItemId: string,
+  ): void {
+    window.setTimeout(() => {
+      const currentInput =
+        document.getElementById(
+          `facilitator-agenda-item-${agendaItemId}`,
+        )
+
+      if (
+        !(currentInput instanceof
+          HTMLInputElement)
+      ) {
+        return
+      }
+
+      const nextInput =
+        currentInput
+          .closest('tr')
+          ?.nextElementSibling
+          ?.querySelector<HTMLInputElement>(
+            'input[aria-label="Agenda item"]',
+          ) ?? null
+
+      if (nextInput === null) {
+        return
+      }
+
+      nextInput.focus()
+      nextInput.select()
+    }, 0)
   }
 
   function addAgendaItem(): void {
@@ -14028,13 +14012,27 @@ function FacilitatorPlannerPage({
                               }
                               onChange={(
                                 event,
-                              ) =>
+                              ) => {
+                                const nextValue =
+                                  event.target.value
+
                                 updateAgendaItemText(
                                   agendaItem.id,
                                   'agendaItem',
-                                  event.target.value,
+                                  nextValue,
                                 )
-                              }
+
+                                if (
+                                  nextValue
+                                    .trim()
+                                    .toLocaleLowerCase() ===
+                                  'break'
+                                ) {
+                                  focusNextAgendaItemInput(
+                                    agendaItem.id,
+                                  )
+                                }
+                              }}
                               onKeyDown={(
                                 event,
                               ) =>
@@ -14095,10 +14093,23 @@ function FacilitatorPlannerPage({
                               )
                             }
                             onChange={(event) => {
+                              const typedName =
+                                event.target.value
+
+                              const capitalizedName =
+                                typedName.length === 0
+                                  ? ''
+                                  : (
+                                    typedName
+                                      .charAt(0)
+                                      .toLocaleUpperCase() +
+                                    typedName.slice(1)
+                                  )
+
                               updateAgendaItemText(
                                 agendaItem.id,
                                 'name',
-                                event.target.value,
+                                capitalizedName,
                               )
 
                               openAgendaNameMenu(
