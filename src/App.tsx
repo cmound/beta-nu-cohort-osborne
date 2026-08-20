@@ -14,6 +14,7 @@ import {
   NavLink,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useParams,
 } from 'react-router'
@@ -27086,10 +27087,6 @@ interface AdminBackupArchiveRecord {
   readonly backupJson: string
 }
 
-interface AdminPageProps {
-  readonly onLock: () => void
-}
-
 interface AdminPacificDateParts {
   readonly year: string
   readonly month: string
@@ -28003,9 +28000,7 @@ async function hashAdminPin(
   ).join('')
 }
 
-function AdminPage({
-  onLock,
-}: AdminPageProps) {
+function AdminPage() {
   const [
     archives,
     setArchives,
@@ -28273,14 +28268,6 @@ function AdminPage({
             Beta Nu Fall Cohort Hub
           </p>
         </div>
-
-        <button
-          type="button"
-          className="admin-lock-button"
-          onClick={onLock}
-        >
-          Lock Admin
-        </button>
       </header>
 
       <div className="admin-summary-grid">
@@ -28609,6 +28596,9 @@ function App() {
   const navigate =
     useNavigate()
 
+  const location =
+    useLocation()
+
   const [coursesOpen, setCoursesOpen] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -28646,6 +28636,58 @@ function App() {
           ADMIN_SESSION_STORAGE_KEY,
         ) === '1',
     )
+
+  const previousRoutePathRef =
+    useRef(
+      location.pathname,
+    )
+
+  useEffect(() => {
+    if (!isAdminAccessTrayOpen) {
+      return
+    }
+
+    const retractTimeout =
+      window.setTimeout(
+        () => {
+          setIsAdminAccessTrayOpen(
+            false,
+          )
+        },
+        4_000,
+      )
+
+    return () => {
+      window.clearTimeout(
+        retractTimeout,
+      )
+    }
+  }, [
+    isAdminAccessTrayOpen,
+  ])
+
+  useEffect(() => {
+    const previousPath =
+      previousRoutePathRef.current
+
+    if (
+      previousPath === '/admin' &&
+      location.pathname !== '/admin'
+    ) {
+      window.sessionStorage.removeItem(
+        ADMIN_SESSION_STORAGE_KEY,
+      )
+
+      setIsAdminUnlocked(
+        false,
+      )
+    }
+
+    previousRoutePathRef.current =
+      location.pathname
+  }, [
+    location.pathname,
+  ])
 
   const [
     sidebarGroupsOpen,
@@ -28743,17 +28785,6 @@ function App() {
     setAdminLoginError('')
 
     navigate('/admin')
-  }
-
-  function lockAdminAccess():
-    void {
-    window.sessionStorage.removeItem(
-      ADMIN_SESSION_STORAGE_KEY,
-    )
-
-    setIsAdminUnlocked(false)
-
-    navigate('/')
   }
 
   const [
@@ -28899,12 +28930,27 @@ function App() {
           lastArchiveTime,
         ) ||
         Date.now() -
-          lastArchiveTime >=
-          ADMIN_AUTO_ARCHIVE_INTERVAL_MS
+        lastArchiveTime >=
+        ADMIN_AUTO_ARCHIVE_INTERVAL_MS
 
       if (!archiveIsDue) {
         return
       }
+
+      const archiveReservationTime =
+        new Date().toISOString()
+
+      /*
+       * Reserve this archive window before
+       * starting the asynchronous IndexedDB
+       * write. This prevents two simultaneous
+       * checks from creating duplicate
+       * automatic archives.
+       */
+      window.localStorage.setItem(
+        ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+        archiveReservationTime,
+      )
 
       try {
         await createAdminArchive(
@@ -28912,10 +28958,22 @@ function App() {
         )
       } catch {
         /*
-         * The archive is a backup layer.
-         * A browser storage failure must
-         * not stop the Hub from running.
+         * Restore the previous timestamp
+         * if the archive failed so the Hub
+         * can try again later.
          */
+        if (
+          storedLastArchive === null
+        ) {
+          window.localStorage.removeItem(
+            ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+          )
+        } else {
+          window.localStorage.setItem(
+            ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+            storedLastArchive,
+          )
+        }
       }
     }
 
@@ -31632,11 +31690,7 @@ function App() {
               path="/admin"
               element={
                 isAdminUnlocked ? (
-                  <AdminPage
-                    onLock={
-                      lockAdminAccess
-                    }
-                  />
+                  <AdminPage />
                 ) : (
                   <Navigate
                     to="/"

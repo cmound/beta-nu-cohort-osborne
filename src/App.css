@@ -17959,30 +17959,6 @@ tbody td {
   font-weight: 700;
 }
 
-.admin-lock-button {
-  min-width: 105px;
-  min-height: 36px;
-  padding: 7px 14px;
-  border: 1px solid #ef5350;
-  border-radius: 6px;
-  color: #ffffff;
-  background:
-    linear-gradient(
-      180deg,
-      #b62b2b 0%,
-      #881c1c 100%
-    );
-  box-shadow:
-    inset 0 1px 0
-      rgba(255, 255, 255, 0.2),
-    0 3px 6px
-      rgba(0, 0, 0, 0.28);
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
 .admin-summary-grid {
   display: grid;
   grid-template-columns:
