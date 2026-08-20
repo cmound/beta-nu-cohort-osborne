@@ -12110,67 +12110,130 @@ tbody td {
   white-space: nowrap;
 }
 
-/* Leadership quote */
+/* Leadership quote - thick polished glass plaque */
 .dashboard-today-quote {
   position: relative;
   min-height: 58px;
   box-sizing: border-box;
   display: grid;
   grid-template-columns:
-    30px
+    34px
     minmax(0, 1fr)
-    30px;
+    34px;
   align-items: center;
-  column-gap: 4px;
+  column-gap: 5px;
   margin: auto 0 0;
-  padding: 7px 7px;
-  border: 1px solid #8197aa;
-  border-radius: 7px;
+  padding: 7px 8px;
+  overflow: hidden;
+
+  border: 2px solid #8fb8d4;
+  border-radius: 15px;
+
   background:
-    linear-gradient(
-      145deg,
-      #ffffff 0%,
-      #f7f9fb 48%,
-      #e9eff4 100%
+    radial-gradient(
+      ellipse at 50% 44%,
+      rgba(255, 255, 255, 0.99) 0%,
+      rgba(248, 252, 255, 0.98) 34%,
+      rgba(236, 248, 255, 0.97) 54%,
+      rgba(214, 237, 250, 0.96) 78%,
+      rgba(187, 218, 237, 0.98) 100%
     );
+
   box-shadow:
-    inset 1px 1px 0
-      rgba(255, 255, 255, 1),
-    inset -2px -2px 4px
-      rgba(49, 87, 122, 0.12),
-    0 4px 7px
+    inset 0 0 0 2px
+      rgba(255, 255, 255, 0.92),
+    inset 0 4px 6px
+      rgba(255, 255, 255, 0.95),
+    inset 0 -5px 7px
+      rgba(77, 125, 157, 0.24),
+    inset 4px 0 5px
+      rgba(255, 255, 255, 0.65),
+    inset -4px 0 6px
+      rgba(69, 113, 145, 0.18),
+    0 0 5px
+      rgba(113, 190, 233, 0.42),
+    0 5px 8px
+      rgba(11, 31, 59, 0.28),
+    0 8px 12px
       rgba(11, 31, 59, 0.18);
 }
 
+/* Diagonal polished-glass reflections */
 .dashboard-today-quote::before {
   content: '';
   position: absolute;
-  top: 2px;
-  right: 7px;
-  left: 3px;
-  height: 1px;
-  border-radius: 999px;
+  z-index: 0;
+  inset: 3px;
+  border-radius: 11px;
+
   background:
-    rgba(255, 255, 255, 0.95);
+    linear-gradient(
+      125deg,
+      rgba(255, 255, 255, 0.78) 0%,
+      rgba(255, 255, 255, 0.32) 22%,
+      rgba(255, 255, 255, 0) 42%
+    ),
+    linear-gradient(
+      135deg,
+      transparent 45%,
+      rgba(255, 255, 255, 0.25) 55%,
+      transparent 68%
+    );
+
   pointer-events: none;
 }
 
+/* Thick illuminated lower glass edge */
+.dashboard-today-quote::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 7px;
+  right: 7px;
+  bottom: 3px;
+  height: 12px;
+
+  border-radius: 0 0 10px 10px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(154, 217, 244, 0.2) 45%,
+      rgba(83, 145, 180, 0.24) 100%
+    );
+
+  box-shadow:
+    inset 0 -1px 0
+      rgba(48, 96, 129, 0.3),
+    0 2px 4px
+      rgba(115, 205, 241, 0.22);
+
+  pointer-events: none;
+}
+
+/* Raised quote text */
 .dashboard-today-quote p {
+  position: relative;
+  z-index: 2;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   margin: 0;
-  color: #C69214;
+  color: #0b1f3b;
   font-size: 13px;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.18;
   text-align: center;
+
   text-shadow:
+    0 -1px 0
+      rgba(255, 255, 255, 0.96),
     0 1px 0
-      rgba(255, 255, 255, 1),
-    0 1px 1px
-      rgba(136, 28, 28, 0.14);
+      rgba(11, 31, 59, 0.16),
+    0 2px 2px
+      rgba(11, 31, 59, 0.08);
 }
 
 .dashboard-today-quote p
@@ -12178,35 +12241,39 @@ tbody td {
   display: block;
 }
 
+/* Metallic raised gold quotation marks */
 .dashboard-today-quote-mark {
   position: relative;
-  z-index: 1;
-  color: #c69214;
+  z-index: 2;
+  color: #d3a007;
   font-family:
     Georgia,
     'Times New Roman',
     serif;
-  font-size: 39px;
+  font-size: 36px;
   font-weight: 900;
   line-height: 0.75;
+
   text-shadow:
+    -1px -1px 0
+      #fff3a8,
     0 1px 0
-      #ffe89a,
-    0 2px 1px
-      #9a6a05,
+      #ffd84d,
+    0 2px 0
+      #b57b00,
     0 3px 3px
-      rgba(111, 76, 0, 0.2);
+      rgba(84, 58, 0, 0.28);
 }
 
 .dashboard-today-quote-mark-open {
-  align-self: start;
-  padding-top: 4px;
+  align-self: center;
+  padding-top: 0;
   text-align: right;
 }
 
 .dashboard-today-quote-mark-close {
-  align-self: end;
-  padding-bottom: 1px;
+  align-self: center;
+  padding-bottom: 0;
   text-align: left;
 }
 
@@ -13469,28 +13536,33 @@ tbody td {
 }
 
 /* Current Term */
+.dashboard-academic-summary-column {
+  min-width: 0;
+}
+
 .dashboard-academic-current-term {
-  min-height: 31px;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  padding: 0 7px;
+  align-items: baseline;
+  gap: 5px;
+  margin: 0 0 6px 2px;
+  padding: 0;
   color: #0b1f3b;
+  white-space: nowrap;
 }
 
 .dashboard-academic-current-term
   > span {
   color: #0b1f3b;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
 }
 
 .dashboard-academic-current-term
   > strong {
   color: #004fc4;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1;
 }
@@ -13519,7 +13591,7 @@ tbody td {
   grid-template-rows:
     repeat(4, minmax(0, 1fr));
   gap: 4px;
-  margin-top: 17px;
+  margin-top: 0px;
   overflow: visible;
   border: 0;
   border-radius: 0;
@@ -13944,6 +14016,20 @@ tbody td {
       rgba(11, 31, 59, 0.17);
 }
 
+/* PDF resource preview backgrounds */
+.dashboard-resource-tile:nth-child(3)
+  .dashboard-resource-preview,
+.dashboard-resource-tile:nth-child(4)
+  .dashboard-resource-preview {
+  background:
+    linear-gradient(
+      145deg,
+      #dbe6ef 0%,
+      #cddae5 52%,
+      #bccbd8 100%
+    );
+}
+
 .dashboard-resource-image {
   display: block;
   box-sizing: border-box;
@@ -13972,6 +14058,7 @@ tbody td {
   height: 88px;
   box-sizing: border-box;
   object-fit: cover;
+  object-position: 95% center;
   border: 1px solid #617b93;
   border-radius: 5px;
   box-shadow:
@@ -14035,10 +14122,10 @@ tbody td {
   margin-top: auto;
   padding-top: 5px;
   color: #475569;
-  font-size: 8px;
-  font-weight: 800;
+  font-size: 10.5px;
+  font-weight: 900;
   line-height: 1;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
 }
 
 /* =========================================================
