@@ -2628,13 +2628,13 @@
   table-layout: fixed;
   color: #111827;
   background: #ffffff;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .contacts-table th,
 .contacts-table td {
   border: 1px solid #8d99a8;
-  vertical-align: middle;
+  vertical-align: top;
   text-align: left;
 }
 
@@ -2655,7 +2655,7 @@
 .contacts-table th {
   color: #111827;
   background: #C69214;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -10600,6 +10600,7 @@ tbody td {
   color: #111827;
   background: transparent;
   font: inherit;
+  text-align: left;
 }
 
 .contact-cell-input,
@@ -10641,7 +10642,8 @@ tbody td {
 }
 
 .contact-status-cell {
-  text-align: center !important;
+  text-align: left !important;
+  vertical-align: top !important;
 }
 
 .contact-status-select {
@@ -10651,9 +10653,10 @@ tbody td {
 
 .contact-status-mentor {
   display: block;
+  padding: 6px 9px;
   color: #64748b;
   font-weight: 700;
-  text-align: center;
+  text-align: left;
 }
 
 .contact-email-input {
@@ -10738,7 +10741,7 @@ tbody td {
   border-right: 1px solid #8d99a8;
   border-bottom: 1px solid #8d99a8;
   text-align: left;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .contacts-inactive-table th {
@@ -10749,14 +10752,14 @@ tbody td {
       #ffd76a 0%,
       #d9a814 100%
     );
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .contacts-inactive-table td {
   color: #111827;
   background: #ffffff;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
 }
 
@@ -10806,6 +10809,7 @@ tbody td {
   background: #ffffff;
   font: inherit;
   font-weight: 400;
+  text-align: left;
 }
 
 .contacts-inactive-name-input {
