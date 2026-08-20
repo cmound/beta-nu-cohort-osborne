@@ -11959,7 +11959,7 @@ tbody td {
 
 .dashboard-progress-milestone time {
   color: #0b1f3b;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   line-height: 1.15;
   white-space: nowrap;
@@ -11968,7 +11968,7 @@ tbody td {
 .dashboard-progress-milestone-description {
   min-width: 0;
   color: #0b1f3b;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -12161,7 +12161,7 @@ tbody td {
   flex-direction: column;
   gap: 4px;
   margin: 0;
-  color: #0b1f3b;
+  color: #C69214;
   font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
@@ -12170,7 +12170,7 @@ tbody td {
     0 1px 0
       rgba(255, 255, 255, 1),
     0 1px 1px
-      rgba(11, 31, 59, 0.12);
+      rgba(136, 28, 28, 0.14);
 }
 
 .dashboard-today-quote p
@@ -12738,8 +12738,8 @@ tbody td {
 .dashboard-meeting-role-header
   > strong {
   min-width: 0;
-  color: #0b1f3b;
-  font-size: 8px;
+  color: #0B1F3B;
+  font-size: 9px;
   font-weight: 900;
   line-height: 1.1;
   text-transform: uppercase;
@@ -12794,8 +12794,8 @@ tbody td {
 
 .dashboard-meeting-role-name {
   min-width: 0;
-  color: #243b55;
-  font-size: 8.5px;
+  color: #005EB8;
+  font-size: 10.5px;
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
@@ -12892,7 +12892,7 @@ tbody td {
   > span {
   min-width: 0;
   color: #0b1f3b;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -12968,7 +12968,7 @@ tbody td {
   > span {
   min-width: 0;
   color: #0b1f3b;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -12977,7 +12977,7 @@ tbody td {
   > strong {
   flex: 0 0 auto;
   color: #0b1f3b;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -13240,7 +13240,7 @@ tbody td {
 .dashboard-course-status-row
   > strong {
   color: #0b1f3b;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 900;
   line-height: 1;
 }
@@ -13322,7 +13322,7 @@ tbody td {
       rgba(49, 87, 122, 0.12),
     0 2px 4px
       rgba(11, 31, 59, 0.15);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 900;
   line-height: 1;
   text-align: center;
@@ -13560,7 +13560,7 @@ tbody td {
 .dashboard-academic-stat-row
   > span {
   color: #0b1f3b;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -13656,7 +13656,7 @@ tbody td {
 .dashboard-academic-next-course-title {
   margin-top: 3px;
   color: #0b1f3b;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 800;
   line-height: 1.2;
 }
@@ -13674,30 +13674,29 @@ tbody td {
 .dashboard-academic-next-course-dates {
   min-width: 0;
   color: #475569;
-  font-size: 8.5px;
+  font-size: 10.5px;
   font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
 }
 
-/* Course status badge */
 .dashboard-academic-next-status {
   flex: 0 0 auto;
-  min-height: 21px;
+  min-height: 24px;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 7px;
+  padding: 4px 9px;
   border: 1px solid;
   border-radius: 5px;
-  font-size: 7.5px;
+  font-size: 9px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.55),
     inset 0 -2px 2px
       rgba(0, 0, 0, 0.13),
     0 2px 3px
@@ -13705,14 +13704,14 @@ tbody td {
 }
 
 .dashboard-academic-next-status-progress {
-  border-color: #126b27;
-  color: #ffffff;
+  border-color: #9c700c;
+  color: #000000;
   background:
     linear-gradient(
       180deg,
-      #27a844 0%,
-      #168a32 55%,
-      #0d6b26 100%
+      #ffe477 0%,
+      #ffd200 55%,
+      #e0ad00 100%
     );
 }
 
@@ -14021,12 +14020,12 @@ tbody td {
 
 .dashboard-resource-name {
   width: 100%;
-  min-height: 32px;
+  min-height: 38px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   color: #0b1f3b;
-  font-size: 8.5px;
+  font-size: 10.5px;
   font-weight: 900;
   line-height: 1.18;
   text-align: center;
@@ -14111,8 +14110,8 @@ tbody td {
   > strong {
   display: block;
   margin-bottom: 4px;
-  color: #0b1f3b;
-  font-size: 10.5px;
+  color: #005EB8;
+  font-size: 12.5px;
   font-weight: 900;
   line-height: 1;
 }
@@ -14121,7 +14120,7 @@ tbody td {
   > p {
   margin: 0;
   color: #0b1f3b;
-  font-size: 9.25px;
+  font-size: 10.5px;
   font-weight: 700;
   line-height: 1.4;
 }
@@ -14134,8 +14133,8 @@ tbody td {
 .dashboard-identity-values-heading {
   display: block;
   margin-bottom: 7px;
-  color: #0b1f3b;
-  font-size: 10.5px;
+  color: #005EB8;
+  font-size: 12.5px;
   font-weight: 900;
   line-height: 1;
 }
@@ -14251,8 +14250,8 @@ tbody td {
 
 .dashboard-identity-value-name {
   min-width: 0;
-  color: #0b1f3b;
-  font-size: 9px;
+  color: #C69214;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
