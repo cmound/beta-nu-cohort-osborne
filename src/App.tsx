@@ -167,6 +167,17 @@ interface BirthdayDashboardItem {
   readonly sortTime: number
 }
 
+interface DashboardQuote {
+  readonly text: string
+  readonly author?: string
+}
+
+interface CohortValueDashboardItem {
+  readonly name: string
+  readonly description: string
+  readonly imageFileName: string
+}
+
 interface CohortValueDashboardItem {
   readonly name: string
   readonly description: string
@@ -792,6 +803,137 @@ const dashboardCompactCourseDateFormatter = new Intl.DateTimeFormat(
     timeZone: 'UTC',
   },
 )
+
+const DASHBOARD_QUOTE_DISPLAY_MS = 5_000
+const DASHBOARD_QUOTE_TRANSITION_MS = 650
+const DASHBOARD_QUOTE_MAX_CHARACTERS = 110
+
+const dashboardQuoteFallback: DashboardQuote = {
+  text: 'Lead with Purpose. Learn. Grow. Transform.',
+}
+
+const dashboardQuoteSeed: readonly DashboardQuote[] = [
+  dashboardQuoteFallback,
+  { text: 'A little progress each day adds up to big results.', author: 'Satya Nani' },
+  { text: 'Striving for success without hard work is like trying to harvest when you haven’t planted.', author: 'David Bly' },
+  { text: 'Start where you are. Use what you have. Do what you can.', author: 'Arthur Ashe' },
+  { text: 'Our greatest weakness lies in giving up. The most certain way to succeed is always to try just one more time.', author: 'Thomas Edison' },
+  { text: 'Education is the passport to the future, for tomorrow belongs to those who prepare for it today.', author: 'Malcolm X' },
+  { text: 'Just believe in yourself. Even if you don’t, pretend that you do, and, at some point, you will.', author: 'Venus Williams' },
+  { text: 'Doubt kills more dreams than failure ever will.', author: 'Suzy Kassem' },
+  { text: 'When one door closes, another opens; but we often look so long and so regretfully upon the closed door that we do not see the one which has opened for us.', author: 'Alexander Graham Bell' },
+  { text: 'You don’t have to be great to start, but you have to start to be great.', author: 'Zig Ziglar' },
+  { text: 'The greatest pleasure in life is doing what people say you cannot do.', author: 'Walter Bagehot' },
+  { text: 'Take it all one day at a time and enjoy the journey.', author: 'Kristi Barlett' },
+  { text: 'Success is the sum of small efforts repeated day-in and day-out.', author: 'Robert Collier' },
+  { text: 'It always seems impossible until it’s done.', author: 'Nelson Mandela' },
+  { text: 'Great things are done by a series of small things brought together.', author: 'Vincent van Gogh' },
+  { text: 'It’s not about perfect. It’s about effort.', author: 'Jillian Michaels' },
+  { text: 'Every year, many, many stupid people graduate from college. And if they can do it, so can you.', author: 'John Green' },
+  { text: 'Every expert was once a beginner.', author: 'Helen Hayes' },
+  { text: 'Seventy percent of life is just showing up.', author: 'Woody Allen' },
+  { text: 'Talent is cheaper than table salt. What separates the talented individual from the successful one is a lot of hard work.', author: 'Stephen King' },
+  { text: 'An investment in knowledge always pays the best interest.', author: 'Benjamin Franklin' },
+  { text: 'I’ve failed over and over and over and over again in my life. And that is why I succeed.', author: 'Michael Jordan' },
+  { text: 'Failure is the opportunity to begin again more intelligently.', author: 'Henry Ford' },
+  { text: 'Success is not final; failure is not fatal. It is the courage to continue that counts.', author: 'Winston Churchill' },
+  { text: 'There is no secret to success. It is the result of preparation, hard work, and learning from failure.', author: 'General Colin Powell' },
+  { text: 'A person who never made a mistake never tried anything new.', author: 'Albert Einstein' },
+  { text: 'Your talents and abilities will improve over time, but for that, you have to start.', author: 'Martin Luther King Jr.' },
+  { text: 'Skill is only developed by hours and hours of work.', author: 'Usain Bolt' },
+  { text: 'Take control of your life. The instant you take control, interesting things will come to you.', author: 'Douglas Adams' },
+  { text: 'Opportunity is missed by most people because it is dressed in overalls and looks like work.', author: 'Thomas Edison' },
+  { text: 'Strive for progress, not perfection.', author: 'Unknown' },
+  { text: 'Discipline is the bridge between goals and accomplishment.', author: 'Jim Rohn' },
+  { text: 'Focus on being productive instead of busy.', author: 'Tim Ferriss' },
+  { text: 'The successful warrior is the average person with laser-like focus.', author: 'Bruce Lee' },
+  { text: 'You don’t find willpower, you create it.', author: 'Unknown' },
+  { text: 'Success usually comes to those who are too busy to be looking for it.', author: 'Henry David Thoreau' },
+  { text: 'It does not matter how slowly you go as long as you do not stop.', author: 'Confucius' },
+  { text: 'Courage doesn’t always roar. Sometimes courage is the quiet voice at the end of the day saying, ‘I will try again tomorrow.’', author: 'Mary Anne Radmacher' },
+  { text: 'Hardships often prepare ordinary people for an extraordinary destiny.', author: 'C.S. Lewis' },
+  { text: 'You are never too old to set another goal or to dream a new dream.', author: 'Les Brown' },
+  { text: 'Fall seven times, stand up eight.', author: 'Japanese Proverb' },
+  { text: 'Only put off until tomorrow what you are willing to die having left undone.', author: 'Pablo Picasso' },
+  { text: 'Procrastination is the art of keeping up with yesterday.', author: 'Don Marquis' },
+  { text: 'You may delay, but time will not.', author: 'Benjamin Franklin' },
+  { text: 'The way to get started is to quit talking and begin doing.', author: 'Walt Disney' },
+  { text: 'Dream big, but start small. The smallest step in the right direction can end up being the biggest step of your life.', author: 'Unknown' },
+  { text: 'The future depends on what you do today.', author: 'Mahatma Gandhi' },
+  { text: 'Success is not the key to happiness. Happiness is the key to success. If you love what you are doing, you will be successful.', author: 'Albert Schweitzer' },
+  { text: 'Your time is limited, so don’t waste it living someone else’s life.', author: 'Steve Jobs' },
+  { text: 'Do what you can, with what you have, where you are.', author: 'Theodore Roosevelt' },
+  { text: 'Believe you can and you’re halfway there.', author: 'Theodore Roosevelt' },
+  { text: 'The illiterate of the future will not be the person who cannot read. It will be the person who does not know how to learn.', author: 'Alvin Toffler' },
+  { text: 'The function of education is to teach one to think intensively and to think critically. Intelligence plus character – that is the goal of true education.', author: 'Dr. Martin Luther King, Jr.' },
+  { text: 'Education in the most powerful weapon which you can use to change the world.', author: 'Nelson Mandela' },
+  { text: 'Education is not preparation for life; education is life itself.', author: 'John Dewey' },
+  { text: 'The roots of education are bitter, but the fruit is sweet.', author: 'Aristotle' },
+  { text: 'It is the mark of an educated mind to be able to entertain a thought without accepting it.', author: 'Aristotle' },
+  { text: 'It is better to learn late than never.', author: 'Publilius Syrus' },
+  { text: 'The only person who is educated is the one who has learned how to learn and change.', author: 'Carl Rogers' },
+  { text: 'Education is the movement from darkness to light.', author: 'Allan Bloom' },
+  { text: 'The whole purpose of education is to turn mirrors into windows.', author: 'Sydney J. Harris' },
+  { text: 'Education is learning what you didn’t even know you didn’t know.', author: 'Daniel J. Boorstin' },
+  { text: 'Education’s purpose is to replace and empty mind with an open one.', author: 'Malcom Forbes' },
+  { text: 'Give a man a fish and you feed him for a day; teach a man to fish and you feed him for a lifetime.', author: 'Maimonides' },
+  { text: 'You are always a student, never a master. You have keep moving forward.', author: 'Conrad Hall' },
+  { text: 'Education is not the filling of a pail, but the lighting of a fire.', author: 'William Butler Yeats' },
+  { text: 'You can teach a student a lesson for a day; but if you can teach him to learn by creating curiosity, he will continue the learning process as long as he lives.', author: 'Clay P. Bedford' },
+  { text: 'Tell me and I’ll forget; show me and I may remember; involve me and I’ll understand.', author: 'Chinese proverb' },
+  { text: 'Education cost money, but then so does ignorance.', author: 'Claus Moser' },
+  { text: 'What sculpture is to a block of marble education is to the human soul.', author: 'Joseph Addison' },
+  { text: 'Why should society feel responsible only for the education of children, and not for the education of all adults of every age?', author: 'Erich Fromm' },
+  { text: 'The beautiful thing about learning is that no one can take it away from you.', author: 'B.B. King' },
+  { text: 'Education is hanging around until you\'ve caught on.', author: 'Robert Lee Frost' },
+  { text: 'Education is the ability to listen to almost anything without losing your temper or your self-confidence.', author: 'Robert Frost' },
+  { text: 'Live as if you were to die tomorrow. Learn as if you were to live forever.', author: 'Mahatma Gandhi' },
+  { text: 'You can never be overdressed or overeducated.', author: 'Oscar Wilde' },
+  { text: 'The task of the modern educator is not to cut down jungles, but to irrigate deserts.', author: 'C.S. Lewis' },
+  { text: 'Children must be taught how to think, not what to think.', author: 'Margaret Mead' },
+  { text: 'The mind once enlightened cannot again become dark.', author: 'Thomas Paine' },
+  { text: 'The great aim of education is not knowledge but action.', author: 'Herbert Spencer' },
+  { text: 'The goal of education is the advancement of knowledge and the dissemination of truth.', author: 'John F. Kennedy' },
+  { text: 'He that loves reading has everything within his reach.', author: 'William Godwin' },
+  { text: 'Develop a passion for learning. If you do, you will never cease to grow.', author: 'Anthony J. D\'Angelo' },
+  { text: 'The only real failure in life is one not learned from.', author: 'Anthony J. D\'Angelo' },
+  { text: 'Education is the key to unlock the golden door of freedom.', author: 'George Washington Carver' },
+  { text: 'The philosophy of the school room in one generation will be the philosophy of government in the next.', author: 'Abraham Lincoln' },
+  { text: 'Intellectual growth should commence at birth and cease only at death.', author: 'Albert Einstein' },
+  { text: 'Learning is not attained by chance, it must be sought for with ardor and diligence.', author: 'Abigail Adams' },
+  { text: 'The mere imparting of information is not education.', author: 'Carter G. Woodson' },
+  { text: 'To read without reflecting is like eating without digesting.', author: 'Edmund Burke' },
+  { text: 'Good questions outrank easy answers.', author: 'Paul Samuelson' },
+  { text: 'An education isn\'t how much you have committed to memory, or even how much you know. It\'s being able to differentiate between what you know and what you don\'t.', author: 'Anatole France' },
+  { text: 'Change is the end result of all true learning.', author: 'Leo Buscaglia' },
+  { text: 'Education is a better safeguard of liberty than a standing army.', author: 'Edward Everett' },
+  { text: 'Education is simply the soul of a society as it passes from one generation to another.', author: 'Gilbert K. Chesterton' },
+  { text: 'He who opens a school door, closes a prison.', author: 'Victor Hugo' },
+  { text: 'Cultivation to the mind is as necessary as food to the body.', author: 'Marcus Tullius Cicero' },
+  { text: 'Knowledge is power. Information is liberating. Education is the premise of progress, in every society, in every family.', author: 'Kofi Annan' },
+  { text: 'There is no greater education than one that is self-driven.', author: 'Neil deGrasse Tyson' },
+  { text: 'Education is freedom.', author: 'Paulo Freire' },
+]
+
+const dashboardQuotes = dashboardQuoteSeed.filter(
+  (quote) =>
+    quote.text.length <=
+    DASHBOARD_QUOTE_MAX_CHARACTERS,
+)
+
+function getDashboardQuoteSizeClass(
+  quoteText: string,
+): string {
+  if (quoteText.length <= 55) {
+    return 'dashboard-today-quote-size-large'
+  }
+
+  if (quoteText.length <= 80) {
+    return 'dashboard-today-quote-size-medium'
+  }
+
+  return 'dashboard-today-quote-size-small'
+}
 
 const activeCoursesDashboard: readonly ActiveCourseDashboardItem[] = [
   {
@@ -5506,6 +5648,16 @@ function DashboardPage({
 }: DashboardPageProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
+  const [dashboardQuoteIndex, setDashboardQuoteIndex] =
+    useState(0)
+
+  const [
+    dashboardPreviousQuoteIndex,
+    setDashboardPreviousQuoteIndex,
+  ] = useState<number | null>(null)
+
+  const dashboardQuoteIndexRef = useRef(0)
+
   useEffect(() => {
     const timerId = window.setInterval(() => {
       setCurrentDate(new Date())
@@ -5515,6 +5667,70 @@ function DashboardPage({
       window.clearInterval(timerId)
     }
   }, [])
+
+  useEffect(() => {
+    const quoteTimerId = window.setInterval(() => {
+      const previousIndex =
+        dashboardQuoteIndexRef.current
+
+      const nextIndex =
+        (
+          previousIndex + 1
+        ) % dashboardQuotes.length
+
+      setDashboardPreviousQuoteIndex(
+        previousIndex,
+      )
+
+      dashboardQuoteIndexRef.current =
+        nextIndex
+
+      setDashboardQuoteIndex(
+        nextIndex,
+      )
+    }, DASHBOARD_QUOTE_DISPLAY_MS)
+
+    return () => {
+      window.clearInterval(
+        quoteTimerId,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
+    if (
+      dashboardPreviousQuoteIndex === null
+    ) {
+      return
+    }
+
+    const transitionTimerId =
+      window.setTimeout(() => {
+        setDashboardPreviousQuoteIndex(
+          null,
+        )
+      }, DASHBOARD_QUOTE_TRANSITION_MS)
+
+    return () => {
+      window.clearTimeout(
+        transitionTimerId,
+      )
+    }
+  }, [dashboardPreviousQuoteIndex])
+
+  const dashboardQuote =
+    dashboardQuotes[
+    dashboardQuoteIndex
+    ] ?? dashboardQuoteFallback
+
+  const dashboardPreviousQuote =
+    dashboardPreviousQuoteIndex === null
+      ? null
+      : (
+        dashboardQuotes[
+        dashboardPreviousQuoteIndex
+        ] ?? null
+      )
 
   const programProgress =
     calculateProgramProgress(currentDate)
@@ -5829,6 +6045,24 @@ function DashboardPage({
                 style={{
                   width: `${programProgress}%`,
                 }}
+              >
+                <span
+                  className="program-progress-sweep"
+                  aria-hidden="true"
+                />
+
+                <span
+                  className="program-progress-reload-overlay"
+                  aria-hidden="true"
+                />
+              </div>
+
+              <span
+                className="program-progress-end-glow"
+                style={{
+                  left: `${programProgress}%`,
+                }}
+                aria-hidden="true"
               />
             </div>
 
@@ -6029,10 +6263,49 @@ function DashboardPage({
               “
             </span>
 
-            <p>
-              <span>Lead with purpose.</span>
-              <span>Learn. Grow. Transform.</span>
-            </p>
+            <div
+              className="dashboard-today-quote-viewport"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {dashboardPreviousQuote !== null && (
+                <div
+                  className={`dashboard-today-quote-slide dashboard-today-quote-slide-out ${getDashboardQuoteSizeClass(
+                    dashboardPreviousQuote.text,
+                  )}`}
+                  aria-hidden="true"
+                >
+                  <strong className="dashboard-today-quote-text">
+                    {dashboardPreviousQuote.text}
+                  </strong>
+
+                  {dashboardPreviousQuote.author !== undefined && (
+                    <cite className="dashboard-today-quote-author">
+                      {'– '}
+                      {dashboardPreviousQuote.author}
+                    </cite>
+                  )}
+                </div>
+              )}
+
+              <div
+                className={`dashboard-today-quote-slide dashboard-today-quote-slide-in ${getDashboardQuoteSizeClass(
+                  dashboardQuote.text,
+                )}`}
+                key={dashboardQuoteIndex}
+              >
+                <strong className="dashboard-today-quote-text">
+                  {dashboardQuote.text}
+                </strong>
+
+                {dashboardQuote.author !== undefined && (
+                  <cite className="dashboard-today-quote-author">
+                    {'– '}
+                    {dashboardQuote.author}
+                  </cite>
+                )}
+              </div>
+            </div>
 
             <span
               className="dashboard-today-quote-mark dashboard-today-quote-mark-close"
@@ -6890,56 +7163,58 @@ function DashboardPage({
             </NavLink>
           </div>
 
-          <div className="dashboard-academic-current-term">
-            <span>
-              Current Term:
-            </span>
-
-            <strong>
-              {dashboardCurrentTerm}
-            </strong>
-          </div>
-
           <div className="dashboard-academic-highlights-content">
-            <div className="dashboard-academic-stats">
-              <div className="dashboard-academic-stat-row">
+            <div className="dashboard-academic-summary-column">
+              <div className="dashboard-academic-current-term">
                 <span>
-                  Total Classes
+                  Current Term:
                 </span>
 
                 <strong>
-                  22
+                  {dashboardCurrentTerm}
                 </strong>
               </div>
 
-              <div className="dashboard-academic-stat-row">
-                <span>
-                  Completed
-                </span>
+              <div className="dashboard-academic-stats">
+                <div className="dashboard-academic-stat-row">
+                  <span>
+                    Total Classes
+                  </span>
 
-                <strong>
-                  {completedAcademicPlanCount}
-                </strong>
-              </div>
+                  <strong>
+                    22
+                  </strong>
+                </div>
 
-              <div className="dashboard-academic-stat-row">
-                <span>
-                  In Progress
-                </span>
+                <div className="dashboard-academic-stat-row">
+                  <span>
+                    Completed
+                  </span>
 
-                <strong>
-                  {dashboardActiveCourses.length}
-                </strong>
-              </div>
+                  <strong>
+                    {completedAcademicPlanCount}
+                  </strong>
+                </div>
 
-              <div className="dashboard-academic-stat-row">
-                <span>
-                  Pending
-                </span>
+                <div className="dashboard-academic-stat-row">
+                  <span>
+                    In Progress
+                  </span>
 
-                <strong>
-                  10
-                </strong>
+                  <strong>
+                    {dashboardActiveCourses.length}
+                  </strong>
+                </div>
+
+                <div className="dashboard-academic-stat-row">
+                  <span>
+                    Pending
+                  </span>
+
+                  <strong>
+                    10
+                  </strong>
+                </div>
               </div>
             </div>
 
