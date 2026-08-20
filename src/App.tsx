@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ChangeEvent,
   type CSSProperties,
   type DragEvent as ReactDragEvent,
   type FormEvent,
@@ -27031,9 +27032,1620 @@ function CoursePage({
   )
 }
 
+type AdminArchiveSource =
+  | 'auto'
+  | 'manual'
+  | 'pre-import'
+
+type AdminArchiveFilterMode =
+  | 'today'
+  | 'all'
+  | 'month'
+  | 'date'
+
+interface BetaNuRuntimeState {
+  readonly contacts:
+  readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  CohortContactStatusState
+
+  readonly contactInactiveDates:
+  CohortContactInactiveDateState
+
+  readonly inactiveFormerContacts:
+  readonly InactiveFormerContactRecord[]
+
+  readonly cohortMeetings:
+  readonly CohortMeetingRecord[]
+
+  readonly cohortAttendance:
+  CohortAttendanceState
+}
+
+interface BetaNuBackupDocument {
+  readonly appName:
+  'Beta Nu Fall Cohort Hub'
+
+  readonly schemaVersion: 1
+
+  readonly exportedAt: string
+
+  readonly storage:
+  Readonly<Record<string, string>>
+}
+
+interface AdminBackupArchiveRecord {
+  readonly id: string
+  readonly createdAt: string
+  readonly pacificDate: string
+  readonly pacificMonth: string
+  readonly fileName: string
+  readonly source: AdminArchiveSource
+  readonly sizeBytes: number
+  readonly backupJson: string
+}
+
+interface AdminPageProps {
+  readonly onLock: () => void
+}
+
+interface AdminPacificDateParts {
+  readonly year: string
+  readonly month: string
+  readonly day: string
+  readonly hour: string
+  readonly minute: string
+  readonly dayPeriod: string
+}
+
+const BETA_NU_RUNTIME_STORAGE_KEY =
+  'beta-nu-runtime-state-v1'
+
+const ADMIN_SESSION_STORAGE_KEY =
+  'beta-nu-admin-unlocked-v1'
+
+const ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY =
+  'beta-nu-admin-last-auto-archive-v1'
+
+const ADMIN_ARCHIVE_DATABASE_NAME =
+  'beta-nu-admin-backup-archive-v1'
+
+const ADMIN_ARCHIVE_STORE_NAME =
+  'archives'
+
+const ADMIN_ARCHIVE_UPDATED_EVENT =
+  'beta-nu-admin-archive-updated'
+
+const ADMIN_AUTO_ARCHIVE_INTERVAL_MS =
+  60 * 60 * 1000
+
+/*
+ * Paste only the SHA-256 hash of your
+ * four-digit PIN here.
+ *
+ * Do not store the actual four-digit
+ * PIN in the source code.
+ */
+const ADMIN_PIN_SHA256 =
+  '481885da4f3c8e27e9c4e6a9bc4619ee398c2784cca8a663524abe91b5cb7f47'
+
+function isAdminObjectRecord(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
+  )
+}
+
+function isCohortTimeZoneValue(
+  value: unknown,
+): value is CohortTimeZone {
+  return (
+    value === 'Eastern' ||
+    value === 'Central' ||
+    value === 'Mountain' ||
+    value === 'Arizona (MST)' ||
+    value === 'Pacific' ||
+    value === 'Alaska' ||
+    value === 'Hawaii-Aleutian'
+  )
+}
+
+function isNullableInteger(
+  value: unknown,
+): value is number | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'number' &&
+      Number.isInteger(value)
+    )
+  )
+}
+
+function isCohortContactRecordValue(
+  value: unknown,
+): value is CohortContactRecord {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    isCohortTimeZoneValue(
+      value.timeZone,
+    ) &&
+    typeof value.phoneDigits ===
+    'string' &&
+    typeof value.email === 'string' &&
+    typeof value.industry ===
+    'string' &&
+    isNullableInteger(
+      value.birthdayMonth,
+    ) &&
+    isNullableInteger(
+      value.birthdayDay,
+    ) &&
+    typeof value.dissertationInterest ===
+    'string' &&
+    typeof value.isMentor ===
+    'boolean'
+  )
+}
+
+function isInactiveFormerContactRecordValue(
+  value: unknown,
+): value is InactiveFormerContactRecord {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return (
+    isCohortContactRecordValue(
+      value,
+    ) &&
+    typeof value.inactiveDate ===
+    'string'
+  )
+}
+
+function isCohortMeetingRecordValue(
+  value: unknown,
+): value is CohortMeetingRecord {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    (
+      value.year === 'Year 1' ||
+      value.year === 'Year 2'
+    ) &&
+    typeof value.date === 'string' &&
+    typeof value.term === 'string' &&
+    typeof value.meetingNumber ===
+    'string' &&
+    typeof value.facilitator ===
+    'string' &&
+    typeof value.communityBuilder ===
+    'string' &&
+    typeof value.recorder ===
+    'string' &&
+    typeof value.timeKeeper ===
+    'string' &&
+    typeof value.processObserver ===
+    'string'
+  )
+}
+
+function isCohortContactStatusStateValue(
+  value: unknown,
+): value is CohortContactStatusState {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return Object.values(value).every(
+    (status) =>
+      status === 'Active' ||
+      status === 'Inactive',
+  )
+}
+
+function isCohortContactInactiveDateStateValue(
+  value: unknown,
+): value is CohortContactInactiveDateState {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return Object.values(value).every(
+    (inactiveDate) =>
+      typeof inactiveDate ===
+      'string',
+  )
+}
+
+function isCohortAttendanceStateValue(
+  value: unknown,
+): value is CohortAttendanceState {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return Object.values(value).every(
+    (mark) =>
+      mark === '' ||
+      mark === 'X' ||
+      mark === 'A',
+  )
+}
+
+function isBetaNuRuntimeState(
+  value: unknown,
+): value is BetaNuRuntimeState {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return (
+    Array.isArray(value.contacts) &&
+    value.contacts.every(
+      isCohortContactRecordValue,
+    ) &&
+    isCohortContactStatusStateValue(
+      value.contactStatuses,
+    ) &&
+    isCohortContactInactiveDateStateValue(
+      value.contactInactiveDates,
+    ) &&
+    Array.isArray(
+      value.inactiveFormerContacts,
+    ) &&
+    value.inactiveFormerContacts.every(
+      isInactiveFormerContactRecordValue,
+    ) &&
+    Array.isArray(
+      value.cohortMeetings,
+    ) &&
+    value.cohortMeetings.every(
+      isCohortMeetingRecordValue,
+    ) &&
+    isCohortAttendanceStateValue(
+      value.cohortAttendance,
+    )
+  )
+}
+
+function createBetaNuRuntimeSeed():
+  BetaNuRuntimeState {
+  return {
+    contacts:
+      cohortContactsSeed,
+    contactStatuses:
+      cohortContactStatusSeed,
+    contactInactiveDates: {},
+    inactiveFormerContacts:
+      inactiveFormerContactsSeed,
+    cohortMeetings:
+      cohortMeetingsSeed,
+    cohortAttendance:
+      cohortAttendanceSeed,
+  }
+}
+
+function readStoredBetaNuRuntimeState():
+  BetaNuRuntimeState {
+  const storedValue =
+    window.localStorage.getItem(
+      BETA_NU_RUNTIME_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return createBetaNuRuntimeSeed()
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !isBetaNuRuntimeState(
+        parsedValue,
+      )
+    ) {
+      return createBetaNuRuntimeSeed()
+    }
+
+    return parsedValue
+  } catch {
+    return createBetaNuRuntimeSeed()
+  }
+}
+
+function getAdminPacificDateParts(
+  date: Date,
+): AdminPacificDateParts {
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone:
+          'America/Los_Angeles',
+      },
+    ).formatToParts(date)
+
+  let year = ''
+  let month = ''
+  let day = ''
+  let hour = ''
+  let minute = ''
+  let dayPeriod = ''
+
+  for (const part of parts) {
+    switch (part.type) {
+      case 'year':
+        year = part.value
+        break
+
+      case 'month':
+        month = part.value
+        break
+
+      case 'day':
+        day = part.value
+        break
+
+      case 'hour':
+        hour = part.value
+        break
+
+      case 'minute':
+        minute = part.value
+        break
+
+      case 'dayPeriod':
+        dayPeriod =
+          part.value.toUpperCase()
+        break
+    }
+  }
+
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    dayPeriod,
+  }
+}
+
+function getAdminPacificDateKey(
+  date: Date,
+): string {
+  const parts =
+    getAdminPacificDateParts(date)
+
+  return (
+    `${parts.year}-` +
+    `${parts.month}-` +
+    parts.day
+  )
+}
+
+function formatAdminBackupFileName(
+  date: Date,
+): string {
+  const parts =
+    getAdminPacificDateParts(date)
+
+  return (
+    'beta-nu-fall-cohort-backup-' +
+    `${parts.year}-` +
+    `${parts.month}-` +
+    `${parts.day}_` +
+    `${parts.hour}.` +
+    `${parts.minute}_` +
+    `${parts.dayPeriod}.json`
+  )
+}
+
+function formatAdminArchiveDateTime(
+  value: string,
+): string {
+  const date = new Date(value)
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-US',
+    {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone:
+        'America/Los_Angeles',
+    },
+  ).format(date)
+}
+
+function formatAdminArchiveSize(
+  sizeBytes: number,
+): string {
+  const kilobytes =
+    sizeBytes / 1024
+
+  if (kilobytes < 10) {
+    return `${kilobytes.toFixed(
+      1,
+    )} KB`
+  }
+
+  return `${Math.round(
+    kilobytes,
+  )} KB`
+}
+
+function getAdminArchiveSourceLabel(
+  source: AdminArchiveSource,
+): string {
+  switch (source) {
+    case 'auto':
+      return 'Automatic'
+
+    case 'manual':
+      return 'Manual Export'
+
+    case 'pre-import':
+      return 'Pre-Import Safety'
+  }
+}
+
+function createBetaNuBackupDocument():
+  BetaNuBackupDocument {
+  const storage:
+    Record<string, string> = {}
+
+  for (
+    let index = 0;
+    index <
+    window.localStorage.length;
+    index += 1
+  ) {
+    const storageKey =
+      window.localStorage.key(
+        index,
+      )
+
+    if (
+      storageKey === null ||
+      !storageKey.startsWith(
+        'beta-nu-',
+      ) ||
+      storageKey ===
+      ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY
+    ) {
+      continue
+    }
+
+    const storageValue =
+      window.localStorage.getItem(
+        storageKey,
+      )
+
+    if (
+      storageValue !== null
+    ) {
+      storage[storageKey] =
+        storageValue
+    }
+  }
+
+  return {
+    appName:
+      'Beta Nu Fall Cohort Hub',
+    schemaVersion: 1,
+    exportedAt:
+      new Date().toISOString(),
+    storage,
+  }
+}
+
+function isBetaNuBackupDocument(
+  value: unknown,
+): value is BetaNuBackupDocument {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  if (
+    value.appName !==
+    'Beta Nu Fall Cohort Hub' ||
+    value.schemaVersion !== 1 ||
+    typeof value.exportedAt !==
+    'string' ||
+    !isAdminObjectRecord(
+      value.storage,
+    )
+  ) {
+    return false
+  }
+
+  return Object.entries(
+    value.storage,
+  ).every(
+    ([storageKey, storageValue]) =>
+      storageKey.startsWith(
+        'beta-nu-',
+      ) &&
+      typeof storageValue ===
+      'string',
+  )
+}
+
+function restoreBetaNuBackupDocument(
+  backup: BetaNuBackupDocument,
+): void {
+  const keysToRemove:
+    string[] = []
+
+  for (
+    let index = 0;
+    index <
+    window.localStorage.length;
+    index += 1
+  ) {
+    const storageKey =
+      window.localStorage.key(
+        index,
+      )
+
+    if (
+      storageKey !== null &&
+      storageKey.startsWith(
+        'beta-nu-',
+      ) &&
+      storageKey !==
+      ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY
+    ) {
+      keysToRemove.push(
+        storageKey,
+      )
+    }
+  }
+
+  for (
+    const storageKey
+    of keysToRemove
+  ) {
+    window.localStorage.removeItem(
+      storageKey,
+    )
+  }
+
+  for (
+    const [
+      storageKey,
+      storageValue,
+    ]
+    of Object.entries(
+      backup.storage,
+    )
+  ) {
+    window.localStorage.setItem(
+      storageKey,
+      storageValue,
+    )
+  }
+}
+
+function isAdminBackupArchiveRecord(
+  value: unknown,
+): value is AdminBackupArchiveRecord {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.createdAt ===
+    'string' &&
+    typeof value.pacificDate ===
+    'string' &&
+    typeof value.pacificMonth ===
+    'string' &&
+    typeof value.fileName ===
+    'string' &&
+    (
+      value.source === 'auto' ||
+      value.source === 'manual' ||
+      value.source ===
+      'pre-import'
+    ) &&
+    typeof value.sizeBytes ===
+    'number' &&
+    Number.isFinite(
+      value.sizeBytes,
+    ) &&
+    typeof value.backupJson ===
+    'string'
+  )
+}
+
+function openAdminArchiveDatabase():
+  Promise<IDBDatabase> {
+  return new Promise(
+    (resolve, reject) => {
+      const request =
+        window.indexedDB.open(
+          ADMIN_ARCHIVE_DATABASE_NAME,
+          1,
+        )
+
+      request.onupgradeneeded =
+        () => {
+          const database =
+            request.result
+
+          if (
+            !database.objectStoreNames.contains(
+              ADMIN_ARCHIVE_STORE_NAME,
+            )
+          ) {
+            const store =
+              database.createObjectStore(
+                ADMIN_ARCHIVE_STORE_NAME,
+                {
+                  keyPath: 'id',
+                },
+              )
+
+            store.createIndex(
+              'createdAt',
+              'createdAt',
+              {
+                unique: false,
+              },
+            )
+          }
+        }
+
+      request.onsuccess =
+        () => {
+          resolve(
+            request.result,
+          )
+        }
+
+      request.onerror =
+        () => {
+          reject(
+            request.error ??
+            new Error(
+              'Unable to open the Admin backup archive.',
+            ),
+          )
+        }
+    },
+  )
+}
+
+async function saveAdminArchiveRecord(
+  record: AdminBackupArchiveRecord,
+): Promise<void> {
+  const database =
+    await openAdminArchiveDatabase()
+
+  await new Promise<void>(
+    (resolve, reject) => {
+      const transaction =
+        database.transaction(
+          ADMIN_ARCHIVE_STORE_NAME,
+          'readwrite',
+        )
+
+      transaction
+        .objectStore(
+          ADMIN_ARCHIVE_STORE_NAME,
+        )
+        .put(record)
+
+      transaction.oncomplete =
+        () => {
+          database.close()
+
+          window.dispatchEvent(
+            new Event(
+              ADMIN_ARCHIVE_UPDATED_EVENT,
+            ),
+          )
+
+          resolve()
+        }
+
+      transaction.onerror =
+        () => {
+          database.close()
+
+          reject(
+            transaction.error ??
+            new Error(
+              'Unable to save the Admin backup archive.',
+            ),
+          )
+        }
+
+      transaction.onabort =
+        () => {
+          database.close()
+
+          reject(
+            transaction.error ??
+            new Error(
+              'The Admin backup archive was cancelled.',
+            ),
+          )
+        }
+    },
+  )
+}
+
+async function readAdminArchiveRecords():
+  Promise<
+    readonly AdminBackupArchiveRecord[]
+  > {
+  const database =
+    await openAdminArchiveDatabase()
+
+  return new Promise(
+    (resolve, reject) => {
+      const transaction =
+        database.transaction(
+          ADMIN_ARCHIVE_STORE_NAME,
+          'readonly',
+        )
+
+      const request =
+        transaction
+          .objectStore(
+            ADMIN_ARCHIVE_STORE_NAME,
+          )
+          .getAll()
+
+      request.onsuccess =
+        () => {
+          const records =
+            request.result
+              .filter(
+                isAdminBackupArchiveRecord,
+              )
+              .sort(
+                (
+                  firstRecord,
+                  secondRecord,
+                ) =>
+                  secondRecord
+                    .createdAt
+                    .localeCompare(
+                      firstRecord.createdAt,
+                    ),
+              )
+
+          database.close()
+          resolve(records)
+        }
+
+      request.onerror =
+        () => {
+          database.close()
+
+          reject(
+            request.error ??
+            new Error(
+              'Unable to read the Admin backup archive.',
+            ),
+          )
+        }
+    },
+  )
+}
+
+async function createAdminArchive(
+  source: AdminArchiveSource,
+): Promise<
+  AdminBackupArchiveRecord
+> {
+  const backup =
+    createBetaNuBackupDocument()
+
+  const backupJson =
+    JSON.stringify(
+      backup,
+      null,
+      2,
+    )
+
+  const createdDate =
+    new Date(
+      backup.exportedAt,
+    )
+
+  const pacificDate =
+    getAdminPacificDateKey(
+      createdDate,
+    )
+
+  const record:
+    AdminBackupArchiveRecord = {
+    id:
+      window.crypto.randomUUID(),
+    createdAt:
+      backup.exportedAt,
+    pacificDate,
+    pacificMonth:
+      pacificDate.slice(
+        0,
+        7,
+      ),
+    fileName:
+      formatAdminBackupFileName(
+        createdDate,
+      ),
+    source,
+    sizeBytes:
+      new Blob(
+        [backupJson],
+      ).size,
+    backupJson,
+  }
+
+  await saveAdminArchiveRecord(
+    record,
+  )
+
+  if (source === 'auto') {
+    window.localStorage.setItem(
+      ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+      backup.exportedAt,
+    )
+  }
+
+  return record
+}
+
+function downloadAdminArchive(
+  archive:
+    AdminBackupArchiveRecord,
+): void {
+  const blob =
+    new Blob(
+      [archive.backupJson],
+      {
+        type:
+          'application/json;charset=utf-8',
+      },
+    )
+
+  const downloadUrl =
+    URL.createObjectURL(blob)
+
+  const anchor =
+    document.createElement('a')
+
+  anchor.href =
+    downloadUrl
+
+  anchor.download =
+    archive.fileName
+
+  document.body.appendChild(
+    anchor,
+  )
+
+  anchor.click()
+  anchor.remove()
+
+  window.setTimeout(
+    () => {
+      URL.revokeObjectURL(
+        downloadUrl,
+      )
+    },
+    0,
+  )
+}
+
+async function hashAdminPin(
+  pin: string,
+): Promise<string> {
+  const encodedPin =
+    new TextEncoder().encode(
+      pin,
+    )
+
+  const digest =
+    await window.crypto.subtle.digest(
+      'SHA-256',
+      encodedPin,
+    )
+
+  return Array.from(
+    new Uint8Array(
+      digest,
+    ),
+    (byte) =>
+      byte
+        .toString(16)
+        .padStart(
+          2,
+          '0',
+        ),
+  ).join('')
+}
+
+function AdminPage({
+  onLock,
+}: AdminPageProps) {
+  const [
+    archives,
+    setArchives,
+  ] =
+    useState<
+      readonly AdminBackupArchiveRecord[]
+    >([])
+
+  const [
+    filterMode,
+    setFilterMode,
+  ] =
+    useState<AdminArchiveFilterMode>(
+      'today',
+    )
+
+  const [
+    monthFilter,
+    setMonthFilter,
+  ] =
+    useState('')
+
+  const [
+    dateFilter,
+    setDateFilter,
+  ] =
+    useState(
+      () =>
+        getAdminPacificDateKey(
+          new Date(),
+        ),
+    )
+
+  const [
+    actionMessage,
+    setActionMessage,
+  ] =
+    useState('')
+
+  const [
+    isWorking,
+    setIsWorking,
+  ] =
+    useState(false)
+
+  const importInputRef =
+    useRef<HTMLInputElement>(
+      null,
+    )
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadArchives():
+      Promise<void> {
+      try {
+        const records =
+          await readAdminArchiveRecords()
+
+        if (isMounted) {
+          setArchives(
+            records,
+          )
+        }
+      } catch {
+        if (isMounted) {
+          setActionMessage(
+            'The JSON Archive Log could not be loaded.',
+          )
+        }
+      }
+    }
+
+    const handleArchiveUpdated =
+      (): void => {
+        void loadArchives()
+      }
+
+    void loadArchives()
+
+    window.addEventListener(
+      ADMIN_ARCHIVE_UPDATED_EVENT,
+      handleArchiveUpdated,
+    )
+
+    return () => {
+      isMounted = false
+
+      window.removeEventListener(
+        ADMIN_ARCHIVE_UPDATED_EVENT,
+        handleArchiveUpdated,
+      )
+    }
+  }, [])
+
+  const todayKey =
+    getAdminPacificDateKey(
+      new Date(),
+    )
+
+  const filteredArchives =
+    archives.filter(
+      (archive) => {
+        switch (filterMode) {
+          case 'today':
+            return (
+              archive.pacificDate ===
+              todayKey
+            )
+
+          case 'all':
+            return true
+
+          case 'month':
+            return (
+              monthFilter.length === 0 ||
+              archive.pacificMonth ===
+              monthFilter
+            )
+
+          case 'date':
+            return (
+              dateFilter.length === 0 ||
+              archive.pacificDate ===
+              dateFilter
+            )
+        }
+      },
+    )
+
+  const latestAutoArchive =
+    archives.find(
+      (archive) =>
+        archive.source ===
+        'auto',
+    )
+
+  const latestManualArchive =
+    archives.find(
+      (archive) =>
+        archive.source ===
+        'manual',
+    )
+
+  async function handleManualExport():
+    Promise<void> {
+    setIsWorking(true)
+    setActionMessage('')
+
+    try {
+      const archive =
+        await createAdminArchive(
+          'manual',
+        )
+
+      downloadAdminArchive(
+        archive,
+      )
+
+      setActionMessage(
+        `Exported ${archive.fileName}`,
+      )
+    } catch {
+      setActionMessage(
+        'The JSON export could not be created.',
+      )
+    } finally {
+      setIsWorking(false)
+    }
+  }
+
+  function openImportFilePicker():
+    void {
+    importInputRef
+      .current
+      ?.click()
+  }
+
+  async function handleImportFile(
+    event:
+      ChangeEvent<HTMLInputElement>,
+  ): Promise<void> {
+    const input =
+      event.currentTarget
+
+    const file =
+      input.files?.[0]
+
+    if (file === undefined) {
+      return
+    }
+
+    setIsWorking(true)
+    setActionMessage('')
+
+    try {
+      const fileText =
+        await file.text()
+
+      const parsedValue:
+        unknown =
+        JSON.parse(fileText)
+
+      if (
+        !isBetaNuBackupDocument(
+          parsedValue,
+        )
+      ) {
+        setActionMessage(
+          'This file is not a valid Beta Nu Fall Cohort Hub backup.',
+        )
+        return
+      }
+
+      const confirmed =
+        window.confirm(
+          'IMPORT JSON will replace the current Beta Nu Hub data with this backup. A safety snapshot of the current data will be created first. Continue?',
+        )
+
+      if (!confirmed) {
+        return
+      }
+
+      await createAdminArchive(
+        'pre-import',
+      )
+
+      restoreBetaNuBackupDocument(
+        parsedValue,
+      )
+
+      setActionMessage(
+        'Backup restored. Reloading the Hub...',
+      )
+
+      window.setTimeout(
+        () => {
+          window.location.reload()
+        },
+        250,
+      )
+    } catch {
+      setActionMessage(
+        'The selected JSON file could not be imported.',
+      )
+    } finally {
+      input.value = ''
+      setIsWorking(false)
+    }
+  }
+
+  return (
+    <section className="page-shell admin-page">
+      <header className="admin-page-header">
+        <div>
+          <span className="admin-page-eyebrow">
+            PRIVATE ACCESS
+          </span>
+
+          <h1>
+            Admin Backup &amp; Recovery
+          </h1>
+
+          <p>
+            Beta Nu Fall Cohort Hub
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="admin-lock-button"
+          onClick={onLock}
+        >
+          Lock Admin
+        </button>
+      </header>
+
+      <div className="admin-summary-grid">
+        <article>
+          <span>
+            Archived JSON Reports
+          </span>
+
+          <strong>
+            {archives.length}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Last Automatic Archive
+          </span>
+
+          <strong>
+            {
+              latestAutoArchive ===
+                undefined
+                ? 'Not yet created'
+                : formatAdminArchiveDateTime(
+                  latestAutoArchive
+                    .createdAt,
+                )
+            }
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Last Manual Export
+          </span>
+
+          <strong>
+            {
+              latestManualArchive ===
+                undefined
+                ? 'Not yet exported'
+                : formatAdminArchiveDateTime(
+                  latestManualArchive
+                    .createdAt,
+                )
+            }
+          </strong>
+        </article>
+      </div>
+
+      <section className="admin-actions-panel">
+        <div className="admin-actions-heading">
+          <div>
+            <h2>
+              JSON Backup Controls
+            </h2>
+
+            <p>
+              Automatic archive:
+              approximately every 1 hour
+              while the Hub is open.
+            </p>
+          </div>
+        </div>
+
+        <div className="admin-action-buttons">
+          <button
+            type="button"
+            className="admin-export-button"
+            disabled={isWorking}
+            onClick={() =>
+              void handleManualExport()
+            }
+          >
+            EXPORT JSON
+          </button>
+
+          <button
+            type="button"
+            className="admin-import-button"
+            disabled={isWorking}
+            onClick={
+              openImportFilePicker
+            }
+          >
+            IMPORT JSON
+          </button>
+
+          <input
+            ref={importInputRef}
+            className="admin-import-input"
+            type="file"
+            accept=".json,application/json"
+            onChange={(event) =>
+              void handleImportFile(
+                event,
+              )
+            }
+          />
+        </div>
+
+        <p
+          className="admin-action-message"
+          aria-live="polite"
+        >
+          {actionMessage}
+        </p>
+      </section>
+
+      <section className="admin-archive-panel">
+        <div className="admin-archive-header">
+          <div>
+            <h2>
+              JSON Archive Log
+            </h2>
+
+            <p>
+              Newest archive appears
+              first.
+            </p>
+          </div>
+
+          <div className="admin-archive-filters">
+            <button
+              type="button"
+              className={
+                filterMode ===
+                  'today'
+                  ? 'admin-filter-button admin-filter-button-active'
+                  : 'admin-filter-button'
+              }
+              onClick={() =>
+                setFilterMode(
+                  'today',
+                )
+              }
+            >
+              Today
+            </button>
+
+            <button
+              type="button"
+              className={
+                filterMode ===
+                  'all'
+                  ? 'admin-filter-button admin-filter-button-active'
+                  : 'admin-filter-button'
+              }
+              onClick={() =>
+                setFilterMode(
+                  'all',
+                )
+              }
+            >
+              All
+            </button>
+
+            <button
+              type="button"
+              className={
+                filterMode ===
+                  'month'
+                  ? 'admin-filter-button admin-filter-button-active'
+                  : 'admin-filter-button'
+              }
+              onClick={() =>
+                setFilterMode(
+                  'month',
+                )
+              }
+            >
+              Month
+            </button>
+
+            <button
+              type="button"
+              className={
+                filterMode ===
+                  'date'
+                  ? 'admin-filter-button admin-filter-button-active'
+                  : 'admin-filter-button'
+              }
+              onClick={() =>
+                setFilterMode(
+                  'date',
+                )
+              }
+            >
+              Date
+            </button>
+
+            {filterMode ===
+              'month' ? (
+              <input
+                type="month"
+                value={monthFilter}
+                onChange={(event) =>
+                  setMonthFilter(
+                    event.target.value,
+                  )
+                }
+              />
+            ) : null}
+
+            {filterMode ===
+              'date' ? (
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(event) =>
+                  setDateFilter(
+                    event.target.value,
+                  )
+                }
+              />
+            ) : null}
+          </div>
+        </div>
+
+        <div className="admin-archive-table-frame">
+          <table className="admin-archive-table">
+            <thead>
+              <tr>
+                <th>
+                  Date / Time
+                </th>
+
+                <th>
+                  Type
+                </th>
+
+                <th>
+                  JSON File
+                </th>
+
+                <th>
+                  Size
+                </th>
+
+                <th>
+                  Download
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredArchives.length ===
+                0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="admin-archive-empty"
+                  >
+                    No JSON archives
+                    match this filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredArchives.map(
+                  (archive) => (
+                    <tr
+                      key={
+                        archive.id
+                      }
+                    >
+                      <td>
+                        {
+                          formatAdminArchiveDateTime(
+                            archive
+                              .createdAt,
+                          )
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          getAdminArchiveSourceLabel(
+                            archive
+                              .source,
+                          )
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          archive
+                            .fileName
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          formatAdminArchiveSize(
+                            archive
+                              .sizeBytes,
+                          )
+                        }
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-download-button"
+                          onClick={() =>
+                            downloadAdminArchive(
+                              archive,
+                            )
+                          }
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  ),
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  )
+}
+
 function App() {
+  const navigate =
+    useNavigate()
+
   const [coursesOpen, setCoursesOpen] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  const [
+    isAdminAccessTrayOpen,
+    setIsAdminAccessTrayOpen,
+  ] =
+    useState(false)
+
+  const [
+    isAdminLoginOpen,
+    setIsAdminLoginOpen,
+  ] =
+    useState(false)
+
+  const [
+    adminPinInput,
+    setAdminPinInput,
+  ] =
+    useState('')
+
+  const [
+    adminLoginError,
+    setAdminLoginError,
+  ] =
+    useState('')
+
+  const [
+    isAdminUnlocked,
+    setIsAdminUnlocked,
+  ] =
+    useState(
+      () =>
+        window.sessionStorage.getItem(
+          ADMIN_SESSION_STORAGE_KEY,
+        ) === '1',
+    )
 
   const [
     sidebarGroupsOpen,
@@ -27057,6 +28669,93 @@ function App() {
     )
   }
 
+  function handleAdminTorchClick():
+    void {
+    setIsAdminAccessTrayOpen(false)
+
+    if (isAdminUnlocked) {
+      navigate('/admin')
+      return
+    }
+
+    setAdminPinInput('')
+    setAdminLoginError('')
+    setIsAdminLoginOpen(true)
+  }
+
+  function closeAdminLogin():
+    void {
+    setAdminPinInput('')
+    setAdminLoginError('')
+    setIsAdminLoginOpen(false)
+  }
+
+  async function handleAdminLoginSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault()
+
+    if (
+      !/^\d{4}$/.test(
+        adminPinInput,
+      )
+    ) {
+      setAdminLoginError(
+        'Enter the four-digit password.',
+      )
+      return
+    }
+
+    if (
+      !/^[a-f0-9]{64}$/i.test(
+        ADMIN_PIN_SHA256,
+      )
+    ) {
+      setAdminLoginError(
+        'The Admin password has not been configured.',
+      )
+      return
+    }
+
+    const enteredPinHash =
+      await hashAdminPin(
+        adminPinInput,
+      )
+
+    if (
+      enteredPinHash !==
+      ADMIN_PIN_SHA256.toLowerCase()
+    ) {
+      setAdminLoginError(
+        'Incorrect password.',
+      )
+      return
+    }
+
+    window.sessionStorage.setItem(
+      ADMIN_SESSION_STORAGE_KEY,
+      '1',
+    )
+
+    setIsAdminUnlocked(true)
+    setIsAdminLoginOpen(false)
+    setAdminPinInput('')
+    setAdminLoginError('')
+
+    navigate('/admin')
+  }
+
+  function lockAdminAccess():
+    void {
+    window.sessionStorage.removeItem(
+      ADMIN_SESSION_STORAGE_KEY,
+    )
+
+    setIsAdminUnlocked(false)
+
+    navigate('/')
+  }
+
   const [
     sidebarAcademicPlan,
     setSidebarAcademicPlan,
@@ -27068,41 +28767,194 @@ function App() {
         readStoredCohortAcademicPlan(),
     )
 
-  const [contacts, setContacts] =
-    useState<readonly CohortContactRecord[]>(cohortContactsSeed)
+  const [
+    initialRuntimeState,
+  ] =
+    useState<BetaNuRuntimeState>(
+      () =>
+        readStoredBetaNuRuntimeState(),
+    )
 
-  const [contactStatuses, setContactStatuses] =
-    useState<CohortContactStatusState>(cohortContactStatusSeed)
+  const [contacts, setContacts] =
+    useState<
+      readonly CohortContactRecord[]
+    >(
+      initialRuntimeState.contacts,
+    )
+
+  const [
+    contactStatuses,
+    setContactStatuses,
+  ] =
+    useState<CohortContactStatusState>(
+      initialRuntimeState
+        .contactStatuses,
+    )
 
   const [
     contactInactiveDates,
     setContactInactiveDates,
-  ] = useState<
-    CohortContactInactiveDateState
-  >({})
+  ] =
+    useState<
+      CohortContactInactiveDateState
+    >(
+      initialRuntimeState
+        .contactInactiveDates,
+    )
 
   const [
     inactiveFormerContacts,
     setInactiveFormerContacts,
-  ] = useState<
-    readonly InactiveFormerContactRecord[]
-  >(inactiveFormerContactsSeed)
+  ] =
+    useState<
+      readonly InactiveFormerContactRecord[]
+    >(
+      initialRuntimeState
+        .inactiveFormerContacts,
+    )
 
-  const [cohortMeetings, setCohortMeetings] =
-    useState<readonly CohortMeetingRecord[]>(cohortMeetingsSeed)
+  const [
+    cohortMeetings,
+    setCohortMeetings,
+  ] =
+    useState<
+      readonly CohortMeetingRecord[]
+    >(
+      initialRuntimeState
+        .cohortMeetings,
+    )
 
-  const [cohortAttendance, setCohortAttendance] =
-    useState<CohortAttendanceState>(cohortAttendanceSeed)
+  const [
+    cohortAttendance,
+    setCohortAttendance,
+  ] =
+    useState<CohortAttendanceState>(
+      initialRuntimeState
+        .cohortAttendance,
+    )
 
-  const [cohortDataSurvey, setCohortDataSurvey] =
+  const [
+    cohortDataSurvey,
+    setCohortDataSurvey,
+  ] =
     useState<CohortDataSurveyState>(
-      () => readStoredCohortDataSurvey(),
+      () =>
+        readStoredCohortDataSurvey(),
     )
 
-  const [purposeResearchRecords, setPurposeResearchRecords] =
-    useState<readonly CohortPurposeResearchRecord[]>(
-      () => readStoredPurposeResearchRecords(),
+  const [
+    purposeResearchRecords,
+    setPurposeResearchRecords,
+  ] =
+    useState<
+      readonly CohortPurposeResearchRecord[]
+    >(
+      () =>
+        readStoredPurposeResearchRecords(),
     )
+
+  useEffect(() => {
+    const runtimeState:
+      BetaNuRuntimeState = {
+      contacts,
+      contactStatuses,
+      contactInactiveDates,
+      inactiveFormerContacts,
+      cohortMeetings,
+      cohortAttendance,
+    }
+
+    window.localStorage.setItem(
+      BETA_NU_RUNTIME_STORAGE_KEY,
+      JSON.stringify(
+        runtimeState,
+      ),
+    )
+  }, [
+    contacts,
+    contactStatuses,
+    contactInactiveDates,
+    inactiveFormerContacts,
+    cohortMeetings,
+    cohortAttendance,
+  ])
+
+  useEffect(() => {
+    async function createAutoArchiveIfDue():
+      Promise<void> {
+      const storedLastArchive =
+        window.localStorage.getItem(
+          ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+        )
+
+      const lastArchiveTime =
+        storedLastArchive === null
+          ? Number.NaN
+          : Date.parse(
+            storedLastArchive,
+          )
+
+      const archiveIsDue =
+        !Number.isFinite(
+          lastArchiveTime,
+        ) ||
+        Date.now() -
+          lastArchiveTime >=
+          ADMIN_AUTO_ARCHIVE_INTERVAL_MS
+
+      if (!archiveIsDue) {
+        return
+      }
+
+      try {
+        await createAdminArchive(
+          'auto',
+        )
+      } catch {
+        /*
+         * The archive is a backup layer.
+         * A browser storage failure must
+         * not stop the Hub from running.
+         */
+      }
+    }
+
+    function handleAdminArchiveVisibility():
+      void {
+      if (
+        document.visibilityState ===
+        'visible'
+      ) {
+        void createAutoArchiveIfDue()
+      }
+    }
+
+    void createAutoArchiveIfDue()
+
+    const archiveInterval =
+      window.setInterval(
+        () => {
+          void createAutoArchiveIfDue()
+        },
+        ADMIN_AUTO_ARCHIVE_INTERVAL_MS,
+      )
+
+    document.addEventListener(
+      'visibilitychange',
+      handleAdminArchiveVisibility,
+    )
+
+    return () => {
+      window.clearInterval(
+        archiveInterval,
+      )
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleAdminArchiveVisibility,
+      )
+    }
+  }, [])
 
   useEffect(() => {
     const syncSidebarAcademicPlan =
@@ -29434,7 +31286,144 @@ function App() {
             )}
           </div>
         </nav>
+
       </aside>
+
+      <div
+        className={
+          isAdminAccessTrayOpen
+            ? 'admin-access-edge admin-access-edge-open'
+            : 'admin-access-edge'
+        }
+      >
+        <button
+          type="button"
+          className="admin-access-edge-trigger"
+          aria-label={
+            isAdminAccessTrayOpen
+              ? 'Close private access'
+              : 'Open private access'
+          }
+          aria-expanded={
+            isAdminAccessTrayOpen
+          }
+          onClick={() =>
+            setIsAdminAccessTrayOpen(
+              (currentValue) =>
+                !currentValue,
+            )
+          }
+        />
+
+        <div className="admin-access-edge-drawer">
+          <button
+            type="button"
+            className="sidebar-admin-torch"
+            onClick={
+              handleAdminTorchClick
+            }
+            aria-label="Open private access"
+          >
+            <img
+              className="sidebar-admin-torch-image"
+              src={`${import.meta.env.BASE_URL}Admin Torch.png`}
+              alt=""
+            />
+          </button>
+        </div>
+      </div>
+
+      {isAdminLoginOpen ? (
+        <div
+          className="admin-login-backdrop"
+          role="presentation"
+        >
+          <form
+            className="admin-login-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-login-title"
+            onSubmit={(event) =>
+              void handleAdminLoginSubmit(
+                event,
+              )
+            }
+          >
+            <header>
+              <h2 id="admin-login-title">
+                ADMIN
+              </h2>
+
+              <button
+                type="button"
+                className="admin-login-close"
+                onClick={
+                  closeAdminLogin
+                }
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </header>
+
+            <label className="admin-login-field">
+              <span>
+                Enter Password:
+              </span>
+
+              <input
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={4}
+                value={
+                  adminPinInput
+                }
+                autoFocus
+                onChange={(event) =>
+                  setAdminPinInput(
+                    event
+                      .target
+                      .value
+                      .replace(
+                        /\D/g,
+                        '',
+                      )
+                      .slice(
+                        0,
+                        4,
+                      ),
+                  )
+                }
+              />
+            </label>
+
+            <p
+              className="admin-login-error"
+              aria-live="polite"
+            >
+              {adminLoginError}
+            </p>
+
+            <div className="admin-login-actions">
+              <button
+                type="button"
+                onClick={
+                  closeAdminLogin
+                }
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+              >
+                Enter
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       <div className="app-main">
         <main className="page-content">
@@ -29636,6 +31625,24 @@ function App() {
                   title="Template EDDP 7XX"
                   description="The reusable Beta Nu Fall course-page template will be maintained here."
                 />
+              }
+            />
+
+            <Route
+              path="/admin"
+              element={
+                isAdminUnlocked ? (
+                  <AdminPage
+                    onLock={
+                      lockAdminAccess
+                    }
+                  />
+                ) : (
+                  <Navigate
+                    to="/"
+                    replace
+                  />
+                )
               }
             />
 

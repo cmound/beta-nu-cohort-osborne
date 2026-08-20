@@ -17513,3 +17513,779 @@ tbody td {
   font-weight: 900;
   cursor: pointer;
 }
+
+/* =========================================================
+   Private Admin Edge Access
+   ========================================================= */
+
+/*
+ * Entire concealed Admin control.
+ * Fixed to the browser viewport so it does
+ * not move when the page or sidebar scrolls.
+ */
+.admin-access-edge {
+  position: fixed;
+  z-index: 950;
+  top: 23px;
+  right: 0;
+  width: 6px;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  overflow: hidden;
+  border-radius: 6px 0 0 6px;
+  transition:
+    width 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/*
+ * Expanded state.
+ * Drawer grows leftward because the
+ * right edge remains fixed at right: 0.
+ */
+.admin-access-edge-open {
+  width: 56px;
+  box-shadow:
+    -5px 3px 9px
+      rgba(0, 0, 0, 0.34);
+}
+
+/*
+ * The thin visible strip.
+ * This is the only thing visible while closed.
+ */
+.admin-access-edge-trigger {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid
+    rgba(104, 147, 184, 0.72);
+  border-radius: 4px 0 0 4px;
+  background:
+    linear-gradient(
+      180deg,
+      #123c5d 0%,
+      #0b2946 48%,
+      #061b31 100%
+    );
+  box-shadow:
+    inset 1px 0 0
+      rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+
+.admin-access-edge-trigger:hover {
+  background:
+    linear-gradient(
+      180deg,
+      #174d75 0%,
+      #0d3457 48%,
+      #08223c 100%
+    );
+}
+
+/*
+ * Hidden drawer area that appears to
+ * the left of the thin trigger.
+ */
+.admin-access-edge-drawer {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  width: 50px;
+  height: 38px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #c89214;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #234b6d 0%,
+      #173653 38%,
+      #0b2946 68%,
+      #061b31 100%
+    );
+
+  box-shadow:
+    inset 1px 1px 0
+      rgba(255, 255, 255, 0.2),
+    inset 0 -2px 3px
+      rgba(0, 0, 0, 0.32),
+    -3px 3px 7px
+      rgba(0, 0, 0, 0.3);
+
+  opacity: 0;
+
+  transform:
+    translateX(50px);
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.2s ease;
+
+  pointer-events: none;
+}
+
+.admin-access-edge-open
+  .admin-access-edge-drawer {
+  opacity: 1;
+  transform:
+    translateX(0);
+  pointer-events: auto;
+}
+
+.admin-access-edge-drawer::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid
+    rgba(143, 184, 212, 0.5);
+  border-radius: 5px 0 0 5px;
+  box-shadow:
+    inset 1px 1px 0
+      rgba(255, 255, 255, 0.18),
+    inset -1px -1px 0
+      rgba(2, 9, 20, 0.32);
+  pointer-events: none;
+}
+
+/*
+ * Torch button inside the drawer.
+ */
+.sidebar-admin-torch {
+  position: relative;
+  z-index: 2;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid
+    rgba(242, 182, 50, 0.42);
+  border-radius: 7px;
+  background:
+    #0b1f3b;
+  opacity: 0.9;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.1),
+    0 2px 4px
+      rgba(0, 0, 0, 0.25);
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    filter 0.15s ease,
+    transform 0.15s ease;
+}
+
+.sidebar-admin-torch:hover {
+  opacity: 1;
+  border-color:
+    rgba(255, 215, 106, 0.9);
+  filter:
+    drop-shadow(
+      0 0 4px
+      rgba(242, 182, 50, 0.55)
+    );
+  transform:
+    scale(1.04);
+}
+
+.sidebar-admin-torch:active {
+  transform:
+    scale(0.96);
+}
+
+.sidebar-admin-torch:focus-visible,
+.admin-access-edge-trigger:focus-visible {
+  outline: 1px solid #f2b632;
+  outline-offset: 2px;
+}
+
+.sidebar-admin-torch-image {
+  width: 28px;
+  height: 28px;
+  display: block;
+  object-fit: contain;
+}
+
+/* =========================================================
+   Admin Password Dialog
+   ========================================================= */
+
+.admin-login-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    rgba(2, 9, 20, 0.78);
+  backdrop-filter:
+    blur(2px);
+}
+
+.admin-login-dialog {
+  width: 340px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #527a99;
+  border-radius: 9px;
+  background:
+    linear-gradient(
+      180deg,
+      #f8fafc 0%,
+      #e8eef4 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    0 16px 38px
+      rgba(0, 0, 0, 0.5);
+}
+
+.admin-login-dialog
+  > header {
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px 9px 16px;
+  border-bottom: 1px solid #31577a;
+  background:
+    linear-gradient(
+      180deg,
+      #0b3158 0%,
+      #061b31 100%
+    );
+}
+
+.admin-login-dialog
+  > header
+  h2 {
+  margin: 0;
+  color: #ffd200;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.admin-login-close {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 5px;
+  color: #ffffff;
+  background: #8b1e1e;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 18px 18px 0;
+}
+
+.admin-login-field
+  > span {
+  color: #0b1f3b;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-login-field input {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 7px 12px;
+  border: 1px solid #718aa1;
+  border-radius: 6px;
+  color: #0b1f3b;
+  background: #ffffff;
+  box-shadow:
+    inset 0 2px 4px
+      rgba(11, 31, 59, 0.1);
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  text-align: center;
+}
+
+.admin-login-field
+  input:focus {
+  outline: 2px solid #c69214;
+  outline-offset: 1px;
+}
+
+.admin-login-error {
+  min-height: 18px;
+  margin: 8px 18px 0;
+  color: #881c1c;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px 18px;
+}
+
+.admin-login-actions
+  button {
+  min-width: 85px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-login-actions
+  button:first-child {
+  border: 1px solid #94a3b8;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e7edf3 100%
+    );
+}
+
+.admin-login-actions
+  button:last-child {
+  border: 1px solid #9c700c;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #ffd200 55%,
+      #c69214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.6),
+    0 2px 4px
+      rgba(0, 0, 0, 0.2);
+}
+
+/* =========================================================
+   Admin Backup & Recovery
+   ========================================================= */
+
+.admin-page {
+  min-width: 0;
+}
+
+.admin-page-header {
+  min-height: 76px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 18px;
+  border: 1px solid #527a99;
+  border-left: 4px solid #c69214;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      #0b3158 0%,
+      #061b31 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.1),
+    0 5px 12px
+      rgba(0, 0, 0, 0.3);
+}
+
+.admin-page-header
+  > div {
+  min-width: 0;
+}
+
+.admin-page-eyebrow {
+  display: block;
+  color: #9fc7e4;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.admin-page-header h1 {
+  margin: 4px 0 0;
+  color: #ffd200;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.admin-page-header p {
+  margin: 4px 0 0;
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-lock-button {
+  min-width: 105px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: 1px solid #ef5350;
+  border-radius: 6px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #b62b2b 0%,
+      #881c1c 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.2),
+    0 3px 6px
+      rgba(0, 0, 0, 0.28);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-summary-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-summary-grid
+  > article {
+  min-width: 0;
+  min-height: 70px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 11px 14px;
+  border: 1px solid #718aa1;
+  border-radius: 7px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e7eef4 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    inset 0 -2px 3px
+      rgba(49, 87, 122, 0.1),
+    0 3px 6px
+      rgba(0, 0, 0, 0.18);
+}
+
+.admin-summary-grid span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.admin-summary-grid strong {
+  margin-top: 6px;
+  color: #0b1f3b;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.admin-actions-panel,
+.admin-archive-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #718aa1;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      #e2eaf2 0%,
+      #d7e2ec 55%,
+      #cbd9e5 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.75),
+    0 4px 9px
+      rgba(0, 0, 0, 0.2);
+}
+
+.admin-actions-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-actions-heading h2,
+.admin-archive-header h2 {
+  margin: 0;
+  color: #0b1f3b;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.admin-actions-heading p,
+.admin-archive-header p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-export-button,
+.admin-import-button {
+  min-width: 130px;
+  min-height: 38px;
+  padding: 7px 15px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-export-button {
+  border: 1px solid #005eb8;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #087ce8 0%,
+      #005eb8 100%
+    );
+}
+
+.admin-import-button {
+  border: 1px solid #9c700c;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #ffd200 55%,
+      #c69214 100%
+    );
+}
+
+.admin-export-button:disabled,
+.admin-import-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.admin-import-input {
+  display: none;
+}
+
+.admin-action-message {
+  min-height: 18px;
+  margin: 10px 0 0;
+  color: #0b1f3b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-archive-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-archive-filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-filter-button {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid #8197aa;
+  border-radius: 5px;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e6edf3 100%
+    );
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-filter-button-active {
+  border-color: #9c700c;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #ffd200 100%
+    );
+}
+
+.admin-archive-filters
+  input {
+  height: 30px;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  border: 1px solid #8197aa;
+  border-radius: 5px;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-archive-table-frame {
+  overflow-x: auto;
+  margin-top: 12px;
+  border: 1px solid #718aa1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.admin-archive-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-size: 10px;
+}
+
+.admin-archive-table th,
+.admin-archive-table td {
+  padding: 8px 10px;
+  border: 1px solid #a6b5c3;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-archive-table th {
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #123c6a 0%,
+      #061b31 100%
+    );
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.admin-archive-table td {
+  font-weight: 700;
+}
+
+.admin-archive-table tbody
+  tr:nth-child(even)
+  td {
+  background: #f3f6f9;
+}
+
+.admin-archive-table
+  th:nth-child(1) {
+  width: 180px;
+}
+
+.admin-archive-table
+  th:nth-child(2) {
+  width: 135px;
+}
+
+.admin-archive-table
+  th:nth-child(3) {
+  width: auto;
+}
+
+.admin-archive-table
+  th:nth-child(4) {
+  width: 90px;
+}
+
+.admin-archive-table
+  th:nth-child(5) {
+  width: 110px;
+}
+
+.admin-download-button {
+  min-width: 78px;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid #718aa1;
+  border-radius: 5px;
+  color: #005eb8;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e7edf3 100%
+    );
+  box-shadow:
+    0 2px 4px
+      rgba(0, 0, 0, 0.12);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-archive-empty {
+  height: 70px;
+  color: #64748b;
+  font-weight: 800;
+  text-align: center !important;
+}
