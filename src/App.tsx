@@ -44,11 +44,6 @@ type SidebarNavigationGroupId =
   | 'cohort-identity'
   | 'shared-files'
 
-type SidebarNavigationGroupState = Record<
-  SidebarNavigationGroupId,
-  boolean
->
-
 interface NavigationItem {
   readonly label: string
   readonly path: string
@@ -628,66 +623,42 @@ const navigationItems: readonly NavigationItem[] = [
     label: 'Dashboard',
     path: '/',
   },
+
+  {
+    label: 'Cohort',
+    path: '/cohort',
+    groupId: 'cohort-identity',
+    navigationOnly: true,
+  },
   {
     label: 'Cohort Contacts',
     path: '/cohort-contact',
+    parentId: 'cohort-identity',
   },
   {
     label: 'Cohort Dates & Roles',
     path: '/cohort-dates-roles',
-    groupId: 'cohort-dates',
-  },
-  {
-    label: 'Facilitator Planner',
-    path: '/facilitator-planner',
-    parentId: 'cohort-dates',
+    parentId: 'cohort-identity',
   },
   {
     label: 'Cohort Availability',
     path: '/data-survey',
-    parentId: 'cohort-dates',
+    parentId: 'cohort-identity',
+  },
+  {
+    label: 'Facilitator Planner',
+    path: '/facilitator-planner',
+    parentId: 'cohort-identity',
   },
   {
     label: 'Attendance',
     path: '/attendance',
-    parentId: 'cohort-dates',
+    parentId: 'cohort-identity',
   },
   {
     label: 'Group Assignments',
     path: '/groups-assigned-by-member',
-    parentId: 'cohort-dates',
-    isLastInGroup: true,
-  },
-  {
-    label: 'Academic Plan',
-    path: '/academic-plan',
-    groupId: 'academic-plan',
-  },
-  {
-    label: 'Book List',
-    path: '/book-list',
-    parentId: 'academic-plan',
-  },
-  {
-    label: 'Courses Waived',
-    path: '/transfer-courses',
-    parentId: 'academic-plan',
-  },
-  {
-    label: 'TLSi Dates',
-    path: '/tlsi-dates',
-    parentId: 'academic-plan',
-    isLastInGroup: true,
-  },
-  {
-    label: 'Dissertation Purpose',
-    path: '/purpose-research',
-  },
-  {
-    label: 'Cohort Identity',
-    path: '/cohort-identity',
-    groupId: 'cohort-identity',
-    navigationOnly: true,
+    parentId: 'cohort-identity',
   },
   {
     label: 'Norms',
@@ -700,16 +671,55 @@ const navigationItems: readonly NavigationItem[] = [
     parentId: 'cohort-identity',
     isLastInGroup: true,
   },
+
   {
-    label: 'Shared Files',
-    path: '/shared-files',
+    label: 'Resources',
+    path: '/resources',
     groupId: 'shared-files',
+    navigationOnly: true,
+  },
+  {
+    label: 'Book List',
+    path: '/book-list',
+    parentId: 'shared-files',
+  },
+  {
+    label: 'Dissertation Purpose',
+    path: '/purpose-research',
+    parentId: 'shared-files',
+  },
+  {
+    label: 'Courses Waived',
+    path: '/transfer-courses',
+    parentId: 'shared-files',
+  },
+  {
+    label: 'TLSi Dates',
+    path: '/tlsi-dates',
+    parentId: 'shared-files',
+  },
+  {
+    label: 'Shared Files & Links',
+    path: '/shared-files',
+    parentId: 'shared-files',
   },
   {
     label: 'BNF Seal & Zoom Images',
     path: '/beta-nu-fall-icons',
     parentId: 'shared-files',
     isLastInGroup: true,
+  },
+
+  {
+    label: 'Academics',
+    path: '/academics',
+    groupId: 'academic-plan',
+    navigationOnly: true,
+  },
+  {
+    label: 'Academic Plan',
+    path: '/academic-plan',
+    parentId: 'academic-plan',
   },
 ]
 
@@ -740,6 +750,268 @@ const appBackgroundStyle: AppBackgroundStyle = {
 }
 
 const sidebarHeaderBannerSrc = `${import.meta.env.BASE_URL}sidebar-header-banner.png`
+
+function renderSidebarSectionIcon(
+  groupId: SidebarNavigationGroupId | undefined,
+): ReactNode {
+  if (groupId === 'cohort-identity') {
+    return (
+      <span
+        className="nav-cohort-identity-icon"
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          role="presentation"
+        >
+          <defs>
+            <linearGradient
+              id="nav-cohort-identity-gold"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="0%"
+                stopColor="#FFD76A"
+              />
+
+              <stop
+                offset="52%"
+                stopColor="#F2B632"
+              />
+
+              <stop
+                offset="100%"
+                stopColor="#C89214"
+              />
+            </linearGradient>
+          </defs>
+
+          <circle
+            cx="12"
+            cy="6.5"
+            r="3.2"
+            fill="url(#nav-cohort-identity-gold)"
+            stroke="#A66E08"
+            strokeWidth="0.8"
+          />
+
+          <circle
+            cx="5.5"
+            cy="9"
+            r="2.4"
+            fill="url(#nav-cohort-identity-gold)"
+            stroke="#A66E08"
+            strokeWidth="0.7"
+          />
+
+          <circle
+            cx="18.5"
+            cy="9"
+            r="2.4"
+            fill="url(#nav-cohort-identity-gold)"
+            stroke="#A66E08"
+            strokeWidth="0.7"
+          />
+
+          <path
+            d="M6.5 20v-1.6c0-3.1 2.5-5.6 5.5-5.6s5.5 2.5 5.5 5.6V20"
+            fill="url(#nav-cohort-identity-gold)"
+            stroke="#A66E08"
+            strokeWidth="0.9"
+            strokeLinejoin="round"
+          />
+
+          <path
+            d="M1.8 19.5v-1.1c0-2.3 1.7-4.2 4-4.6"
+            fill="none"
+            stroke="#F2B632"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+
+          <path
+            d="M22.2 19.5v-1.1c0-2.3-1.7-4.2-4-4.6"
+            fill="none"
+            stroke="#F2B632"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  if (groupId === 'shared-files') {
+    return (
+      <span
+        className="nav-shared-files-icon"
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          role="presentation"
+        >
+          <path
+            className="nav-shared-files-folder-body"
+            d="M3 7
+             C3 5.9 3.9 5 5 5
+             H9.1
+             L11 7
+             H19
+             C20.1 7 21 7.9 21 9
+             V18.5
+             C21 19.6 20.1 20.5 19 20.5
+             H5
+             C3.9 20.5 3 19.6 3 18.5
+             Z"
+            fill="#F2B632"
+            stroke="#C89214"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+
+          <path
+            className="nav-shared-files-folder-highlight"
+            d="M4.5 8.3 H19.3"
+            fill="none"
+            stroke="#FFD76A"
+            strokeWidth="1"
+            strokeLinecap="round"
+            opacity="0.95"
+          />
+
+          <path
+            d="M4.5 19 H19.5"
+            fill="none"
+            stroke="#A87308"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  if (groupId === 'academic-plan') {
+    return (
+      <span
+        className="nav-academic-plan-icon"
+        aria-hidden="true"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          role="presentation"
+        >
+          <path
+            d="M2.5 8.2
+             12 3.8
+             21.5 8.2
+             12 12.7
+             Z"
+            fill="#F2B632"
+            stroke="#C89214"
+            strokeWidth="1.1"
+            strokeLinejoin="round"
+          />
+
+          <path
+            d="M6.5 10.3
+             V15.2
+             C8.2 17
+             10 17.8
+             12 17.8
+             C14 17.8
+             15.8 17
+             17.5 15.2
+             V10.3"
+            fill="#F2B632"
+            stroke="#C89214"
+            strokeWidth="1.1"
+            strokeLinejoin="round"
+          />
+
+          <path
+            d="M4.4 7.6
+             12 4.8
+             18.5 7.8"
+            fill="none"
+            stroke="#FFD76A"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+            opacity="0.95"
+          />
+
+          <path
+            d="M18.7 8.8 V14.6"
+            fill="none"
+            stroke="#F2B632"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+
+          <circle
+            cx="18.7"
+            cy="16.1"
+            r="1.2"
+            fill="#FFD76A"
+            stroke="#C89214"
+            strokeWidth="0.6"
+          />
+
+          <path
+            d="M8 16.3
+             C9.2 17.1
+             10.5 17.4
+             12 17.4"
+            fill="none"
+            stroke="#FFD76A"
+            strokeWidth="0.8"
+            strokeLinecap="round"
+          />
+
+          <path
+            d="M6.8 10.5
+             12 12.8
+             17.2 10.5"
+            fill="none"
+            stroke="#8F6500"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          <path
+            d="M8.2 14.6
+             C10.5 15.7
+             13.5 15.7
+             15.8 14.6"
+            fill="none"
+            stroke="#9B6C08"
+            strokeWidth="0.85"
+            strokeLinecap="round"
+          />
+
+          <path
+            d="M6.2 7.5
+             12 5.4
+             17.8 7.5"
+            fill="none"
+            stroke="#FFE58A"
+            strokeWidth="0.7"
+            strokeLinecap="round"
+            opacity="0.9"
+          />
+        </svg>
+      </span>
+    )
+  }
+
+  return null
+}
 
 const PROGRAM_START_DATE = Date.UTC(2025, 7, 25)
 const PROGRAM_END_DATE = Date.UTC(2027, 5, 27)
@@ -28894,28 +29166,6 @@ function App() {
     location.pathname,
   ])
 
-  const [
-    sidebarGroupsOpen,
-    setSidebarGroupsOpen,
-  ] = useState<SidebarNavigationGroupState>({
-    'cohort-dates': true,
-    'academic-plan': true,
-    'cohort-identity': true,
-    'shared-files': true,
-  })
-
-  function toggleSidebarGroup(
-    groupId: SidebarNavigationGroupId,
-  ): void {
-    setSidebarGroupsOpen(
-      (currentGroups) => ({
-        ...currentGroups,
-        [groupId]:
-          !currentGroups[groupId],
-      }),
-    )
-  }
-
   function handleAdminTorchClick():
     void {
     setIsAdminAccessTrayOpen(false)
@@ -29967,146 +30217,21 @@ function App() {
         <nav className="sidebar-nav" aria-label="Beta Nu Fall navigation">
           {navigationItems.map((item) => {
             if (
-              item.parentId !== undefined &&
-              !sidebarGroupsOpen[
-              item.parentId
-              ]
-            ) {
-              return null
-            }
-
-            if (
               item.navigationOnly === true
             ) {
-              const groupIsOpen =
-                item.groupId !== undefined &&
-                sidebarGroupsOpen[
-                item.groupId
-                ]
-
               return (
-                <button
+                <div
                   key={item.path}
-                  type="button"
-                  className="nav-group-button"
-                  aria-expanded={groupIsOpen}
-                  onClick={() => {
-                    if (
-                      item.groupId !== undefined
-                    ) {
-                      toggleSidebarGroup(
-                        item.groupId,
-                      )
-                    }
-                  }}
+                  className="nav-group-button nav-section-header"
                 >
-                  <span
-                    className={
-                      'nav-cohort-identity-icon'
-                    }
-                    aria-hidden="true"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      role="presentation"
-                    >
-                      <defs>
-                        <linearGradient
-                          id={
-                            'nav-cohort-identity-gold'
-                          }
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="#FFD76A"
-                          />
+                  {renderSidebarSectionIcon(
+                    item.groupId,
+                  )}
 
-                          <stop
-                            offset="52%"
-                            stopColor="#F2B632"
-                          />
-
-                          <stop
-                            offset="100%"
-                            stopColor="#C89214"
-                          />
-                        </linearGradient>
-                      </defs>
-
-                      <circle
-                        cx="12"
-                        cy="6.5"
-                        r="3.2"
-                        fill={
-                          'url(#nav-cohort-identity-gold)'
-                        }
-                        stroke="#A66E08"
-                        strokeWidth="0.8"
-                      />
-
-                      <circle
-                        cx="5.5"
-                        cy="9"
-                        r="2.4"
-                        fill={
-                          'url(#nav-cohort-identity-gold)'
-                        }
-                        stroke="#A66E08"
-                        strokeWidth="0.7"
-                      />
-
-                      <circle
-                        cx="18.5"
-                        cy="9"
-                        r="2.4"
-                        fill={
-                          'url(#nav-cohort-identity-gold)'
-                        }
-                        stroke="#A66E08"
-                        strokeWidth="0.7"
-                      />
-
-                      <path
-                        d="M6.5 20v-1.6c0-3.1 2.5-5.6 5.5-5.6s5.5 2.5 5.5 5.6V20"
-                        fill={
-                          'url(#nav-cohort-identity-gold)'
-                        }
-                        stroke="#A66E08"
-                        strokeWidth="0.9"
-                        strokeLinejoin="round"
-                      />
-
-                      <path
-                        d="M1.8 19.5v-1.1c0-2.3 1.7-4.2 4-4.6"
-                        fill="none"
-                        stroke="#F2B632"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-
-                      <path
-                        d="M22.2 19.5v-1.1c0-2.3-1.7-4.2-4-4.6"
-                        fill="none"
-                        stroke="#F2B632"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
+                  <span>
+                    {item.label}
                   </span>
-
-                  <span>{item.label}</span>
-
-                  <span
-                    className="nav-chevron"
-                    aria-hidden="true"
-                  >
-                    {groupIsOpen ? '[-]' : '[+]'}
-                  </span>
-                </button>
+                </div>
               )
             }
 
@@ -30115,22 +30240,6 @@ function App() {
                 key={item.path}
                 to={item.path}
                 end={item.path === '/'}
-                aria-expanded={
-                  item.groupId === undefined
-                    ? undefined
-                    : sidebarGroupsOpen[
-                    item.groupId
-                    ]
-                }
-                onClick={() => {
-                  if (
-                    item.groupId !== undefined
-                  ) {
-                    toggleSidebarGroup(
-                      item.groupId,
-                    )
-                  }
-                }}
                 className={({ isActive }) => {
                   const classNames = [
                     'nav-link',
@@ -31230,21 +31339,6 @@ function App() {
                 )}
 
                 <span>{item.label}</span>
-
-                {item.groupId !== undefined ? (
-                  <span
-                    className="nav-chevron"
-                    aria-hidden="true"
-                  >
-                    {
-                      sidebarGroupsOpen[
-                        item.groupId
-                      ]
-                        ? '[-]'
-                        : '[+]'
-                    }
-                  </span>
-                ) : null}
               </NavLink>
             )
           })}
@@ -31412,7 +31506,7 @@ function App() {
                     />
 
                     <strong>
-                      ACTIVE
+                      ACTIVE COURSES
                     </strong>
 
                     <span className="course-count-badge">
@@ -31460,7 +31554,7 @@ function App() {
                     />
 
                     <strong>
-                      PENDING
+                      PENDING COURSES
                     </strong>
 
                     <span className="course-count-badge">
@@ -31508,7 +31602,7 @@ function App() {
                     />
 
                     <strong>
-                      COMPLETED
+                      COMPLETED COURSES
                     </strong>
 
                     <span className="course-count-badge">
