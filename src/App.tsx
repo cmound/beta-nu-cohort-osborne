@@ -451,9 +451,21 @@ interface DashboardPageProps {
 }
 
 interface CohortDatesRolesPageProps {
-  readonly contacts: readonly CohortContactRecord[]
-  readonly meetings: readonly CohortMeetingRecord[]
-  readonly onAddMeeting: (meeting: CohortMeetingRecord) => void
+  readonly contacts:
+  readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
+
+  readonly contactInactiveDates:
+  Readonly<CohortContactInactiveDateState>
+
+  readonly meetings:
+  readonly CohortMeetingRecord[]
+
+  readonly onAddMeeting:
+  (meeting: CohortMeetingRecord) => void
+
   readonly onUpdateRole: (
     meetingId: string,
     roleField: CohortMeetingRoleField,
@@ -3215,7 +3227,7 @@ const birthdayMonthLabels: readonly string[] = [
 const cohortContactsSeed: readonly CohortContactRecord[] = [
   {
     id: 'cheryl-marie-osborne',
-    name: 'Dr. Cheryl-Marie Osborne (Mentor)',
+    name: 'Dr. Cheryl-Marie Osborne',
     timeZone: 'Pacific',
     phoneDigits: '7143431102',
     email: 'cherylosborne909@gmail.com',
@@ -5434,16 +5446,72 @@ function getRoleNameOptions(
   )
 }
 
-function isFormerMemberAssignmentInvalid(
+function isRoleAssignmentInactive(
   meetingDate: string,
   value: string,
+  contacts:
+    readonly CohortContactRecord[],
+  contactStatuses:
+    Readonly<CohortContactStatusState>,
+  contactInactiveDates:
+    Readonly<CohortContactInactiveDateState>,
 ): boolean {
-  const normalizedValue = normalizeRoleParticipantName(value)
+  const normalizedValue =
+    normalizeRoleParticipantName(
+      value,
+    )
 
-  return formerCohortMembers.some(
-    (member) =>
-      normalizeRoleParticipantName(member.name) === normalizedValue &&
-      meetingDate > member.inactiveAfterDate,
+  const formerMember =
+    formerCohortMembers.find(
+      (member) =>
+        normalizeRoleParticipantName(
+          member.name,
+        ) === normalizedValue,
+    )
+
+  if (
+    formerMember !== undefined &&
+    meetingDate >=
+    formerMember.inactiveAfterDate
+  ) {
+    return true
+  }
+
+  const contact =
+    contacts.find(
+      (contactRecord) =>
+        normalizeRoleParticipantName(
+          contactRecord.name,
+        ) === normalizedValue,
+    )
+
+  if (
+    contact === undefined ||
+    contactStatuses[
+    contact.id
+    ] !== 'Inactive'
+  ) {
+    return false
+  }
+
+  const inactiveDate =
+    (
+      contactInactiveDates[
+      contact.id
+      ] ?? ''
+    ).trim()
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      inactiveDate,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    meetingDate >=
+    inactiveDate
   )
 }
 
@@ -5495,116 +5563,184 @@ function isCountableRoleAssignment(
   meeting: CohortMeetingRecord,
   roleValue: string,
   participantName: string,
+  contacts:
+    readonly CohortContactRecord[],
+  contactStatuses:
+    Readonly<CohortContactStatusState>,
+  contactInactiveDates:
+    Readonly<CohortContactInactiveDateState>,
 ): boolean {
   if (!roleValue.trim()) {
     return false
   }
 
-  if (isFormerMemberAssignmentInvalid(meeting.date, roleValue)) {
+  if (
+    isRoleAssignmentInactive(
+      meeting.date,
+      roleValue,
+      contacts,
+      contactStatuses,
+      contactInactiveDates,
+    )
+  ) {
     return false
   }
 
   return (
-    normalizeRoleParticipantName(roleValue) ===
-    normalizeRoleParticipantName(participantName)
+    normalizeRoleParticipantName(
+      roleValue,
+    ) ===
+    normalizeRoleParticipantName(
+      participantName,
+    )
   )
 }
 
 function buildCohortRoleSummary(
-  meetings: readonly CohortMeetingRecord[],
-  contacts: readonly CohortContactRecord[],
+  meetings:
+    readonly CohortMeetingRecord[],
+  contacts:
+    readonly CohortContactRecord[],
+  contactStatuses:
+    Readonly<CohortContactStatusState>,
+  contactInactiveDates:
+    Readonly<CohortContactInactiveDateState>,
 ): CohortRoleSummaryRecord[] {
-  const mentorNames = new Set(
-    contacts
-      .filter((contact) => contact.isMentor)
-      .map((contact) => normalizeRoleParticipantName(contact.name)),
-  )
-
-  const participantNames = getRoleNameOptions(contacts)
-    .filter(
-      (name) =>
-        !mentorNames.has(normalizeRoleParticipantName(name)),
-    )
-    .sort((firstName, secondName) =>
-      firstName.localeCompare(secondName, 'en-US', {
-        sensitivity: 'base',
-      }),
+  const mentorNames =
+    new Set(
+      contacts
+        .filter(
+          (contact) =>
+            contact.isMentor,
+        )
+        .map(
+          (contact) =>
+            normalizeRoleParticipantName(
+              contact.name,
+            ),
+        ),
     )
 
-  return participantNames.map((name) => {
-    let facilitator = 0
-    let communityBuilder = 0
-    let recorder = 0
-    let timeKeeper = 0
-    let processObserver = 0
+  const participantNames =
+    getRoleNameOptions(
+      contacts,
+    )
+      .filter(
+        (name) =>
+          !mentorNames.has(
+            normalizeRoleParticipantName(
+              name,
+            ),
+          ),
+      )
+      .sort(
+        (
+          firstName,
+          secondName,
+        ) =>
+          firstName.localeCompare(
+            secondName,
+            'en-US',
+            {
+              sensitivity: 'base',
+            },
+          ),
+      )
 
-    for (const meeting of meetings) {
-      if (
-        isCountableRoleAssignment(
-          meeting,
-          meeting.facilitator,
-          name,
-        )
+  return participantNames.map(
+    (name) => {
+      let facilitator = 0
+      let communityBuilder = 0
+      let recorder = 0
+      let timeKeeper = 0
+      let processObserver = 0
+
+      for (
+        const meeting
+        of meetings
       ) {
-        facilitator += 1
+        if (
+          isCountableRoleAssignment(
+            meeting,
+            meeting.facilitator,
+            name,
+            contacts,
+            contactStatuses,
+            contactInactiveDates,
+          )
+        ) {
+          facilitator += 1
+        }
+
+        if (
+          isCountableRoleAssignment(
+            meeting,
+            meeting.communityBuilder,
+            name,
+            contacts,
+            contactStatuses,
+            contactInactiveDates,
+          )
+        ) {
+          communityBuilder += 1
+        }
+
+        if (
+          isCountableRoleAssignment(
+            meeting,
+            meeting.recorder,
+            name,
+            contacts,
+            contactStatuses,
+            contactInactiveDates,
+          )
+        ) {
+          recorder += 1
+        }
+
+        if (
+          isCountableRoleAssignment(
+            meeting,
+            meeting.timeKeeper,
+            name,
+            contacts,
+            contactStatuses,
+            contactInactiveDates,
+          )
+        ) {
+          timeKeeper += 1
+        }
+
+        if (
+          isCountableRoleAssignment(
+            meeting,
+            meeting.processObserver,
+            name,
+            contacts,
+            contactStatuses,
+            contactInactiveDates,
+          )
+        ) {
+          processObserver += 1
+        }
       }
 
-      if (
-        isCountableRoleAssignment(
-          meeting,
-          meeting.communityBuilder,
-          name,
-        )
-      ) {
-        communityBuilder += 1
-      }
-
-      if (
-        isCountableRoleAssignment(
-          meeting,
-          meeting.recorder,
-          name,
-        )
-      ) {
-        recorder += 1
-      }
-
-      if (
-        isCountableRoleAssignment(
-          meeting,
-          meeting.timeKeeper,
-          name,
-        )
-      ) {
-        timeKeeper += 1
-      }
-
-      if (
-        isCountableRoleAssignment(
-          meeting,
-          meeting.processObserver,
-          name,
-        )
-      ) {
-        processObserver += 1
-      }
-    }
-
-    return {
-      name,
-      facilitator,
-      communityBuilder,
-      recorder,
-      timeKeeper,
-      processObserver,
-      total:
-        facilitator +
-        communityBuilder +
-        recorder +
-        timeKeeper +
+      return {
+        name,
+        facilitator,
+        communityBuilder,
+        recorder,
+        timeKeeper,
         processObserver,
-    }
-  })
+        total:
+          facilitator +
+          communityBuilder +
+          recorder +
+          timeKeeper +
+          processObserver,
+      }
+    },
+  )
 }
 
 function calculateProgramProgress(currentDate: Date): number {
@@ -8477,6 +8613,8 @@ function CohortContactPage({
 
 function CohortDatesRolesPage({
   contacts,
+  contactStatuses,
+  contactInactiveDates,
   meetings,
   onAddMeeting,
   onUpdateRole,
@@ -8522,8 +8660,18 @@ function CohortDatesRolesPage({
     ? getNextCohortMeetingLabel(meetings, newMeetingTerm)
     : ''
 
-  const roleNameOptions = getRoleNameOptions(contacts)
-  const roleSummary = buildCohortRoleSummary(meetings, contacts)
+  const roleNameOptions =
+    getRoleNameOptions(
+      contacts,
+    )
+
+  const roleSummary =
+    buildCohortRoleSummary(
+      meetings,
+      contacts,
+      contactStatuses,
+      contactInactiveDates,
+    )
 
   const roleSummaryTotals = roleSummary.reduce(
     (totals, summary) => ({
@@ -8605,35 +8753,60 @@ function CohortDatesRolesPage({
     roleField: CohortMeetingRoleField,
     value: string,
   ): ReactNode {
-    const isBlank = value.trim().length === 0
-    const isInactive = isFormerMemberAssignmentInvalid(
-      meeting.date,
-      value,
-    )
-    const isSearchMatch = doesRoleMatchSearch(value, nameSearch)
-    const isDuplicate = isDuplicateMeetingRoleAssignment(
-      meeting,
-      value,
-    )
+    const isBlank =
+      value.trim().length === 0
+
+    const isInactive =
+      isRoleAssignmentInactive(
+        meeting.date,
+        value,
+        contacts,
+        contactStatuses,
+        contactInactiveDates,
+      )
+
+    const isSearchMatch =
+      doesRoleMatchSearch(
+        value,
+        nameSearch,
+      )
+
+    const isDuplicate =
+      isDuplicateMeetingRoleAssignment(
+        meeting,
+        value,
+      )
 
     const className = [
       'cohort-meeting-role-input',
-      isBlank ? 'cohort-meeting-role-input-empty' : '',
-      isInactive ? 'cohort-meeting-role-input-inactive' : '',
-      isSearchMatch ? 'cohort-meeting-role-input-search-match' : '',
-      isDuplicate ? 'cohort-meeting-role-input-duplicate' : '',
+      isBlank
+        ? 'cohort-meeting-role-input-empty'
+        : '',
+      isInactive
+        ? 'cohort-meeting-role-input-inactive'
+        : '',
+      isSearchMatch
+        ? 'cohort-meeting-role-input-search-match'
+        : '',
+      isDuplicate
+        ? 'cohort-meeting-role-input-duplicate'
+        : '',
     ]
-      .filter((classItem) => classItem.length > 0)
+      .filter(
+        (classItem) =>
+          classItem.length > 0,
+      )
       .join(' ')
 
-    let title = value || 'Role unassigned'
+    let title =
+      value || 'Role unassigned'
 
     if (isDuplicate) {
       title =
         'QC warning: This person is assigned to more than one role for this cohort meeting.'
     } else if (isInactive) {
       title =
-        'Patrick J. Harris left the cohort after July 26, 2026. Reassign this role.'
+        'This cohort member is inactive as of this meeting date. Reassign this role.'
     }
 
     return (
@@ -27359,7 +27532,28 @@ function readStoredBetaNuRuntimeState():
       return createBetaNuRuntimeSeed()
     }
 
-    return parsedValue
+    return {
+      ...parsedValue,
+      contacts:
+        parsedValue.contacts.map(
+          (contact) => {
+            if (
+              contact.id ===
+              'cheryl-marie-osborne' &&
+              contact.name ===
+              'Dr. Cheryl-Marie Osborne (Mentor)'
+            ) {
+              return {
+                ...contact,
+                name:
+                  'Dr. Cheryl-Marie Osborne',
+              }
+            }
+
+            return contact
+          },
+        ),
+    }
   } catch {
     return createBetaNuRuntimeSeed()
   }
@@ -31534,9 +31728,21 @@ function App() {
               element={
                 <CohortDatesRolesPage
                   contacts={contacts}
-                  meetings={cohortMeetings}
-                  onAddMeeting={addCohortMeeting}
-                  onUpdateRole={updateCohortMeetingRole}
+                  contactStatuses={
+                    contactStatuses
+                  }
+                  contactInactiveDates={
+                    contactInactiveDates
+                  }
+                  meetings={
+                    cohortMeetings
+                  }
+                  onAddMeeting={
+                    addCohortMeeting
+                  }
+                  onUpdateRole={
+                    updateCohortMeetingRole
+                  }
                 />
               }
             />
