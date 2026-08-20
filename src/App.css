@@ -4332,6 +4332,41 @@
   font-size: 9px;
 }
 
+/* =========================================================
+   Saved Facilitator Agendas - Font Size Controls
+   Adjust these values to make this section larger/smaller.
+   ========================================================= */
+
+/* Small "SAVED FACILITATOR AGENDAS" label */
+.facilitator-planner-saved-panel > header span {
+  font-size: 14px;
+}
+
+/* Gold "Past and In-Progress Agendas" heading */
+.facilitator-planner-saved-panel > header h2 {
+  font-size: 18px;
+}
+
+/* Right-side "1 saved" count */
+.facilitator-planner-saved-panel > header > strong {
+  font-size: 12px;
+}
+
+/* Saved agenda table body text */
+.facilitator-planner-saved-table {
+  font-size: 13px;
+}
+
+/* Agenda / Facilitator / Date / Status / Last Saved / Actions */
+.facilitator-planner-saved-table th {
+  font-size: 12px;
+}
+
+/* Open and Generate buttons */
+.facilitator-planner-saved-actions button {
+  font-size: 12px;
+}
+
 .facilitator-planner-saved-empty {
   height: 58px !important;
   color: #64748b;
