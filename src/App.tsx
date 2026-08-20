@@ -7016,26 +7016,328 @@ function DashboardPage({
         </article>
 
         <article className="dashboard-info-card dashboard-shared-resources-card">
-          <p className="dashboard-card-label">
-            Shared Files / Image Library
-          </p>
+          <div className="dashboard-shared-resources-header">
+            <div className="dashboard-shared-resources-title-group">
+              <span
+                className="dashboard-shared-resources-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M3.5 7.5H9L10.8 5H15.5L17 7.5H20.5V18.5H3.5V7.5Z"
+                    fill="currentColor"
+                    stroke="#9A6A05"
+                    strokeWidth="1.2"
+                    strokeLinejoin="round"
+                  />
+
+                  <path
+                    d="M4.5 9H19.5"
+                    stroke="#FFD76A"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                  />
+
+                  <path
+                    d="M5 17.3H19"
+                    stroke="#A87408"
+                    strokeWidth="1"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+
+              <p className="dashboard-card-label">
+                Shared Files / Image Library
+              </p>
+            </div>
+
+            <NavLink
+              className="dashboard-view-all-files"
+              to="/shared-files"
+            >
+              View All Files
+            </NavLink>
+          </div>
+
+          <div className="dashboard-resource-grid">
+            <div className="dashboard-resource-tile">
+              <div className="dashboard-resource-preview">
+                <img
+                  className="dashboard-resource-image dashboard-resource-seal-image"
+                  src={`${import.meta.env.BASE_URL}Seal - Beta Nu Fall - Web (1024px).png`}
+                  alt="Beta Nu Fall Seal"
+                />
+              </div>
+
+              <strong className="dashboard-resource-name">
+                Beta Nu Fall Seal
+              </strong>
+
+              <span className="dashboard-resource-type">
+                PNG
+              </span>
+            </div>
+
+            <div className="dashboard-resource-tile">
+              <div className="dashboard-resource-preview">
+                <img
+                  className="dashboard-resource-image dashboard-resource-wallpaper-image"
+                  src={`${import.meta.env.BASE_URL}Zoom - Beta Nu Fall - Blue Texture.png`}
+                  alt="Beta Nu Fall Zoom Wallpaper"
+                />
+              </div>
+
+              <strong className="dashboard-resource-name">
+                Beta Nu Fall Zoom Wallpaper
+              </strong>
+
+              <span className="dashboard-resource-type">
+                PNG
+              </span>
+            </div>
+
+            <div className="dashboard-resource-tile">
+              <div className="dashboard-resource-preview">
+                <span
+                  className="dashboard-resource-pdf-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 72 88"
+                    fill="none"
+                  >
+                    <path
+                      d="M12 3H46L62 19V83H12V3Z"
+                      fill="#F8FAFC"
+                      stroke="#9AA9B8"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M46 3V19H62"
+                      fill="#E2E8F0"
+                      stroke="#9AA9B8"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+
+                    <rect
+                      x="7"
+                      y="34"
+                      width="48"
+                      height="25"
+                      rx="3"
+                      fill="#D71920"
+                      stroke="#9C1116"
+                      strokeWidth="1.2"
+                    />
+
+                    <text
+                      x="31"
+                      y="51"
+                      fill="#FFFFFF"
+                      fontSize="15"
+                      fontWeight="900"
+                      textAnchor="middle"
+                    >
+                      PDF
+                    </text>
+
+                    <path
+                      d="M21 67H52"
+                      stroke="#B9C4CF"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M21 74H48"
+                      stroke="#CBD5DF"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+
+              <strong className="dashboard-resource-name">
+                Dissertation Tips 1-9 with Table of Contents
+              </strong>
+
+              <span className="dashboard-resource-type">
+                PDF
+              </span>
+            </div>
+
+            <div className="dashboard-resource-tile">
+              <div className="dashboard-resource-preview">
+                <span
+                  className="dashboard-resource-pdf-icon"
+                  aria-hidden="true"
+                >
+                  <svg
+                    viewBox="0 0 72 88"
+                    fill="none"
+                  >
+                    <path
+                      d="M12 3H46L62 19V83H12V3Z"
+                      fill="#F8FAFC"
+                      stroke="#9AA9B8"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+
+                    <path
+                      d="M46 3V19H62"
+                      fill="#E2E8F0"
+                      stroke="#9AA9B8"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                    />
+
+                    <rect
+                      x="7"
+                      y="34"
+                      width="48"
+                      height="25"
+                      rx="3"
+                      fill="#D71920"
+                      stroke="#9C1116"
+                      strokeWidth="1.2"
+                    />
+
+                    <text
+                      x="31"
+                      y="51"
+                      fill="#FFFFFF"
+                      fontSize="15"
+                      fontWeight="900"
+                      textAnchor="middle"
+                    >
+                      PDF
+                    </text>
+
+                    <path
+                      d="M21 67H52"
+                      stroke="#B9C4CF"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+
+                    <path
+                      d="M21 74H48"
+                      stroke="#CBD5DF"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+
+              <strong className="dashboard-resource-name">
+                Dissertation Handbook 2.0 v1.2
+              </strong>
+
+              <span className="dashboard-resource-type">
+                PDF
+              </span>
+            </div>
+          </div>
         </article>
 
         <article className="dashboard-info-card dashboard-identity-card">
-          <p className="dashboard-card-label">
-            Our Cohort Identity
-          </p>
+          <div className="dashboard-identity-header">
+            <div className="dashboard-identity-title-group">
+              <span
+                className="dashboard-identity-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M12 3L19 6V11C19 15.4 16.4 19.1 12 21C7.6 19.1 5 15.4 5 11V6L12 3Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
 
-          <p className="dashboard-identity-preview">
-            {cohortVision}
-          </p>
+                  <path
+                    d="M12 5.5V18.5"
+                    stroke="#FFD76A"
+                    strokeWidth="0.9"
+                    strokeLinecap="round"
+                    opacity="0.9"
+                  />
 
-          <div className="dashboard-identity-values-preview">
-            {cohortValues.map((value) => (
-              <span key={value.name}>
-                {value.name}
+                  <path
+                    d="M7.2 7.2L12 5.2L16.8 7.2"
+                    stroke="#FFD76A"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </span>
-            ))}
+
+              <p className="dashboard-card-label">
+                Our Cohort Identity
+              </p>
+            </div>
+
+            <NavLink
+              className="dashboard-view-norms-values"
+              to="/values-vision"
+            >
+              View Norms &amp; Values
+            </NavLink>
+          </div>
+
+          <div className="dashboard-identity-vision">
+            <strong>
+              Vision
+            </strong>
+
+            <p>
+              {cohortVision}
+            </p>
+          </div>
+
+          <div className="dashboard-identity-values">
+            <strong className="dashboard-identity-values-heading">
+              Our Values
+            </strong>
+
+            <div className="dashboard-identity-values-grid">
+              {cohortValues.map((value) => (
+                <div
+                  className="dashboard-identity-value-card"
+                  key={value.name}
+                  title={value.description}
+                >
+                  <span
+                    className="dashboard-identity-value-icon"
+                    aria-hidden="true"
+                  >
+                    <img
+                      src={`${import.meta.env.BASE_URL}${value.imageFileName}`}
+                      alt=""
+                    />
+                  </span>
+
+                  <span className="dashboard-identity-value-name">
+                    {value.name}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </article>
       </div>
