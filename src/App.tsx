@@ -2874,7 +2874,659 @@ const cohortSharedFiles:
 
 const SHARED_FILES_PAGE_SIZE = 8
 const SHARED_URLS_PAGE_SIZE = 8
+const COHORT_SHARED_URLS_STORAGE_KEY =
+  'beta-nu-shared-urls-v1'
 
+const COHORT_SHARED_FILE_METADATA_STORAGE_KEY =
+  'beta-nu-shared-file-metadata-v1'
+
+const COHORT_SHARED_FILE_DATABASE_NAME =
+  'beta-nu-shared-files-v1'
+
+const COHORT_SHARED_FILE_STORE_NAME =
+  'files'
+
+interface CohortSharedFileStoredRecord {
+  readonly id: string
+  readonly title: string
+  readonly fileName: string
+  readonly previewFileName?: string
+  readonly category: string
+  readonly description: string
+  readonly dateAdded: string
+  readonly sizeBytes: number
+  readonly originalBlob: Blob
+  readonly previewBlob?: Blob
+}
+
+interface CohortSharedCellPopoverState {
+  readonly recordId: string
+  readonly left: number
+  readonly top: number
+  readonly width: number
+}
+
+function isCohortSharedStorageObject(
+  value: unknown,
+): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null
+  )
+}
+
+function isStoredCohortSharedUrlRecord(
+  value: unknown,
+): value is CohortSharedUrlRecord {
+  if (
+    !isCohortSharedStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.websiteName ===
+    'string' &&
+    typeof value.url === 'string' &&
+    typeof value.source === 'string' &&
+    typeof value.notes === 'string' &&
+    typeof value.addedAt === 'string'
+  )
+}
+
+function readStoredCohortSharedUrls():
+  readonly CohortSharedUrlRecord[] {
+  const storedValue =
+    window.localStorage.getItem(
+      COHORT_SHARED_URLS_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return []
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every(
+        isStoredCohortSharedUrlRecord,
+      )
+    ) {
+      return []
+    }
+
+    return parsedValue
+  } catch {
+    return []
+  }
+}
+
+function writeStoredCohortSharedUrls(
+  urls:
+    readonly CohortSharedUrlRecord[],
+): void {
+  window.localStorage.setItem(
+    COHORT_SHARED_URLS_STORAGE_KEY,
+    JSON.stringify(urls),
+  )
+}
+
+function writeCohortSharedFileMetadata(
+  files: readonly CohortSharedFile[],
+): void {
+  const metadata = files.map(
+    (file) => ({
+      id: file.id,
+      title: file.title,
+      fileName: file.fileName,
+      ...(file.previewFileName ===
+        undefined
+        ? {}
+        : {
+          previewFileName:
+            file.previewFileName,
+        }),
+      category: file.category,
+      description: file.description,
+      dateAdded:
+        file.dateAdded ?? '',
+      sizeBytes:
+        file.sizeBytes ?? 0,
+    }),
+  )
+
+  window.localStorage.setItem(
+    COHORT_SHARED_FILE_METADATA_STORAGE_KEY,
+    JSON.stringify(metadata),
+  )
+}
+
+function isStoredCohortSharedFileRecord(
+  value: unknown,
+): value is CohortSharedFileStoredRecord {
+  if (
+    !isCohortSharedStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.fileName === 'string' &&
+    (
+      value.previewFileName ===
+      undefined ||
+      typeof value.previewFileName ===
+      'string'
+    ) &&
+    typeof value.category === 'string' &&
+    typeof value.description ===
+    'string' &&
+    typeof value.dateAdded === 'string' &&
+    typeof value.sizeBytes === 'number' &&
+    Number.isFinite(value.sizeBytes) &&
+    value.originalBlob instanceof Blob &&
+    (
+      value.previewBlob === undefined ||
+      value.previewBlob instanceof Blob
+    )
+  )
+}
+
+function openCohortSharedFileDatabase():
+  Promise<IDBDatabase> {
+  return new Promise(
+    (resolve, reject) => {
+      const request =
+        window.indexedDB.open(
+          COHORT_SHARED_FILE_DATABASE_NAME,
+          1,
+        )
+
+      request.onupgradeneeded = () => {
+        const database =
+          request.result
+
+        if (
+          !database.objectStoreNames.contains(
+            COHORT_SHARED_FILE_STORE_NAME,
+          )
+        ) {
+          database.createObjectStore(
+            COHORT_SHARED_FILE_STORE_NAME,
+            {
+              keyPath: 'id',
+            },
+          )
+        }
+      }
+
+      request.onsuccess = () =>
+        resolve(request.result)
+
+      request.onerror = () =>
+        reject(
+          request.error ??
+          new Error(
+            'Unable to open Shared Files storage.',
+          ),
+        )
+    },
+  )
+}
+
+async function readStoredCohortSharedFiles():
+  Promise<
+    readonly CohortSharedFileStoredRecord[]
+  > {
+  const database =
+    await openCohortSharedFileDatabase()
+
+  try {
+    return await new Promise(
+      (resolve, reject) => {
+        const transaction =
+          database.transaction(
+            COHORT_SHARED_FILE_STORE_NAME,
+            'readonly',
+          )
+
+        const request =
+          transaction
+            .objectStore(
+              COHORT_SHARED_FILE_STORE_NAME,
+            )
+            .getAll()
+
+        request.onsuccess = () => {
+          const result: unknown =
+            request.result
+
+          if (
+            !Array.isArray(result) ||
+            !result.every(
+              isStoredCohortSharedFileRecord,
+            )
+          ) {
+            reject(
+              new Error(
+                'Shared Files storage contains an invalid record.',
+              ),
+            )
+            return
+          }
+
+          resolve(result)
+        }
+
+        request.onerror = () =>
+          reject(
+            request.error ??
+            new Error(
+              'Unable to read Shared Files storage.',
+            ),
+          )
+      },
+    )
+  } finally {
+    database.close()
+  }
+}
+
+async function putStoredCohortSharedFiles(
+  records:
+    readonly CohortSharedFileStoredRecord[],
+): Promise<void> {
+  if (records.length === 0) {
+    return
+  }
+
+  const database =
+    await openCohortSharedFileDatabase()
+
+  try {
+    await new Promise<void>(
+      (resolve, reject) => {
+        const transaction =
+          database.transaction(
+            COHORT_SHARED_FILE_STORE_NAME,
+            'readwrite',
+          )
+
+        const store =
+          transaction.objectStore(
+            COHORT_SHARED_FILE_STORE_NAME,
+          )
+
+        for (const record of records) {
+          store.put(record)
+        }
+
+        transaction.oncomplete = () =>
+          resolve()
+
+        transaction.onerror = () =>
+          reject(
+            transaction.error ??
+            new Error(
+              'Unable to save the shared document.',
+            ),
+          )
+
+        transaction.onabort = () =>
+          reject(
+            transaction.error ??
+            new Error(
+              'The shared document save was cancelled.',
+            ),
+          )
+      },
+    )
+  } finally {
+    database.close()
+  }
+}
+
+async function deleteStoredCohortSharedFiles(
+  fileIds: readonly string[],
+): Promise<void> {
+  if (fileIds.length === 0) {
+    return
+  }
+
+  const database =
+    await openCohortSharedFileDatabase()
+
+  try {
+    await new Promise<void>(
+      (resolve, reject) => {
+        const transaction =
+          database.transaction(
+            COHORT_SHARED_FILE_STORE_NAME,
+            'readwrite',
+          )
+
+        const store =
+          transaction.objectStore(
+            COHORT_SHARED_FILE_STORE_NAME,
+          )
+
+        for (const fileId of fileIds) {
+          store.delete(fileId)
+        }
+
+        transaction.oncomplete = () =>
+          resolve()
+
+        transaction.onerror = () =>
+          reject(
+            transaction.error ??
+            new Error(
+              'Unable to delete the selected shared documents.',
+            ),
+          )
+
+        transaction.onabort = () =>
+          reject(
+            transaction.error ??
+            new Error(
+              'The shared document delete was cancelled.',
+            ),
+          )
+      },
+    )
+  } finally {
+    database.close()
+  }
+}
+
+async function updateStoredCohortSharedFileMetadata(
+  fileId: string,
+  title: string,
+  category: string,
+  description: string,
+): Promise<void> {
+  const database =
+    await openCohortSharedFileDatabase()
+
+  try {
+    await new Promise<void>(
+      (resolve, reject) => {
+        const transaction =
+          database.transaction(
+            COHORT_SHARED_FILE_STORE_NAME,
+            'readwrite',
+          )
+
+        const store =
+          transaction.objectStore(
+            COHORT_SHARED_FILE_STORE_NAME,
+          )
+
+        const request =
+          store.get(fileId)
+
+        request.onsuccess = () => {
+          const result: unknown =
+            request.result
+
+          if (
+            !isStoredCohortSharedFileRecord(
+              result,
+            )
+          ) {
+            transaction.abort()
+            reject(
+              new Error(
+                'The selected shared document could not be found.',
+              ),
+            )
+            return
+          }
+
+          store.put({
+            ...result,
+            title,
+            category,
+            description,
+          })
+        }
+
+        request.onerror = () => {
+          transaction.abort()
+          reject(
+            request.error ??
+            new Error(
+              'Unable to update the shared document.',
+            ),
+          )
+        }
+
+        transaction.oncomplete = () =>
+          resolve()
+
+        transaction.onerror = () =>
+          reject(
+            transaction.error ??
+            new Error(
+              'Unable to update the shared document.',
+            ),
+          )
+      },
+    )
+  } finally {
+    database.close()
+  }
+}
+
+function getCohortSharedPopoverPosition(
+  anchor: HTMLElement,
+  requestedWidth: number,
+  requestedHeight: number,
+): Omit<
+  CohortSharedCellPopoverState,
+  'recordId'
+> {
+  const rect =
+    anchor.getBoundingClientRect()
+
+  const width = Math.min(
+    requestedWidth,
+    window.innerWidth - 24,
+  )
+
+  const left = Math.min(
+    Math.max(12, rect.left),
+    Math.max(
+      12,
+      window.innerWidth - width - 12,
+    ),
+  )
+
+  const top = Math.max(
+    12,
+    rect.top - requestedHeight - 8,
+  )
+
+  return {
+    left,
+    top,
+    width,
+  }
+}
+
+async function copyCohortSharedText(
+  value: string,
+): Promise<void> {
+  if (
+    navigator.clipboard !== undefined
+  ) {
+    await navigator.clipboard.writeText(
+      value,
+    )
+    return
+  }
+
+  const textArea =
+    document.createElement('textarea')
+
+  textArea.value = value
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+
+  document.body.appendChild(textArea)
+  textArea.select()
+  document.execCommand('copy')
+  textArea.remove()
+}
+
+async function createCohortSharedUrlReportBlob(
+  urls:
+    readonly CohortSharedUrlRecord[],
+): Promise<Blob> {
+  const reportParagraphs:
+    Paragraph[] = [
+      new Paragraph({
+        spacing: {
+          after: 240,
+        },
+        children: [
+          new TextRun({
+            text:
+              'Beta Nu Cohort Shared URL Report',
+            bold: true,
+            font: 'Times New Roman',
+            size: 32,
+          }),
+        ],
+      }),
+    ]
+
+  for (const sharedUrl of urls) {
+    reportParagraphs.push(
+      new Paragraph({
+        spacing: {
+          before: 120,
+          after: 40,
+        },
+        children: [
+          new TextRun({
+            text: sharedUrl.websiteName,
+            bold: true,
+            font: 'Times New Roman',
+            size: 24,
+          }),
+        ],
+      }),
+      new Paragraph({
+        spacing: {
+          after: 80,
+        },
+        children: [
+          new TextRun({
+            text: sharedUrl.url,
+            color: '005EB8',
+            underline: {
+              type: UnderlineType.SINGLE,
+            },
+            font: 'Times New Roman',
+            size: 22,
+          }),
+        ],
+      }),
+    )
+
+    if (
+      sharedUrl.notes.trim().length > 0
+    ) {
+      reportParagraphs.push(
+        new Paragraph({
+          spacing: {
+            after: 80,
+          },
+          children: [
+            new TextRun({
+              text:
+                `- ${sharedUrl.notes.trim()}`,
+              font: 'Times New Roman',
+              size: 22,
+            }),
+          ],
+        }),
+      )
+    }
+
+    if (
+      sharedUrl.source.trim().length > 0
+    ) {
+      reportParagraphs.push(
+        new Paragraph({
+          spacing: {
+            after: 160,
+          },
+          children: [
+            new TextRun({
+              text:
+                `Source: ${sharedUrl.source.trim()}`,
+              italics: true,
+              font: 'Times New Roman',
+              size: 20,
+            }),
+          ],
+        }),
+      )
+    }
+  }
+
+  const reportDocument =
+    new Document({
+      sections: [
+        {
+          children: reportParagraphs,
+        },
+      ],
+    })
+
+  return Packer.toBlob(
+    reportDocument,
+  )
+}
+
+function downloadCohortSharedUrlReport(
+  blob: Blob,
+): void {
+  const objectUrl =
+    URL.createObjectURL(blob)
+
+  const downloadLink =
+    document.createElement('a')
+
+  const dateKey =
+    new Date()
+      .toISOString()
+      .slice(0, 10)
+
+  downloadLink.href = objectUrl
+  downloadLink.download =
+    `beta-nu-shared-url-report-${dateKey}.docx`
+
+  document.body.appendChild(
+    downloadLink,
+  )
+
+  downloadLink.click()
+  downloadLink.remove()
+  URL.revokeObjectURL(objectUrl)
+}
 function createCohortSharedUrlDraft():
   CohortSharedUrlDraft {
   return {
@@ -20421,7 +21073,7 @@ function CohortSharedFilesPage() {
   ] =
     useState<
       readonly CohortSharedUrlRecord[]
-    >([])
+    >(readStoredCohortSharedUrls)
 
   const [
     isAddUrlOpen,
@@ -20505,6 +21157,92 @@ function CohortSharedFilesPage() {
     setSelectedUrlIds,
   ] =
     useState<readonly string[]>([])
+
+  const [
+    isSharedFileStoreReady,
+    setIsSharedFileStoreReady,
+  ] = useState(false)
+
+  const [
+    documentMenuId,
+    setDocumentMenuId,
+  ] = useState<string | null>(null)
+
+  const [
+    urlMenuId,
+    setUrlMenuId,
+  ] = useState<string | null>(null)
+
+  const [
+    editingDocumentId,
+    setEditingDocumentId,
+  ] = useState<string | null>(null)
+
+  const [
+    editDocumentTitle,
+    setEditDocumentTitle,
+  ] = useState('')
+
+  const [
+    editDocumentCategory,
+    setEditDocumentCategory,
+  ] = useState('')
+
+  const [
+    editDocumentDescription,
+    setEditDocumentDescription,
+  ] = useState('')
+
+  const [
+    editingUrlId,
+    setEditingUrlId,
+  ] = useState<string | null>(null)
+
+  const [
+    editUrlWebsiteName,
+    setEditUrlWebsiteName,
+  ] = useState('')
+
+  const [
+    editUrlValue,
+    setEditUrlValue,
+  ] = useState('')
+
+  const [
+    editUrlSource,
+    setEditUrlSource,
+  ] = useState('')
+
+  const [
+    editUrlNotes,
+    setEditUrlNotes,
+  ] = useState('')
+
+  const [
+    notesPopover,
+    setNotesPopover,
+  ] =
+    useState<
+      CohortSharedCellPopoverState | null
+    >(null)
+
+  const [
+    notesDraft,
+    setNotesDraft,
+  ] = useState('')
+
+  const [
+    urlLinkPopover,
+    setUrlLinkPopover,
+  ] =
+    useState<
+      CohortSharedCellPopoverState | null
+    >(null)
+
+  const [
+    isUrlReportMode,
+    setIsUrlReportMode,
+  ] = useState(false)
 
   const [
     documentPage,
@@ -20722,6 +21460,24 @@ function CohortSharedFilesPage() {
           file.id === selectedFileId,
       ) ?? null
 
+  const notesPopoverUrl =
+    notesPopover === null
+      ? null
+      : sharedUrls.find(
+        (sharedUrl) =>
+          sharedUrl.id ===
+          notesPopover.recordId,
+      ) ?? null
+
+  const urlLinkPopoverUrl =
+    urlLinkPopover === null
+      ? null
+      : sharedUrls.find(
+        (sharedUrl) =>
+          sharedUrl.id ===
+          urlLinkPopover.recordId,
+      ) ?? null
+
   const selectedPreviewKind =
     selectedFile === null
       ? null
@@ -20787,7 +21543,100 @@ function CohortSharedFilesPage() {
     )
 
   useEffect(() => {
+    let isCancelled = false
+
+    async function loadStoredSharedFiles():
+      Promise<void> {
+      try {
+        const storedFiles =
+          await readStoredCohortSharedFiles()
+
+        if (isCancelled) {
+          return
+        }
+
+        const runtimeFiles =
+          storedFiles.map(
+            (storedFile) => {
+              const originalUrl =
+                URL.createObjectURL(
+                  storedFile.originalBlob,
+                )
+
+              sharedFileObjectUrlsRef.current.push(
+                originalUrl,
+              )
+
+              let previewUrl =
+                originalUrl
+
+              if (
+                storedFile.previewBlob !==
+                undefined
+              ) {
+                previewUrl =
+                  URL.createObjectURL(
+                    storedFile.previewBlob,
+                  )
+
+                sharedFileObjectUrlsRef.current.push(
+                  previewUrl,
+                )
+              }
+
+              return {
+                id: storedFile.id,
+                title: storedFile.title,
+                fileName:
+                  storedFile.fileName,
+                ...(storedFile.previewFileName ===
+                  undefined
+                  ? {}
+                  : {
+                    previewFileName:
+                      storedFile.previewFileName,
+                  }),
+                category:
+                  storedFile.category,
+                description:
+                  storedFile.description,
+                dateAdded:
+                  storedFile.dateAdded,
+                sizeBytes:
+                  storedFile.sizeBytes,
+                runtimeOriginalUrl:
+                  originalUrl,
+                runtimePreviewUrl:
+                  previewUrl,
+              } satisfies CohortSharedFile
+            },
+          )
+
+        setAddedSharedFiles(
+          runtimeFiles,
+        )
+
+        setIsSharedFileStoreReady(
+          true,
+        )
+      } catch {
+        if (!isCancelled) {
+          setIsSharedFileStoreReady(
+            true,
+          )
+
+          window.alert(
+            'Unable to load persisted Shared Files from browser storage.',
+          )
+        }
+      }
+    }
+
+    void loadStoredSharedFiles()
+
     return () => {
+      isCancelled = true
+
       for (
         const objectUrl
         of sharedFileObjectUrlsRef.current
@@ -20798,6 +21647,25 @@ function CohortSharedFilesPage() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    writeStoredCohortSharedUrls(
+      sharedUrls,
+    )
+  }, [sharedUrls])
+
+  useEffect(() => {
+    if (!isSharedFileStoreReady) {
+      return
+    }
+
+    writeCohortSharedFileMetadata(
+      addedSharedFiles,
+    )
+  }, [
+    addedSharedFiles,
+    isSharedFileStoreReady,
+  ])
 
   useEffect(() => {
     setDocumentPage(1)
@@ -21231,7 +22099,8 @@ function CohortSharedFilesPage() {
     )
   }
 
-  function saveMassUpload(): void {
+  async function saveMassUpload():
+    Promise<void> {
     if (massUploadFiles.length === 0) {
       window.alert(
         'Select at least one file for Mass Upload.',
@@ -21338,8 +22207,8 @@ function CohortSharedFilesPage() {
     const missingPreviewFileNames:
       string[] = []
 
-    const addedFiles:
-      CohortSharedFile[] = []
+    const storedFiles:
+      CohortSharedFileStoredRecord[] = []
 
     for (
       const [
@@ -21391,38 +22260,10 @@ function CohortSharedFilesPage() {
         continue
       }
 
-      const originalUrl =
-        URL.createObjectURL(
-          originalFile,
-        )
-
-      sharedFileObjectUrlsRef.current.push(
-        originalUrl,
-      )
-
-      let previewUrl =
-        originalUrl
-
-      if (
-        companionPreview !== null
-      ) {
-        previewUrl =
-          URL.createObjectURL(
-            companionPreview,
-          )
-
-        sharedFileObjectUrlsRef.current.push(
-          previewUrl,
-        )
-      }
-
       const documentId =
-        `local-shared-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 9)}`
+        `local-shared-${Date.now()}-${crypto.randomUUID()}`
 
-      const nextSharedFile:
-        CohortSharedFile = {
+      storedFiles.push({
         id: documentId,
         title:
           getCohortSharedFileDefaultTitle(
@@ -21430,6 +22271,14 @@ function CohortSharedFilesPage() {
           ),
         fileName:
           originalFile.name,
+        ...(companionPreview === null
+          ? {}
+          : {
+            previewFileName:
+              companionPreview.name,
+            previewBlob:
+              companionPreview,
+          }),
         category:
           addDocumentCategory.trim() ||
           'General',
@@ -21439,28 +22288,16 @@ function CohortSharedFilesPage() {
           new Date().toISOString(),
         sizeBytes:
           originalFile.size,
-        runtimeOriginalUrl:
-          originalUrl,
-        runtimePreviewUrl:
-          previewUrl,
-        ...(companionPreview === null
-          ? {}
-          : {
-            previewFileName:
-              companionPreview.name,
-          }),
-      }
-
-      addedFiles.push(
-        nextSharedFile,
-      )
+        originalBlob:
+          originalFile,
+      })
 
       existingFileNameKeys.add(
         fileNameKey,
       )
     }
 
-    if (addedFiles.length === 0) {
+    if (storedFiles.length === 0) {
       const messages = [
         'No new documents were added.',
       ]
@@ -21489,6 +22326,73 @@ function CohortSharedFilesPage() {
       return
     }
 
+    try {
+      await putStoredCohortSharedFiles(
+        storedFiles,
+      )
+    } catch {
+      window.alert(
+        'The Mass Upload could not be saved to persistent browser storage. No new rows were added.',
+      )
+      return
+    }
+
+    const addedFiles =
+      storedFiles.map(
+        (storedFile) => {
+          const originalUrl =
+            URL.createObjectURL(
+              storedFile.originalBlob,
+            )
+
+          sharedFileObjectUrlsRef.current.push(
+            originalUrl,
+          )
+
+          let previewUrl = originalUrl
+
+          if (
+            storedFile.previewBlob !==
+            undefined
+          ) {
+            previewUrl =
+              URL.createObjectURL(
+                storedFile.previewBlob,
+              )
+
+            sharedFileObjectUrlsRef.current.push(
+              previewUrl,
+            )
+          }
+
+          return {
+            id: storedFile.id,
+            title: storedFile.title,
+            fileName:
+              storedFile.fileName,
+            ...(storedFile.previewFileName ===
+              undefined
+              ? {}
+              : {
+                previewFileName:
+                  storedFile.previewFileName,
+              }),
+            category:
+              storedFile.category,
+            description:
+              storedFile.description,
+            dateAdded:
+              storedFile.dateAdded,
+            sizeBytes:
+              storedFile.sizeBytes,
+            runtimeOriginalUrl:
+              originalUrl,
+            runtimePreviewUrl:
+              previewUrl,
+          } satisfies CohortSharedFile
+        },
+      )
+
     setAddedSharedFiles(
       (currentFiles) => [
         ...currentFiles,
@@ -21500,11 +22404,7 @@ function CohortSharedFilesPage() {
       addedFiles[0]?.id ?? null,
     )
 
-    setSelectedDocumentIds(
-      addedFiles.map(
-        (file) => file.id,
-      ),
-    )
+    setSelectedDocumentIds([])
 
     setSearchTerm('')
     setCategoryFilter('All')
@@ -21522,8 +22422,7 @@ function CohortSharedFilesPage() {
     }
 
     if (
-      missingPreviewFileNames.length >
-      0
+      missingPreviewFileNames.length > 0
     ) {
       resultMessages.push(
         `Skipped ${missingPreviewFileNames.length} file(s) that require a matching PDF preview.`,
@@ -21537,7 +22436,8 @@ function CohortSharedFilesPage() {
     )
   }
 
-  function saveAddedDocument(): void {
+  async function saveAddedDocument():
+    Promise<void> {
     const originalFile =
       addDocumentOriginalFile
 
@@ -21591,6 +22491,51 @@ function CohortSharedFilesPage() {
       return
     }
 
+    const documentId =
+      `local-shared-${Date.now()}-${crypto.randomUUID()}`
+
+    const storedFile:
+      CohortSharedFileStoredRecord = {
+      id: documentId,
+      title:
+        addDocumentTitle.trim() ||
+        getCohortSharedFileDefaultTitle(
+          originalFile.name,
+        ),
+      fileName: originalFile.name,
+      ...(addDocumentPreviewFile === null
+        ? {}
+        : {
+          previewFileName:
+            addDocumentPreviewFile.name,
+          previewBlob:
+            addDocumentPreviewFile,
+        }),
+      category:
+        addDocumentCategory.trim() ||
+        'General',
+      description:
+        addDocumentDescription.trim() ||
+        'Shared reference document.',
+      dateAdded:
+        new Date().toISOString(),
+      sizeBytes:
+        originalFile.size,
+      originalBlob:
+        originalFile,
+    }
+
+    try {
+      await putStoredCohortSharedFiles([
+        storedFile,
+      ])
+    } catch {
+      window.alert(
+        'The document could not be saved to persistent browser storage.',
+      )
+      return
+    }
+
     const originalUrl =
       URL.createObjectURL(
         originalFile,
@@ -21615,40 +22560,27 @@ function CohortSharedFilesPage() {
       )
     }
 
-    const documentId =
-      `local-shared-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 9)}`
-
     const nextSharedFile:
       CohortSharedFile = {
-      id: documentId,
-      title:
-        addDocumentTitle.trim() ||
-        getCohortSharedFileDefaultTitle(
-          originalFile.name,
-        ),
-      fileName: originalFile.name,
-      category:
-        addDocumentCategory.trim() ||
-        'General',
+      id: storedFile.id,
+      title: storedFile.title,
+      fileName: storedFile.fileName,
+      ...(storedFile.previewFileName ===
+        undefined
+        ? {}
+        : {
+          previewFileName:
+            storedFile.previewFileName,
+        }),
+      category: storedFile.category,
       description:
-        addDocumentDescription.trim() ||
-        'Shared reference document.',
-      dateAdded:
-        new Date().toISOString(),
-      sizeBytes:
-        originalFile.size,
+        storedFile.description,
+      dateAdded: storedFile.dateAdded,
+      sizeBytes: storedFile.sizeBytes,
       runtimeOriginalUrl:
         originalUrl,
       runtimePreviewUrl:
         previewUrl,
-      ...(addDocumentPreviewFile === null
-        ? {}
-        : {
-          previewFileName:
-            addDocumentPreviewFile.name,
-        }),
     }
 
     setAddedSharedFiles(
@@ -21662,12 +22594,7 @@ function CohortSharedFilesPage() {
       documentId,
     )
 
-    setSelectedDocumentIds(
-      (currentIds) => [
-        ...currentIds,
-        documentId,
-      ],
-    )
+    setSelectedDocumentIds([])
 
     setSearchTerm('')
     setCategoryFilter('All')
@@ -21778,9 +22705,7 @@ function CohortSharedFilesPage() {
       ],
     )
 
-    setSelectedUrlIds([
-      nextSharedUrl.id,
-    ])
+    setSelectedUrlIds([])
 
     setSearchTerm('')
     setCategoryFilter('All')
@@ -21896,12 +22821,7 @@ function CohortSharedFilesPage() {
       ],
     )
 
-    setSelectedUrlIds(
-      nextUrls.map(
-        (sharedUrl) =>
-          sharedUrl.id,
-      ),
-    )
+    setSelectedUrlIds([])
 
     setSearchTerm('')
     setCategoryFilter('All')
@@ -21911,6 +22831,495 @@ function CohortSharedFilesPage() {
     if (duplicateCount > 0) {
       window.alert(
         `Added ${nextUrls.length} URL(s). Skipped ${duplicateCount} duplicate URL(s).`,
+      )
+    }
+  }
+
+  function revokeSharedFileRuntimeUrls(
+    file: CohortSharedFile,
+  ): void {
+    const urls = [
+      file.runtimeOriginalUrl,
+      file.runtimePreviewUrl,
+    ].filter(
+      (value): value is string =>
+        value !== undefined,
+    )
+
+    for (
+      const objectUrl
+      of new Set(urls)
+    ) {
+      URL.revokeObjectURL(
+        objectUrl,
+      )
+    }
+  }
+
+  function updateSharedUrlRecord(
+    urlId: string,
+    updates: Partial<
+      Pick<
+        CohortSharedUrlRecord,
+        | 'websiteName'
+        | 'url'
+        | 'source'
+        | 'notes'
+      >
+    >,
+  ): void {
+    setSharedUrls(
+      (currentUrls) =>
+        currentUrls.map(
+          (sharedUrl) =>
+            sharedUrl.id === urlId
+              ? {
+                ...sharedUrl,
+                ...updates,
+              }
+              : sharedUrl,
+        ),
+    )
+  }
+
+  function openDocumentEdit(
+    file: CohortSharedFile,
+  ): void {
+    setEditingDocumentId(file.id)
+    setEditDocumentTitle(file.title)
+    setEditDocumentCategory(
+      file.category,
+    )
+    setEditDocumentDescription(
+      file.description,
+    )
+    setDocumentMenuId(null)
+  }
+
+  function closeDocumentEdit(): void {
+    setEditingDocumentId(null)
+    setEditDocumentTitle('')
+    setEditDocumentCategory('')
+    setEditDocumentDescription('')
+  }
+
+  async function saveDocumentEdit():
+    Promise<void> {
+    const fileId = editingDocumentId
+
+    if (fileId === null) {
+      return
+    }
+
+    const title =
+      editDocumentTitle.trim()
+
+    const category =
+      editDocumentCategory.trim() ||
+      'General'
+
+    const description =
+      editDocumentDescription.trim() ||
+      'Shared reference document.'
+
+    if (title.length === 0) {
+      window.alert(
+        'Document Name cannot be blank.',
+      )
+      return
+    }
+
+    const editableFile =
+      addedSharedFiles.find(
+        (file) => file.id === fileId,
+      )
+
+    if (editableFile === undefined) {
+      window.alert(
+        'Only documents uploaded through Shared Files can be edited.',
+      )
+      return
+    }
+
+    try {
+      await updateStoredCohortSharedFileMetadata(
+        fileId,
+        title,
+        category,
+        description,
+      )
+    } catch {
+      window.alert(
+        'The document changes could not be saved.',
+      )
+      return
+    }
+
+    setAddedSharedFiles(
+      (currentFiles) =>
+        currentFiles.map(
+          (file) =>
+            file.id === fileId
+              ? {
+                ...file,
+                title,
+                category,
+                description,
+              }
+              : file,
+        ),
+    )
+
+    closeDocumentEdit()
+  }
+
+  function openUrlEdit(
+    sharedUrl: CohortSharedUrlRecord,
+  ): void {
+    setEditingUrlId(sharedUrl.id)
+    setEditUrlWebsiteName(
+      sharedUrl.websiteName,
+    )
+    setEditUrlValue(sharedUrl.url)
+    setEditUrlSource(sharedUrl.source)
+    setEditUrlNotes(sharedUrl.notes)
+    setUrlMenuId(null)
+  }
+
+  function closeUrlEdit(): void {
+    setEditingUrlId(null)
+    setEditUrlWebsiteName('')
+    setEditUrlValue('')
+    setEditUrlSource('')
+    setEditUrlNotes('')
+  }
+
+  function saveUrlEdit(): void {
+    const urlId = editingUrlId
+
+    if (urlId === null) {
+      return
+    }
+
+    const websiteName =
+      editUrlWebsiteName.trim()
+
+    const normalizedUrl =
+      normalizeCohortSharedUrl(
+        editUrlValue,
+      )
+
+    if (websiteName.length === 0) {
+      window.alert(
+        'Website Name cannot be blank.',
+      )
+      return
+    }
+
+    if (normalizedUrl === null) {
+      window.alert(
+        'Enter a valid http or https URL.',
+      )
+      return
+    }
+
+    const duplicateExists =
+      sharedUrls.some(
+        (sharedUrl) =>
+          sharedUrl.id !== urlId &&
+          sharedUrl.url ===
+          normalizedUrl,
+      )
+
+    if (duplicateExists) {
+      window.alert(
+        'That URL is already listed.',
+      )
+      return
+    }
+
+    updateSharedUrlRecord(
+      urlId,
+      {
+        websiteName,
+        url: normalizedUrl,
+        source:
+          editUrlSource.trim(),
+        notes:
+          editUrlNotes.trim(),
+      },
+    )
+
+    closeUrlEdit()
+  }
+
+  async function deleteDocumentIds(
+    fileIds: readonly string[],
+  ): Promise<void> {
+    const deletableFiles =
+      addedSharedFiles.filter(
+        (file) =>
+          fileIds.includes(file.id),
+      )
+
+    if (deletableFiles.length === 0) {
+      return
+    }
+
+    const confirmationLabel =
+      deletableFiles.length === 1
+        ? `Delete "${deletableFiles[0]?.title ?? 'this document'}"?`
+        : `Delete ${deletableFiles.length} selected documents?`
+
+    if (
+      !window.confirm(
+        `${confirmationLabel}\n\nThis removes the stored document from this browser and cannot be undone from the Shared Files page.`,
+      )
+    ) {
+      return
+    }
+
+    try {
+      await deleteStoredCohortSharedFiles(
+        deletableFiles.map(
+          (file) => file.id,
+        ),
+      )
+    } catch {
+      window.alert(
+        'The selected document(s) could not be deleted from persistent storage.',
+      )
+      return
+    }
+
+    for (const file of deletableFiles) {
+      revokeSharedFileRuntimeUrls(file)
+    }
+
+    const deletedIds =
+      new Set(
+        deletableFiles.map(
+          (file) => file.id,
+        ),
+      )
+
+    setAddedSharedFiles(
+      (currentFiles) =>
+        currentFiles.filter(
+          (file) =>
+            !deletedIds.has(file.id),
+        ),
+    )
+
+    setSelectedDocumentIds(
+      (currentIds) =>
+        currentIds.filter(
+          (id) =>
+            !deletedIds.has(id),
+        ),
+    )
+
+    if (
+      selectedFileId !== null &&
+      deletedIds.has(selectedFileId)
+    ) {
+      setSelectedFileId(null)
+    }
+
+    setDocumentMenuId(null)
+  }
+
+  function deleteSelectedDocuments():
+    void {
+    void deleteDocumentIds(
+      selectedDocumentIds,
+    )
+  }
+
+  function deleteUrlIds(
+    urlIds: readonly string[],
+  ): void {
+    const deletableUrls =
+      sharedUrls.filter(
+        (sharedUrl) =>
+          urlIds.includes(
+            sharedUrl.id,
+          ),
+      )
+
+    if (deletableUrls.length === 0) {
+      return
+    }
+
+    const confirmationLabel =
+      deletableUrls.length === 1
+        ? `Delete "${deletableUrls[0]?.websiteName ?? 'this URL'}"?`
+        : `Delete ${deletableUrls.length} selected URL links?`
+
+    if (
+      !window.confirm(
+        `${confirmationLabel}\n\nThis removes the URL from Shared Files & Links.`,
+      )
+    ) {
+      return
+    }
+
+    const deletedIds =
+      new Set(
+        deletableUrls.map(
+          (sharedUrl) =>
+            sharedUrl.id,
+        ),
+      )
+
+    setSharedUrls(
+      (currentUrls) =>
+        currentUrls.filter(
+          (sharedUrl) =>
+            !deletedIds.has(
+              sharedUrl.id,
+            ),
+        ),
+    )
+
+    setSelectedUrlIds(
+      (currentIds) =>
+        currentIds.filter(
+          (id) =>
+            !deletedIds.has(id),
+        ),
+    )
+
+    setUrlMenuId(null)
+    setNotesPopover(null)
+    setUrlLinkPopover(null)
+  }
+
+  function deleteSelectedUrls(): void {
+    deleteUrlIds(selectedUrlIds)
+  }
+
+  function openNotesEditor(
+    sharedUrl: CohortSharedUrlRecord,
+    anchor: HTMLElement,
+  ): void {
+    const position =
+      getCohortSharedPopoverPosition(
+        anchor,
+        360,
+        190,
+      )
+
+    setNotesDraft(sharedUrl.notes)
+    setNotesPopover({
+      recordId: sharedUrl.id,
+      ...position,
+    })
+    setUrlLinkPopover(null)
+  }
+
+  function saveNotesEditor(): void {
+    const popover = notesPopover
+
+    if (popover === null) {
+      return
+    }
+
+    updateSharedUrlRecord(
+      popover.recordId,
+      {
+        notes: notesDraft.trim(),
+      },
+    )
+
+    setNotesPopover(null)
+    setNotesDraft('')
+  }
+
+  function openUrlLinkViewer(
+    sharedUrl: CohortSharedUrlRecord,
+    anchor: HTMLElement,
+  ): void {
+    const position =
+      getCohortSharedPopoverPosition(
+        anchor,
+        420,
+        145,
+      )
+
+    setUrlLinkPopover({
+      recordId: sharedUrl.id,
+      ...position,
+    })
+    setNotesPopover(null)
+  }
+
+  async function copySharedUrl(
+    url: string,
+  ): Promise<void> {
+    try {
+      await copyCohortSharedText(url)
+      window.alert('URL copied.')
+    } catch {
+      window.alert(
+        'The URL could not be copied automatically.',
+      )
+    }
+  }
+
+  function openSharedUrlInNewTab(
+    url: string,
+  ): void {
+    window.open(
+      url,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
+
+  function beginUrlReportMode(): void {
+    setSelectedUrlIds([])
+    setIsUrlReportMode(true)
+    setUrlMenuId(null)
+  }
+
+  function cancelUrlReportMode(): void {
+    setSelectedUrlIds([])
+    setIsUrlReportMode(false)
+  }
+
+  async function generateSelectedUrlReport():
+    Promise<void> {
+    const selectedUrls =
+      sharedUrls.filter(
+        (sharedUrl) =>
+          selectedUrlIds.includes(
+            sharedUrl.id,
+          ),
+      )
+
+    if (selectedUrls.length === 0) {
+      window.alert(
+        'Select at least one URL for the report.',
+      )
+      return
+    }
+
+    try {
+      const reportBlob =
+        await createCohortSharedUrlReportBlob(
+          selectedUrls,
+        )
+
+      downloadCohortSharedUrlReport(
+        reportBlob,
+      )
+
+      setSelectedUrlIds([])
+      setIsUrlReportMode(false)
+    } catch {
+      window.alert(
+        'The Shared URL Word report could not be generated.',
       )
     }
   }
@@ -22006,16 +23415,7 @@ function CohortSharedFilesPage() {
     fileId: string,
   ): void {
     setSelectedFileId(fileId)
-
-    setSelectedDocumentIds(
-      (currentIds) =>
-        currentIds.includes(fileId)
-          ? currentIds
-          : [
-            ...currentIds,
-            fileId,
-          ],
-    )
+    setDocumentMenuId(null)
   }
 
   function downloadSelectedFile():
@@ -22275,7 +23675,7 @@ function CohortSharedFilesPage() {
       <section className="shared-files-header">
         <div>
           <h2>
-            Beta Nu Cohort Shared Files
+            Beta Nu Cohort Shared Files & Links
           </h2>
 
           <p>
@@ -22387,18 +23787,6 @@ function CohortSharedFilesPage() {
           Clear
         </button>
 
-        <button
-          type="button"
-          className="shared-files-add-button"
-          onClick={openAddDocument}
-        >
-          <span aria-hidden="true">
-            +
-          </span>
-
-          Add Document
-        </button>
-
         <div className="shared-files-visible-count">
           <span>Visible</span>
 
@@ -22456,6 +23844,20 @@ function CohortSharedFilesPage() {
                   </svg>
 
                   Attachments
+                </button>
+
+                <button
+                  type="button"
+                  className="shared-files-panel-action-button shared-files-panel-action-button-danger"
+                  disabled={
+                    selectedDocumentIds.length ===
+                    0
+                  }
+                  onClick={
+                    deleteSelectedDocuments
+                  }
+                >
+                  Delete Selected
                 </button>
               </div>
             </header>
@@ -22569,14 +23971,99 @@ function CohortSharedFilesPage() {
                             )}
                           </td>
 
-                          <td className="shared-files-more-options-cell">
-                            <span
+                          <td
+                            className="shared-files-more-options-cell"
+                            onClick={(event) =>
+                              event.stopPropagation()
+                            }
+                          >
+                            <button
+                              type="button"
+                              className="shared-files-more-options-button"
                               title="More options"
-                              aria-label="More options"
-                              role="img"
+                              aria-label={`More options for ${file.title}`}
+                              onClick={() =>
+                                setDocumentMenuId(
+                                  documentMenuId ===
+                                    file.id
+                                    ? null
+                                    : file.id,
+                                )
+                              }
                             >
                               ⋯
-                            </span>
+                            </button>
+
+                            {documentMenuId ===
+                              file.id ? (
+                              <div className="shared-files-row-menu">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openDocumentEdit(
+                                      file,
+                                    )
+                                  }
+                                >
+                                  Edit
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    selectDocumentForPreview(
+                                      file.id,
+                                    )
+                                  }
+                                >
+                                  Preview
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedFileId(
+                                      file.id,
+                                    )
+                                    setDocumentMenuId(
+                                      null,
+                                    )
+
+                                    const downloadLink =
+                                      document.createElement(
+                                        'a',
+                                      )
+
+                                    downloadLink.href =
+                                      getCohortSharedFileOriginalUrl(
+                                        file,
+                                      )
+                                    downloadLink.download =
+                                      file.fileName
+
+                                    document.body.appendChild(
+                                      downloadLink,
+                                    )
+                                    downloadLink.click()
+                                    downloadLink.remove()
+                                  }}
+                                >
+                                  Download
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="shared-files-row-menu-delete"
+                                  onClick={() => {
+                                    void deleteDocumentIds([
+                                      file.id,
+                                    ])
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ) : null}
                           </td>
                         </tr>
                       )
@@ -22700,6 +24187,61 @@ function CohortSharedFilesPage() {
 
                   Attachments
                 </button>
+
+
+                {isUrlReportMode ? (
+                  <>
+                    <button
+                      type="button"
+                      className="shared-files-panel-action-button shared-files-panel-action-button-gold"
+                      disabled={
+                        selectedUrlIds.length ===
+                        0
+                      }
+                      onClick={() => {
+                        void generateSelectedUrlReport()
+                      }}
+                    >
+                      Generate Report
+                    </button>
+
+                    <button
+                      type="button"
+                      className="shared-files-panel-action-button shared-files-panel-action-button-secondary"
+                      onClick={
+                        cancelUrlReportMode
+                      }
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="shared-files-panel-action-button shared-files-panel-action-button-gold"
+                      onClick={
+                        beginUrlReportMode
+                      }
+                    >
+                      Download URL Report
+                    </button>
+
+                    <button
+                      type="button"
+                      className="shared-files-panel-action-button shared-files-panel-action-button-danger"
+                      disabled={
+                        selectedUrlIds.length ===
+                        0
+                      }
+                      onClick={
+                        deleteSelectedUrls
+                      }
+                    >
+                      Delete Selected
+                    </button>
+                  </>
+                )}
               </div>
             </header>
 
@@ -22722,7 +24264,7 @@ function CohortSharedFilesPage() {
                       />
                     </th>
                     <th>Website Name</th>
-                    <th>Add URL</th>
+                    <th>URL Link</th>
                     <th>Source, if applicable</th>
                     <th>Notes</th>
                     <th className="shared-files-options-column" />
@@ -22766,13 +24308,19 @@ function CohortSharedFilesPage() {
                           </td>
 
                           <td>
-                            <a
-                              href={sharedUrl.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              className="shared-files-url-link-button"
+                              title={sharedUrl.url}
+                              onClick={(event) =>
+                                openUrlLinkViewer(
+                                  sharedUrl,
+                                  event.currentTarget,
+                                )
+                              }
                             >
                               {sharedUrl.url}
-                            </a>
+                            </button>
                           </td>
 
                           <td>
@@ -22780,17 +24328,94 @@ function CohortSharedFilesPage() {
                           </td>
 
                           <td>
-                            {sharedUrl.notes}
+                            <button
+                              type="button"
+                              className="shared-files-notes-button"
+                              title={
+                                sharedUrl.notes ||
+                                'Click to add notes'
+                              }
+                              onClick={(event) =>
+                                openNotesEditor(
+                                  sharedUrl,
+                                  event.currentTarget,
+                                )
+                              }
+                            >
+                              {sharedUrl.notes ||
+                                'Add notes'}
+                            </button>
                           </td>
 
                           <td className="shared-files-more-options-cell">
-                            <span
+                            <button
+                              type="button"
+                              className="shared-files-more-options-button"
                               title="More options"
-                              aria-label="More options"
-                              role="img"
+                              aria-label={`More options for ${sharedUrl.websiteName}`}
+                              onClick={() =>
+                                setUrlMenuId(
+                                  urlMenuId ===
+                                    sharedUrl.id
+                                    ? null
+                                    : sharedUrl.id,
+                                )
+                              }
                             >
                               ⋯
-                            </span>
+                            </button>
+
+                            {urlMenuId ===
+                              sharedUrl.id ? (
+                              <div className="shared-files-row-menu">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openUrlEdit(
+                                      sharedUrl,
+                                    )
+                                  }
+                                >
+                                  Edit
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void copySharedUrl(
+                                      sharedUrl.url,
+                                    )
+                                    setUrlMenuId(null)
+                                  }}
+                                >
+                                  Copy URL
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    openSharedUrlInNewTab(
+                                      sharedUrl.url,
+                                    )
+                                    setUrlMenuId(null)
+                                  }}
+                                >
+                                  Open
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="shared-files-row-menu-delete"
+                                  onClick={() =>
+                                    deleteUrlIds([
+                                      sharedUrl.id,
+                                    ])
+                                  }
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            ) : null}
                           </td>
                         </tr>
                       )
@@ -22968,6 +24593,346 @@ function CohortSharedFilesPage() {
         </section>
       </div>
 
+      {notesPopover !== null &&
+        notesPopoverUrl !== null ? (
+        <section
+          className="shared-files-cell-popover shared-files-notes-popover"
+          style={{
+            left: notesPopover.left,
+            top: notesPopover.top,
+            width: notesPopover.width,
+          }}
+          role="dialog"
+          aria-label={`Notes for ${notesPopoverUrl.websiteName}`}
+        >
+          <header>
+            <strong>Notes</strong>
+
+            <button
+              type="button"
+              aria-label="Close Notes"
+              onClick={() => {
+                setNotesPopover(null)
+                setNotesDraft('')
+              }}
+            >
+              ×
+            </button>
+          </header>
+
+          <textarea
+            value={notesDraft}
+            onChange={(event) =>
+              setNotesDraft(
+                event.target.value,
+              )
+            }
+          />
+
+          <footer>
+            <button
+              type="button"
+              className="shared-files-popover-cancel-button"
+              onClick={() => {
+                setNotesPopover(null)
+                setNotesDraft('')
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              className="shared-files-popover-save-button"
+              onClick={saveNotesEditor}
+            >
+              Save
+            </button>
+          </footer>
+        </section>
+      ) : null}
+
+      {urlLinkPopover !== null &&
+        urlLinkPopoverUrl !== null ? (
+        <section
+          className="shared-files-cell-popover shared-files-url-link-popover"
+          style={{
+            left: urlLinkPopover.left,
+            top: urlLinkPopover.top,
+            width: urlLinkPopover.width,
+          }}
+          role="dialog"
+          aria-label={`URL for ${urlLinkPopoverUrl.websiteName}`}
+        >
+          <header>
+            <strong>URL Link</strong>
+
+            <button
+              type="button"
+              aria-label="Close URL Link"
+              onClick={() =>
+                setUrlLinkPopover(null)
+              }
+            >
+              ×
+            </button>
+          </header>
+
+          <p>
+            {urlLinkPopoverUrl.url}
+          </p>
+
+          <footer>
+            <button
+              type="button"
+              className="shared-files-popover-copy-button"
+              onClick={() => {
+                void copySharedUrl(
+                  urlLinkPopoverUrl.url,
+                )
+              }}
+            >
+              Copy URL
+            </button>
+
+            <button
+              type="button"
+              className="shared-files-popover-save-button"
+              onClick={() =>
+                openSharedUrlInNewTab(
+                  urlLinkPopoverUrl.url,
+                )
+              }
+            >
+              Open Link
+            </button>
+          </footer>
+        </section>
+      ) : null}
+
+      {editingDocumentId !== null ? (
+        <div
+          className="shared-files-modal-backdrop"
+          role="presentation"
+        >
+          <section
+            className="shared-files-add-modal shared-files-edit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shared-files-edit-document-title"
+          >
+            <header className="shared-files-add-modal-header">
+              <div>
+                <h2 id="shared-files-edit-document-title">
+                  Edit Shared Document
+                </h2>
+
+                <p>
+                  Update document information. The stored file itself is not replaced.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="shared-files-add-modal-close"
+                aria-label="Close Edit Shared Document"
+                onClick={closeDocumentEdit}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="shared-files-add-modal-body">
+              <label className="shared-files-add-field">
+                <span>Document Name</span>
+
+                <input
+                  type="text"
+                  value={editDocumentTitle}
+                  onChange={(event) =>
+                    setEditDocumentTitle(
+                      event.target.value,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="shared-files-add-field">
+                <span>Category</span>
+
+                <input
+                  type="text"
+                  value={editDocumentCategory}
+                  onChange={(event) =>
+                    setEditDocumentCategory(
+                      event.target.value,
+                    )
+                  }
+                />
+              </label>
+
+              <label className="shared-files-add-field">
+                <span>Description</span>
+
+                <textarea
+                  value={editDocumentDescription}
+                  onChange={(event) =>
+                    setEditDocumentDescription(
+                      event.target.value,
+                    )
+                  }
+                />
+              </label>
+            </div>
+
+            <footer className="shared-files-add-modal-actions">
+              <button
+                type="button"
+                className="shared-files-add-cancel-button"
+                onClick={closeDocumentEdit}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="shared-files-add-save-button"
+                disabled={
+                  editDocumentTitle
+                    .trim().length === 0
+                }
+                onClick={() => {
+                  void saveDocumentEdit()
+                }}
+              >
+                Save Changes
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {editingUrlId !== null ? (
+        <div
+          className="shared-files-modal-backdrop"
+          role="presentation"
+        >
+          <section
+            className="shared-files-add-modal shared-files-edit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shared-files-edit-url-title"
+          >
+            <header className="shared-files-add-modal-header">
+              <div>
+                <h2 id="shared-files-edit-url-title">
+                  Edit Shared URL
+                </h2>
+
+                <p>
+                  Update the website name, link, source, or notes.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="shared-files-add-modal-close"
+                aria-label="Close Edit Shared URL"
+                onClick={closeUrlEdit}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="shared-files-add-modal-body">
+              <div className="shared-files-url-form-grid">
+                <label className="shared-files-add-field">
+                  <span>Website Name</span>
+
+                  <input
+                    type="text"
+                    value={editUrlWebsiteName}
+                    onChange={(event) =>
+                      setEditUrlWebsiteName(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="shared-files-add-field">
+                  <span>URL Link</span>
+
+                  <input
+                    type="text"
+                    value={editUrlValue}
+                    onChange={(event) =>
+                      setEditUrlValue(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="shared-files-url-form-grid">
+                <label className="shared-files-add-field">
+                  <span>Source, if applicable</span>
+
+                  <input
+                    type="text"
+                    value={editUrlSource}
+                    onChange={(event) =>
+                      setEditUrlSource(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </label>
+
+                <label className="shared-files-add-field">
+                  <span>Notes</span>
+
+                  <textarea
+                    value={editUrlNotes}
+                    onChange={(event) =>
+                      setEditUrlNotes(
+                        event.target.value,
+                      )
+                    }
+                  />
+                </label>
+              </div>
+            </div>
+
+            <footer className="shared-files-add-modal-actions">
+              <button
+                type="button"
+                className="shared-files-add-cancel-button"
+                onClick={closeUrlEdit}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="shared-files-add-save-button"
+                disabled={
+                  editUrlWebsiteName
+                    .trim().length === 0 ||
+                  editUrlValue
+                    .trim().length === 0
+                }
+                onClick={saveUrlEdit}
+              >
+                Save Changes
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+
       {isAddUrlOpen ? (
         <div
           className="shared-files-modal-backdrop"
@@ -23069,7 +25034,7 @@ function CohortSharedFilesPage() {
 
                     <label className="shared-files-add-field">
                       <span>
-                        Add URL
+                        URL Link
                       </span>
 
                       <input
@@ -23123,7 +25088,7 @@ function CohortSharedFilesPage() {
                 <div className="shared-files-multiple-url-editor">
                   <div className="shared-files-multiple-url-header">
                     <span>Website Name</span>
-                    <span>Add URL</span>
+                    <span>URL Link</span>
                     <span>
                       Source, if Applicable
                     </span>
@@ -23154,7 +25119,7 @@ function CohortSharedFilesPage() {
 
                         <input
                           type="text"
-                          aria-label="Add URL"
+                          aria-label="URL Link"
                           value={draft.url}
                           placeholder="https://..."
                           onChange={(event) =>
@@ -23632,12 +25597,16 @@ function CohortSharedFilesPage() {
                     : massUploadFiles.length ===
                     0
                 }
-                onClick={
-                  addDocumentMode ===
+                onClick={() => {
+                  if (
+                    addDocumentMode ===
                     'single'
-                    ? saveAddedDocument
-                    : saveMassUpload
-                }
+                  ) {
+                    void saveAddedDocument()
+                  } else {
+                    void saveMassUpload()
+                  }
+                }}
               >
                 {addDocumentMode ===
                   'single'

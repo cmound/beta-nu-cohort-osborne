@@ -8185,6 +8185,388 @@
 }
 
 /* =========================================================
+   Shared Files & Links Functional Controls
+   ========================================================= */
+
+.shared-files-panel-actions {
+  gap: 6px;
+}
+
+.shared-files-panel-action-button:disabled {
+  border-color: #94a3b8;
+  color: #94a3b8;
+  background:
+    linear-gradient(
+      180deg,
+      #eef2f6 0%,
+      #d7e0e8 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.85);
+  cursor: default;
+  filter: none;
+  transform: none;
+}
+
+.shared-files-panel-action-button-danger {
+  min-width: 98px;
+  border-color: #a31515;
+  color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #d93636 0%,
+      #bd2031 48%,
+      #991b1b 76%,
+      #760d0d 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.25),
+    inset 0 -3px 2px
+      rgba(90, 0, 0, 0.45),
+    0 3px 5px
+      rgba(0, 0, 0, 0.28);
+}
+
+.shared-files-panel-action-button-gold {
+  min-width: 112px;
+  border-color: #8f6810;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #e9bd34 46%,
+      #d7a91f 70%,
+      #b9830c 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    inset 0 -3px 2px
+      rgba(87, 54, 0, 0.3),
+    0 3px 5px
+      rgba(0, 0, 0, 0.28);
+}
+
+.shared-files-panel-action-button-secondary {
+  min-width: 72px;
+  border-color: #7f8c9d;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e7edf4 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    0 2px 4px
+      rgba(0, 0, 0, 0.18);
+}
+
+.shared-files-more-options-cell {
+  position: relative;
+  overflow: visible;
+}
+
+.shared-files-more-options-button {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: #0b1f3b;
+  background: transparent;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.shared-files-more-options-button:hover,
+.shared-files-more-options-button:focus-visible {
+  background: #e7edf4;
+}
+
+.shared-files-more-options-button:focus-visible {
+  outline: 2px solid #005eb8;
+  outline-offset: 1px;
+}
+
+.shared-files-row-menu {
+  position: absolute;
+  z-index: 30;
+  top: 50%;
+  right: 30px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid #7f95aa;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow:
+    0 7px 18px
+      rgba(0, 0, 0, 0.26);
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.shared-files-row-menu button {
+  min-height: 25px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid #9aa8b8;
+  border-radius: 4px;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e9eff5 100%
+    );
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.shared-files-row-menu button:hover {
+  border-color: #005eb8;
+  background: #edf6ff;
+}
+
+.shared-files-row-menu
+  .shared-files-row-menu-delete {
+  border-color: #a31515;
+  color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #c62828 0%,
+      #8b0000 100%
+    );
+}
+
+.shared-files-url-table td:nth-child(3),
+.shared-files-url-table td:nth-child(5) {
+  position: relative;
+  display: table-cell;
+  overflow: visible;
+}
+
+.shared-files-url-link-button,
+.shared-files-notes-button {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shared-files-url-link-button {
+  overflow: hidden;
+  color: #005eb8;
+  font-weight: 700;
+  text-decoration: underline;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shared-files-url-link-button:hover {
+  color: #003f7d;
+}
+
+.shared-files-notes-button {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #1f2937;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.shared-files-notes-button:hover {
+  color: #005eb8;
+  text-decoration: underline;
+}
+
+.shared-files-cell-popover {
+  position: fixed;
+  z-index: 90;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #527a99;
+  border-radius: 7px;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #edf3f8 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    0 10px 24px
+      rgba(0, 0, 0, 0.3);
+}
+
+.shared-files-cell-popover > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.shared-files-cell-popover > header strong {
+  color: #0b1f3b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.shared-files-cell-popover
+  > header
+  > button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.shared-files-notes-popover textarea {
+  width: 100%;
+  min-height: 105px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 8px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.shared-files-url-link-popover p {
+  margin: 0 0 10px;
+  padding: 8px;
+  border: 1px solid #c2ccd6;
+  border-radius: 4px;
+  color: #005eb8;
+  background: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.shared-files-cell-popover footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.shared-files-cell-popover footer button {
+  min-height: 29px;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.shared-files-popover-cancel-button {
+  border: 1px solid #94a3b8;
+  color: #0b1f3b;
+  background: #ffffff;
+}
+
+.shared-files-popover-copy-button {
+  border: 1px solid #1f6096;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #1877c7 0%,
+      #075aa8 100%
+    );
+}
+
+.shared-files-popover-save-button {
+  border: 1px solid #8f6810;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #d7a91f 100%
+    );
+}
+
+.shared-files-edit-modal {
+  width: 650px;
+}
+
+.shared-files-edit-modal
+  .shared-files-add-field
+  + .shared-files-add-field {
+  margin-top: 12px;
+}
+
+.shared-files-edit-modal textarea {
+  width: 100%;
+  min-height: 95px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 8px 9px;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  color: #111827;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.shared-files-edit-modal textarea:focus,
+.shared-files-notes-popover textarea:focus,
+.shared-files-url-link-button:focus-visible,
+.shared-files-notes-button:focus-visible {
+  outline: 2px solid rgba(0, 94, 184, 0.38);
+  outline-offset: 1px;
+}
+
+/* =========================================================
    Beta Nu Cohort Group Assignments
    ========================================================= */
 
