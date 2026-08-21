@@ -1984,7 +1984,7 @@ function getProfessorLastName(
 
   return (
     nameParts[
-      nameParts.length - 1
+    nameParts.length - 1
     ] ?? ''
   )
 }
@@ -2049,9 +2049,9 @@ function isStoredProfessorDirectoryRecord(
   return (
     typeof value.id === 'string' &&
     typeof value.canonicalName ===
-      'string' &&
+    'string' &&
     typeof value.phoneDigits ===
-      'string' &&
+    'string' &&
     typeof value.email === 'string'
   )
 }
@@ -28854,6 +28854,11 @@ function CoursePage({
     )
 
   const [
+    assignmentRowCountInput,
+    setAssignmentRowCountInput,
+  ] = useState('')
+
+  const [
     assignmentFormError,
     setAssignmentFormError,
   ] = useState('')
@@ -29193,7 +29198,7 @@ function CoursePage({
       baseline !== null &&
       matchedProfessor !== null &&
       matchedProfessor.id !==
-        baseline.id
+      baseline.id
     ) {
       updateCourseWorkspace({
         professorName:
@@ -29227,13 +29232,13 @@ function CoursePage({
       const isBaselineLastNameAlias =
         enteredNameParts.length === 1 &&
         enteredNameParts[0] ===
-          getProfessorLastName(
-            baseline.canonicalName,
-          )
+        getProfessorLastName(
+          baseline.canonicalName,
+        )
 
       const isSameRememberedProfessor =
         matchedProfessor?.id ===
-          baseline.id ||
+        baseline.id ||
         isBaselineLastNameAlias
 
       if (isSameRememberedProfessor) {
@@ -29242,9 +29247,9 @@ function CoursePage({
 
         const hasChanges =
           baseline.phoneDigits !==
-            cleanedPhoneDigits ||
+          cleanedPhoneDigits ||
           baseline.email !==
-            cleanedEmail
+          cleanedEmail
 
         if (!hasChanges) {
           updateCourseWorkspace({
@@ -29411,6 +29416,8 @@ function CoursePage({
       createEmptyCourseAssignmentFormState(),
     ])
 
+    setAssignmentRowCountInput('')
+
     setAssignmentFormError('')
 
     setIsAssignmentModalOpen(
@@ -29446,14 +29453,183 @@ function CoursePage({
     )
   }
 
-  function addAssignmentFormRow():
-    void {
+  function resizeAssignmentFormRows(
+    value: string,
+  ): void {
+    setAssignmentRowCountInput(
+      value,
+    )
+
+    const trimmedValue =
+      value.trim()
+
+    if (
+      trimmedValue.length === 0
+    ) {
+      setAssignmentFormError('')
+      return
+    }
+
+    if (
+      !/^\d+$/.test(
+        trimmedValue,
+      )
+    ) {
+      return
+    }
+
+    const requestedRowCount =
+      Number(trimmedValue)
+
+    if (
+      !Number.isInteger(
+        requestedRowCount,
+      ) ||
+      requestedRowCount < 1 ||
+      requestedRowCount > 50
+    ) {
+      setAssignmentFormError(
+        'Number of rows must be between 1 and 50.',
+      )
+
+      return
+    }
+
+    if (
+      requestedRowCount <
+      assignmentForms.length
+    ) {
+      const rowsBeingRemoved =
+        assignmentForms.slice(
+          requestedRowCount,
+        )
+
+      const hasEnteredData =
+        rowsBeingRemoved.some(
+          (row) =>
+            row.asn.trim().length > 0 ||
+            row.name.trim().length > 0 ||
+            row.dueDate.trim().length > 0 ||
+            row.points.trim().length > 0,
+        )
+
+      if (
+        hasEnteredData &&
+        !window.confirm(
+          `Reducing the row count to ${requestedRowCount} will remove entered information from the extra rows. Continue?`,
+        )
+      ) {
+        setAssignmentRowCountInput(
+          String(
+            assignmentForms.length,
+          ),
+        )
+
+        return
+      }
+    }
+
+    if (
+      requestedRowCount >
+      assignmentForms.length
+    ) {
+      const rowsToAdd =
+        Array.from(
+          {
+            length:
+              requestedRowCount -
+              assignmentForms.length,
+          },
+          () =>
+            createEmptyCourseAssignmentFormState(),
+        )
+
+      setAssignmentForms([
+        ...assignmentForms,
+        ...rowsToAdd,
+      ])
+    } else {
+      setAssignmentForms(
+        assignmentForms.slice(
+          0,
+          requestedRowCount,
+        ),
+      )
+    }
+
+    setAssignmentFormError('')
+  }
+
+  function removeAssignmentFormRow(
+    rowIndex: number,
+  ): void {
+    if (
+      assignmentForms.length === 1
+    ) {
+      setAssignmentForms([
+        createEmptyCourseAssignmentFormState(),
+      ])
+
+      setAssignmentRowCountInput(
+        '1',
+      )
+
+      return
+    }
+
+    const nextRows =
+      assignmentForms.filter(
+        (
+          _row,
+          currentRowIndex,
+        ) =>
+          currentRowIndex !==
+          rowIndex,
+      )
+
+    setAssignmentForms(
+      nextRows,
+    )
+
+    setAssignmentRowCountInput(
+      String(nextRows.length),
+    )
+
+    setAssignmentFormError('')
+  }
+
+  function addAssignmentFormRow(
+    focusNewRow = false,
+  ): void {
+    const nextRowIndex =
+      assignmentForms.length
+
     setAssignmentForms(
       (currentRows) => [
         ...currentRows,
         createEmptyCourseAssignmentFormState(),
       ],
     )
+
+    setAssignmentRowCountInput(
+      String(
+        assignmentForms.length +
+        1,
+      ),
+    )
+
+    if (focusNewRow) {
+      window.setTimeout(
+        () => {
+          document
+            .getElementById(
+              `course-assignment-asn-${nextRowIndex}`,
+            )
+            ?.focus()
+        },
+        0,
+      )
+    }
   }
 
   function saveAssignments(
@@ -30345,7 +30521,7 @@ function CoursePage({
 
               if (
                 nextTarget instanceof
-                  Node &&
+                Node &&
                 event.currentTarget.contains(
                   nextTarget,
                 )
@@ -30727,27 +30903,88 @@ function CoursePage({
                   saveAssignments
                 }
               >
-                <div className="course-assignment-form-rows">
-                  {assignmentForms.map(
-                    (
-                      formRow,
-                      rowIndex,
-                    ) => (
-                      <div
-                        className="course-assignment-form-row"
-                        key={`assignment-form-row-${rowIndex}`}
-                      >
-                        <div className="course-assignment-form-grid">
-                          <label>
-                            <span>
-                              ASN #
-                            </span>
+                <div className="course-assignment-row-count-control">
+                  <label
+                    htmlFor="course-assignment-row-count"
+                  >
+                    <span>
+                      # of rows
+                    </span>
 
+                    <input
+                      id="course-assignment-row-count"
+                      type="number"
+                      inputMode="numeric"
+                      min="1"
+                      max="50"
+                      placeholder="#"
+                      value={
+                        assignmentRowCountInput
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        resizeAssignmentFormRows(
+                          event.target.value,
+                        )
+                      }}
+                    />
+                  </label>
+
+                  <small>
+                    Optional. Enter the
+                    number of assignment
+                    rows you want to start
+                    with.
+                  </small>
+                </div>
+
+                <div className="course-assignment-entry-table">
+                  <div className="course-assignment-entry-grid course-assignment-entry-header">
+                    <span>
+                      ASN #
+                    </span>
+
+                    <span>
+                      Assignment Name
+                    </span>
+
+                    <span>
+                      Due Date
+                    </span>
+
+                    <span>
+                      Points
+                    </span>
+
+                    <span
+                      aria-hidden="true"
+                      className="course-assignment-remove-header"
+                    />
+                  </div>
+
+                  <div className="course-assignment-form-rows">
+                    {assignmentForms.map(
+                      (
+                        formRow,
+                        rowIndex,
+                      ) => (
+                        <div
+                          className="course-assignment-entry-grid course-assignment-form-row"
+                          key={`assignment-form-row-${rowIndex}`}
+                        >
+                          <div className="course-assignment-entry-cell">
                             <input
+                              id={
+                                `course-assignment-asn-${rowIndex}`
+                              }
                               autoFocus={
                                 rowIndex === 0
                               }
                               type="text"
+                              aria-label={
+                                `ASN number for row ${rowIndex + 1}`
+                              }
                               placeholder="4, 3.5, or PQR"
                               value={
                                 formRow.asn
@@ -30763,15 +31000,14 @@ function CoursePage({
                                 )
                               }}
                             />
-                          </label>
+                          </div>
 
-                          <label>
-                            <span>
-                              Assignment Name
-                            </span>
-
+                          <div className="course-assignment-entry-cell">
                             <input
                               type="text"
+                              aria-label={
+                                `Assignment name for row ${rowIndex + 1}`
+                              }
                               placeholder="Enter assignment name"
                               value={
                                 formRow.name
@@ -30787,15 +31023,14 @@ function CoursePage({
                                 )
                               }}
                             />
-                          </label>
+                          </div>
 
-                          <label>
-                            <span>
-                              Due Date
-                            </span>
-
+                          <div className="course-assignment-entry-cell">
                             <input
                               type="text"
+                              aria-label={
+                                `Due date for row ${rowIndex + 1}`
+                              }
                               placeholder="817, 0817, 081726, or 8/17/2026"
                               value={
                                 formRow.dueDate
@@ -30811,23 +31046,16 @@ function CoursePage({
                                 )
                               }}
                             />
+                          </div>
 
-                            <small>
-                              Week Due is
-                              calculated
-                              automatically.
-                            </small>
-                          </label>
-
-                          <label>
-                            <span>
-                              Points
-                            </span>
-
+                          <div className="course-assignment-entry-cell">
                             <input
                               type="text"
                               inputMode="decimal"
-                              placeholder="Enter points"
+                              aria-label={
+                                `Points for row ${rowIndex + 1}`
+                              }
+                              placeholder="Points"
                               value={
                                 formRow.points
                               }
@@ -30841,30 +31069,75 @@ function CoursePage({
                                     .value,
                                 )
                               }}
-                            />
-                          </label>
-                        </div>
+                              onKeyDown={(
+                                event,
+                              ) => {
+                                if (
+                                  event.key !==
+                                  'Tab' ||
+                                  event.shiftKey ||
+                                  rowIndex !==
+                                  assignmentForms.length -
+                                  1 ||
+                                  formRow.points
+                                    .trim()
+                                    .length === 0
+                                ) {
+                                  return
+                                }
 
-                        {rowIndex ===
-                          assignmentForms.length -
-                          1 ? (
+                                event.preventDefault()
+
+                                addAssignmentFormRow(
+                                  true,
+                                )
+                              }}
+                            />
+                          </div>
+
                           <button
                             type="button"
-                            className="course-assignment-add-row-button"
-                            onClick={
-                              addAssignmentFormRow
+                            className="course-assignment-remove-row-button"
+                            aria-label={
+                              `Remove assignment row ${rowIndex + 1}`
                             }
+                            title="Remove row"
+                            onClick={() => {
+                              removeAssignmentFormRow(
+                                rowIndex,
+                              )
+                            }}
                           >
-                            <span aria-hidden="true">
-                              +
-                            </span>
-
-                            Add another assignment
+                            ×
                           </button>
-                        ) : null}
-                      </div>
-                    ),
-                  )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                <div className="course-assignment-grid-footer">
+                  <small>
+                    Week Due is calculated
+                    automatically from each
+                    Due Date.
+                  </small>
+
+                  <button
+                    type="button"
+                    className="course-assignment-add-row-button"
+                    onClick={() => {
+                      addAssignmentFormRow(
+                        true,
+                      )
+                    }}
+                  >
+                    <span aria-hidden="true">
+                      +
+                    </span>
+
+                    Add another assignment
+                  </button>
                 </div>
 
                 {assignmentFormError
