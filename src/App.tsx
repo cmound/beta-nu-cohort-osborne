@@ -12148,10 +12148,43 @@ function FacilitatorPlannerPage({
       | 'details',
     value: string,
   ): void {
+    const normalizedAgendaItemValue =
+      field === 'agendaItem'
+        ? value
+          .trim()
+          .toLocaleLowerCase()
+        : ''
+
     const isBreakAgendaItem =
       field === 'agendaItem' &&
-      value.trim().toLocaleLowerCase() ===
+      normalizedAgendaItemValue ===
       'break'
+
+    const isFinalRemarksAgendaItem =
+      field === 'agendaItem' &&
+      (
+        normalizedAgendaItemValue.includes(
+          'final remarks',
+        ) ||
+        normalizedAgendaItemValue.includes(
+          'closing remarks',
+        )
+      )
+
+    const isProcessObserverAgendaItem =
+      field === 'agendaItem' &&
+      normalizedAgendaItemValue.includes(
+        'process observer',
+      )
+
+    const processObserverName =
+      selectedMeeting === undefined ||
+        selectedMeeting.processObserver
+          .trim().length === 0
+        ? ''
+        : getFacilitatorAgendaPersonLabel(
+          selectedMeeting.processObserver,
+        )
 
     setAgendaItems(
       (currentItems) => {
@@ -12167,10 +12200,22 @@ function FacilitatorPlannerPage({
                     name: 'All',
                     durationMinutes: 10,
                   }
-                  : {
-                    ...agendaItem,
-                    [field]: value,
-                  }
+                  : isFinalRemarksAgendaItem
+                    ? {
+                      ...agendaItem,
+                      agendaItem: value,
+                      name: 'Dr. CMO',
+                    }
+                    : isProcessObserverAgendaItem
+                      ? {
+                        ...agendaItem,
+                        agendaItem: value,
+                        name: processObserverName,
+                      }
+                      : {
+                        ...agendaItem,
+                        [field]: value,
+                      }
                 : agendaItem,
           )
 
@@ -14039,9 +14084,21 @@ function FacilitatorPlannerPage({
                 aria-hidden="true"
               />
 
-              <strong className="facilitator-planner-eastern-badge">
-                Eastern Time
-              </strong>
+              <div
+                className={
+                  remainingMinutes < 0
+                    ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-over'
+                    : remainingMinutes === 0
+                      ? 'facilitator-planner-planned-finish facilitator-planner-planned-finish-full'
+                      : 'facilitator-planner-planned-finish'
+                }
+              >
+                Planned finish:{' '}
+                {formatFacilitatorClockTime(
+                  plannedFinishMinutes +
+                  FACILITATOR_EASTERN_OFFSET_MINUTES,
+                )}
+              </div>
 
               <span
                 className="facilitator-planner-time-guide"
@@ -14288,6 +14345,11 @@ function FacilitatorPlannerPage({
                                 const nextValue =
                                   event.target.value
 
+                                const normalizedValue =
+                                  nextValue
+                                    .trim()
+                                    .toLocaleLowerCase()
+
                                 updateAgendaItemText(
                                   agendaItem.id,
                                   'agendaItem',
@@ -14295,13 +14357,27 @@ function FacilitatorPlannerPage({
                                 )
 
                                 if (
-                                  nextValue
-                                    .trim()
-                                    .toLocaleLowerCase() ===
+                                  normalizedValue ===
                                   'break'
                                 ) {
                                   focusNextAgendaItemInput(
                                     agendaItem.id,
+                                  )
+
+                                  return
+                                }
+
+                                if (
+                                  normalizedValue ===
+                                  'final remarks' ||
+                                  normalizedValue ===
+                                  'closing remarks' ||
+                                  normalizedValue ===
+                                  'process observer'
+                                ) {
+                                  focusAgendaTableInput(
+                                    agendaItem.id,
+                                    'name',
                                   )
                                 }
                               }}

@@ -3585,10 +3585,10 @@
 
 .facilitator-planner-planned-finish {
   width: max-content;
-  min-width: 184px;
+  min-width: 220px;
   box-sizing: border-box;
   margin: 0;
-  padding: 7px 12px;
+  padding: 6px 16px;
   border: 1px solid #73a9cf;
   border-radius: 6px;
   color: #ffffff;
@@ -3603,7 +3603,7 @@
       rgba(255, 255, 255, 0.14),
     0 3px 6px
       rgba(0, 0, 0, 0.32);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   line-height: 1;
   text-align: center;
@@ -3777,7 +3777,7 @@
     minmax(20px, 1fr) auto;
   align-items: center;
   gap: 8px;
-  margin-top: 11px;
+  margin-top: 5px;
 }
 
 .facilitator-planner-time-guide {
@@ -4076,7 +4076,9 @@
 }
 
 .facilitator-planner-duration-input {
+  position: relative;
   height: 31px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -4092,6 +4094,22 @@
   padding: 4px 0;
   appearance: textfield;
   field-sizing: content;
+  text-align: left;
+}
+
+.facilitator-planner-duration-input
+  input:focus {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 31px;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  background: #ffffff;
+  field-sizing: fixed;
   text-align: left;
 }
 
@@ -14059,7 +14077,7 @@ tbody td {
 
 /* View All Courses */
 .dashboard-view-all-courses-status {
-  min-width: 184px;
+  min-width: 220px;
   min-height: 35px;
   box-sizing: border-box;
   display: inline-flex;
@@ -14216,7 +14234,7 @@ tbody td {
 .dashboard-academic-current-term
   > strong {
   color: #004fc4;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   line-height: 1;
 }
