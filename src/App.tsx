@@ -129,6 +129,13 @@ type CourseWorkspaceState = Record<
   CourseWorkspaceRecord
 >
 
+interface ProfessorDirectoryRecord {
+  readonly id: string
+  readonly canonicalName: string
+  readonly phoneDigits: string
+  readonly email: string
+}
+
 type CourseProgressStatus =
   | "Haven't Started"
   | 'In Progress'
@@ -1874,6 +1881,8 @@ const COURSE_WORKSPACES_STORAGE_KEY =
   'beta-nu-course-workspaces-v1'
 const COURSE_PROGRESS_STORAGE_KEY =
   'beta-nu-course-progress-v1'
+const PROFESSOR_DIRECTORY_STORAGE_KEY =
+  'beta-nu-professor-directory-v1'
 
 const courseAssignmentWeekdayLabels = [
   'Sun.',
@@ -1931,6 +1940,150 @@ function isCourseWorkspaceStorageObject(
     typeof value === 'object' &&
     value !== null
   )
+}
+
+function normalizeProfessorLookupName(
+  value: string,
+): string {
+  return value
+    .normalize('NFD')
+    .replace(
+      /[\u0300-\u036f]/g,
+      '',
+    )
+    .toLowerCase()
+    .replace(
+      /^(?:dr|doctor|professor)\b\.?\s*/,
+      '',
+    )
+    .replace(
+      /[^a-z0-9]+/g,
+      ' ',
+    )
+    .trim()
+    .replace(
+      /\s+/g,
+      ' ',
+    )
+}
+
+function getProfessorLastName(
+  value: string,
+): string {
+  const normalizedName =
+    normalizeProfessorLookupName(
+      value,
+    )
+
+  if (normalizedName.length === 0) {
+    return ''
+  }
+
+  const nameParts =
+    normalizedName.split(' ')
+
+  return (
+    nameParts[
+      nameParts.length - 1
+    ] ?? ''
+  )
+}
+
+function findProfessorDirectoryMatch(
+  records:
+    readonly ProfessorDirectoryRecord[],
+  value: string,
+): ProfessorDirectoryRecord | null {
+  const normalizedInput =
+    normalizeProfessorLookupName(
+      value,
+    )
+
+  if (normalizedInput.length === 0) {
+    return null
+  }
+
+  const exactMatch =
+    records.find(
+      (record) =>
+        normalizeProfessorLookupName(
+          record.canonicalName,
+        ) === normalizedInput,
+    )
+
+  if (exactMatch !== undefined) {
+    return exactMatch
+  }
+
+  const inputParts =
+    normalizedInput.split(' ')
+
+  if (inputParts.length !== 1) {
+    return null
+  }
+
+  const lastNameMatches =
+    records.filter(
+      (record) =>
+        getProfessorLastName(
+          record.canonicalName,
+        ) === normalizedInput,
+    )
+
+  return lastNameMatches.length === 1
+    ? lastNameMatches[0]
+    : null
+}
+
+function isStoredProfessorDirectoryRecord(
+  value: unknown,
+): value is ProfessorDirectoryRecord {
+  if (
+    !isCourseWorkspaceStorageObject(
+      value,
+    )
+  ) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.canonicalName ===
+      'string' &&
+    typeof value.phoneDigits ===
+      'string' &&
+    typeof value.email === 'string'
+  )
+}
+
+function readStoredProfessorDirectory():
+  readonly ProfessorDirectoryRecord[] {
+  const storedValue =
+    window.localStorage.getItem(
+      PROFESSOR_DIRECTORY_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return []
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every(
+        isStoredProfessorDirectoryRecord,
+      )
+    ) {
+      return []
+    }
+
+    return parsedValue
+  } catch {
+    return []
+  }
 }
 
 function isStoredCourseAssignmentRecord(
@@ -28663,6 +28816,27 @@ function CoursePage({
     )
 
   const [
+    professorDirectory,
+    setProfessorDirectory,
+  ] =
+    useState<
+      readonly ProfessorDirectoryRecord[]
+    >(
+      readStoredProfessorDirectory,
+    )
+
+  const professorEditBaselineRef =
+    useRef<
+      ProfessorDirectoryRecord | null
+    >(null)
+
+  const professorAutoFillRef =
+    useRef(false)
+
+  const professorNameBeforeEditRef =
+    useRef('')
+
+  const [
     isAssignmentModalOpen,
     setIsAssignmentModalOpen,
   ] = useState(false)
@@ -28716,6 +28890,15 @@ function CoursePage({
 
   useEffect(() => {
     window.localStorage.setItem(
+      PROFESSOR_DIRECTORY_STORAGE_KEY,
+      JSON.stringify(
+        professorDirectory,
+      ),
+    )
+  }, [professorDirectory])
+
+  useEffect(() => {
+    window.localStorage.setItem(
       COURSE_PROGRESS_STORAGE_KEY,
       JSON.stringify(
         courseProgress,
@@ -28745,6 +28928,15 @@ function CoursePage({
     setSelectedWebinarIds(
       [],
     )
+
+    professorEditBaselineRef.current =
+      null
+
+    professorAutoFillRef.current =
+      false
+
+    professorNameBeforeEditRef.current =
+      ''
   }, [courseCode])
 
   const course =
@@ -28890,6 +29082,327 @@ function CoursePage({
         },
       }),
     )
+  }
+
+  function beginProfessorMemoryEdit():
+    void {
+    if (
+      professorEditBaselineRef.current !==
+      null
+    ) {
+      return
+    }
+
+    professorEditBaselineRef.current =
+      findProfessorDirectoryMatch(
+        professorDirectory,
+        workspace.professorName,
+      )
+  }
+
+  function applyRememberedProfessor(
+    professorName: string,
+  ): void {
+    const matchedProfessor =
+      findProfessorDirectoryMatch(
+        professorDirectory,
+        professorName,
+      )
+
+    if (matchedProfessor === null) {
+      professorAutoFillRef.current =
+        false
+
+      return
+    }
+
+    professorEditBaselineRef.current =
+      matchedProfessor
+
+    professorAutoFillRef.current =
+      true
+
+    updateCourseWorkspace({
+      professorName:
+        matchedProfessor.canonicalName,
+      professorPhoneDigits:
+        matchedProfessor.phoneDigits,
+      professorEmail:
+        matchedProfessor.email,
+    })
+  }
+
+  function finishProfessorMemoryEdit(
+    professorName: string,
+    professorPhoneDigits: string,
+    professorEmail: string,
+  ): void {
+    const cleanedName =
+      professorName.trim()
+
+    const cleanedPhoneDigits =
+      professorPhoneDigits
+        .replace(
+          /\D/g,
+          '',
+        )
+        .slice(
+          0,
+          10,
+        )
+
+    const cleanedEmail =
+      professorEmail.trim()
+
+    if (cleanedName.length === 0) {
+      professorEditBaselineRef.current =
+        null
+
+      return
+    }
+
+    const baseline =
+      professorEditBaselineRef.current
+
+    const matchedProfessor =
+      findProfessorDirectoryMatch(
+        professorDirectory,
+        cleanedName,
+      )
+
+    if (
+      baseline === null &&
+      matchedProfessor !== null
+    ) {
+      updateCourseWorkspace({
+        professorName:
+          matchedProfessor.canonicalName,
+        professorPhoneDigits:
+          matchedProfessor.phoneDigits,
+        professorEmail:
+          matchedProfessor.email,
+      })
+
+      professorEditBaselineRef.current =
+        null
+
+      return
+    }
+
+    if (
+      baseline !== null &&
+      matchedProfessor !== null &&
+      matchedProfessor.id !==
+        baseline.id
+    ) {
+      updateCourseWorkspace({
+        professorName:
+          matchedProfessor.canonicalName,
+        professorPhoneDigits:
+          matchedProfessor.phoneDigits,
+        professorEmail:
+          matchedProfessor.email,
+      })
+
+      professorEditBaselineRef.current =
+        null
+
+      return
+    }
+
+    if (baseline !== null) {
+      const normalizedEnteredName =
+        normalizeProfessorLookupName(
+          cleanedName,
+        )
+
+      const enteredNameParts =
+        normalizedEnteredName
+          .split(' ')
+          .filter(
+            (part) =>
+              part.length > 0,
+          )
+
+      const isBaselineLastNameAlias =
+        enteredNameParts.length === 1 &&
+        enteredNameParts[0] ===
+          getProfessorLastName(
+            baseline.canonicalName,
+          )
+
+      const isSameRememberedProfessor =
+        matchedProfessor?.id ===
+          baseline.id ||
+        isBaselineLastNameAlias
+
+      if (isSameRememberedProfessor) {
+        const canonicalName =
+          baseline.canonicalName
+
+        const hasChanges =
+          baseline.phoneDigits !==
+            cleanedPhoneDigits ||
+          baseline.email !==
+            cleanedEmail
+
+        if (!hasChanges) {
+          updateCourseWorkspace({
+            professorName:
+              canonicalName,
+            professorPhoneDigits:
+              baseline.phoneDigits,
+            professorEmail:
+              baseline.email,
+          })
+
+          professorEditBaselineRef.current =
+            null
+
+          return
+        }
+
+        const confirmed =
+          window.confirm(
+            `Save changes to the remembered professor information for ${baseline.canonicalName}?`,
+          )
+
+        if (!confirmed) {
+          updateCourseWorkspace({
+            professorName:
+              baseline.canonicalName,
+            professorPhoneDigits:
+              baseline.phoneDigits,
+            professorEmail:
+              baseline.email,
+          })
+
+          professorEditBaselineRef.current =
+            null
+
+          return
+        }
+
+        const updatedProfessor:
+          ProfessorDirectoryRecord = {
+          ...baseline,
+          phoneDigits:
+            cleanedPhoneDigits,
+          email:
+            cleanedEmail,
+        }
+
+        setProfessorDirectory(
+          (current) =>
+            current.map(
+              (record) =>
+                record.id ===
+                  baseline.id
+                  ? updatedProfessor
+                  : record,
+            ),
+        )
+
+        updateCourseWorkspace({
+          professorName:
+            updatedProfessor.canonicalName,
+          professorPhoneDigits:
+            updatedProfessor.phoneDigits,
+          professorEmail:
+            updatedProfessor.email,
+        })
+
+        professorEditBaselineRef.current =
+          null
+
+        return
+      }
+
+      const updateExistingName =
+        window.confirm(
+          `Is "${cleanedName}" a correction to the remembered professor name "${baseline.canonicalName}"?\n\nSelect OK to update the existing professor record. Select Cancel to treat "${cleanedName}" as a different professor.`,
+        )
+
+      if (updateExistingName) {
+        const updatedProfessor:
+          ProfessorDirectoryRecord = {
+          ...baseline,
+          canonicalName:
+            cleanedName,
+          phoneDigits:
+            cleanedPhoneDigits,
+          email:
+            cleanedEmail,
+        }
+
+        setProfessorDirectory(
+          (current) =>
+            current.map(
+              (record) =>
+                record.id ===
+                  baseline.id
+                  ? updatedProfessor
+                  : record,
+            ),
+        )
+
+        updateCourseWorkspace({
+          professorName:
+            updatedProfessor.canonicalName,
+          professorPhoneDigits:
+            updatedProfessor.phoneDigits,
+          professorEmail:
+            updatedProfessor.email,
+        })
+
+        professorEditBaselineRef.current =
+          null
+
+        return
+      }
+    }
+
+    const saveNewProfessor =
+      window.confirm(
+        `Save ${cleanedName} to professor memory so this information can auto-fill on other class pages?`,
+      )
+
+    if (!saveNewProfessor) {
+      professorEditBaselineRef.current =
+        null
+
+      return
+    }
+
+    const newProfessor:
+      ProfessorDirectoryRecord = {
+      id: crypto.randomUUID(),
+      canonicalName:
+        cleanedName,
+      phoneDigits:
+        cleanedPhoneDigits,
+      email:
+        cleanedEmail,
+    }
+
+    setProfessorDirectory(
+      (current) => [
+        ...current,
+        newProfessor,
+      ],
+    )
+
+    updateCourseWorkspace({
+      professorName:
+        newProfessor.canonicalName,
+      professorPhoneDigits:
+        newProfessor.phoneDigits,
+      professorEmail:
+        newProfessor.email,
+    })
+
+    professorEditBaselineRef.current =
+      null
   }
 
   function openAssignmentModal():
@@ -29821,7 +30334,65 @@ function CoursePage({
             </div>
           </header>
 
-          <div className="course-workspace-professor-grid">
+          <div
+            className="course-workspace-professor-grid"
+            onFocusCapture={
+              beginProfessorMemoryEdit
+            }
+            onBlur={(event) => {
+              const nextTarget =
+                event.relatedTarget
+
+              if (
+                nextTarget instanceof
+                  Node &&
+                event.currentTarget.contains(
+                  nextTarget,
+                )
+              ) {
+                return
+              }
+
+              if (
+                professorAutoFillRef.current
+              ) {
+                professorAutoFillRef.current =
+                  false
+
+                professorEditBaselineRef.current =
+                  null
+
+                return
+              }
+
+              const professorNameInput =
+                event.currentTarget
+                  .querySelector<HTMLInputElement>(
+                    'input[name="courseProfessorName"]',
+                  )
+
+              const professorPhoneInput =
+                event.currentTarget
+                  .querySelector<HTMLInputElement>(
+                    'input[name="courseProfessorPhone"]',
+                  )
+
+              const professorEmailInput =
+                event.currentTarget
+                  .querySelector<HTMLInputElement>(
+                    'input[name="courseProfessorEmail"]',
+                  )
+
+              finishProfessorMemoryEdit(
+                professorNameInput
+                  ?.value ?? '',
+                professorPhoneInput
+                  ?.value ?? '',
+                professorEmailInput
+                  ?.value ?? '',
+              )
+            }}
+          >
             <label className="course-workspace-field">
               <span>
                 Professor Name
@@ -29829,19 +30400,49 @@ function CoursePage({
 
               <input
                 type="text"
+                name="courseProfessorName"
                 className="course-workspace-field-input"
                 placeholder="Enter professor name"
                 value={
                   workspace.professorName
                 }
+                onFocus={(
+                  event,
+                ) => {
+                  professorNameBeforeEditRef.current =
+                    event.currentTarget
+                      .value
+                }}
                 onChange={(
                   event,
                 ) => {
+                  professorAutoFillRef.current =
+                    false
+
                   updateCourseWorkspace({
                     professorName:
                       event.target
                         .value,
                   })
+                }}
+                onBlur={(
+                  event,
+                ) => {
+                  if (
+                    event.currentTarget
+                      .value
+                      .trim() ===
+                    professorNameBeforeEditRef
+                      .current
+                      .trim()
+                  ) {
+                    return
+                  }
+
+                  applyRememberedProfessor(
+                    event.currentTarget
+                      .value,
+                  )
                 }}
               />
             </label>
@@ -29854,6 +30455,7 @@ function CoursePage({
               <input
                 type="tel"
                 inputMode="tel"
+                name="courseProfessorPhone"
                 className="course-workspace-field-input"
                 placeholder="(555) 123-4567"
                 value={
@@ -29864,6 +30466,9 @@ function CoursePage({
                 onChange={(
                   event,
                 ) => {
+                  professorAutoFillRef.current =
+                    false
+
                   updateCourseWorkspace({
                     professorPhoneDigits:
                       event.target
@@ -29888,6 +30493,7 @@ function CoursePage({
 
               <input
                 type="email"
+                name="courseProfessorEmail"
                 className="course-workspace-field-input"
                 placeholder="Enter professor email"
                 value={
@@ -29896,6 +30502,9 @@ function CoursePage({
                 onChange={(
                   event,
                 ) => {
+                  professorAutoFillRef.current =
+                    false
+
                   updateCourseWorkspace({
                     professorEmail:
                       event.target

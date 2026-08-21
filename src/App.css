@@ -1523,22 +1523,50 @@
   background: #31577a;
 }
 
-/* Match the selected Academic Plan box to ACTIVE COURSES */
+/* Keep Academic Plan permanently highlighted */
+.nav-sub-link-academic-plan,
+.nav-sub-link-academic-plan.nav-link-active {
+  color: #061321;
+  font-weight: 900;
+  isolation: isolate;
+}
+
+.nav-sub-link-academic-plan::after,
 .nav-sub-link-academic-plan.nav-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  display: block;
   top: 1px;
   right: 10px;
   bottom: auto;
   left: 29px;
   height: 28px;
   box-sizing: border-box;
+  border: 1px solid #c89214;
   border-radius: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      #fff7a8 0%,
+      #ffe866 50%,
+      #ffd84d 100%
+    );
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.7),
+      rgba(255, 255, 255, 0.78),
     inset 0 -2px 2px
-      rgba(0, 0, 0, 0.12),
+      rgba(138, 101, 0, 0.14),
     0 2px 3px
       rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+
+.nav-sub-link-academic-plan
+  > span,
+.nav-sub-link-academic-plan.nav-link-active
+  > span {
+  z-index: 2;
 }
 
 /* ---------------------------------------------------------
