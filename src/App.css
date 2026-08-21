@@ -1478,16 +1478,22 @@
    Academic Plan final alignment
    --------------------------------------------------------- */
 
+/* Add the same visual gap above Academic Plan
+   used between the course-status sections */
+.nav-section-header
+  + .nav-sub-link-academic-plan {
+  margin-top: 5px;
+}
+
 /* Move Academic Plan text left to match the course headings */
 .nav-sub-link-academic-plan {
-  margin-top: 5px;
   padding-left: 39px;
 }
 
-/* Keep the Academic Plan trunk aligned with the course trunk */
+/* Keep the Academic Plan trunk continuous through the new gap */
 .nav-sub-link-academic-plan::before {
   left: 15px;
-  top: -6px;
+  top: -9px;
   width: 2px;
   background: #31577a;
 }
@@ -1517,8 +1523,18 @@
 .nav-sub-link-academic-plan.nav-link-active::after {
   top: 1px;
   right: 10px;
-  bottom: 1px;
+  bottom: auto;
   left: 29px;
+  height: 28px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.7),
+    inset 0 -2px 2px
+      rgba(0, 0, 0, 0.12),
+    0 2px 3px
+      rgba(0, 0, 0, 0.14);
 }
 
 /* ---------------------------------------------------------
