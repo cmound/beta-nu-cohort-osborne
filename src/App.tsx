@@ -23696,41 +23696,6 @@ function CohortSharedFilesPage() {
         </div>
       </section>
 
-      <section className="shared-files-quick-add-row">
-        <button
-          type="button"
-          className="shared-files-quick-url-button"
-          onClick={openAddUrl}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="M10.5 13.5 13.5 10.5" />
-            <path d="M7.2 15.8 5.7 17.3a3.8 3.8 0 0 1-5.4-5.4l3.4-3.4a3.8 3.8 0 0 1 5.4 0" />
-            <path d="m16.8 8.2 1.5-1.5a3.8 3.8 0 1 1 5.4 5.4l-3.4 3.4a3.8 3.8 0 0 1-5.4 0" />
-          </svg>
-
-          <span aria-hidden="true">
-            +
-          </span>
-
-          URL
-        </button>
-
-        <button
-          type="button"
-          className="shared-files-quick-document-button"
-          onClick={openAddDocument}
-        >
-          <span aria-hidden="true">
-            +
-          </span>
-
-          Document
-        </button>
-      </section>
-
       <section className="shared-files-toolbar">
         <label className="shared-files-search-field">
           <span>
@@ -23812,6 +23777,18 @@ function CohortSharedFilesPage() {
               </div>
 
               <div className="shared-files-panel-actions">
+                <button
+                  type="button"
+                  className="shared-files-quick-document-button"
+                  onClick={openAddDocument}
+                >
+                  <span aria-hidden="true">
+                    +
+                  </span>
+
+                  Document
+                </button>
+
                 <button
                   type="button"
                   className="shared-files-panel-action-button"
@@ -24154,6 +24131,25 @@ function CohortSharedFilesPage() {
               </div>
 
               <div className="shared-files-panel-actions">
+                <button
+                  type="button"
+                  className="shared-files-quick-url-button"
+                  onClick={openAddUrl}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                  </svg>
+
+                  <span aria-hidden="true">
+                    +
+                  </span>
+
+                  URL
+                </button>
+
                 <button
                   type="button"
                   className="shared-files-panel-action-button"

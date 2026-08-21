@@ -8192,6 +8192,13 @@
   gap: 6px;
 }
 
+.shared-files-panel-actions
+  .shared-files-quick-url-button,
+.shared-files-panel-actions
+  .shared-files-quick-document-button {
+  height: 31px;
+}
+
 .shared-files-panel-action-button:disabled {
   border-color: #94a3b8;
   color: #94a3b8;
