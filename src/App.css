@@ -3789,6 +3789,11 @@
   margin-top: 5px;
 }
 
+.facilitator-planner-time-track-bottom
+  > .facilitator-planner-time-label-right {
+  justify-self: end;
+}
+
 .facilitator-planner-time-guide {
   min-width: 0;
   border-top: 2px dotted #29a9ef;
