@@ -18485,20 +18485,20 @@ tbody td {
   min-height: 370px;
   margin-top: 12px;
   padding: 22px 18px;
-  border: 1px solid #7f9db7;
+  border: 1px solid #6f8fa8;
   border-radius: 10px;
   background:
     linear-gradient(
       145deg,
-      #ffffff 0%,
-      #edf5fb 54%,
-      #dce9f3 100%
+      #e7f1f8 0%,
+      #cfdfeb 52%,
+      #b8cedf 100%
     );
   box-shadow:
     inset 2px 2px 0
-      rgba(255, 255, 255, 0.98),
+      rgba(255, 255, 255, 0.82),
     inset -2px -3px 3px
-      rgba(49, 87, 122, 0.12),
+      rgba(49, 87, 122, 0.16),
     0 5px 10px
       rgba(0, 0, 0, 0.22);
 }
