@@ -29592,6 +29592,189 @@ function CoursePage({
     setAssignmentFormError('')
   }
 
+    function focusAssignmentFormInput(
+    rowIndex: number,
+    field:
+      | 'asn'
+      | 'name'
+      | 'dueDate'
+      | 'points',
+  ): void {
+    const inputId =
+      `course-assignment-${field}-${rowIndex}`
+
+    window.setTimeout(() => {
+      const input =
+        document.getElementById(
+          inputId,
+        )
+
+      if (
+        input instanceof
+          HTMLInputElement
+      ) {
+        input.focus()
+        input.select()
+      }
+    }, 0)
+  }
+
+  function handleAssignmentFormArrowKey(
+    rowIndex: number,
+    field:
+      | 'asn'
+      | 'name'
+      | 'dueDate'
+      | 'points',
+    event:
+      ReactKeyboardEvent<HTMLInputElement>,
+  ): void {
+    const fieldOrder = [
+      'asn',
+      'name',
+      'dueDate',
+      'points',
+    ] as const
+
+    if (
+      event.key === 'ArrowUp'
+    ) {
+      if (rowIndex === 0) {
+        return
+      }
+
+      event.preventDefault()
+
+      focusAssignmentFormInput(
+        rowIndex - 1,
+        field,
+      )
+
+      return
+    }
+
+    if (
+      event.key === 'ArrowDown'
+    ) {
+      if (
+        rowIndex >=
+        assignmentForms.length - 1
+      ) {
+        return
+      }
+
+      event.preventDefault()
+
+      focusAssignmentFormInput(
+        rowIndex + 1,
+        field,
+      )
+
+      return
+    }
+
+    if (
+      event.key !== 'ArrowLeft' &&
+      event.key !== 'ArrowRight'
+    ) {
+      return
+    }
+
+    const selectionStart =
+      event.currentTarget
+        .selectionStart
+
+    const selectionEnd =
+      event.currentTarget
+        .selectionEnd
+
+    if (
+      selectionStart === null ||
+      selectionEnd === null ||
+      selectionStart !==
+        selectionEnd
+    ) {
+      return
+    }
+
+    if (
+      event.key === 'ArrowLeft' &&
+      selectionStart > 0
+    ) {
+      return
+    }
+
+    if (
+      event.key === 'ArrowRight' &&
+      selectionEnd <
+        event.currentTarget
+          .value.length
+    ) {
+      return
+    }
+
+    const fieldIndex =
+      fieldOrder.indexOf(
+        field,
+      )
+
+    if (
+      event.key === 'ArrowLeft'
+    ) {
+      if (fieldIndex > 0) {
+        event.preventDefault()
+
+        focusAssignmentFormInput(
+          rowIndex,
+          fieldOrder[
+            fieldIndex - 1
+          ],
+        )
+
+        return
+      }
+
+      if (rowIndex > 0) {
+        event.preventDefault()
+
+        focusAssignmentFormInput(
+          rowIndex - 1,
+          'points',
+        )
+      }
+
+      return
+    }
+
+    if (
+      fieldIndex <
+      fieldOrder.length - 1
+    ) {
+      event.preventDefault()
+
+      focusAssignmentFormInput(
+        rowIndex,
+        fieldOrder[
+          fieldIndex + 1
+        ],
+      )
+
+      return
+    }
+
+    if (
+      rowIndex <
+      assignmentForms.length - 1
+    ) {
+      event.preventDefault()
+
+      focusAssignmentFormInput(
+        rowIndex + 1,
+        'asn',
+      )
+    }
+  }
+
   function removeAssignmentFormRow(
     rowIndex: number,
   ): void {
@@ -31031,11 +31214,23 @@ function CoursePage({
                                     .value,
                                 )
                               }}
+                              onKeyDown={(
+                                event,
+                              ) => {
+                                handleAssignmentFormArrowKey(
+                                  rowIndex,
+                                  'asn',
+                                  event,
+                                )
+                              }}
                             />
                           </div>
 
                           <div className="course-assignment-entry-cell">
                             <input
+                              id={
+                                `course-assignment-name-${rowIndex}`
+                              }
                               type="text"
                               aria-label={
                                 `Assignment name for row ${rowIndex + 1}`
@@ -31054,11 +31249,23 @@ function CoursePage({
                                     .value,
                                 )
                               }}
+                              onKeyDown={(
+                                event,
+                              ) => {
+                                handleAssignmentFormArrowKey(
+                                  rowIndex,
+                                  'name',
+                                  event,
+                                )
+                              }}
                             />
                           </div>
 
                           <div className="course-assignment-entry-cell">
                             <input
+                              id={
+                                `course-assignment-dueDate-${rowIndex}`
+                              }
                               type="text"
                               aria-label={
                                 `Due date for row ${rowIndex + 1}`
@@ -31077,11 +31284,23 @@ function CoursePage({
                                     .value,
                                 )
                               }}
+                              onKeyDown={(
+                                event,
+                              ) => {
+                                handleAssignmentFormArrowKey(
+                                  rowIndex,
+                                  'dueDate',
+                                  event,
+                                )
+                              }}
                             />
                           </div>
 
                           <div className="course-assignment-entry-cell">
                             <input
+                              id={
+                                `course-assignment-points-${rowIndex}`
+                              }
                               type="text"
                               inputMode="decimal"
                               aria-label={
@@ -31105,23 +31324,29 @@ function CoursePage({
                                 event,
                               ) => {
                                 if (
-                                  event.key !==
-                                  'Tab' ||
-                                  event.shiftKey ||
-                                  rowIndex !==
-                                  assignmentForms.length -
-                                  1 ||
+                                  event.key ===
+                                    'Tab' &&
+                                  !event.shiftKey &&
+                                  rowIndex ===
+                                    assignmentForms.length -
+                                    1 &&
                                   formRow.points
                                     .trim()
-                                    .length === 0
+                                    .length > 0
                                 ) {
+                                  event.preventDefault()
+
+                                  addAssignmentFormRow(
+                                    true,
+                                  )
+
                                   return
                                 }
 
-                                event.preventDefault()
-
-                                addAssignmentFormRow(
-                                  true,
+                                handleAssignmentFormArrowKey(
+                                  rowIndex,
+                                  'points',
+                                  event,
                                 )
                               }}
                             />
