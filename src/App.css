@@ -1381,14 +1381,9 @@
   background: #31577a;
 }
 
-/* Align Academic Plan tree with course-status tree */
+/* Align Academic Plan vertical tree with course-status tree */
 .nav-sub-link-academic-plan::before {
   left: 15px;
-}
-
-.nav-sub-link-academic-plan
-  .nav-sub-item-dot {
-  left: 33px;
 }
 
 /* Sub-page hover */
@@ -1480,6 +1475,51 @@
 }
 
 /* ---------------------------------------------------------
+   Academic Plan final alignment
+   --------------------------------------------------------- */
+
+/* Move Academic Plan text left to match the course headings */
+.nav-sub-link-academic-plan {
+  padding-left: 39px;
+}
+
+/* Keep the Academic Plan trunk aligned with the course trunk */
+.nav-sub-link-academic-plan::before {
+  left: 15px;
+  width: 2px;
+  background: #31577a;
+}
+
+/* Remove the gold circle but retain its connector branch */
+.nav-sub-link-academic-plan
+  .nav-sub-item-dot,
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot {
+  left: 29px;
+  width: 0;
+  height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Horizontal branch from the main trunk into Academic Plan */
+.nav-sub-link-academic-plan
+  .nav-sub-item-dot::before {
+  width: 14px;
+  height: 2px;
+  background: #31577a;
+}
+
+/* Match the selected Academic Plan box to ACTIVE COURSES */
+.nav-sub-link-academic-plan.nav-link-active::after {
+  top: 1px;
+  right: 10px;
+  bottom: 1px;
+  left: 29px;
+}
+
+/* ---------------------------------------------------------
    Courses expanded panel
    --------------------------------------------------------- */
 
@@ -1509,9 +1549,18 @@
   background: #31577a;
 }
 
-/* Remove old connector masking */
+/* Stop the main Academics trunk after COMPLETED COURSES */
 .course-status-group-completed::before {
-  display: none;
+  content: '';
+  position: absolute;
+  z-index: 2;
+  display: block;
+  left: -15px;
+  top: 16px;
+  bottom: 0;
+  width: 4px;
+  background: #eef3f7;
+  pointer-events: none;
 }
 
 /* Status headers */
@@ -1539,9 +1588,11 @@
 /* Header connector branch */
 .course-status-heading::after {
   left: -13px;
+  top: 50%;
   width: 13px;
   height: 2px;
   background: #31577a;
+  transform: translateY(-1px);
 }
 
 /* ACTIVE */
@@ -1668,9 +1719,11 @@
 /* Course horizontal connector branch */
 .course-status-link::before {
   left: 7px;
+  top: 50%;
   width: 17px;
   height: 2px;
   background: #31577a;
+  transform: translateY(-1px);
 }
 
 .course-status-link:hover {
