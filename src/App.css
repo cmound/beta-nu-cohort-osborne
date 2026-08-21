@@ -8714,7 +8714,7 @@ tbody td {
 }
 
 .academic-plan-panel-header {
-  min-height: 58px;
+  min-height: 68px;
   box-sizing: border-box;
   display: grid;
   grid-template-columns:
@@ -8723,7 +8723,7 @@ tbody td {
     minmax(250px, 1fr);
   align-items: center;
   gap: 18px;
-  padding: 4px 14px;
+  padding: 7px 14px;
   border-bottom: 1px solid #7f8c9d;
   background:
     linear-gradient(
@@ -8744,6 +8744,7 @@ tbody td {
   justify-content: center;
   gap: 12px;
   justify-self: center;
+  align-self: end;
 }
 
 .academic-stat-box {
@@ -8807,7 +8808,7 @@ tbody td {
 
   color: #f4f6f8;
 
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -8849,6 +8850,7 @@ tbody td {
   justify-content: flex-end;
   gap: 7px;
   justify-self: end;
+  align-self: end;
 }
 
 .academic-plan-status-key span {
@@ -9061,18 +9063,9 @@ tbody td {
   text-decoration: none;
 }
 
-/* In Progress block: one moderate black outline around
-   all consecutive In Progress rows */
-.academic-plan-row-current td:first-child {
-  border-left:
-    2px solid #111827;
-}
-
-.academic-plan-row-current td:last-child {
-  border-right:
-    2px solid #111827;
-}
-
+/* In Progress block:
+   bold black divider above and below
+   all consecutive active courses */
 .academic-plan-table
   tbody
   > .academic-plan-row-current:first-child
@@ -9083,7 +9076,7 @@ tbody td {
   + .academic-plan-row-current
   td {
   border-top:
-    2px solid #111827;
+    3px solid #111827;
 }
 
 .academic-plan-row-current:not(
@@ -9093,7 +9086,14 @@ tbody td {
   )
   td {
   border-bottom:
-    2px solid #111827;
+    3px solid #111827;
+}
+
+/* Program-year divider:
+   bold double line between Year 1 and Year 2 */
+.academic-plan-row-year-start td {
+  border-top:
+    4px double #111827;
 }
 
 /* Pending: italic row text, Status keeps gray fill */

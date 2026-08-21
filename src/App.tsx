@@ -22360,6 +22360,13 @@ function CohortAcademicPlanPage() {
                       record.endDate,
                     )
 
+                  const startsNewProgramYear =
+                    rowIndex > 0 &&
+                    academicPlan[
+                      rowIndex - 1
+                    ]?.programYear !==
+                    record.programYear
+
                   return (
                     <tr
                       key={record.id}
@@ -22376,6 +22383,9 @@ function CohortAcademicPlanPage() {
                           status ===
                             'Pending'
                             ? 'academic-plan-row-pending'
+                            : '',
+                          startsNewProgramYear
+                            ? 'academic-plan-row-year-start'
                             : '',
                         ]
                           .filter(Boolean)
