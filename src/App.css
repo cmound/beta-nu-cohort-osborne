@@ -1479,10 +1479,14 @@
    --------------------------------------------------------- */
 
 /* Add the same visual gap above Academic Plan
-   used between the course-status sections */
+   used between the course-status sections,
+   while extending the light panel background
+   to the bottom of the ACADEMICS header */
 .nav-section-header
   + .nav-sub-link-academic-plan {
   margin-top: 5px;
+  box-shadow:
+    0 -8px 0 #f4f7fa;
 }
 
 /* Move Academic Plan text left to match the course headings */
