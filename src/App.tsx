@@ -205,6 +205,10 @@ type CohortSharedFileUploadMode =
   | 'single'
   | 'mass'
 
+type CohortSharedUrlUploadMode =
+  | 'single'
+  | 'multiple'
+
 interface CohortSharedFile {
   readonly id: string
   readonly title: string
@@ -212,9 +216,33 @@ interface CohortSharedFile {
   readonly previewFileName?: string
   readonly category: string
   readonly description: string
+  readonly dateAdded?: string
+  readonly sizeBytes?: number
   readonly runtimeOriginalUrl?: string
   readonly runtimePreviewUrl?: string
 }
+
+interface CohortSharedUrlRecord {
+  readonly id: string
+  readonly websiteName: string
+  readonly url: string
+  readonly source: string
+  readonly notes: string
+  readonly addedAt: string
+}
+
+interface CohortSharedUrlDraft {
+  readonly id: string
+  readonly websiteName: string
+  readonly url: string
+  readonly source: string
+  readonly notes: string
+}
+
+type CohortSharedUrlDraftField = Exclude<
+  keyof CohortSharedUrlDraft,
+  'id'
+>
 
 interface CohortSharedSpreadsheetSheet {
   readonly name: string
@@ -2843,6 +2871,114 @@ const cohortAcademicPlanFields = [
 
 const cohortSharedFiles:
   readonly CohortSharedFile[] = []
+
+const SHARED_FILES_PAGE_SIZE = 8
+const SHARED_URLS_PAGE_SIZE = 8
+
+function createCohortSharedUrlDraft():
+  CohortSharedUrlDraft {
+  return {
+    id: crypto.randomUUID(),
+    websiteName: '',
+    url: '',
+    source: '',
+    notes: '',
+  }
+}
+
+function normalizeCohortSharedUrl(
+  value: string,
+): string | null {
+  const trimmedValue = value.trim()
+
+  if (trimmedValue.length === 0) {
+    return null
+  }
+
+  const candidateUrl =
+    /^[a-z][a-z0-9+.-]*:/i.test(
+      trimmedValue,
+    )
+      ? trimmedValue
+      : `https://${trimmedValue}`
+
+  try {
+    const parsedUrl =
+      new URL(candidateUrl)
+
+    if (
+      parsedUrl.protocol !== 'http:' &&
+      parsedUrl.protocol !== 'https:'
+    ) {
+      return null
+    }
+
+    return parsedUrl.toString()
+  } catch {
+    return null
+  }
+}
+
+function formatCohortSharedFileDate(
+  value: string | undefined,
+): string {
+  if (value === undefined) {
+    return ''
+  }
+
+  const date = new Date(value)
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-US',
+    {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    },
+  ).format(date)
+}
+
+function formatCohortSharedFileSize(
+  sizeBytes: number | undefined,
+): string {
+  if (
+    sizeBytes === undefined ||
+    !Number.isFinite(sizeBytes) ||
+    sizeBytes < 0
+  ) {
+    return ''
+  }
+
+  if (sizeBytes < 1024) {
+    return `${sizeBytes} B`
+  }
+
+  const sizeKilobytes =
+    sizeBytes / 1024
+
+  if (sizeKilobytes < 1024) {
+    return `${Math.round(sizeKilobytes)} KB`
+  }
+
+  const sizeMegabytes =
+    sizeKilobytes / 1024
+
+  return (
+    `${sizeMegabytes.toFixed(
+      sizeMegabytes >= 10
+        ? 0
+        : 1,
+    )} MB`
+  )
+}
 
 function getCohortSharedFileExtension(
   fileName: string,
@@ -20279,8 +20415,67 @@ function CohortSharedFilesPage() {
   ] =
     useState<File | null>(null)
 
+  const [
+    sharedUrls,
+    setSharedUrls,
+  ] =
+    useState<
+      readonly CohortSharedUrlRecord[]
+    >([])
+
+  const [
+    isAddUrlOpen,
+    setIsAddUrlOpen,
+  ] =
+    useState(false)
+
+  const [
+    addUrlMode,
+    setAddUrlMode,
+  ] =
+    useState<CohortSharedUrlUploadMode>(
+      'single',
+    )
+
+  const [
+    addUrlWebsiteName,
+    setAddUrlWebsiteName,
+  ] =
+    useState('')
+
+  const [
+    addUrlValue,
+    setAddUrlValue,
+  ] =
+    useState('')
+
+  const [
+    addUrlSource,
+    setAddUrlSource,
+  ] =
+    useState('')
+
+  const [
+    addUrlNotes,
+    setAddUrlNotes,
+  ] =
+    useState('')
+
+  const [
+    multipleUrlDrafts,
+    setMultipleUrlDrafts,
+  ] =
+    useState<
+      readonly CohortSharedUrlDraft[]
+    >([
+      createCohortSharedUrlDraft(),
+    ])
+
   const sharedFileObjectUrlsRef =
     useRef<string[]>([])
+
+  const searchInputRef =
+    useRef<HTMLInputElement>(null)
 
   const [searchTerm, setSearchTerm] =
     useState('')
@@ -20298,6 +20493,30 @@ function CohortSharedFilesPage() {
     useState<string | null>(
       cohortSharedFiles[0]?.id ?? null,
     )
+
+  const [
+    selectedDocumentIds,
+    setSelectedDocumentIds,
+  ] =
+    useState<readonly string[]>([])
+
+  const [
+    selectedUrlIds,
+    setSelectedUrlIds,
+  ] =
+    useState<readonly string[]>([])
+
+  const [
+    documentPage,
+    setDocumentPage,
+  ] =
+    useState(1)
+
+  const [
+    urlPage,
+    setUrlPage,
+  ] =
+    useState(1)
 
   const [
     previewMessage,
@@ -20392,6 +20611,109 @@ function CohortSharedFilesPage() {
       },
     )
 
+  const visibleSharedUrls =
+    sharedUrls.filter(
+      (sharedUrl) => {
+        if (
+          normalizedSearchTerm.length ===
+          0
+        ) {
+          return true
+        }
+
+        return [
+          sharedUrl.websiteName,
+          sharedUrl.url,
+          sharedUrl.source,
+          sharedUrl.notes,
+        ].some((value) =>
+          value
+            .toLowerCase()
+            .includes(
+              normalizedSearchTerm,
+            ),
+        )
+      },
+    )
+
+  const documentPageCount =
+    Math.max(
+      1,
+      Math.ceil(
+        visibleFiles.length /
+        SHARED_FILES_PAGE_SIZE,
+      ),
+    )
+
+  const urlPageCount =
+    Math.max(
+      1,
+      Math.ceil(
+        visibleSharedUrls.length /
+        SHARED_URLS_PAGE_SIZE,
+      ),
+    )
+
+  const normalizedDocumentPage =
+    Math.min(
+      documentPage,
+      documentPageCount,
+    )
+
+  const normalizedUrlPage =
+    Math.min(
+      urlPage,
+      urlPageCount,
+    )
+
+  const documentStartIndex =
+    (
+      normalizedDocumentPage - 1
+    ) * SHARED_FILES_PAGE_SIZE
+
+  const urlStartIndex =
+    (
+      normalizedUrlPage - 1
+    ) * SHARED_URLS_PAGE_SIZE
+
+  const pagedVisibleFiles =
+    visibleFiles.slice(
+      documentStartIndex,
+      documentStartIndex +
+      SHARED_FILES_PAGE_SIZE,
+    )
+
+  const pagedVisibleUrls =
+    visibleSharedUrls.slice(
+      urlStartIndex,
+      urlStartIndex +
+      SHARED_URLS_PAGE_SIZE,
+    )
+
+  const documentRangeStart =
+    visibleFiles.length === 0
+      ? 0
+      : documentStartIndex + 1
+
+  const documentRangeEnd =
+    Math.min(
+      documentStartIndex +
+      pagedVisibleFiles.length,
+      visibleFiles.length,
+    )
+
+  const urlRangeStart =
+    visibleSharedUrls.length === 0
+      ? 0
+      : urlStartIndex + 1
+
+  const urlRangeEnd =
+    Math.min(
+      urlStartIndex +
+      pagedVisibleUrls.length,
+      visibleSharedUrls.length,
+    )
+
   const selectedFile =
     selectedFileId === null
       ? null
@@ -20438,6 +20760,32 @@ function CohortSharedFilesPage() {
         0,
       )
 
+  const totalSharedResourceCount =
+    allSharedFiles.length +
+    sharedUrls.length
+
+  const visibleSharedResourceCount =
+    visibleFiles.length +
+    visibleSharedUrls.length
+
+  const allPagedDocumentsSelected =
+    pagedVisibleFiles.length > 0 &&
+    pagedVisibleFiles.every(
+      (file) =>
+        selectedDocumentIds.includes(
+          file.id,
+        ),
+    )
+
+  const allPagedUrlsSelected =
+    pagedVisibleUrls.length > 0 &&
+    pagedVisibleUrls.every(
+      (sharedUrl) =>
+        selectedUrlIds.includes(
+          sharedUrl.id,
+        ),
+    )
+
   useEffect(() => {
     return () => {
       for (
@@ -20450,6 +20798,14 @@ function CohortSharedFilesPage() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    setDocumentPage(1)
+    setUrlPage(1)
+  }, [
+    searchTerm,
+    categoryFilter,
+  ])
 
   useEffect(() => {
     if (
@@ -20735,6 +21091,10 @@ function CohortSharedFilesPage() {
     setCategoryFilter('All')
   }
 
+  function focusSharedFilesSearch(): void {
+    searchInputRef.current?.focus()
+  }
+
   function resetAddDocumentForm():
     void {
     setAddDocumentTitle('')
@@ -20754,6 +21114,27 @@ function CohortSharedFilesPage() {
   function closeAddDocument(): void {
     setIsAddDocumentOpen(false)
     resetAddDocumentForm()
+  }
+
+  function resetAddUrlForm(): void {
+    setAddUrlWebsiteName('')
+    setAddUrlValue('')
+    setAddUrlSource('')
+    setAddUrlNotes('')
+    setMultipleUrlDrafts([
+      createCohortSharedUrlDraft(),
+    ])
+  }
+
+  function openAddUrl(): void {
+    resetAddUrlForm()
+    setAddUrlMode('single')
+    setIsAddUrlOpen(true)
+  }
+
+  function closeAddUrl(): void {
+    setIsAddUrlOpen(false)
+    resetAddUrlForm()
   }
 
   function handleAddDocumentFileSelection(
@@ -21054,6 +21435,10 @@ function CohortSharedFilesPage() {
           'General',
         description:
           'Shared reference document.',
+        dateAdded:
+          new Date().toISOString(),
+        sizeBytes:
+          originalFile.size,
         runtimeOriginalUrl:
           originalUrl,
         runtimePreviewUrl:
@@ -21113,6 +21498,12 @@ function CohortSharedFilesPage() {
 
     setSelectedFileId(
       addedFiles[0]?.id ?? null,
+    )
+
+    setSelectedDocumentIds(
+      addedFiles.map(
+        (file) => file.id,
+      ),
     )
 
     setSearchTerm('')
@@ -21244,6 +21635,10 @@ function CohortSharedFilesPage() {
       description:
         addDocumentDescription.trim() ||
         'Shared reference document.',
+      dateAdded:
+        new Date().toISOString(),
+      sizeBytes:
+        originalFile.size,
       runtimeOriginalUrl:
         originalUrl,
       runtimePreviewUrl:
@@ -21267,10 +21662,360 @@ function CohortSharedFilesPage() {
       documentId,
     )
 
+    setSelectedDocumentIds(
+      (currentIds) => [
+        ...currentIds,
+        documentId,
+      ],
+    )
+
     setSearchTerm('')
     setCategoryFilter('All')
 
     closeAddDocument()
+  }
+
+  function updateMultipleUrlDraft(
+    draftId: string,
+    field: CohortSharedUrlDraftField,
+    value: string,
+  ): void {
+    setMultipleUrlDrafts(
+      (currentDrafts) =>
+        currentDrafts.map(
+          (draft) =>
+            draft.id === draftId
+              ? {
+                ...draft,
+                [field]: value,
+              }
+              : draft,
+        ),
+    )
+  }
+
+  function addMultipleUrlRow(): void {
+    setMultipleUrlDrafts(
+      (currentDrafts) => [
+        ...currentDrafts,
+        createCohortSharedUrlDraft(),
+      ],
+    )
+  }
+
+  function removeMultipleUrlRow(
+    draftId: string,
+  ): void {
+    setMultipleUrlDrafts(
+      (currentDrafts) => {
+        const remainingDrafts =
+          currentDrafts.filter(
+            (draft) =>
+              draft.id !== draftId,
+          )
+
+        return remainingDrafts.length ===
+          0
+          ? [
+            createCohortSharedUrlDraft(),
+          ]
+          : remainingDrafts
+      },
+    )
+  }
+
+  function saveSingleUrl(): void {
+    const websiteName =
+      addUrlWebsiteName.trim()
+
+    const normalizedUrl =
+      normalizeCohortSharedUrl(
+        addUrlValue,
+      )
+
+    if (websiteName.length === 0) {
+      window.alert(
+        'Enter a Website Name.',
+      )
+      return
+    }
+
+    if (normalizedUrl === null) {
+      window.alert(
+        'Enter a valid http or https URL.',
+      )
+      return
+    }
+
+    if (
+      sharedUrls.some(
+        (sharedUrl) =>
+          sharedUrl.url ===
+          normalizedUrl,
+      )
+    ) {
+      window.alert(
+        'That URL is already listed.',
+      )
+      return
+    }
+
+    const nextSharedUrl:
+      CohortSharedUrlRecord = {
+      id: crypto.randomUUID(),
+      websiteName,
+      url: normalizedUrl,
+      source: addUrlSource.trim(),
+      notes: addUrlNotes.trim(),
+      addedAt:
+        new Date().toISOString(),
+    }
+
+    setSharedUrls(
+      (currentUrls) => [
+        ...currentUrls,
+        nextSharedUrl,
+      ],
+    )
+
+    setSelectedUrlIds([
+      nextSharedUrl.id,
+    ])
+
+    setSearchTerm('')
+    setCategoryFilter('All')
+
+    closeAddUrl()
+  }
+
+  function saveMultipleUrls(): void {
+    const populatedDrafts =
+      multipleUrlDrafts.filter(
+        (draft) =>
+          [
+            draft.websiteName,
+            draft.url,
+            draft.source,
+            draft.notes,
+          ].some(
+            (value) =>
+              value.trim().length > 0,
+          ),
+      )
+
+    if (populatedDrafts.length === 0) {
+      window.alert(
+        'Enter at least one URL.',
+      )
+      return
+    }
+
+    const existingUrls =
+      new Set(
+        sharedUrls.map(
+          (sharedUrl) =>
+            sharedUrl.url,
+        ),
+      )
+
+    const nextUrls:
+      CohortSharedUrlRecord[] = []
+
+    let duplicateCount = 0
+
+    for (
+      const [
+        draftIndex,
+        draft,
+      ] of populatedDrafts.entries()
+    ) {
+      const websiteName =
+        draft.websiteName.trim()
+
+      const normalizedUrl =
+        normalizeCohortSharedUrl(
+          draft.url,
+        )
+
+      if (websiteName.length === 0) {
+        window.alert(
+          `Row ${draftIndex + 1}: enter a Website Name.`,
+        )
+        return
+      }
+
+      if (normalizedUrl === null) {
+        window.alert(
+          `Row ${draftIndex + 1}: enter a valid http or https URL.`,
+        )
+        return
+      }
+
+      if (
+        existingUrls.has(
+          normalizedUrl,
+        )
+      ) {
+        duplicateCount += 1
+        continue
+      }
+
+      const nextSharedUrl:
+        CohortSharedUrlRecord = {
+        id: crypto.randomUUID(),
+        websiteName,
+        url: normalizedUrl,
+        source: draft.source.trim(),
+        notes: draft.notes.trim(),
+        addedAt:
+          new Date().toISOString(),
+      }
+
+      nextUrls.push(
+        nextSharedUrl,
+      )
+
+      existingUrls.add(
+        normalizedUrl,
+      )
+    }
+
+    if (nextUrls.length === 0) {
+      window.alert(
+        duplicateCount > 0
+          ? 'No new URLs were added because all entered URLs are already listed.'
+          : 'No URLs were added.',
+      )
+      return
+    }
+
+    setSharedUrls(
+      (currentUrls) => [
+        ...currentUrls,
+        ...nextUrls,
+      ],
+    )
+
+    setSelectedUrlIds(
+      nextUrls.map(
+        (sharedUrl) =>
+          sharedUrl.id,
+      ),
+    )
+
+    setSearchTerm('')
+    setCategoryFilter('All')
+
+    closeAddUrl()
+
+    if (duplicateCount > 0) {
+      window.alert(
+        `Added ${nextUrls.length} URL(s). Skipped ${duplicateCount} duplicate URL(s).`,
+      )
+    }
+  }
+
+  function toggleDocumentSelection(
+    fileId: string,
+  ): void {
+    setSelectedDocumentIds(
+      (currentIds) =>
+        currentIds.includes(fileId)
+          ? currentIds.filter(
+            (id) => id !== fileId,
+          )
+          : [
+            ...currentIds,
+            fileId,
+          ],
+    )
+  }
+
+  function toggleUrlSelection(
+    urlId: string,
+  ): void {
+    setSelectedUrlIds(
+      (currentIds) =>
+        currentIds.includes(urlId)
+          ? currentIds.filter(
+            (id) => id !== urlId,
+          )
+          : [
+            ...currentIds,
+            urlId,
+          ],
+    )
+  }
+
+  function toggleAllPagedDocuments(
+    checked: boolean,
+  ): void {
+    const pageIds =
+      pagedVisibleFiles.map(
+        (file) => file.id,
+      )
+
+    setSelectedDocumentIds(
+      (currentIds) => {
+        if (checked) {
+          return Array.from(
+            new Set([
+              ...currentIds,
+              ...pageIds,
+            ]),
+          )
+        }
+
+        return currentIds.filter(
+          (id) =>
+            !pageIds.includes(id),
+        )
+      },
+    )
+  }
+
+  function toggleAllPagedUrls(
+    checked: boolean,
+  ): void {
+    const pageIds =
+      pagedVisibleUrls.map(
+        (sharedUrl) =>
+          sharedUrl.id,
+      )
+
+    setSelectedUrlIds(
+      (currentIds) => {
+        if (checked) {
+          return Array.from(
+            new Set([
+              ...currentIds,
+              ...pageIds,
+            ]),
+          )
+        }
+
+        return currentIds.filter(
+          (id) =>
+            !pageIds.includes(id),
+        )
+      },
+    )
+  }
+
+  function selectDocumentForPreview(
+    fileId: string,
+  ): void {
+    setSelectedFileId(fileId)
+
+    setSelectedDocumentIds(
+      (currentIds) =>
+        currentIds.includes(fileId)
+          ? currentIds
+          : [
+            ...currentIds,
+            fileId,
+          ],
+    )
   }
 
   function downloadSelectedFile():
@@ -21546,9 +22291,44 @@ function CohortSharedFilesPage() {
           </span>
 
           <strong>
-            {allSharedFiles.length}
+            {totalSharedResourceCount}
           </strong>
         </div>
+      </section>
+
+      <section className="shared-files-quick-add-row">
+        <button
+          type="button"
+          className="shared-files-quick-url-button"
+          onClick={openAddUrl}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path d="M10.5 13.5 13.5 10.5" />
+            <path d="M7.2 15.8 5.7 17.3a3.8 3.8 0 0 1-5.4-5.4l3.4-3.4a3.8 3.8 0 0 1 5.4 0" />
+            <path d="m16.8 8.2 1.5-1.5a3.8 3.8 0 1 1 5.4 5.4l-3.4 3.4a3.8 3.8 0 0 1-5.4 0" />
+          </svg>
+
+          <span aria-hidden="true">
+            +
+          </span>
+
+          URL
+        </button>
+
+        <button
+          type="button"
+          className="shared-files-quick-document-button"
+          onClick={openAddDocument}
+        >
+          <span aria-hidden="true">
+            +
+          </span>
+
+          Document
+        </button>
       </section>
 
       <section className="shared-files-toolbar">
@@ -21558,6 +22338,8 @@ function CohortSharedFilesPage() {
           </span>
 
           <input
+            ref={searchInputRef}
+            id="shared-files-search-input"
             type="text"
             value={searchTerm}
             placeholder="Search title, category, filename, or description..."
@@ -21621,82 +22403,469 @@ function CohortSharedFilesPage() {
           <span>Visible</span>
 
           <strong>
-            {visibleFiles.length}
+            {visibleSharedResourceCount}
           </strong>
         </div>
       </section>
 
       <div className="shared-files-layout">
-        <section className="shared-files-library-panel">
-          <header className="shared-files-panel-header">
-            <div>
-              <h2>
-                Shared Documents
-              </h2>
+        <div className="shared-files-left-column">
+          <section className="shared-files-library-panel">
+            <header className="shared-files-panel-header">
+              <div>
+                <h2>
+                  Shared Documents
+                </h2>
 
-              <p>
-                Select a document to
-                preview.
-              </p>
-            </div>
-          </header>
-
-          <div className="shared-files-list">
-            {visibleFiles.map(
-              (file) => {
-                const isSelected =
-                  file.id ===
-                  selectedFileId
-
-                return (
-                  <button
-                    key={file.id}
-                    type="button"
-                    className={`shared-files-list-item${isSelected
-                      ? ' shared-files-list-item-selected'
-                      : ''
-                      }`}
-                    onClick={() =>
-                      setSelectedFileId(
-                        file.id,
-                      )
-                    }
-                  >
-                    <span className="shared-files-type-badge">
-                      {getCohortSharedFileTypeLabel(
-                        file.fileName,
-                      )}
-                    </span>
-
-                    <span className="shared-files-list-item-copy">
-                      <strong>
-                        {file.title}
-                      </strong>
-
-                      <small>
-                        {
-                          file.category
-                        }
-                      </small>
-
-                      <span>
-                        {file.fileName}
-                      </span>
-                    </span>
-                  </button>
-                )
-              },
-            )}
-
-            {visibleFiles.length ===
-              0 ? (
-              <div className="shared-files-list-empty">
-                No shared files match
-                the current filters.
+                <p>
+                  Select a document to
+                  preview.
+                </p>
               </div>
-            ) : null}
-          </div>
-        </section>
+
+              <div className="shared-files-panel-actions">
+                <button
+                  type="button"
+                  className="shared-files-panel-action-button"
+                  onClick={
+                    focusSharedFilesSearch
+                  }
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 6h16" />
+                    <path d="M7 12h10" />
+                    <path d="M10 18h4" />
+                  </svg>
+
+                  Filters
+                </button>
+
+                <button
+                  type="button"
+                  className="shared-files-panel-action-button"
+                  onClick={openAddDocument}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M21.4 11.6 12 21a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" />
+                  </svg>
+
+                  Attachments
+                </button>
+              </div>
+            </header>
+
+            <div className="shared-files-document-table-frame">
+              <table className="shared-files-document-table">
+                <thead>
+                  <tr>
+                    <th className="shared-files-checkbox-column">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all visible documents"
+                        checked={
+                          allPagedDocumentsSelected
+                        }
+                        onChange={(event) =>
+                          toggleAllPagedDocuments(
+                            event.target.checked,
+                          )
+                        }
+                      />
+                    </th>
+                    <th>Document Name</th>
+                    <th>Category</th>
+                    <th>Date Added</th>
+                    <th>Size</th>
+                    <th className="shared-files-options-column" />
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {pagedVisibleFiles.map(
+                    (file) => {
+                      const isPreviewSelected =
+                        file.id ===
+                        selectedFileId
+
+                      const isChecked =
+                        selectedDocumentIds.includes(
+                          file.id,
+                        )
+
+                      return (
+                        <tr
+                          key={file.id}
+                          className={
+                            isPreviewSelected ||
+                              isChecked
+                              ? 'shared-files-document-row-selected'
+                              : undefined
+                          }
+                          onClick={() =>
+                            selectDocumentForPreview(
+                              file.id,
+                            )
+                          }
+                        >
+                          <td className="shared-files-checkbox-cell">
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${file.title}`}
+                              checked={isChecked}
+                              onClick={(event) =>
+                                event.stopPropagation()
+                              }
+                              onChange={() =>
+                                toggleDocumentSelection(
+                                  file.id,
+                                )
+                              }
+                            />
+                          </td>
+
+                          <td>
+                            <div className="shared-files-document-name-cell">
+                              <span
+                                className={`shared-files-document-icon${getCohortSharedFileTypeLabel(
+                                  file.fileName,
+                                ) === 'PDF'
+                                  ? ' shared-files-document-icon-pdf'
+                                  : ''
+                                  }`}
+                                aria-hidden="true"
+                              >
+                                <span>
+                                  {getCohortSharedFileTypeLabel(
+                                    file.fileName,
+                                  )}
+                                </span>
+                              </span>
+
+                              <strong>
+                                {file.title}
+                              </strong>
+                            </div>
+                          </td>
+
+                          <td>
+                            {file.category}
+                          </td>
+
+                          <td>
+                            {formatCohortSharedFileDate(
+                              file.dateAdded,
+                            )}
+                          </td>
+
+                          <td>
+                            {formatCohortSharedFileSize(
+                              file.sizeBytes,
+                            )}
+                          </td>
+
+                          <td className="shared-files-more-options-cell">
+                            <span
+                              title="More options"
+                              aria-label="More options"
+                              role="img"
+                            >
+                              ⋯
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    },
+                  )}
+
+                  {pagedVisibleFiles.length ===
+                    0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="shared-files-table-empty-cell"
+                      >
+                        No shared files match
+                        the current filters.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+
+            <footer className="shared-files-table-footer">
+              <span>
+                {documentRangeStart}-
+                {documentRangeEnd} of{' '}
+                {visibleFiles.length}{' '}
+                documents
+              </span>
+
+              <div className="shared-files-pagination">
+                <button
+                  type="button"
+                  disabled={
+                    normalizedDocumentPage <=
+                    1
+                  }
+                  onClick={() =>
+                    setDocumentPage(
+                      Math.max(
+                        1,
+                        normalizedDocumentPage -
+                        1,
+                      ),
+                    )
+                  }
+                >
+                  &lt;
+                </button>
+
+                <span>
+                  {normalizedDocumentPage}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={
+                    normalizedDocumentPage >=
+                    documentPageCount
+                  }
+                  onClick={() =>
+                    setDocumentPage(
+                      Math.min(
+                        documentPageCount,
+                        normalizedDocumentPage +
+                        1,
+                      ),
+                    )
+                  }
+                >
+                  &gt;
+                </button>
+              </div>
+            </footer>
+          </section>
+
+          <section className="shared-files-url-panel">
+            <header className="shared-files-panel-header">
+              <div>
+                <h2>
+                  Shared URL Links
+                </h2>
+
+                <p>
+                  Select a URL to open in
+                  a new tab.
+                </p>
+              </div>
+
+              <div className="shared-files-panel-actions">
+                <button
+                  type="button"
+                  className="shared-files-panel-action-button"
+                  onClick={
+                    focusSharedFilesSearch
+                  }
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 6h16" />
+                    <path d="M7 12h10" />
+                    <path d="M10 18h4" />
+                  </svg>
+
+                  Filters
+                </button>
+
+                <button
+                  type="button"
+                  className="shared-files-panel-action-button"
+                  onClick={openAddUrl}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M21.4 11.6 12 21a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" />
+                  </svg>
+
+                  Attachments
+                </button>
+              </div>
+            </header>
+
+            <div className="shared-files-url-table-frame">
+              <table className="shared-files-url-table">
+                <thead>
+                  <tr>
+                    <th className="shared-files-checkbox-column">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all visible URLs"
+                        checked={
+                          allPagedUrlsSelected
+                        }
+                        onChange={(event) =>
+                          toggleAllPagedUrls(
+                            event.target.checked,
+                          )
+                        }
+                      />
+                    </th>
+                    <th>Website Name</th>
+                    <th>Add URL</th>
+                    <th>Source, if applicable</th>
+                    <th>Notes</th>
+                    <th className="shared-files-options-column" />
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {pagedVisibleUrls.map(
+                    (sharedUrl) => {
+                      const isChecked =
+                        selectedUrlIds.includes(
+                          sharedUrl.id,
+                        )
+
+                      return (
+                        <tr
+                          key={sharedUrl.id}
+                          className={
+                            isChecked
+                              ? 'shared-files-url-row-selected'
+                              : undefined
+                          }
+                        >
+                          <td className="shared-files-checkbox-cell">
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${sharedUrl.websiteName}`}
+                              checked={isChecked}
+                              onChange={() =>
+                                toggleUrlSelection(
+                                  sharedUrl.id,
+                                )
+                              }
+                            />
+                          </td>
+
+                          <td>
+                            <strong>
+                              {sharedUrl.websiteName}
+                            </strong>
+                          </td>
+
+                          <td>
+                            <a
+                              href={sharedUrl.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {sharedUrl.url}
+                            </a>
+                          </td>
+
+                          <td>
+                            {sharedUrl.source}
+                          </td>
+
+                          <td>
+                            {sharedUrl.notes}
+                          </td>
+
+                          <td className="shared-files-more-options-cell">
+                            <span
+                              title="More options"
+                              aria-label="More options"
+                              role="img"
+                            >
+                              ⋯
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    },
+                  )}
+
+                  {pagedVisibleUrls.length ===
+                    0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="shared-files-table-empty-cell"
+                      >
+                        No shared URLs match
+                        the current filters.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+
+            <footer className="shared-files-table-footer">
+              <span>
+                {urlRangeStart}-
+                {urlRangeEnd} of{' '}
+                {visibleSharedUrls.length}{' '}
+                links
+              </span>
+
+              <div className="shared-files-pagination">
+                <button
+                  type="button"
+                  disabled={
+                    normalizedUrlPage <= 1
+                  }
+                  onClick={() =>
+                    setUrlPage(
+                      Math.max(
+                        1,
+                        normalizedUrlPage -
+                        1,
+                      ),
+                    )
+                  }
+                >
+                  &lt;
+                </button>
+
+                <span>
+                  {normalizedUrlPage}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={
+                    normalizedUrlPage >=
+                    urlPageCount
+                  }
+                  onClick={() =>
+                    setUrlPage(
+                      Math.min(
+                        urlPageCount,
+                        normalizedUrlPage +
+                        1,
+                      ),
+                    )
+                  }
+                >
+                  &gt;
+                </button>
+              </div>
+            </footer>
+          </section>
+        </div>
 
         <section className="shared-files-preview-panel">
           <header className="shared-files-preview-header">
@@ -21798,6 +22967,301 @@ function CohortSharedFilesPage() {
           </div>
         </section>
       </div>
+
+      {isAddUrlOpen ? (
+        <div
+          className="shared-files-modal-backdrop"
+          role="presentation"
+        >
+          <section
+            className={`shared-files-add-modal${addUrlMode === 'multiple'
+              ? ' shared-files-url-modal-multiple'
+              : ''
+              }`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shared-files-add-url-title"
+          >
+            <header className="shared-files-add-modal-header">
+              <div>
+                <h2
+                  id="shared-files-add-url-title"
+                >
+                  Add URL
+                </h2>
+
+                <p>
+                  Add one website or several
+                  shared resource links.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="shared-files-add-modal-close"
+                aria-label="Close Add URL"
+                onClick={closeAddUrl}
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="shared-files-add-modal-body">
+              <div className="shared-files-add-mode-selector">
+                <button
+                  type="button"
+                  className={
+                    addUrlMode ===
+                      'single'
+                      ? 'shared-files-add-mode-button shared-files-add-mode-button-active'
+                      : 'shared-files-add-mode-button'
+                  }
+                  onClick={() => {
+                    resetAddUrlForm()
+                    setAddUrlMode(
+                      'single',
+                    )
+                  }}
+                >
+                  Add Single URL
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    addUrlMode ===
+                      'multiple'
+                      ? 'shared-files-add-mode-button shared-files-add-mode-button-active'
+                      : 'shared-files-add-mode-button'
+                  }
+                  onClick={() => {
+                    resetAddUrlForm()
+                    setAddUrlMode(
+                      'multiple',
+                    )
+                  }}
+                >
+                  Add Multiple URLs
+                </button>
+              </div>
+
+              {addUrlMode ===
+                'single' ? (
+                <>
+                  <div className="shared-files-url-form-grid">
+                    <label className="shared-files-add-field">
+                      <span>
+                        Website Name
+                      </span>
+
+                      <input
+                        type="text"
+                        value={
+                          addUrlWebsiteName
+                        }
+                        onChange={(event) =>
+                          setAddUrlWebsiteName(
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label className="shared-files-add-field">
+                      <span>
+                        Add URL
+                      </span>
+
+                      <input
+                        type="text"
+                        value={addUrlValue}
+                        placeholder="https://..."
+                        onChange={(event) =>
+                          setAddUrlValue(
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="shared-files-url-form-grid">
+                    <label className="shared-files-add-field">
+                      <span>
+                        Source, if applicable
+                      </span>
+
+                      <input
+                        type="text"
+                        value={addUrlSource}
+                        onChange={(event) =>
+                          setAddUrlSource(
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </label>
+
+                    <label className="shared-files-add-field">
+                      <span>
+                        Notes
+                      </span>
+
+                      <input
+                        type="text"
+                        value={addUrlNotes}
+                        onChange={(event) =>
+                          setAddUrlNotes(
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <div className="shared-files-multiple-url-editor">
+                  <div className="shared-files-multiple-url-header">
+                    <span>Website Name</span>
+                    <span>Add URL</span>
+                    <span>
+                      Source, if Applicable
+                    </span>
+                    <span>Notes</span>
+                    <span />
+                  </div>
+
+                  {multipleUrlDrafts.map(
+                    (draft) => (
+                      <div
+                        key={draft.id}
+                        className="shared-files-multiple-url-row"
+                      >
+                        <input
+                          type="text"
+                          aria-label="Website Name"
+                          value={
+                            draft.websiteName
+                          }
+                          onChange={(event) =>
+                            updateMultipleUrlDraft(
+                              draft.id,
+                              'websiteName',
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                        <input
+                          type="text"
+                          aria-label="Add URL"
+                          value={draft.url}
+                          placeholder="https://..."
+                          onChange={(event) =>
+                            updateMultipleUrlDraft(
+                              draft.id,
+                              'url',
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                        <input
+                          type="text"
+                          aria-label="Source, if applicable"
+                          value={draft.source}
+                          onChange={(event) =>
+                            updateMultipleUrlDraft(
+                              draft.id,
+                              'source',
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                        <input
+                          type="text"
+                          aria-label="Notes"
+                          value={draft.notes}
+                          onChange={(event) =>
+                            updateMultipleUrlDraft(
+                              draft.id,
+                              'notes',
+                              event.target.value,
+                            )
+                          }
+                        />
+
+                        <button
+                          type="button"
+                          aria-label="Remove URL row"
+                          onClick={() =>
+                            removeMultipleUrlRow(
+                              draft.id,
+                            )
+                          }
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ),
+                  )}
+
+                  <button
+                    type="button"
+                    className="shared-files-add-url-row-button"
+                    onClick={addMultipleUrlRow}
+                  >
+                    + Add Row
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <footer className="shared-files-add-modal-actions">
+              <button
+                type="button"
+                className="shared-files-add-cancel-button"
+                onClick={closeAddUrl}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="shared-files-add-save-button"
+                disabled={
+                  addUrlMode === 'single'
+                    ? addUrlWebsiteName
+                      .trim().length === 0 ||
+                    addUrlValue
+                      .trim().length === 0
+                    : multipleUrlDrafts.every(
+                      (draft) =>
+                        draft.websiteName
+                          .trim().length === 0 &&
+                        draft.url
+                          .trim().length === 0 &&
+                        draft.source
+                          .trim().length === 0 &&
+                        draft.notes
+                          .trim().length === 0,
+                    )
+                }
+                onClick={
+                  addUrlMode === 'single'
+                    ? saveSingleUrl
+                    : saveMultipleUrls
+                }
+              >
+                {addUrlMode === 'single'
+                  ? 'Add URL'
+                  : 'Add URLs'}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
 
       {isAddDocumentOpen ? (
         <div
