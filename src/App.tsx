@@ -620,12 +620,12 @@ type AppBackgroundStyle = CSSProperties & {
 
 const navigationItems: readonly NavigationItem[] = [
   {
-    label: 'Dashboard',
+    label: 'DASHBOARD',
     path: '/',
   },
 
   {
-    label: 'Cohort',
+    label: 'COHORT',
     path: '/cohort',
     groupId: 'cohort-identity',
     navigationOnly: true,
@@ -673,7 +673,7 @@ const navigationItems: readonly NavigationItem[] = [
   },
 
   {
-    label: 'Resources',
+    label: 'RESOURCES',
     path: '/resources',
     groupId: 'shared-files',
     navigationOnly: true,
@@ -711,13 +711,13 @@ const navigationItems: readonly NavigationItem[] = [
   },
 
   {
-    label: 'Academics',
+    label: 'ACADEMICS',
     path: '/academics',
     groupId: 'academic-plan',
     navigationOnly: true,
   },
   {
-    label: 'Academic Plan',
+    label: 'ACADEMIC PLAN',
     path: '/academic-plan',
     parentId: 'academic-plan',
   },

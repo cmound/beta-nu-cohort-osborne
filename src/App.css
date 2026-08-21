@@ -1493,7 +1493,7 @@
 /* Main Courses connector */
 .courses-status-panel::before {
   left: 15px;
-  top: 6px;
+  top: -4px;
   bottom: 22px;
   width: 2px;
   background: #31577a;
@@ -1550,26 +1550,26 @@
 /* PENDING */
 .course-status-group-pending
   .course-status-heading {
-  border-color: #8799a7;
+  border-color: #7d94b8;
   background:
     linear-gradient(
       180deg,
-      #dce5eb 0%,
-      #c5d1d9 52%,
-      #b4c2cc 100%
+      #eef5ff 0%,
+      #d5e3f8 52%,
+      #b8cce8 100%
     );
 }
 
 /* COMPLETED */
 .course-status-group-completed
   .course-status-heading {
-  border-color: #49a98c;
+  border-color: #3ea97c;
   background:
     linear-gradient(
       180deg,
-      #bceee7 0%,
-      #8dddd1 52%,
-      #67c9bc 100%
+      #cbf5dc 0%,
+      #97e0b4 52%,
+      #63c88a 100%
     );
 }
 
@@ -1603,23 +1603,23 @@
 
 .course-status-group-pending
   .course-count-badge {
-  border-color: #8799a7;
+  border-color: #7d94b8;
   background:
     linear-gradient(
       180deg,
-      #edf2f5 0%,
-      #c7d3dc 100%
+      #f7fbff 0%,
+      #dce8f8 100%
     );
 }
 
 .course-status-group-completed
   .course-count-badge {
-  border-color: #49a98c;
+  border-color: #3ea97c;
   background:
     linear-gradient(
       180deg,
-      #c9f3ec 0%,
-      #82d7bd 100%
+      #e7fff0 0%,
+      #aceac3 100%
     );
 }
 
