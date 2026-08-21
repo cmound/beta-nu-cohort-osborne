@@ -28836,6 +28836,11 @@ function CoursePage({
   const professorNameBeforeEditRef =
     useRef('')
 
+  const courseProgressTableFrameRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
+
   const [
     isAssignmentModalOpen,
     setIsAssignmentModalOpen,
@@ -29065,6 +29070,33 @@ function CoursePage({
             100,
           ),
     }
+  }
+
+  function scrollCourseProgressTable(
+    direction: 'left' | 'right',
+  ): void {
+    const tableFrame =
+      courseProgressTableFrameRef.current
+
+    if (tableFrame === null) {
+      return
+    }
+
+    const scrollDistance =
+      Math.max(
+        420,
+        Math.round(
+          tableFrame.clientWidth * 0.55,
+        ),
+      )
+
+    tableFrame.scrollBy({
+      left:
+        direction === 'left'
+          ? -scrollDistance
+          : scrollDistance,
+      behavior: 'smooth',
+    })
   }
 
   function updateCourseWorkspace(
@@ -31788,26 +31820,67 @@ function CoursePage({
             </h2>
           </div>
 
-          <div className="course-progress-key">
-            <span className="course-progress-key-not-started">
-              Haven&apos;t Started
-            </span>
+          <div className="course-progress-header-actions">
+            <div className="course-progress-scroll-controls">
+              <button
+                type="button"
+                className="course-progress-scroll-button"
+                onClick={() =>
+                  scrollCourseProgressTable(
+                    'left',
+                  )
+                }
+              >
+                <span aria-hidden="true">
+                  ◀
+                </span>
 
-            <span className="course-progress-key-progress">
-              In Progress
-            </span>
+                Scroll Left
+              </button>
 
-            <span className="course-progress-key-done">
-              Done
-            </span>
+              <button
+                type="button"
+                className="course-progress-scroll-button"
+                onClick={() =>
+                  scrollCourseProgressTable(
+                    'right',
+                  )
+                }
+              >
+                Scroll Right
 
-            <span className="course-progress-key-help">
-              Help!
-            </span>
+                <span aria-hidden="true">
+                  ▶
+                </span>
+              </button>
+            </div>
+
+            <div className="course-progress-key">
+              <span className="course-progress-key-not-started">
+                Haven&apos;t Started
+              </span>
+
+              <span className="course-progress-key-progress">
+                In Progress
+              </span>
+
+              <span className="course-progress-key-done">
+                Done
+              </span>
+
+              <span className="course-progress-key-help">
+                Help!
+              </span>
+            </div>
           </div>
         </header>
 
-        <div className="course-progress-table-frame">
+        <div
+          ref={
+            courseProgressTableFrameRef
+          }
+          className="course-progress-table-frame"
+        >
           <table className="course-progress-table">
             <thead>
               <tr>
