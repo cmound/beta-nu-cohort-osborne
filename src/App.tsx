@@ -30254,6 +30254,15 @@ function App() {
                   }
 
                   if (
+                    item.parentId ===
+                    'academic-plan'
+                  ) {
+                    classNames.push(
+                      'nav-sub-link-academic-plan',
+                    )
+                  }
+
+                  if (
                     item.isLastInGroup === true
                   ) {
                     classNames.push(

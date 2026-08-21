@@ -1381,6 +1381,16 @@
   background: #31577a;
 }
 
+/* Align Academic Plan tree with course-status tree */
+.nav-sub-link-academic-plan::before {
+  left: 15px;
+}
+
+.nav-sub-link-academic-plan
+  .nav-sub-item-dot {
+  left: 33px;
+}
+
 /* Sub-page hover */
 .nav-sub-link:hover {
   color: #0b1f3b;
