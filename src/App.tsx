@@ -13430,39 +13430,58 @@ function FacilitatorPlannerPage({
             </select>
           </label>
 
-          <button
-            type="button"
-            className={
-              isBuildingAgenda
-                ? 'facilitator-planner-start-button facilitator-planner-start-button-active'
-                : 'facilitator-planner-start-button'
-            }
-            disabled={isBuildingAgenda}
-            onClick={() => {
-              setIsBuildingAgenda(true)
-              setActionMessage(
-                'Agenda-building session started.',
-              )
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <div className="facilitator-planner-build-actions">
+            <button
+              type="button"
+              className={
+                isBuildingAgenda
+                  ? 'facilitator-planner-start-button facilitator-planner-start-button-active'
+                  : 'facilitator-planner-start-button'
+              }
+              disabled={isBuildingAgenda}
+              onClick={() => {
+                setIsBuildingAgenda(true)
+                setActionMessage(
+                  'Agenda-building session started.',
+                )
+              }}
             >
-              <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
-              <path d="m13 7 4 4" />
-              <path d="M4 16l4 4" />
-            </svg>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+                <path d="m13 7 4 4" />
+                <path d="M4 16l4 4" />
+              </svg>
 
-            {isBuildingAgenda
-              ? 'Building Agenda'
-              : 'Start Building Agenda'}
-          </button>
+              {isBuildingAgenda
+                ? 'Building Agenda'
+                : 'Start Building Agenda'}
+            </button>
+
+            {isBuildingAgenda ? (
+              <button
+                type="button"
+                className="facilitator-planner-cancel-build-button"
+                onClick={() => {
+                  setIsBuildingAgenda(false)
+                  setLastProtectedAt('')
+
+                  setActionMessage(
+                    'Agenda-building session cancelled. Latest changes remain protected.',
+                  )
+                }}
+              >
+                Cancel Build
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="facilitator-planner-meeting-summary">
