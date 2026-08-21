@@ -28067,16 +28067,47 @@ function formatAdminArchiveDate(
     return value
   }
 
-  return new Intl.DateTimeFormat(
-    'en-US',
-    {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone:
-        'America/Los_Angeles',
-    },
-  ).format(date)
+  const parts =
+    getAdminPacificDateParts(
+      date,
+    )
+
+  const weekday =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        weekday: 'short',
+        timeZone:
+          'America/Los_Angeles',
+      },
+    ).format(date)
+
+  const monthLabels = [
+    'Jan.',
+    'Feb.',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'Aug.',
+    'Sep.',
+    'Oct.',
+    'Nov.',
+    'Dec.',
+  ] as const
+
+  const monthLabel =
+    monthLabels[
+    Number(parts.month) - 1
+    ] ?? parts.month
+
+  return (
+    `${weekday}. ` +
+    `${monthLabel} ` +
+    `${Number(parts.day)}, ` +
+    parts.year
+  )
 }
 
 function formatAdminArchiveTime(
@@ -29144,7 +29175,7 @@ function AdminPage() {
 
             <p>
               Newest archive appears
-              first.
+              first
             </p>
           </div>
 
