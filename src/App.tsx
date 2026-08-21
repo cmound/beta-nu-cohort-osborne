@@ -31611,7 +31611,7 @@ function App() {
                     />
 
                     <strong>
-                      COMPLETED COURSES
+                      COMPLETED
                     </strong>
 
                     <span className="course-count-badge">

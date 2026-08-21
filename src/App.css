@@ -1480,12 +1480,14 @@
 
 /* Move Academic Plan text left to match the course headings */
 .nav-sub-link-academic-plan {
+  margin-top: 5px;
   padding-left: 39px;
 }
 
 /* Keep the Academic Plan trunk aligned with the course trunk */
 .nav-sub-link-academic-plan::before {
   left: 15px;
+  top: -6px;
   width: 2px;
   background: #31577a;
 }
@@ -1706,14 +1708,27 @@
   border-radius: 4px;
   color: #0b1f3b;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1.05;
 }
 
+/* Active courses remain bold */
+.course-status-group-active
+  .course-status-link {
+  font-weight: 800;
+}
+
+/* Pending courses use regular font weight */
 .course-status-group-pending
   .course-status-link {
   color: #111827;
-  font-weight: 800;
+  font-weight: 400;
+}
+
+/* Completed courses use regular font weight */
+.course-status-group-completed
+  .course-status-link {
+  font-weight: 400;
 }
 
 /* Course horizontal connector branch */
