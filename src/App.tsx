@@ -14355,18 +14355,28 @@ function FacilitatorPlannerPage({
                               onChange={(
                                 event,
                               ) => {
-                                const nextValue =
+                                const typedAgendaItem =
                                   event.target.value
 
+                                const capitalizedAgendaItem =
+                                  typedAgendaItem.length === 0
+                                    ? ''
+                                    : (
+                                      typedAgendaItem
+                                        .charAt(0)
+                                        .toLocaleUpperCase() +
+                                      typedAgendaItem.slice(1)
+                                    )
+
                                 const normalizedValue =
-                                  nextValue
+                                  capitalizedAgendaItem
                                     .trim()
                                     .toLocaleLowerCase()
 
                                 updateAgendaItemText(
                                   agendaItem.id,
                                   'agendaItem',
-                                  nextValue,
+                                  capitalizedAgendaItem,
                                 )
 
                                 if (
