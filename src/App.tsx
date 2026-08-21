@@ -27583,6 +27583,22 @@ const ADMIN_ARCHIVE_UPDATED_EVENT =
 const ADMIN_AUTO_ARCHIVE_INTERVAL_MS =
   60 * 60 * 1000
 
+const ADMIN_ARCHIVE_MONTH_LABELS =
+  [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ] as const
+
 /*
  * Paste only the SHA-256 hash of your
  * four-digit PIN here.
@@ -27929,6 +27945,71 @@ function getAdminPacificDateKey(
   )
 }
 
+function shiftAdminDateKey(
+  value: string,
+  dayOffset: number,
+): string {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+      value,
+    )
+
+  if (match === null) {
+    return getAdminPacificDateKey(
+      new Date(),
+    )
+  }
+
+  const date =
+    new Date(
+      Date.UTC(
+        Number(match[1]),
+        Number(match[2]) - 1,
+        Number(match[3]),
+      ),
+    )
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return getAdminPacificDateKey(
+      new Date(),
+    )
+  }
+
+  date.setUTCDate(
+    date.getUTCDate() +
+    dayOffset,
+  )
+
+  return (
+    `${date.getUTCFullYear()}-` +
+    `${String(
+      date.getUTCMonth() + 1,
+    ).padStart(2, '0')}-` +
+    String(
+      date.getUTCDate(),
+    ).padStart(2, '0')
+  )
+}
+
+function getAdminPacificHourKey(
+  date: Date,
+): string {
+  const parts =
+    getAdminPacificDateParts(date)
+
+  return (
+    `${parts.year}-` +
+    `${parts.month}-` +
+    `${parts.day}-` +
+    `${parts.hour}-` +
+    parts.dayPeriod
+  )
+}
+
 function formatAdminBackupFileName(
   date: Date,
 ): string {
@@ -27967,6 +28048,56 @@ function formatAdminArchiveDateTime(
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      timeZone:
+        'America/Los_Angeles',
+    },
+  ).format(date)
+}
+
+function formatAdminArchiveDate(
+  value: string,
+): string {
+  const date = new Date(value)
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-US',
+    {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone:
+        'America/Los_Angeles',
+    },
+  ).format(date)
+}
+
+function formatAdminArchiveTime(
+  value: string,
+): string {
+  const date = new Date(value)
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-US',
+    {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
       timeZone:
         'America/Los_Angeles',
     },
@@ -28508,7 +28639,12 @@ function AdminPage() {
     monthFilter,
     setMonthFilter,
   ] =
-    useState('')
+    useState(
+      () =>
+        getAdminPacificDateKey(
+          new Date(),
+        ).slice(0, 7),
+    )
 
   const [
     dateFilter,
@@ -28520,6 +28656,12 @@ function AdminPage() {
           new Date(),
         ),
     )
+
+  const [
+    isMonthMenuOpen,
+    setIsMonthMenuOpen,
+  ] =
+    useState(false)
 
   const [
     actionMessage,
@@ -28583,11 +28725,6 @@ function AdminPage() {
     }
   }, [])
 
-  const todayKey =
-    getAdminPacificDateKey(
-      new Date(),
-    )
-
   const filteredArchives =
     archives.filter(
       (archive) => {
@@ -28595,11 +28732,15 @@ function AdminPage() {
           case 'today':
             return (
               archive.pacificDate ===
-              todayKey
+              dateFilter
             )
 
           case 'all':
-            return true
+            return (
+              dateFilter.length === 0 ||
+              archive.pacificDate <=
+              dateFilter
+            )
 
           case 'month':
             return (
@@ -28631,6 +28772,136 @@ function AdminPage() {
         archive.source ===
         'manual',
     )
+
+  function applyArchiveDate(
+    nextDate: string,
+  ): void {
+    setDateFilter(
+      nextDate,
+    )
+
+    setMonthFilter(
+      nextDate.slice(
+        0,
+        7,
+      ),
+    )
+
+    setFilterMode(
+      'date',
+    )
+
+    setIsMonthMenuOpen(
+      false,
+    )
+  }
+
+  function moveArchiveDate(
+    dayOffset: number,
+  ): void {
+    applyArchiveDate(
+      shiftAdminDateKey(
+        dateFilter,
+        dayOffset,
+      ),
+    )
+  }
+
+  function showTodayArchives():
+    void {
+    const currentToday =
+      getAdminPacificDateKey(
+        new Date(),
+      )
+
+    setDateFilter(
+      currentToday,
+    )
+
+    setMonthFilter(
+      currentToday.slice(
+        0,
+        7,
+      ),
+    )
+
+    setFilterMode(
+      'today',
+    )
+
+    setIsMonthMenuOpen(
+      false,
+    )
+  }
+
+  function showAllArchives():
+    void {
+    const currentToday =
+      getAdminPacificDateKey(
+        new Date(),
+      )
+
+    setDateFilter(
+      currentToday,
+    )
+
+    setMonthFilter(
+      currentToday.slice(
+        0,
+        7,
+      ),
+    )
+
+    setFilterMode(
+      'all',
+    )
+
+    setIsMonthMenuOpen(
+      false,
+    )
+  }
+
+  function selectArchiveMonth(
+    monthIndex: number,
+  ): void {
+    const currentToday =
+      getAdminPacificDateKey(
+        new Date(),
+      )
+
+    const selectedYear =
+      /^\d{4}-/.test(
+        dateFilter,
+      )
+        ? dateFilter.slice(
+          0,
+          4,
+        )
+        : currentToday.slice(
+          0,
+          4,
+        )
+
+    const monthNumber =
+      String(
+        monthIndex + 1,
+      ).padStart(
+        2,
+        '0',
+      )
+
+    setMonthFilter(
+      `${selectedYear}-${monthNumber}`,
+    )
+
+    setFilterMode(
+      'month',
+    )
+
+    setIsMonthMenuOpen(
+      false,
+    )
+  }
 
   async function handleManualExport():
     Promise<void> {
@@ -28770,14 +29041,14 @@ function AdminPage() {
 
         <article>
           <span>
-            Last Automatic Archive
+            Last Automatic Report
           </span>
 
           <strong>
             {
               latestAutoArchive ===
                 undefined
-                ? 'Not yet created'
+                ? 'Not Yet Generated'
                 : formatAdminArchiveDateTime(
                   latestAutoArchive
                     .createdAt,
@@ -28795,7 +29066,7 @@ function AdminPage() {
             {
               latestManualArchive ===
                 undefined
-                ? 'Not yet exported'
+                ? 'Not Yet Generated'
                 : formatAdminArchiveDateTime(
                   latestManualArchive
                     .createdAt,
@@ -28814,7 +29085,7 @@ function AdminPage() {
 
             <p>
               Automatic archive:
-              approximately every 1 hour
+              at the top of every hour
               while the Hub is open.
             </p>
           </div>
@@ -28880,16 +29151,52 @@ function AdminPage() {
           <div className="admin-archive-filters">
             <button
               type="button"
+              className="admin-filter-button admin-date-arrow-button"
+              aria-label="Previous date"
+              onClick={() =>
+                moveArchiveDate(-1)
+              }
+            >
+              &lt;
+            </button>
+
+            <input
+              className={
+                filterMode ===
+                  'date'
+                  ? 'admin-archive-date-input admin-archive-date-input-active'
+                  : 'admin-archive-date-input'
+              }
+              type="date"
+              value={dateFilter}
+              onChange={(event) =>
+                applyArchiveDate(
+                  event.target.value,
+                )
+              }
+            />
+
+            <button
+              type="button"
+              className="admin-filter-button admin-date-arrow-button"
+              aria-label="Next date"
+              onClick={() =>
+                moveArchiveDate(1)
+              }
+            >
+              &gt;
+            </button>
+
+            <button
+              type="button"
               className={
                 filterMode ===
                   'today'
                   ? 'admin-filter-button admin-filter-button-active'
                   : 'admin-filter-button'
               }
-              onClick={() =>
-                setFilterMode(
-                  'today',
-                )
+              onClick={
+                showTodayArchives
               }
             >
               Today
@@ -28903,74 +29210,64 @@ function AdminPage() {
                   ? 'admin-filter-button admin-filter-button-active'
                   : 'admin-filter-button'
               }
-              onClick={() =>
-                setFilterMode(
-                  'all',
-                )
+              onClick={
+                showAllArchives
               }
             >
               All
             </button>
 
-            <button
-              type="button"
-              className={
-                filterMode ===
-                  'month'
-                  ? 'admin-filter-button admin-filter-button-active'
-                  : 'admin-filter-button'
-              }
-              onClick={() =>
-                setFilterMode(
-                  'month',
-                )
-              }
-            >
-              Month
-            </button>
-
-            <button
-              type="button"
-              className={
-                filterMode ===
-                  'date'
-                  ? 'admin-filter-button admin-filter-button-active'
-                  : 'admin-filter-button'
-              }
-              onClick={() =>
-                setFilterMode(
-                  'date',
-                )
-              }
-            >
-              Date
-            </button>
-
-            {filterMode ===
-              'month' ? (
-              <input
-                type="month"
-                value={monthFilter}
-                onChange={(event) =>
-                  setMonthFilter(
-                    event.target.value,
+            <div className="admin-month-picker">
+              <button
+                type="button"
+                className={
+                  filterMode ===
+                    'month'
+                    ? 'admin-filter-button admin-filter-button-active'
+                    : 'admin-filter-button'
+                }
+                aria-expanded={
+                  isMonthMenuOpen
+                }
+                onClick={() =>
+                  setIsMonthMenuOpen(
+                    (currentValue) =>
+                      !currentValue,
                   )
                 }
-              />
-            ) : null}
+              >
+                Month
+              </button>
 
-            {filterMode ===
-              'date' ? (
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(event) =>
-                  setDateFilter(
-                    event.target.value,
-                  )
-                }
-              />
-            ) : null}
+              {isMonthMenuOpen ? (
+                <div
+                  className="admin-month-menu"
+                  role="menu"
+                >
+                  {ADMIN_ARCHIVE_MONTH_LABELS.map(
+                    (
+                      monthLabel,
+                      monthIndex,
+                    ) => (
+                      <button
+                        key={
+                          monthLabel
+                        }
+                        type="button"
+                        role="menuitem"
+                        onClick={() =>
+                          selectArchiveMonth(
+                            monthIndex,
+                          )
+                        }
+                      >
+                        {monthLabel}
+                      </button>
+                    ),
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -28979,7 +29276,11 @@ function AdminPage() {
             <thead>
               <tr>
                 <th>
-                  Date / Time
+                  Date
+                </th>
+
+                <th>
+                  Time
                 </th>
 
                 <th>
@@ -28987,7 +29288,7 @@ function AdminPage() {
                 </th>
 
                 <th>
-                  JSON File
+                  JSON File Name
                 </th>
 
                 <th>
@@ -29005,7 +29306,7 @@ function AdminPage() {
                 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="admin-archive-empty"
                   >
                     No JSON archives
@@ -29022,7 +29323,16 @@ function AdminPage() {
                     >
                       <td>
                         {
-                          formatAdminArchiveDateTime(
+                          formatAdminArchiveDate(
+                            archive
+                              .createdAt,
+                          )
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          formatAdminArchiveTime(
                             archive
                               .createdAt,
                           )
@@ -29064,6 +29374,12 @@ function AdminPage() {
                             )
                           }
                         >
+                          <span
+                            aria-hidden="true"
+                          >
+                            ↓
+                          </span>
+
                           Download
                         </button>
                       </td>
@@ -29376,8 +29692,16 @@ function App() {
   ])
 
   useEffect(() => {
-    async function createAutoArchiveIfDue():
+    let archiveTimer:
+      number | null = null
+
+    let isCancelled = false
+
+    async function createTopOfHourArchive():
       Promise<void> {
+      const now =
+        new Date()
+
       const storedLastArchive =
         window.localStorage.getItem(
           ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
@@ -29390,28 +29714,25 @@ function App() {
             storedLastArchive,
           )
 
-      const archiveIsDue =
-        !Number.isFinite(
+      if (
+        Number.isFinite(
           lastArchiveTime,
-        ) ||
-        Date.now() -
-        lastArchiveTime >=
-        ADMIN_AUTO_ARCHIVE_INTERVAL_MS
-
-      if (!archiveIsDue) {
+        ) &&
+        getAdminPacificHourKey(
+          new Date(
+            lastArchiveTime,
+          ),
+        ) ===
+        getAdminPacificHourKey(
+          now,
+        )
+      ) {
         return
       }
 
       const archiveReservationTime =
-        new Date().toISOString()
+        now.toISOString()
 
-      /*
-       * Reserve this archive window before
-       * starting the asynchronous IndexedDB
-       * write. This prevents two simultaneous
-       * checks from creating duplicate
-       * automatic archives.
-       */
       window.localStorage.setItem(
         ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
         archiveReservationTime,
@@ -29422,11 +29743,6 @@ function App() {
           'auto',
         )
       } catch {
-        /*
-         * Restore the previous timestamp
-         * if the archive failed so the Hub
-         * can try again later.
-         */
         if (
           storedLastArchive === null
         ) {
@@ -29442,25 +29758,63 @@ function App() {
       }
     }
 
+    function scheduleNextTopOfHour():
+      void {
+      if (isCancelled) {
+        return
+      }
+
+      if (
+        archiveTimer !== null
+      ) {
+        window.clearTimeout(
+          archiveTimer,
+        )
+      }
+
+      const now =
+        new Date()
+
+      const millisecondsIntoHour =
+        now.getMinutes() *
+        60 *
+        1000 +
+        now.getSeconds() *
+        1000 +
+        now.getMilliseconds()
+
+      const millisecondsUntilNextHour =
+        ADMIN_AUTO_ARCHIVE_INTERVAL_MS -
+        millisecondsIntoHour
+
+      archiveTimer =
+        window.setTimeout(
+          () => {
+            void createTopOfHourArchive()
+              .finally(
+                () => {
+                  scheduleNextTopOfHour()
+                },
+              )
+          },
+          Math.max(
+            250,
+            millisecondsUntilNextHour,
+          ),
+        )
+    }
+
     function handleAdminArchiveVisibility():
       void {
       if (
         document.visibilityState ===
         'visible'
       ) {
-        void createAutoArchiveIfDue()
+        scheduleNextTopOfHour()
       }
     }
 
-    void createAutoArchiveIfDue()
-
-    const archiveInterval =
-      window.setInterval(
-        () => {
-          void createAutoArchiveIfDue()
-        },
-        ADMIN_AUTO_ARCHIVE_INTERVAL_MS,
-      )
+    scheduleNextTopOfHour()
 
     document.addEventListener(
       'visibilitychange',
@@ -29468,9 +29822,15 @@ function App() {
     )
 
     return () => {
-      window.clearInterval(
-        archiveInterval,
-      )
+      isCancelled = true
+
+      if (
+        archiveTimer !== null
+      ) {
+        window.clearTimeout(
+          archiveTimer,
+        )
+      }
 
       document.removeEventListener(
         'visibilitychange',
