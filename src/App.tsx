@@ -21310,6 +21310,34 @@ function CohortSharedFilesPage() {
     ),
   ]
 
+  const sourceOptions =
+    Array.from(
+      new Set(
+        [
+          ...sharedUrls.map(
+            (sharedUrl) =>
+              sharedUrl.source.trim(),
+          ),
+          addUrlSource.trim(),
+          ...multipleUrlDrafts.map(
+            (draft) =>
+              draft.source.trim(),
+          ),
+        ].filter(
+          (source) =>
+            source.length > 0,
+        ),
+      ),
+    ).sort(
+      (
+        firstSource,
+        secondSource,
+      ) =>
+        firstSource.localeCompare(
+          secondSource,
+        ),
+    )
+
   const normalizedSearchTerm =
     searchTerm
       .trim()
@@ -25006,6 +25034,19 @@ function CohortSharedFilesPage() {
                 </button>
               </div>
 
+              <datalist
+                id="shared-files-source-suggestions"
+              >
+                {sourceOptions.map(
+                  (source) => (
+                    <option
+                      key={source}
+                      value={source}
+                    />
+                  ),
+                )}
+              </datalist>
+
               {addUrlMode ===
                 'single' ? (
                 <>
@@ -25054,6 +25095,7 @@ function CohortSharedFilesPage() {
 
                       <input
                         type="text"
+                        list="shared-files-source-suggestions"
                         value={addUrlSource}
                         onChange={(event) =>
                           setAddUrlSource(
@@ -25061,6 +25103,12 @@ function CohortSharedFilesPage() {
                           )
                         }
                       />
+
+                      <small>
+                        Previously used
+                        sources appear
+                        as you type.
+                      </small>
                     </label>
 
                     <label className="shared-files-add-field">
@@ -25130,6 +25178,7 @@ function CohortSharedFilesPage() {
                         <input
                           type="text"
                           aria-label="Source, if applicable"
+                          list="shared-files-source-suggestions"
                           value={draft.source}
                           onChange={(event) =>
                             updateMultipleUrlDraft(
