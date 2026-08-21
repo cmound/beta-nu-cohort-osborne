@@ -18511,7 +18511,7 @@ tbody td {
 .admin-actions-heading h2 {
   margin: 0;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1.15;
 }
@@ -18542,7 +18542,7 @@ tbody td {
   padding: 10px 14px;
   border-radius: 12px;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
@@ -18667,8 +18667,8 @@ tbody td {
 }
 
 .admin-summary-grid span {
-  color: #17365d;
-  font-size: 11px;
+  color: #C69214;
+  font-size: 14px;
   font-weight: 900;
   line-height: 1.15;
 }
@@ -18676,16 +18676,16 @@ tbody td {
 .admin-summary-grid strong {
   margin-top: 12px;
   color: #0b1f3b;
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 900;
-  line-height: 1.22;
+  line-height: 1.2;
 }
 
 .admin-summary-grid
   > article:first-child
   strong {
   margin-top: 10px;
-  font-size: 38px;
+  font-size: 44px;
   line-height: 1;
 }
 
@@ -18719,56 +18719,57 @@ tbody td {
 }
 
 .admin-archive-header {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto;
+  display: flex;
   align-items: center;
-  column-gap: 10px;
-  row-gap: 7px;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
 }
 
 .admin-archive-header
   > div:first-child {
-  display: contents;
+  min-width: 0;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 14px;
+  white-space: nowrap;
 }
 
 .admin-archive-header h2 {
-  grid-column: 1 / -1;
-  grid-row: 1;
+  flex: 0 0 auto;
   margin: 0;
   color: #0b1f3b;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 900;
-  line-height: 1.05;
-  text-align: center;
+  line-height: 1;
+  text-align: left;
+  white-space: nowrap;
 }
 
 .admin-archive-header p {
-  grid-column: 1;
-  grid-row: 2;
+  flex: 0 0 auto;
   margin: 0;
   color: #27476b;
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1;
   white-space: nowrap;
 }
 
 .admin-archive-filters {
-  grid-column: 2;
-  grid-row: 2;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 4px;
   white-space: nowrap;
 }
 
 .admin-filter-button {
   min-height: 32px;
   box-sizing: border-box;
-  padding: 5px 10px;
+  padding: 5px 8px;
   border: 1px solid #86a1b8;
   border-radius: 6px;
   color: #0b1f3b;
@@ -18787,7 +18788,7 @@ tbody td {
     0 2px 4px
       rgba(0, 0, 0, 0.16);
   font-family: inherit;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -18803,7 +18804,37 @@ tbody td {
 }
 
 .admin-filter-button-active {
-  border-color: #c69214;
+  border-color: #527a99;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #f8fbff 0%,
+      #d9e7f2 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    inset 0 -2px 2px
+      rgba(49, 87, 122, 0.12),
+    0 2px 4px
+      rgba(0, 0, 0, 0.16);
+}
+
+.admin-date-arrow-button {
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.admin-archive-date-input {
+  width: 112px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  border: 1px solid #c69214;
+  border-radius: 6px;
   color: #061321;
   background:
     linear-gradient(
@@ -18811,48 +18842,29 @@ tbody td {
       #fff3a2 0%,
       #ffd200 100%
     );
-}
-
-.admin-date-arrow-button {
-  width: 36px;
-  min-width: 36px;
-  padding: 0;
-  font-size: 15px;
-}
-
-.admin-archive-date-input {
-  width: 132px;
-  height: 32px;
-  box-sizing: border-box;
-  padding: 4px 7px;
-  border: 1px solid #86a1b8;
-  border-radius: 6px;
-  color: #0b1f3b;
-  background:
-    linear-gradient(
-      180deg,
-      #ffffff 0%,
-      #f4f8fb 100%
-    );
   box-shadow:
-    inset 0 1px 2px
-      rgba(49, 87, 122, 0.08),
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.78),
+    inset 0 -2px 2px
+      rgba(138, 101, 0, 0.16),
     0 2px 4px
-      rgba(0, 0, 0, 0.12);
+      rgba(0, 0, 0, 0.14);
   font-family: inherit;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .admin-archive-date-input-active {
-  border-color: #c69214;
+  border-color: #a87408;
   box-shadow:
-    inset 0 1px 2px
-      rgba(49, 87, 122, 0.08),
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.78),
+    inset 0 -2px 2px
+      rgba(138, 101, 0, 0.16),
     0 0 0 1px
-      rgba(198, 146, 20, 0.16),
+      rgba(198, 146, 20, 0.2),
     0 2px 4px
-      rgba(0, 0, 0, 0.12);
+      rgba(0, 0, 0, 0.14);
 }
 
 /* Month popup */
