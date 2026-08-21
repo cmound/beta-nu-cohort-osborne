@@ -14001,6 +14001,8 @@ function FacilitatorPlannerPage({
                 {formatFacilitatorClockTime(
                   plannedFinishMinutes,
                 )}
+                {' '}
+                {pacificZone}
               </div>
 
               <div className="facilitator-planner-time-label facilitator-planner-time-label-right">
@@ -14079,11 +14081,6 @@ function FacilitatorPlannerPage({
                 </span>
               </div>
 
-              <span
-                className="facilitator-planner-time-guide"
-                aria-hidden="true"
-              />
-
               <div
                 className={
                   remainingMinutes < 0
@@ -14098,12 +14095,9 @@ function FacilitatorPlannerPage({
                   plannedFinishMinutes +
                   FACILITATOR_EASTERN_OFFSET_MINUTES,
                 )}
+                {' '}
+                {easternZone}
               </div>
-
-              <span
-                className="facilitator-planner-time-guide"
-                aria-hidden="true"
-              />
 
               <div className="facilitator-planner-time-label facilitator-planner-time-label-right">
                 <strong>

@@ -3585,24 +3585,27 @@
 
 .facilitator-planner-planned-finish {
   width: max-content;
-  min-width: 220px;
+  min-width: 245px;
   box-sizing: border-box;
   margin: 0;
   padding: 6px 16px;
-  border: 1px solid #73a9cf;
+  border: 1px solid #c89214;
   border-radius: 6px;
-  color: #ffffff;
+  color: #061321;
   background:
     linear-gradient(
       180deg,
-      #164873 0%,
-      #0b3158 100%
+      #fff7a8 0%,
+      #ffe866 50%,
+      #ffd84d 100%
     );
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.14),
+      rgba(255, 255, 255, 0.78),
+    inset 0 -2px 2px
+      rgba(138, 101, 0, 0.14),
     0 3px 6px
-      rgba(0, 0, 0, 0.32);
+      rgba(0, 0, 0, 0.28);
   font-size: 14px;
   font-weight: 900;
   line-height: 1;
@@ -3613,10 +3616,16 @@
 .facilitator-planner-planned-finish-full {
   color: #061321;
   border-color: #8a6500;
-  background: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 55%,
+      #c89214 100%
+    );
   box-shadow:
     inset 0 1px 0
-      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0.68),
     inset 0 -3px 3px
       rgba(138, 101, 0, 0.24),
     0 3px 7px
@@ -3772,11 +3781,11 @@
 .facilitator-planner-time-track-bottom {
   display: grid;
   grid-template-columns:
-    auto minmax(20px, 1fr)
+    minmax(90px, 1fr)
     auto
-    minmax(20px, 1fr) auto;
+    minmax(90px, 1fr);
   align-items: center;
-  gap: 8px;
+  column-gap: 12px;
   margin-top: 5px;
 }
 
