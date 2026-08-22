@@ -31402,6 +31402,15 @@ function CoursePage({
           ),
       )
 
+  const upcomingCourseMeetingId =
+    courseMeetings.find(
+      (meeting) =>
+        getCohortAcademicPlanStatus(
+          meeting.date,
+          meeting.date,
+        ) !== 'Done',
+    )?.id ?? null
+
   const webinarLimit =
     isSixteenWeekCourse
       ? 14
@@ -33717,7 +33726,17 @@ function CoursePage({
                 courseMeetings.map(
                   (meeting) => (
                     <article
-                      className="course-meeting-compact-card"
+                      className={
+                        getCohortAcademicPlanStatus(
+                          meeting.date,
+                          meeting.date,
+                        ) === 'Done'
+                          ? 'course-meeting-compact-card course-meeting-compact-card-completed'
+                          : meeting.id ===
+                            upcomingCourseMeetingId
+                            ? 'course-meeting-compact-card course-meeting-compact-card-upcoming'
+                            : 'course-meeting-compact-card'
+                      }
                       key={meeting.id}
                     >
                       <header

@@ -18834,6 +18834,40 @@ tbody td {
   font-weight: 400;
 }
 
+/* Completed cohort meetings use a
+   coordinated light-gray body fill. */
+.course-meeting-compact-card-completed
+  .course-meeting-compact-roles
+  dt,
+.course-meeting-compact-card-completed
+  .course-meeting-compact-roles
+  dd {
+  background: #e8edf3;
+}
+
+/* The next upcoming cohort meeting
+   receives a stronger yellow title bar. */
+.course-meeting-compact-card-upcoming
+  .course-meeting-compact-header {
+  background:
+    linear-gradient(
+      180deg,
+      #fff176 0%,
+      #ffd200 55%,
+      #e5b900 100%
+    );
+}
+
+.course-meeting-compact-card-upcoming
+  .course-meeting-compact-header
+  strong,
+.course-meeting-compact-card-upcoming
+  .course-meeting-compact-header
+  span {
+  color: #111827;
+  font-weight: 900;
+}
+
 .course-meetings-compact-empty {
   grid-column: 1 / -1;
   min-height: 72px;
