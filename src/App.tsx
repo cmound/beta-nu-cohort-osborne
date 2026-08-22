@@ -29448,34 +29448,28 @@ function CoursePage({
 
         if (phoneChanged) {
           changeDescriptions.push(
-            `Phone #: ${
-              formatCourseProfessorPhone(
-                baseline.phoneDigits,
-              ) || 'Blank'
-            } to ${
-              formatCourseProfessorPhone(
-                cleanedPhoneDigits,
-              ) || 'Blank'
+            `Phone #: ${formatCourseProfessorPhone(
+              baseline.phoneDigits,
+            ) || 'Blank'
+            } to ${formatCourseProfessorPhone(
+              cleanedPhoneDigits,
+            ) || 'Blank'
             }`,
           )
         }
 
         if (emailChanged) {
           changeDescriptions.push(
-            `Email: ${
-              baseline.email || 'Blank'
-            } to ${
-              cleanedEmail || 'Blank'
+            `Email: ${baseline.email || 'Blank'
+            } to ${cleanedEmail || 'Blank'
             }`,
           )
         }
 
         if (zoomChanged) {
           changeDescriptions.push(
-            `Zoom: ${
-              baseline.zoomUrl || 'Blank'
-            } to ${
-              cleanedZoomUrl || 'Blank'
+            `Zoom: ${baseline.zoomUrl || 'Blank'
+            } to ${cleanedZoomUrl || 'Blank'
             }`,
           )
         }
@@ -31155,13 +31149,21 @@ function CoursePage({
           <section className="course-workspace-section course-workspace-assignments-section">
             <header className="course-workspace-section-header">
               <div>
-                <span className="course-workspace-section-eyebrow">
-                  Course Requirements
-                </span>
+                {isSixteenWeekCourse ? (
+                  <h2>
+                    COURSE ASSIGNMENTS
+                  </h2>
+                ) : (
+                  <>
+                    <span className="course-workspace-section-eyebrow">
+                      Course Requirements
+                    </span>
 
-                <h2>
-                  Assignments
-                </h2>
+                    <h2>
+                      Assignments
+                    </h2>
+                  </>
+                )}
               </div>
 
               <div className="course-workspace-section-actions">
@@ -32142,14 +32144,31 @@ function CoursePage({
           <section className="course-workspace-section course-workspace-meetings-section">
             <header className="course-workspace-section-header">
               <div>
-                <span className="course-workspace-section-eyebrow">
-                  Beta Nu Fall
-                </span>
+                {isSixteenWeekCourse ? (
+                  <h2>
+                    BETA NU COHORT MEETINGS
+                  </h2>
+                ) : (
+                  <>
+                    <span className="course-workspace-section-eyebrow">
+                      Beta Nu Fall
+                    </span>
 
-                <h2>
-                  Cohort Meetings
-                </h2>
+                    <h2>
+                      Cohort Meetings
+                    </h2>
+                  </>
+                )}
               </div>
+
+              {isSixteenWeekCourse ? (
+                <NavLink
+                  className="course-meeting-header-link"
+                  to="/cohort-dates-roles"
+                >
+                  Click Here to view Cohort Meeting Dates &amp; Roles
+                </NavLink>
+              ) : null}
 
               <div className="course-cohort-zoom">
                 <span>
@@ -32293,17 +32312,19 @@ function CoursePage({
               )}
             </div>
 
-            <p className="course-meeting-readonly-note">
-              *Cohort meeting dates and role
-              assignments are managed on the
-              Cohort Dates &amp; Roles page.{' '}
-              <NavLink
-                className="course-meeting-readonly-link"
-                to="/cohort-dates-roles"
-              >
-                Click Here
-              </NavLink>
-            </p>
+            {!isSixteenWeekCourse ? (
+              <p className="course-meeting-readonly-note">
+                *Cohort meeting dates and role
+                assignments are managed on the
+                Cohort Dates &amp; Roles page.{' '}
+                <NavLink
+                  className="course-meeting-readonly-link"
+                  to="/cohort-dates-roles"
+                >
+                  Click Here
+                </NavLink>
+              </p>
+            ) : null}
           </section>
         </div>
       </div>
@@ -32311,10 +32332,6 @@ function CoursePage({
       <section className="course-workspace-section">
         <header className="course-workspace-section-header">
           <div>
-            <span className="course-workspace-section-eyebrow">
-              Student Tracking
-            </span>
-
             <h2>
               Cohort Assignment Progress
             </h2>

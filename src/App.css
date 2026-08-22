@@ -17322,9 +17322,9 @@ tbody td {
 .course-progress-student-name {
   position: sticky;
   left: 0;
-  width: 165px;
-  min-width: 165px;
-  max-width: 165px;
+  width: 135px;
+  min-width: 135px;
+  max-width: 135px;
   border-right: 2px solid #0b1f3b !important;
 }
 
@@ -17356,9 +17356,9 @@ tbody td {
 
 .course-progress-overall-column,
 .course-progress-overall-cell {
-  width: 175px;
-  min-width: 175px;
-  max-width: 175px;
+  width: 145px;
+  min-width: 145px;
+  max-width: 145px;
   border-right: 2px solid #0b1f3b !important;
 }
 
@@ -18556,19 +18556,19 @@ tbody td {
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-number-column {
-  width: 12%;
+  width: 10%;
 }
 
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-session-column {
-  width: 11%;
+  width: 9%;
 }
 
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-topic-column {
-  width: 18%;
+  width: 26%;
 }
 
 .course-workspace-operations-grid
@@ -18580,27 +18580,33 @@ tbody td {
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-time-column {
-  width: 14%;
+  width: 13%;
 }
 
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-required-column {
-  width: 11%;
+  width: 9%;
 }
 
 .course-workspace-operations-grid
-  .course-webinar-table
+  .course-webinar-table-16
   th {
-  padding: 5px 4px;
-  font-size: 10px;
-  line-height: 1.05;
-  vertical-align: bottom;
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
-.course-webinar-time-zone {
-  display: block;
-  margin-top: 2px;
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-cell-input,
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-cell-select,
+.course-workspace-operations-grid
+  .course-webinar-table-16
+  .course-webinar-derived-value {
+  padding-left: 3px;
+  padding-right: 3px;
 }
 
 .course-workspace-operations-grid
@@ -18883,9 +18889,12 @@ tbody td {
   min-height: 29px;
   box-sizing: border-box;
   align-self: center;
-  padding: 4px 76px 4px 10px;
+  overflow: hidden;
+  padding: 4px 10px;
   font-size: 13px;
   line-height: 1.2;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .course-workspace-layout-16
@@ -18917,6 +18926,57 @@ tbody td {
   min-width: 0;
   margin-top: 8px;
   margin-bottom: 0;
+}
+
+.course-workspace-layout-16
+  .course-workspace-assignments-section
+  .course-workspace-section-header,
+.course-workspace-layout-16
+  .course-workspace-meetings-section
+  .course-workspace-section-header {
+  min-height: 36px;
+  padding: 5px 12px;
+  align-items: center;
+  gap: 12px;
+}
+
+.course-workspace-layout-16
+  .course-workspace-assignments-section
+  .course-workspace-section-header
+  h2,
+.course-workspace-layout-16
+  .course-workspace-meetings-section
+  .course-workspace-section-header
+  h2 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.course-workspace-layout-16
+  .course-meeting-header-link {
+  min-width: 0;
+  margin-left: auto;
+  color: #8fd3ff;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.course-workspace-layout-16
+  .course-meeting-header-link:hover {
+  color: #ffffff;
+}
+
+.course-workspace-layout-16
+  .course-cohort-zoom {
+  align-self: center;
+  flex: 0 0 auto;
+  padding-bottom: 0;
 }
 
 /* Give the 16-week webinar table the full
