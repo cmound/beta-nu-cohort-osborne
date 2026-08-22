@@ -1418,9 +1418,9 @@
   isolation: isolate;
 }
 
-/* Make room for the active COHORT arrow
+/* Make room for the active sub-page arrow
    without changing any non-selected row. */
-.nav-sub-link-cohort.nav-link-active {
+.nav-sub-link.nav-link-active {
   padding-left: 84px;
 }
 
@@ -1455,9 +1455,9 @@
   pointer-events: none;
 }
 
-/* On the selected COHORT row, position the
+/* On every selected sub-page, position the
    selected box immediately after the arrow. */
-.nav-sub-link-cohort.nav-link-active::after {
+.nav-sub-link.nav-link-active::after {
   left: 73px;
 }
 
@@ -1486,10 +1486,10 @@
       rgba(198, 146, 20, 0.38);
 }
 
-/* Selected COHORT sub-page:
+/* Selected sub-page:
    replace the normal gold circle with
    the larger polished 3D gold arrow. */
-.nav-sub-link-cohort.nav-link-active
+.nav-sub-link.nav-link-active
   .nav-sub-item-dot {
   z-index: 3;
   left: 25px;
@@ -1525,7 +1525,7 @@
 }
 
 /* Inner beveled gold surface. */
-.nav-sub-link-cohort.nav-link-active
+.nav-sub-link.nav-link-active
   .nav-sub-item-dot::after {
   content: '';
   position: absolute;
@@ -1554,7 +1554,7 @@
 /* Bright upper-left bevel highlight.
    This replaces the normal horizontal
    connector branch only while selected. */
-.nav-sub-link-cohort.nav-link-active
+.nav-sub-link.nav-link-active
   .nav-sub-item-dot::before {
   content: '';
   position: absolute;
@@ -21484,4 +21484,231 @@ tbody td {
 .course-workspace-layout-16
   .course-webinar-table-frame {
   overflow-x: auto;
+}
+
+/* =========================================================
+   Unified Sidebar Selected-Page Indicator
+   ========================================================= */
+
+/* Academic Plan is highlighted only when it is
+   actually the selected page. */
+.nav-sub-link-academic-plan:not(.nav-link-active)::after {
+  display: none;
+}
+
+/* Restore normal Academic Plan text when another
+   page is selected. */
+.nav-sub-link-academic-plan:not(.nav-link-active) {
+  font-weight: 900;
+}
+
+/* When Academic Plan is active, use exactly the
+   same arrow and selected box as other sub-pages. */
+.nav-sub-link-academic-plan.nav-link-active {
+  padding-left: 84px;
+}
+
+.nav-sub-link-academic-plan.nav-link-active::after {
+  top: 2px;
+  right: 6px;
+  bottom: 2px;
+  left: 73px;
+  height: auto;
+  border: 1px solid #d7a91f;
+  border-radius: 5px;
+  background:
+    linear-gradient(
+      180deg,
+      #fff8d8 0%,
+      #fff1b8 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.85),
+    0 1px 3px
+      rgba(198, 146, 20, 0.2);
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot {
+  z-index: 3;
+  left: 15px;
+  top: 50%;
+  width: 56px;
+  height: 22px;
+  border: 0;
+  border-radius: 0;
+  background: #8e6508;
+  box-shadow: none;
+  clip-path:
+    polygon(
+      0 25%,
+      72% 25%,
+      72% 0,
+      100% 50%,
+      72% 100%,
+      72% 75%,
+      0 75%
+    );
+  filter:
+    drop-shadow(
+      0 2px 2px
+      rgba(0, 0, 0, 0.34)
+    );
+  transform:
+    translateY(-50%);
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 48%,
+      #dca527 70%,
+      #c89214 100%
+    );
+  clip-path:
+    inherit;
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 4px;
+  width: 29px;
+  height: 2px;
+  border-radius: 999px;
+  background:
+    rgba(
+      255,
+      239,
+      166,
+      0.82
+    );
+  transform: none;
+}
+
+/* ---------------------------------------------------------
+   Selected individual course
+   --------------------------------------------------------- */
+
+.course-status-link-active {
+  position: relative;
+  min-height: 28px;
+  padding-left: 67px;
+  color: #0b1f3b;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 900;
+  isolation: isolate;
+}
+
+/* Pale-yellow selected course box. */
+.course-status-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 1px;
+  right: 3px;
+  bottom: 1px;
+  left: 55px;
+  border: 1px solid #d7a91f;
+  border-radius: 5px;
+  background:
+    linear-gradient(
+      180deg,
+      #fff8d8 0%,
+      #fff1b8 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.85),
+    0 1px 3px
+      rgba(198, 146, 20, 0.2);
+  pointer-events: none;
+}
+
+.course-status-link-active
+  > span:last-child {
+  position: relative;
+  z-index: 2;
+}
+
+/* Replace the active course dot with the
+   same polished gold directional arrow. */
+.course-status-link-active
+  .course-status-dot {
+  position: absolute;
+  z-index: 3;
+  left: 7px;
+  top: 50%;
+  width: 46px;
+  height: 22px;
+  border: 0;
+  border-radius: 0;
+  background: #8e6508;
+  box-shadow: none;
+  clip-path:
+    polygon(
+      0 25%,
+      68% 25%,
+      68% 0,
+      100% 50%,
+      68% 100%,
+      68% 75%,
+      0 75%
+    );
+  filter:
+    drop-shadow(
+      0 2px 2px
+      rgba(0, 0, 0, 0.34)
+    );
+  transform:
+    translateY(-50%);
+}
+
+/* Beveled arrow surface. */
+.course-status-link-active
+  .course-status-dot::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 48%,
+      #dca527 70%,
+      #c89214 100%
+    );
+  clip-path:
+    inherit;
+}
+
+/* Arrow highlight. */
+.course-status-link-active
+  .course-status-dot::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 4px;
+  width: 25px;
+  height: 2px;
+  border-radius: 999px;
+  background:
+    rgba(
+      255,
+      239,
+      166,
+      0.82
+    );
 }
