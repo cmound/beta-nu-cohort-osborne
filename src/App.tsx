@@ -7,6 +7,7 @@ import {
   type DragEvent as ReactDragEvent,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
 import {
@@ -188,6 +189,24 @@ interface CourseTableLayoutRecord {
 
   readonly progressStudentOrder:
   readonly string[]
+
+  readonly webinarColumnWidths:
+  readonly number[]
+
+  readonly webinarRowHeights:
+  Readonly<Record<string, number>>
+
+  readonly assignmentColumnWidths:
+  readonly number[]
+
+  readonly assignmentRowHeights:
+  Readonly<Record<string, number>>
+
+  readonly progressColumnWidths:
+  readonly number[]
+
+  readonly progressRowHeights:
+  Readonly<Record<string, number>>
 }
 
 type CourseTableLayoutState = Record<
@@ -2018,6 +2037,12 @@ function createDefaultCourseTableLayoutRecord():
     assignmentRowOrder: [],
     progressAssignmentOrder: [],
     progressStudentOrder: [],
+    webinarColumnWidths: [],
+    webinarRowHeights: {},
+    assignmentColumnWidths: [],
+    assignmentRowHeights: {},
+    progressColumnWidths: [],
+    progressRowHeights: {},
   }
 }
 
@@ -2045,6 +2070,54 @@ function isCourseAssignmentColumnKey(
     value === 'dueDate' ||
     value === 'points'
   )
+}
+
+function readStoredCourseLayoutNumberArray(
+  value: unknown,
+): readonly number[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(
+    (
+      item,
+    ): item is number =>
+      typeof item === 'number' &&
+      Number.isFinite(item) &&
+      item > 0,
+  )
+}
+
+function readStoredCourseLayoutNumberRecord(
+  value: unknown,
+): Readonly<Record<string, number>> {
+  if (
+    typeof value !== 'object' ||
+    value === null
+  ) {
+    return {}
+  }
+
+  const numbers:
+    Record<string, number> = {}
+
+  for (
+    const [
+      key,
+      item,
+    ] of Object.entries(value)
+  ) {
+    if (
+      typeof item === 'number' &&
+      Number.isFinite(item) &&
+      item > 0
+    ) {
+      numbers[key] = item
+    }
+  }
+
+  return numbers
 }
 
 function readStoredCourseTableLayouts():
@@ -2160,6 +2233,36 @@ function readStoredCourseTableLayouts():
           )
           : []
 
+      const webinarColumnWidths =
+        readStoredCourseLayoutNumberArray(
+          record.webinarColumnWidths,
+        )
+
+      const webinarRowHeights =
+        readStoredCourseLayoutNumberRecord(
+          record.webinarRowHeights,
+        )
+
+      const assignmentColumnWidths =
+        readStoredCourseLayoutNumberArray(
+          record.assignmentColumnWidths,
+        )
+
+      const assignmentRowHeights =
+        readStoredCourseLayoutNumberRecord(
+          record.assignmentRowHeights,
+        )
+
+      const progressColumnWidths =
+        readStoredCourseLayoutNumberArray(
+          record.progressColumnWidths,
+        )
+
+      const progressRowHeights =
+        readStoredCourseLayoutNumberRecord(
+          record.progressRowHeights,
+        )
+
       layouts[courseSlug] = {
         webinarColumnOrder:
           webinarColumnOrder.length >
@@ -2182,6 +2285,12 @@ function readStoredCourseTableLayouts():
         assignmentRowOrder,
         progressAssignmentOrder,
         progressStudentOrder,
+        webinarColumnWidths,
+        webinarRowHeights,
+        assignmentColumnWidths,
+        assignmentRowHeights,
+        progressColumnWidths,
+        progressRowHeights,
       }
     }
 
@@ -29570,6 +29679,517 @@ function CoursePage({
     )
   }
 
+  function getCourseResizeColumnWidths(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+  ): readonly number[] {
+    switch (section) {
+      case 'webinars':
+        return (
+          courseTableLayout
+            .webinarColumnWidths
+        )
+
+      case 'assignments':
+        return (
+          courseTableLayout
+            .assignmentColumnWidths
+        )
+
+      case 'progress':
+        return (
+          courseTableLayout
+            .progressColumnWidths
+        )
+    }
+  }
+
+  function getCourseResizeRowHeights(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+  ): Readonly<Record<string, number>> {
+    switch (section) {
+      case 'webinars':
+        return (
+          courseTableLayout
+            .webinarRowHeights
+        )
+
+      case 'assignments':
+        return (
+          courseTableLayout
+            .assignmentRowHeights
+        )
+
+      case 'progress':
+        return (
+          courseTableLayout
+            .progressRowHeights
+        )
+    }
+  }
+
+  function getCourseResizeTableStyle(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+    expectedColumnCount: number,
+    extraWidth = 0,
+  ): CSSProperties | undefined {
+    const widths =
+      getCourseResizeColumnWidths(
+        section,
+      )
+
+    if (
+      widths.length !==
+      expectedColumnCount
+    ) {
+      return undefined
+    }
+
+    const totalWidth =
+      widths.reduce(
+        (
+          total,
+          width,
+        ) =>
+          total + width,
+        extraWidth,
+      )
+
+    return {
+      width:
+        `${Math.round(
+          totalWidth,
+        )}px`,
+      minWidth:
+        `${Math.round(
+          totalWidth,
+        )}px`,
+    }
+  }
+
+  function getCourseResizeColumnStyle(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+    columnIndex: number,
+    expectedColumnCount: number,
+  ): CSSProperties | undefined {
+    const widths =
+      getCourseResizeColumnWidths(
+        section,
+      )
+
+    if (
+      widths.length !==
+      expectedColumnCount
+    ) {
+      return undefined
+    }
+
+    const width =
+      widths[columnIndex]
+
+    if (width === undefined) {
+      return undefined
+    }
+
+    return {
+      width,
+      minWidth: width,
+      maxWidth: width,
+    }
+  }
+
+  function getCourseResizeRowStyle(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+    rowId: string,
+  ): CSSProperties | undefined {
+    const height =
+      getCourseResizeRowHeights(
+        section,
+      )[rowId]
+
+    if (height === undefined) {
+      return undefined
+    }
+
+    return {
+      height,
+    }
+  }
+
+  function setCourseResizeColumnWidths(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+    widths: readonly number[],
+  ): void {
+    switch (section) {
+      case 'webinars':
+        updateCurrentCourseTableLayout({
+          webinarColumnWidths:
+            widths,
+        })
+        return
+
+      case 'assignments':
+        updateCurrentCourseTableLayout({
+          assignmentColumnWidths:
+            widths,
+        })
+        return
+
+      case 'progress':
+        updateCurrentCourseTableLayout({
+          progressColumnWidths:
+            widths,
+        })
+        return
+    }
+  }
+
+  function setCourseResizeRowHeight(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+    rowId: string,
+    height: number,
+  ): void {
+    const currentHeights =
+      getCourseResizeRowHeights(
+        section,
+      )
+
+    const nextHeights = {
+      ...currentHeights,
+      [rowId]: height,
+    }
+
+    switch (section) {
+      case 'webinars':
+        updateCurrentCourseTableLayout({
+          webinarRowHeights:
+            nextHeights,
+        })
+        return
+
+      case 'assignments':
+        updateCurrentCourseTableLayout({
+          assignmentRowHeights:
+            nextHeights,
+        })
+        return
+
+      case 'progress':
+        updateCurrentCourseTableLayout({
+          progressRowHeights:
+            nextHeights,
+        })
+        return
+    }
+  }
+
+  function getCourseResizeTableClassName(
+    baseClassName: string,
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+  ): string {
+    return (
+      courseLayoutEditorSection ===
+        section
+        ? `${baseClassName} course-layout-resizable-table course-layout-resize-active`
+        : `${baseClassName} course-layout-resizable-table`
+    )
+  }
+
+  function toggleCourseResizeMode(
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+  ): void {
+    if (section === 'webinars') {
+      setIsWebinarDeleteMode(
+        false,
+      )
+
+      setSelectedWebinarIds(
+        [],
+      )
+    }
+
+    setCourseLayoutEditorSection(
+      (current) =>
+        current === section
+          ? null
+          : section,
+    )
+  }
+
+  function handleCourseResizableTablePointerDown(
+    event:
+      ReactPointerEvent<HTMLTableElement>,
+    section:
+      'webinars' |
+      'assignments' |
+      'progress',
+  ): void {
+    if (
+      courseLayoutEditorSection !==
+      section
+    ) {
+      return
+    }
+
+    if (
+      !(event.target instanceof Element)
+    ) {
+      return
+    }
+
+    const table =
+      event.currentTarget
+
+    const cell =
+      event.target.closest(
+        'th, td',
+      )
+
+    const row =
+      event.target.closest(
+        'tr',
+      )
+
+    if (
+      !(
+        cell instanceof
+        HTMLTableCellElement
+      ) ||
+      !(
+        row instanceof
+        HTMLTableRowElement
+      ) ||
+      cell.closest('table') !==
+      table ||
+      row.closest('table') !==
+      table
+    ) {
+      return
+    }
+
+    const headerRow =
+      table.tHead?.rows[0]
+
+    if (headerRow === undefined) {
+      return
+    }
+
+    const headerCells =
+      Array.from(
+        headerRow.cells,
+      )
+
+    const cellRect =
+      cell.getBoundingClientRect()
+
+    const rowRect =
+      row.getBoundingClientRect()
+
+    const distanceFromRight =
+      Math.abs(
+        cellRect.right -
+        event.clientX,
+      )
+
+    const distanceFromBottom =
+      Math.abs(
+        rowRect.bottom -
+        event.clientY,
+      )
+
+    const canResizeColumn =
+      distanceFromRight <= 7 &&
+      cell.cellIndex <
+      headerCells.length - 1
+
+    const rowId =
+      row.dataset.layoutRowId
+
+    const canResizeRow =
+      distanceFromBottom <= 7 &&
+      rowId !== undefined
+
+    if (
+      !canResizeColumn &&
+      !canResizeRow
+    ) {
+      return
+    }
+
+    const resizeColumn =
+      canResizeColumn &&
+      (
+        !canResizeRow ||
+        distanceFromRight <=
+        distanceFromBottom
+      )
+
+    const startX =
+      event.clientX
+
+    const startY =
+      event.clientY
+
+    const startingWidths =
+      headerCells.map(
+        (headerCell) =>
+          Math.round(
+            headerCell
+              .getBoundingClientRect()
+              .width,
+          ),
+      )
+
+    const columnIndex =
+      cell.cellIndex
+
+    const startingWidth =
+      startingWidths[
+      columnIndex
+      ] ??
+      cellRect.width
+
+    const startingHeight =
+      rowRect.height
+
+    const previousUserSelect =
+      document.body.style.userSelect
+
+    const previousCursor =
+      document.body.style.cursor
+
+    event.preventDefault()
+
+    document.body.style.userSelect =
+      'none'
+
+    document.body.style.cursor =
+      resizeColumn
+        ? 'col-resize'
+        : 'row-resize'
+
+    function handlePointerMove(
+      pointerEvent: PointerEvent,
+    ): void {
+      if (resizeColumn) {
+        const nextWidth =
+          Math.max(
+            48,
+            Math.round(
+              startingWidth +
+              (
+                pointerEvent.clientX -
+                startX
+              ),
+            ),
+          )
+
+        const nextWidths = [
+          ...startingWidths,
+        ]
+
+        nextWidths[
+          columnIndex
+        ] =
+          nextWidth
+
+        setCourseResizeColumnWidths(
+          section,
+          nextWidths,
+        )
+
+        return
+      }
+
+      if (rowId === undefined) {
+        return
+      }
+
+      const nextHeight =
+        Math.max(
+          24,
+          Math.round(
+            startingHeight +
+            (
+              pointerEvent.clientY -
+              startY
+            ),
+          ),
+        )
+
+      setCourseResizeRowHeight(
+        section,
+        rowId,
+        nextHeight,
+      )
+    }
+
+    function finishResize():
+      void {
+      window.removeEventListener(
+        'pointermove',
+        handlePointerMove,
+      )
+
+      window.removeEventListener(
+        'pointerup',
+        finishResize,
+      )
+
+      window.removeEventListener(
+        'pointercancel',
+        finishResize,
+      )
+
+      document.body.style.userSelect =
+        previousUserSelect
+
+      document.body.style.cursor =
+        previousCursor
+    }
+
+    window.addEventListener(
+      'pointermove',
+      handlePointerMove,
+    )
+
+    window.addEventListener(
+      'pointerup',
+      finishResize,
+    )
+
+    window.addEventListener(
+      'pointercancel',
+      finishResize,
+    )
+  }
+
   function updateCourseProgress(
     contactId: string,
     assignmentId: string,
@@ -31749,12 +32369,26 @@ function CoursePage({
 
                 <button
                   type="button"
-                  className="course-workspace-icon-button course-layout-settings-button"
-                  aria-label="Adjust Class Webinars layout"
-                  title="Adjust Class Webinars Layout"
+                  className={
+                    courseLayoutEditorSection ===
+                      'assignments'
+                      ? 'course-workspace-icon-button course-layout-settings-button course-layout-settings-button-active'
+                      : 'course-workspace-icon-button course-layout-settings-button'
+                  }
+                  aria-label="Toggle Course Assignments resize mode"
+                  title={
+                    courseLayoutEditorSection ===
+                      'assignments'
+                      ? 'Finish Resizing Course Assignments'
+                      : 'Resize Course Assignments'
+                  }
+                  aria-pressed={
+                    courseLayoutEditorSection ===
+                    'assignments'
+                  }
                   onClick={() => {
-                    setCourseLayoutEditorSection(
-                      'webinars',
+                    toggleCourseResizeMode(
+                      'assignments',
                     )
                   }}
                 >
@@ -31764,21 +32398,112 @@ function CoursePage({
             </header>
 
             <div className="course-workspace-table-frame">
-              <table className="course-workspace-table course-assignment-table">
+              <table
+                className={
+                  getCourseResizeTableClassName(
+                    'course-workspace-table course-assignment-table',
+                    'assignments',
+                  )
+                }
+                style={
+                  getCourseResizeTableStyle(
+                    'assignments',
+                    5,
+                  )
+                }
+                onPointerDown={(
+                  event,
+                ) => {
+                  handleCourseResizableTablePointerDown(
+                    event,
+                    'assignments',
+                  )
+                }}
+              >
                 <thead>
-                  <tr>
-                    <th>ASN #</th>
-                    <th>Assignment Name</th>
-                    <th>Week Due</th>
-                    <th>Due Date</th>
-                    <th>Points</th>
+                  <tr
+                    data-layout-row-id="header"
+                    style={
+                      getCourseResizeRowStyle(
+                        'assignments',
+                        'header',
+                      )
+                    }
+                  >
+                    <th
+                      style={
+                        getCourseResizeColumnStyle(
+                          'assignments',
+                          0,
+                          5,
+                        )
+                      }
+                    >
+                      ASN #
+                    </th>
+
+                    <th
+                      style={
+                        getCourseResizeColumnStyle(
+                          'assignments',
+                          1,
+                          5,
+                        )
+                      }
+                    >
+                      Assignment Name
+                    </th>
+
+                    <th
+                      style={
+                        getCourseResizeColumnStyle(
+                          'assignments',
+                          2,
+                          5,
+                        )
+                      }
+                    >
+                      Week Due
+                    </th>
+
+                    <th
+                      style={
+                        getCourseResizeColumnStyle(
+                          'assignments',
+                          3,
+                          5,
+                        )
+                      }
+                    >
+                      Due Date
+                    </th>
+
+                    <th
+                      style={
+                        getCourseResizeColumnStyle(
+                          'assignments',
+                          4,
+                          5,
+                        )
+                      }
+                    >
+                      Points
+                    </th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {workspace.assignments
                     .length === 0 ? (
-                    <tr>
+                    <tr
+                      data-layout-row-id="empty"
+                      style={
+                        getCourseResizeRowStyle(
+                          'assignments',
+                          'empty',
+                        )
+                      }
+                    >
                       <td
                         className="course-workspace-empty-state"
                         colSpan={5}
@@ -31795,6 +32520,15 @@ function CoursePage({
                         <tr
                           key={
                             assignment.id
+                          }
+                          data-layout-row-id={
+                            assignment.id
+                          }
+                          style={
+                            getCourseResizeRowStyle(
+                              'assignments',
+                              assignment.id,
+                            )
                           }
                           className={
                             assignment.id ===
@@ -32285,12 +33019,26 @@ function CoursePage({
 
                 <button
                   type="button"
-                  className="course-workspace-icon-button course-layout-settings-button"
-                  aria-label="Adjust Course Assignments layout"
-                  title="Adjust Course Assignments Layout"
+                  className={
+                    courseLayoutEditorSection ===
+                      'webinars'
+                      ? 'course-workspace-icon-button course-layout-settings-button course-layout-settings-button-active'
+                      : 'course-workspace-icon-button course-layout-settings-button'
+                  }
+                  aria-label="Toggle Class Webinars resize mode"
+                  title={
+                    courseLayoutEditorSection ===
+                      'webinars'
+                      ? 'Finish Resizing Class Webinars'
+                      : 'Resize Class Webinars'
+                  }
+                  aria-pressed={
+                    courseLayoutEditorSection ===
+                    'webinars'
+                  }
                   onClick={() => {
-                    setCourseLayoutEditorSection(
-                      'assignments',
+                    toggleCourseResizeMode(
+                      'webinars',
                     )
                   }}
                 >
@@ -32302,16 +33050,46 @@ function CoursePage({
             <div className="course-workspace-table-frame course-webinar-table-frame">
               <table
                 className={
-                  isSixteenWeekCourse
-                    ? 'course-workspace-table course-webinar-table course-webinar-table-16'
-                    : 'course-workspace-table course-webinar-table'
+                  getCourseResizeTableClassName(
+                    isSixteenWeekCourse
+                      ? 'course-workspace-table course-webinar-table course-webinar-table-16'
+                      : 'course-workspace-table course-webinar-table',
+                    'webinars',
+                  )
                 }
+                style={
+                  getCourseResizeTableStyle(
+                    'webinars',
+                    isSixteenWeekCourse
+                      ? 7
+                      : 6,
+                    isWebinarDeleteMode
+                      ? 38
+                      : 0,
+                  )
+                }
+                onPointerDown={(
+                  event,
+                ) => {
+                  handleCourseResizableTablePointerDown(
+                    event,
+                    'webinars',
+                  )
+                }}
                 onKeyDown={
                   handleCourseWebinarTableKeyDown
                 }
               >
                 <thead>
-                  <tr>
+                  <tr
+                    data-layout-row-id="header"
+                    style={
+                      getCourseResizeRowStyle(
+                        'webinars',
+                        'header',
+                      )
+                    }
+                  >
                     {isWebinarDeleteMode ? (
                       <th
                         className="course-webinar-select-column"
@@ -32319,37 +33097,120 @@ function CoursePage({
                       />
                     ) : null}
 
-                    <th className="course-webinar-number-column">
+                    <th
+                      className="course-webinar-number-column"
+                      style={
+                        getCourseResizeColumnStyle(
+                          'webinars',
+                          0,
+                          isSixteenWeekCourse
+                            ? 7
+                            : 6,
+                        )
+                      }
+                    >
                       Webinar #
                     </th>
 
-                    <th className="course-webinar-session-column">
+                    <th
+                      className="course-webinar-session-column"
+                      style={
+                        getCourseResizeColumnStyle(
+                          'webinars',
+                          1,
+                          isSixteenWeekCourse
+                            ? 7
+                            : 6,
+                        )
+                      }
+                    >
                       Session
                     </th>
 
                     {isSixteenWeekCourse ? (
-                      <th className="course-webinar-topic-column">
+                      <th
+                        className="course-webinar-topic-column"
+                        style={
+                          getCourseResizeColumnStyle(
+                            'webinars',
+                            2,
+                            7,
+                          )
+                        }
+                      >
                         Topic
                       </th>
                     ) : null}
 
-                    <th className="course-webinar-date-column">
+                    <th
+                      className="course-webinar-date-column"
+                      style={
+                        getCourseResizeColumnStyle(
+                          'webinars',
+                          isSixteenWeekCourse
+                            ? 3
+                            : 2,
+                          isSixteenWeekCourse
+                            ? 7
+                            : 6,
+                        )
+                      }
+                    >
                       Date
                     </th>
 
-                    <th className="course-webinar-time-column">
+                    <th
+                      className="course-webinar-time-column"
+                      style={
+                        getCourseResizeColumnStyle(
+                          'webinars',
+                          isSixteenWeekCourse
+                            ? 4
+                            : 3,
+                          isSixteenWeekCourse
+                            ? 7
+                            : 6,
+                        )
+                      }
+                    >
                       Start Time
                       <br />
                       Pacific
                     </th>
 
-                    <th className="course-webinar-time-column">
+                    <th
+                      className="course-webinar-time-column"
+                      style={
+                        getCourseResizeColumnStyle(
+                          'webinars',
+                          isSixteenWeekCourse
+                            ? 5
+                            : 4,
+                          isSixteenWeekCourse
+                            ? 7
+                            : 6,
+                        )
+                      }
+                    >
                       Start Time
                       <br />
                       Eastern
                     </th>
 
-                    <th className="course-webinar-required-column">
+                    <th
+                      className="course-webinar-required-column"
+                      style={
+                        getCourseResizeColumnStyle(
+                          'webinars',
+                          isSixteenWeekCourse
+                            ? 6
+                            : 5,
+                          isSixteenWeekCourse
+                            ? 7
+                            : 6,
+                        )
+                      }
+                    >
                       Required
                     </th>
                   </tr>
@@ -32358,7 +33219,15 @@ function CoursePage({
                 <tbody>
                   {workspace.webinars.length ===
                     0 ? (
-                    <tr>
+                    <tr
+                      data-layout-row-id="empty"
+                      style={
+                        getCourseResizeRowStyle(
+                          'webinars',
+                          'empty',
+                        )
+                      }
+                    >
                       <td
                         className="course-workspace-empty-state"
                         colSpan={
@@ -32375,6 +33244,15 @@ function CoursePage({
                       (webinar) => (
                         <tr
                           key={webinar.id}
+                          data-layout-row-id={
+                            webinar.id
+                          }
+                          style={
+                            getCourseResizeRowStyle(
+                              'webinars',
+                              webinar.id,
+                            )
+                          }
                           className={
                             selectedWebinarIds.includes(
                               webinar.id,
@@ -33028,11 +33906,25 @@ function CoursePage({
 
             <button
               type="button"
-              className="course-workspace-icon-button course-layout-settings-button"
-              aria-label="Adjust Cohort Assignment Progress layout"
-              title="Adjust Cohort Assignment Progress Layout"
+              className={
+                courseLayoutEditorSection ===
+                  'progress'
+                  ? 'course-workspace-icon-button course-layout-settings-button course-layout-settings-button-active'
+                  : 'course-workspace-icon-button course-layout-settings-button'
+              }
+              aria-label="Toggle Cohort Assignment Progress resize mode"
+              title={
+                courseLayoutEditorSection ===
+                  'progress'
+                  ? 'Finish Resizing Cohort Assignment Progress'
+                  : 'Resize Cohort Assignment Progress'
+              }
+              aria-pressed={
+                courseLayoutEditorSection ===
+                'progress'
+              }
               onClick={() => {
-                setCourseLayoutEditorSection(
+                toggleCourseResizeMode(
                   'progress',
                 )
               }}
@@ -33048,29 +33940,113 @@ function CoursePage({
           }
           className="course-progress-table-frame"
         >
-          <table className="course-progress-table">
+          <table
+            className={
+              getCourseResizeTableClassName(
+                'course-progress-table',
+                'progress',
+              )
+            }
+            style={
+              getCourseResizeTableStyle(
+                'progress',
+                workspace.assignments
+                  .length === 0
+                  ? 3
+                  : 2 +
+                  workspace.assignments
+                    .length,
+              )
+            }
+            onPointerDown={(
+              event,
+            ) => {
+              handleCourseResizableTablePointerDown(
+                event,
+                'progress',
+              )
+            }}
+          >
             <thead>
-              <tr>
-                <th className="course-progress-student-column">
+              <tr
+                data-layout-row-id="header"
+                style={
+                  getCourseResizeRowStyle(
+                    'progress',
+                    'header',
+                  )
+                }
+              >
+                <th
+                  className="course-progress-student-column"
+                  style={
+                    getCourseResizeColumnStyle(
+                      'progress',
+                      0,
+                      workspace.assignments
+                        .length === 0
+                        ? 3
+                        : 2 +
+                        workspace.assignments
+                          .length,
+                    )
+                  }
+                >
                   Student
                 </th>
 
-                <th className="course-progress-overall-column">
+                <th
+                  className="course-progress-overall-column"
+                  style={
+                    getCourseResizeColumnStyle(
+                      'progress',
+                      1,
+                      workspace.assignments
+                        .length === 0
+                        ? 3
+                        : 2 +
+                        workspace.assignments
+                          .length,
+                    )
+                  }
+                >
                   Overall Progress
                 </th>
 
                 {workspace.assignments.length ===
                   0 ? (
-                  <th className="course-progress-assignment-column">
+                  <th
+                    className="course-progress-assignment-column"
+                    style={
+                      getCourseResizeColumnStyle(
+                        'progress',
+                        2,
+                        3,
+                      )
+                    }
+                  >
                     Assignments
                   </th>
                 ) : (
                   workspace.assignments.map(
-                    (assignment) => (
+                    (
+                      assignment,
+                      assignmentIndex,
+                    ) => (
                       <th
                         className="course-progress-assignment-column"
                         key={assignment.id}
                         title={assignment.name}
+                        style={
+                          getCourseResizeColumnStyle(
+                            'progress',
+                            assignmentIndex +
+                            2,
+                            2 +
+                            workspace.assignments
+                              .length,
+                          )
+                        }
                       >
                         <strong className="course-progress-assignment-asn">
                           {assignment.asn}
@@ -33102,12 +34078,45 @@ function CoursePage({
                     )
 
                   return (
-                    <tr key={contact.id}>
-                      <td className="course-progress-student-name">
+                    <tr
+                      key={contact.id}
+                      data-layout-row-id={
+                        contact.id
+                      }
+                      style={
+                        getCourseResizeRowStyle(
+                          'progress',
+                          contact.id,
+                        )
+                      }
+                    >
+                      <td
+                        className="course-progress-student-name"
+                        style={
+                          getCourseResizeColumnStyle(
+                            'progress',
+                            0,
+                            2 +
+                            workspace.assignments
+                              .length,
+                          )
+                        }
+                      >
                         {contact.name}
                       </td>
 
-                      <td className="course-progress-overall-cell">
+                      <td
+                        className="course-progress-overall-cell"
+                        style={
+                          getCourseResizeColumnStyle(
+                            'progress',
+                            1,
+                            2 +
+                            workspace.assignments
+                              .length,
+                          )
+                        }
+                      >
                         <div className="course-progress-overall-summary">
                           <strong>
                             {summary.completed} /{' '}
@@ -33135,7 +34144,10 @@ function CoursePage({
                         </td>
                       ) : (
                         workspace.assignments.map(
-                          (assignment) => {
+                          (
+                            assignment,
+                            assignmentIndex,
+                          ) => {
                             const progressKey =
                               getCourseProgressKey(
                                 courseSlug,
@@ -33153,6 +34165,16 @@ function CoursePage({
                               <td
                                 className="course-progress-status-cell"
                                 key={assignment.id}
+                                style={
+                                  getCourseResizeColumnStyle(
+                                    'progress',
+                                    assignmentIndex +
+                                    2,
+                                    2 +
+                                    workspace.assignments
+                                      .length,
+                                  )
+                                }
                               >
                                 <button
                                   type="button"

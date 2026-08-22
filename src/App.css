@@ -19004,6 +19004,7 @@ tbody td {
 .course-workspace-layout-16
   .course-workspace-meetings-section
   .course-workspace-section-header {
+  position: relative;
   min-height: 36px;
   padding: 5px 12px;
   align-items: center;
@@ -19025,16 +19026,35 @@ tbody td {
 }
 
 .course-workspace-layout-16
-  .course-meeting-header-link {
-  min-width: 0;
-  margin-left: auto;
+  .course-meeting-header-link-group {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
   color: #8fd3ff;
   font-size: 9px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
+  transform:
+    translateX(-50%);
+}
+
+.course-workspace-layout-16
+  .course-meeting-header-link {
+  color: #8fd3ff;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.course-workspace-layout-16
+  .course-meeting-header-link-group
+  > span {
+  color: #8fd3ff;
+  text-decoration: none;
 }
 
 .course-workspace-layout-16
@@ -21199,4 +21219,114 @@ tbody td {
   font-size: 10px;
   font-weight: 900;
   cursor: pointer;
+}
+
+/* =========================================================
+   Direct Course Table Resize Mode
+   ========================================================= */
+
+/* Legacy arrow-based layout dialog is no longer used. */
+.course-layout-editor-backdrop {
+  display: none !important;
+}
+
+.course-layout-settings-button-active {
+  color: #061321;
+  border-color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #fff7a8 0%,
+      #ffd84d 52%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.82),
+    inset 0 -2px 2px
+      rgba(100, 67, 0, 0.28),
+    0 0 0 2px
+      rgba(255, 210, 0, 0.32),
+    0 3px 6px
+      rgba(0, 0, 0, 0.32);
+}
+
+.course-layout-resize-active {
+  outline:
+    2px solid rgba(
+      0,
+      94,
+      184,
+      0.78
+    );
+  outline-offset: -2px;
+}
+
+.course-layout-resize-active th,
+.course-layout-resize-active td {
+  position: relative;
+}
+
+/* Vertical drag area between columns. */
+.course-layout-resize-active
+  th:not(:last-child)::after,
+.course-layout-resize-active
+  td:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+/* Horizontal drag area between rows. */
+.course-layout-resize-active
+  th::before,
+.course-layout-resize-active
+  td::before {
+  content: '';
+  position: absolute;
+  z-index: 29;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  height: 8px;
+  cursor: row-resize;
+}
+
+.course-layout-resize-active
+  th:not(:last-child):hover::after,
+.course-layout-resize-active
+  td:not(:last-child):hover::after {
+  background:
+    rgba(
+      0,
+      94,
+      184,
+      0.16
+    );
+}
+
+.course-layout-resize-active
+  th:hover::before,
+.course-layout-resize-active
+  td:hover::before {
+  background:
+    rgba(
+      0,
+      94,
+      184,
+      0.14
+    );
+}
+
+/* Allow a widened webinar table to scroll
+   instead of clipping the resized columns. */
+.course-webinar-table-frame,
+.course-workspace-layout-16
+  .course-webinar-table-frame {
+  overflow-x: auto;
 }
