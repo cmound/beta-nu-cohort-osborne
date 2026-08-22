@@ -28906,6 +28906,14 @@ function CoursePage({
       [],
     )
 
+  const [
+    openWebinarRequirementId,
+    setOpenWebinarRequirementId,
+  ] =
+    useState<string | null>(
+      null,
+    )
+
   useEffect(() => {
     window.localStorage.setItem(
       COURSE_WORKSPACES_STORAGE_KEY,
@@ -28954,6 +28962,10 @@ function CoursePage({
 
     setSelectedWebinarIds(
       [],
+    )
+
+    setOpenWebinarRequirementId(
+      null,
     )
 
     professorEditBaselineRef.current =
@@ -31777,18 +31789,14 @@ function CoursePage({
 
                     <th className="course-webinar-time-column">
                       Start Time
-
-                      <span className="course-webinar-time-zone">
-                        Pacific
-                      </span>
+                      <br />
+                      Pacific
                     </th>
 
                     <th className="course-webinar-time-column">
                       Start Time
-
-                      <span className="course-webinar-time-zone">
-                        Eastern
-                      </span>
+                      <br />
+                      Eastern
                     </th>
 
                     <th className="course-webinar-required-column">
@@ -32075,12 +32083,23 @@ function CoursePage({
                             </div>
                           </td>
 
-                          <td>
+                          <td className="course-webinar-required-cell">
                             <select
-                              className="course-webinar-cell-select"
+                              className={
+                                openWebinarRequirementId ===
+                                  webinar.id
+                                  ? 'course-webinar-cell-select course-webinar-cell-select-open'
+                                  : 'course-webinar-cell-select'
+                              }
                               aria-label="Webinar requirement"
                               value={
                                 webinar.required
+                              }
+                              size={
+                                openWebinarRequirementId ===
+                                  webinar.id
+                                  ? 3
+                                  : undefined
                               }
                               onChange={(
                                 event,
@@ -32091,24 +32110,73 @@ function CoursePage({
                                     .value,
                                 )
                               }}
+                              onClick={() => {
+                                if (
+                                  openWebinarRequirementId ===
+                                  webinar.id
+                                ) {
+                                  setOpenWebinarRequirementId(
+                                    null,
+                                  )
+                                }
+                              }}
+                              onBlur={() => {
+                                setOpenWebinarRequirementId(
+                                  (currentId) =>
+                                    currentId ===
+                                      webinar.id
+                                      ? null
+                                      : currentId,
+                                )
+                              }}
                               onKeyDown={(
                                 event,
                               ) => {
+                                const isOpen =
+                                  openWebinarRequirementId ===
+                                  webinar.id
+
                                 if (
-                                  event.key !==
+                                  !isOpen &&
+                                  event.key ===
                                   'Enter'
                                 ) {
+                                  event.preventDefault()
+                                  event.stopPropagation()
+
+                                  setOpenWebinarRequirementId(
+                                    webinar.id,
+                                  )
+
                                   return
                                 }
 
-                                event.preventDefault()
+                                if (isOpen) {
+                                  event.stopPropagation()
 
-                                try {
-                                  event.currentTarget
-                                    .showPicker()
-                                } catch {
-                                  event.currentTarget
-                                    .focus()
+                                  if (
+                                    event.key ===
+                                    'Escape'
+                                  ) {
+                                    event.preventDefault()
+
+                                    setOpenWebinarRequirementId(
+                                      null,
+                                    )
+
+                                    return
+                                  }
+
+                                  if (
+                                    event.key ===
+                                    'Enter'
+                                  ) {
+                                    event.preventDefault()
+
+                                    setOpenWebinarRequirementId(
+                                      null,
+                                    )
+                                  }
                                 }
                               }}
                             >
