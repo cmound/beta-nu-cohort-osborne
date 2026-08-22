@@ -148,6 +148,53 @@ type CourseProgressState = Record<
   CourseProgressStatus
 >
 
+type CourseLayoutEditorSection =
+  | 'webinars'
+  | 'assignments'
+  | 'progress'
+  | null
+
+type CourseWebinarColumnKey =
+  | 'webinarNumber'
+  | 'session'
+  | 'topic'
+  | 'date'
+  | 'pacificStartTime'
+  | 'easternStartTime'
+  | 'required'
+
+type CourseAssignmentColumnKey =
+  | 'asn'
+  | 'name'
+  | 'week'
+  | 'dueDate'
+  | 'points'
+
+interface CourseTableLayoutRecord {
+  readonly webinarColumnOrder:
+  readonly CourseWebinarColumnKey[]
+
+  readonly webinarRowOrder:
+  readonly string[]
+
+  readonly assignmentColumnOrder:
+  readonly CourseAssignmentColumnKey[]
+
+  readonly assignmentRowOrder:
+  readonly string[]
+
+  readonly progressAssignmentOrder:
+  readonly string[]
+
+  readonly progressStudentOrder:
+  readonly string[]
+}
+
+type CourseTableLayoutState = Record<
+  string,
+  CourseTableLayoutRecord
+>
+
 interface ActiveCourseDashboardItem {
   readonly code: string
   readonly title: string
@@ -1882,8 +1929,32 @@ const COURSE_WORKSPACES_STORAGE_KEY =
   'beta-nu-course-workspaces-v1'
 const COURSE_PROGRESS_STORAGE_KEY =
   'beta-nu-course-progress-v1'
+
 const PROFESSOR_DIRECTORY_STORAGE_KEY =
   'beta-nu-professor-directory-v1'
+
+const COURSE_TABLE_LAYOUT_STORAGE_KEY =
+  'beta-nu-course-table-layout-v1'
+
+const DEFAULT_COURSE_WEBINAR_COLUMN_ORDER:
+  readonly CourseWebinarColumnKey[] = [
+    'webinarNumber',
+    'session',
+    'topic',
+    'date',
+    'pacificStartTime',
+    'easternStartTime',
+    'required',
+  ]
+
+const DEFAULT_COURSE_ASSIGNMENT_COLUMN_ORDER:
+  readonly CourseAssignmentColumnKey[] = [
+    'asn',
+    'name',
+    'week',
+    'dueDate',
+    'points',
+  ]
 
 const courseAssignmentWeekdayLabels = [
   'Sun.',
@@ -1932,6 +2003,344 @@ function createEmptyCourseAssignmentFormState():
     dueDate: '',
     points: '',
   }
+}
+
+function createDefaultCourseTableLayoutRecord():
+  CourseTableLayoutRecord {
+  return {
+    webinarColumnOrder: [
+      ...DEFAULT_COURSE_WEBINAR_COLUMN_ORDER,
+    ],
+    webinarRowOrder: [],
+    assignmentColumnOrder: [
+      ...DEFAULT_COURSE_ASSIGNMENT_COLUMN_ORDER,
+    ],
+    assignmentRowOrder: [],
+    progressAssignmentOrder: [],
+    progressStudentOrder: [],
+  }
+}
+
+function isCourseWebinarColumnKey(
+  value: unknown,
+): value is CourseWebinarColumnKey {
+  return (
+    value === 'webinarNumber' ||
+    value === 'session' ||
+    value === 'topic' ||
+    value === 'date' ||
+    value === 'pacificStartTime' ||
+    value === 'easternStartTime' ||
+    value === 'required'
+  )
+}
+
+function isCourseAssignmentColumnKey(
+  value: unknown,
+): value is CourseAssignmentColumnKey {
+  return (
+    value === 'asn' ||
+    value === 'name' ||
+    value === 'week' ||
+    value === 'dueDate' ||
+    value === 'points'
+  )
+}
+
+function readStoredCourseTableLayouts():
+  CourseTableLayoutState {
+  const storedValue =
+    window.localStorage.getItem(
+      COURSE_TABLE_LAYOUT_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      typeof parsedValue !== 'object' ||
+      parsedValue === null
+    ) {
+      return {}
+    }
+
+    const layouts:
+      CourseTableLayoutState = {}
+
+    for (
+      const [
+        courseSlug,
+        layoutValue,
+      ] of Object.entries(
+        parsedValue,
+      )
+    ) {
+      if (
+        typeof layoutValue !==
+        'object' ||
+        layoutValue === null
+      ) {
+        continue
+      }
+
+      const record =
+        layoutValue as Record<
+          string,
+          unknown
+        >
+
+      const webinarColumnOrder =
+        Array.isArray(
+          record.webinarColumnOrder,
+        )
+          ? record.webinarColumnOrder.filter(
+            isCourseWebinarColumnKey,
+          )
+          : []
+
+      const assignmentColumnOrder =
+        Array.isArray(
+          record.assignmentColumnOrder,
+        )
+          ? record.assignmentColumnOrder.filter(
+            isCourseAssignmentColumnKey,
+          )
+          : []
+
+      const webinarRowOrder =
+        Array.isArray(
+          record.webinarRowOrder,
+        )
+          ? record.webinarRowOrder.filter(
+            (
+              value,
+            ): value is string =>
+              typeof value === 'string',
+          )
+          : []
+
+      const assignmentRowOrder =
+        Array.isArray(
+          record.assignmentRowOrder,
+        )
+          ? record.assignmentRowOrder.filter(
+            (
+              value,
+            ): value is string =>
+              typeof value === 'string',
+          )
+          : []
+
+      const progressAssignmentOrder =
+        Array.isArray(
+          record.progressAssignmentOrder,
+        )
+          ? record.progressAssignmentOrder.filter(
+            (
+              value,
+            ): value is string =>
+              typeof value === 'string',
+          )
+          : []
+
+      const progressStudentOrder =
+        Array.isArray(
+          record.progressStudentOrder,
+        )
+          ? record.progressStudentOrder.filter(
+            (
+              value,
+            ): value is string =>
+              typeof value === 'string',
+          )
+          : []
+
+      layouts[courseSlug] = {
+        webinarColumnOrder:
+          webinarColumnOrder.length >
+            0
+            ? webinarColumnOrder
+            : [
+              ...DEFAULT_COURSE_WEBINAR_COLUMN_ORDER,
+            ],
+
+        webinarRowOrder,
+
+        assignmentColumnOrder:
+          assignmentColumnOrder.length >
+            0
+            ? assignmentColumnOrder
+            : [
+              ...DEFAULT_COURSE_ASSIGNMENT_COLUMN_ORDER,
+            ],
+
+        assignmentRowOrder,
+        progressAssignmentOrder,
+        progressStudentOrder,
+      }
+    }
+
+    return layouts
+  } catch {
+    return {}
+  }
+}
+
+function normalizeCourseLayoutOrder<
+  T extends string,
+>(
+  storedOrder: readonly T[],
+  availableItems: readonly T[],
+): readonly T[] {
+  const nextOrder:
+    T[] = []
+
+  for (
+    const item of storedOrder
+  ) {
+    if (
+      availableItems.includes(
+        item,
+      ) &&
+      !nextOrder.includes(
+        item,
+      )
+    ) {
+      nextOrder.push(item)
+    }
+  }
+
+  for (
+    const item of availableItems
+  ) {
+    if (
+      !nextOrder.includes(
+        item,
+      )
+    ) {
+      nextOrder.push(item)
+    }
+  }
+
+  return nextOrder
+}
+
+function orderCourseRecordsById<
+  T extends {
+    readonly id: string
+  },
+>(
+  records: readonly T[],
+  storedOrder:
+    readonly string[],
+): readonly T[] {
+  const recordMap =
+    new Map(
+      records.map(
+        (record) => [
+          record.id,
+          record,
+        ],
+      ),
+    )
+
+  const orderedRecords:
+    T[] = []
+
+  for (
+    const recordId
+    of storedOrder
+  ) {
+    const record =
+      recordMap.get(
+        recordId,
+      )
+
+    if (
+      record !== undefined
+    ) {
+      orderedRecords.push(
+        record,
+      )
+
+      recordMap.delete(
+        recordId,
+      )
+    }
+  }
+
+  for (
+    const record
+    of records
+  ) {
+    if (
+      recordMap.has(
+        record.id,
+      )
+    ) {
+      orderedRecords.push(
+        record,
+      )
+    }
+  }
+
+  return orderedRecords
+}
+
+function moveCourseLayoutItem<
+  T,
+>(
+  items: readonly T[],
+  item: T,
+  direction: -1 | 1,
+): readonly T[] {
+  const currentIndex =
+    items.indexOf(
+      item,
+    )
+
+  const targetIndex =
+    currentIndex +
+    direction
+
+  if (
+    currentIndex < 0 ||
+    targetIndex < 0 ||
+    targetIndex >=
+    items.length
+  ) {
+    return items
+  }
+
+  const currentItem =
+    items[currentIndex]
+
+  const targetItem =
+    items[targetIndex]
+
+  if (
+    currentItem === undefined ||
+    targetItem === undefined
+  ) {
+    return items
+  }
+
+  const nextItems = [
+    ...items,
+  ]
+
+  nextItems[currentIndex] =
+    targetItem
+
+  nextItems[targetIndex] =
+    currentItem
+
+  return nextItems
 }
 
 function isCourseWorkspaceStorageObject(
@@ -28858,6 +29267,14 @@ function CoursePage({
       null,
     )
 
+  const webinarRequirementRefs =
+    useRef<
+      Record<
+        string,
+        HTMLSelectElement | null
+      >
+    >({})
+
   const [
     isAssignmentModalOpen,
     setIsAssignmentModalOpen,
@@ -28914,6 +29331,22 @@ function CoursePage({
       null,
     )
 
+  const [
+    courseTableLayouts,
+    setCourseTableLayouts,
+  ] =
+    useState<CourseTableLayoutState>(
+      readStoredCourseTableLayouts,
+    )
+
+  const [
+    courseLayoutEditorSection,
+    setCourseLayoutEditorSection,
+  ] =
+    useState<CourseLayoutEditorSection>(
+      null,
+    )
+
   useEffect(() => {
     window.localStorage.setItem(
       COURSE_WORKSPACES_STORAGE_KEY,
@@ -28942,6 +29375,15 @@ function CoursePage({
   }, [courseProgress])
 
   useEffect(() => {
+    window.localStorage.setItem(
+      COURSE_TABLE_LAYOUT_STORAGE_KEY,
+      JSON.stringify(
+        courseTableLayouts,
+      ),
+    )
+  }, [courseTableLayouts])
+
+  useEffect(() => {
     setIsAssignmentModalOpen(
       false,
     )
@@ -28963,6 +29405,13 @@ function CoursePage({
     setSelectedWebinarIds(
       [],
     )
+
+    setCourseLayoutEditorSection(
+      null,
+    )
+
+    webinarRequirementRefs.current =
+      {}
 
     setOpenWebinarRequirementId(
       null,
@@ -29038,6 +29487,83 @@ function CoursePage({
           ] ?? 'Active'
         ) === 'Active',
     )
+
+  const courseTableLayout =
+    courseTableLayouts[
+    courseSlug
+    ] ??
+    createDefaultCourseTableLayoutRecord()
+
+  const availableWebinarColumns =
+    DEFAULT_COURSE_WEBINAR_COLUMN_ORDER.filter(
+      (columnKey) =>
+        isSixteenWeekCourse ||
+        columnKey !== 'topic',
+    )
+
+  const webinarColumnOrder =
+    normalizeCourseLayoutOrder(
+      courseTableLayout
+        .webinarColumnOrder,
+      availableWebinarColumns,
+    )
+
+  const assignmentColumnOrder =
+    normalizeCourseLayoutOrder(
+      courseTableLayout
+        .assignmentColumnOrder,
+      DEFAULT_COURSE_ASSIGNMENT_COLUMN_ORDER,
+    )
+
+  const orderedWebinars =
+    orderCourseRecordsById(
+      workspace.webinars,
+      courseTableLayout
+        .webinarRowOrder,
+    )
+
+  const orderedAssignments =
+    orderCourseRecordsById(
+      workspace.assignments,
+      courseTableLayout
+        .assignmentRowOrder,
+    )
+
+  const orderedProgressAssignments =
+    orderCourseRecordsById(
+      workspace.assignments,
+      courseTableLayout
+        .progressAssignmentOrder,
+    )
+
+  const orderedProgressContacts =
+    orderCourseRecordsById(
+      courseProgressContacts,
+      courseTableLayout
+        .progressStudentOrder,
+    )
+
+  function updateCurrentCourseTableLayout(
+    updates:
+      Partial<CourseTableLayoutRecord>,
+  ): void {
+    setCourseTableLayouts(
+      (current) => ({
+        ...current,
+
+        [courseSlug]: {
+          ...(
+            current[
+            courseSlug
+            ] ??
+            createDefaultCourseTableLayoutRecord()
+          ),
+
+          ...updates,
+        },
+      }),
+    )
+  }
 
   function updateCourseProgress(
     contactId: string,
@@ -31220,6 +31746,20 @@ function CoursePage({
                     <path d="M14.25 10.5v5.75" />
                   </svg>
                 </button>
+
+                <button
+                  type="button"
+                  className="course-workspace-icon-button course-layout-settings-button"
+                  aria-label="Adjust Class Webinars layout"
+                  title="Adjust Class Webinars Layout"
+                  onClick={() => {
+                    setCourseLayoutEditorSection(
+                      'webinars',
+                    )
+                  }}
+                >
+                  ⚙
+                </button>
               </div>
             </header>
 
@@ -31229,11 +31769,7 @@ function CoursePage({
                   <tr>
                     <th>ASN #</th>
                     <th>Assignment Name</th>
-                    <th>
-                      Week
-                      <br />
-                      Due
-                    </th>
+                    <th>Week Due</th>
                     <th>Due Date</th>
                     <th>Points</th>
                   </tr>
@@ -31746,6 +32282,20 @@ function CoursePage({
                     <path d="M14.25 10.5v5.75" />
                   </svg>
                 </button>
+
+                <button
+                  type="button"
+                  className="course-workspace-icon-button course-layout-settings-button"
+                  aria-label="Adjust Course Assignments layout"
+                  title="Adjust Course Assignments Layout"
+                  onClick={() => {
+                    setCourseLayoutEditorSection(
+                      'assignments',
+                    )
+                  }}
+                >
+                  ⚙
+                </button>
               </div>
             </header>
 
@@ -32071,6 +32621,16 @@ function CoursePage({
                                   'pacificStartTime',
                                   normalizedTime,
                                 )
+
+                                window.requestAnimationFrame(
+                                  () => {
+                                    webinarRequirementRefs
+                                      .current[
+                                      webinar.id
+                                    ]
+                                      ?.focus()
+                                  },
+                                )
                               }}
                             />
                           </td>
@@ -32085,6 +32645,14 @@ function CoursePage({
 
                           <td className="course-webinar-required-cell">
                             <select
+                              ref={(
+                                selectElement,
+                              ) => {
+                                webinarRequirementRefs.current[
+                                  webinar.id
+                                ] =
+                                  selectElement
+                              }}
                               className={
                                 openWebinarRequirementId ===
                                   webinar.id
@@ -32398,48 +32966,48 @@ function CoursePage({
       </div>
 
       <section className="course-workspace-section">
-        <header className="course-workspace-section-header">
+        <header className="course-workspace-section-header course-progress-section-header">
           <div>
             <h2>
               Cohort Assignment Progress
             </h2>
           </div>
 
+          <div className="course-progress-scroll-controls">
+            <button
+              type="button"
+              className="course-progress-scroll-button"
+              onClick={() =>
+                scrollCourseProgressTable(
+                  'left',
+                )
+              }
+            >
+              <span aria-hidden="true">
+                ◀
+              </span>
+
+              Scroll Left
+            </button>
+
+            <button
+              type="button"
+              className="course-progress-scroll-button"
+              onClick={() =>
+                scrollCourseProgressTable(
+                  'right',
+                )
+              }
+            >
+              Scroll Right
+
+              <span aria-hidden="true">
+                ▶
+              </span>
+            </button>
+          </div>
+
           <div className="course-progress-header-actions">
-            <div className="course-progress-scroll-controls">
-              <button
-                type="button"
-                className="course-progress-scroll-button"
-                onClick={() =>
-                  scrollCourseProgressTable(
-                    'left',
-                  )
-                }
-              >
-                <span aria-hidden="true">
-                  ◀
-                </span>
-
-                Scroll Left
-              </button>
-
-              <button
-                type="button"
-                className="course-progress-scroll-button"
-                onClick={() =>
-                  scrollCourseProgressTable(
-                    'right',
-                  )
-                }
-              >
-                Scroll Right
-
-                <span aria-hidden="true">
-                  ▶
-                </span>
-              </button>
-            </div>
-
             <div className="course-progress-key">
               <span className="course-progress-key-not-started">
                 Haven&apos;t Started
@@ -32457,6 +33025,20 @@ function CoursePage({
                 Help!
               </span>
             </div>
+
+            <button
+              type="button"
+              className="course-workspace-icon-button course-layout-settings-button"
+              aria-label="Adjust Cohort Assignment Progress layout"
+              title="Adjust Cohort Assignment Progress Layout"
+              onClick={() => {
+                setCourseLayoutEditorSection(
+                  'progress',
+                )
+              }}
+            >
+              ⚙
+            </button>
           </div>
         </header>
 
@@ -32612,6 +33194,609 @@ function CoursePage({
           each course.
         </p>
       </section>
+
+      {courseLayoutEditorSection !==
+        null ? (
+        <div className="course-layout-editor-backdrop">
+          <section
+            className="course-layout-editor"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="course-layout-editor-title"
+          >
+            <header className="course-layout-editor-header">
+              <div>
+                <span>
+                  {courseRecord.code}
+                </span>
+
+                <h2 id="course-layout-editor-title">
+                  {courseLayoutEditorSection ===
+                    'webinars'
+                    ? 'Adjust Class Webinars'
+                    : courseLayoutEditorSection ===
+                      'assignments'
+                      ? 'Adjust Course Assignments'
+                      : 'Adjust Cohort Assignment Progress'}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="course-layout-editor-close"
+                aria-label="Close layout editor"
+                onClick={() => {
+                  setCourseLayoutEditorSection(
+                    null,
+                  )
+                }}
+              >
+                ×
+              </button>
+            </header>
+
+            <p className="course-layout-editor-note">
+              These layout changes apply only
+              to {courseRecord.code}. They do
+              not change any other class page.
+            </p>
+
+            {courseLayoutEditorSection ===
+              'webinars' ? (
+              <div className="course-layout-editor-grid">
+                <section>
+                  <h3>
+                    Column Order
+                  </h3>
+
+                  <div className="course-layout-editor-list">
+                    {webinarColumnOrder.map(
+                      (
+                        columnKey,
+                        columnIndex,
+                      ) => {
+                        const labels:
+                          Record<
+                            CourseWebinarColumnKey,
+                            string
+                          > = {
+                          webinarNumber:
+                            'Webinar #',
+                          session:
+                            'Session',
+                          topic:
+                            'Topic',
+                          date:
+                            'Date',
+                          pacificStartTime:
+                            'Start Time Pacific',
+                          easternStartTime:
+                            'Start Time Eastern',
+                          required:
+                            'Required',
+                        }
+
+                        return (
+                          <div
+                            className="course-layout-editor-item"
+                            key={
+                              columnKey
+                            }
+                          >
+                            <span>
+                              {
+                                labels[
+                                columnKey
+                                ]
+                              }
+                            </span>
+
+                            <div>
+                              <button
+                                type="button"
+                                disabled={
+                                  columnIndex ===
+                                  0
+                                }
+                                onClick={() => {
+                                  updateCurrentCourseTableLayout({
+                                    webinarColumnOrder:
+                                      moveCourseLayoutItem(
+                                        webinarColumnOrder,
+                                        columnKey,
+                                        -1,
+                                      ),
+                                  })
+                                }}
+                              >
+                                ←
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  columnIndex ===
+                                  webinarColumnOrder.length -
+                                  1
+                                }
+                                onClick={() => {
+                                  updateCurrentCourseTableLayout({
+                                    webinarColumnOrder:
+                                      moveCourseLayoutItem(
+                                        webinarColumnOrder,
+                                        columnKey,
+                                        1,
+                                      ),
+                                  })
+                                }}
+                              >
+                                →
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      },
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h3>
+                    Row Order
+                  </h3>
+
+                  <div className="course-layout-editor-list">
+                    {orderedWebinars.map(
+                      (
+                        webinar,
+                        rowIndex,
+                      ) => (
+                        <div
+                          className="course-layout-editor-item"
+                          key={
+                            webinar.id
+                          }
+                        >
+                          <span>
+                            {webinar.webinarNumber ||
+                              `Webinar Row ${rowIndex + 1}`}
+                          </span>
+
+                          <div>
+                            <button
+                              type="button"
+                              disabled={
+                                rowIndex ===
+                                0
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  webinarRowOrder:
+                                    moveCourseLayoutItem(
+                                      orderedWebinars.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      webinar.id,
+                                      -1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ↑
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                rowIndex ===
+                                orderedWebinars.length -
+                                1
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  webinarRowOrder:
+                                    moveCourseLayoutItem(
+                                      orderedWebinars.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      webinar.id,
+                                      1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : null}
+
+            {courseLayoutEditorSection ===
+              'assignments' ? (
+              <div className="course-layout-editor-grid">
+                <section>
+                  <h3>
+                    Column Order
+                  </h3>
+
+                  <div className="course-layout-editor-list">
+                    {assignmentColumnOrder.map(
+                      (
+                        columnKey,
+                        columnIndex,
+                      ) => {
+                        const labels:
+                          Record<
+                            CourseAssignmentColumnKey,
+                            string
+                          > = {
+                          asn:
+                            'ASN #',
+                          name:
+                            'Assignment Name',
+                          week:
+                            'Week Due',
+                          dueDate:
+                            'Due Date',
+                          points:
+                            'Points',
+                        }
+
+                        return (
+                          <div
+                            className="course-layout-editor-item"
+                            key={
+                              columnKey
+                            }
+                          >
+                            <span>
+                              {
+                                labels[
+                                columnKey
+                                ]
+                              }
+                            </span>
+
+                            <div>
+                              <button
+                                type="button"
+                                disabled={
+                                  columnIndex ===
+                                  0
+                                }
+                                onClick={() => {
+                                  updateCurrentCourseTableLayout({
+                                    assignmentColumnOrder:
+                                      moveCourseLayoutItem(
+                                        assignmentColumnOrder,
+                                        columnKey,
+                                        -1,
+                                      ),
+                                  })
+                                }}
+                              >
+                                ←
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  columnIndex ===
+                                  assignmentColumnOrder.length -
+                                  1
+                                }
+                                onClick={() => {
+                                  updateCurrentCourseTableLayout({
+                                    assignmentColumnOrder:
+                                      moveCourseLayoutItem(
+                                        assignmentColumnOrder,
+                                        columnKey,
+                                        1,
+                                      ),
+                                  })
+                                }}
+                              >
+                                →
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      },
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h3>
+                    Row Order
+                  </h3>
+
+                  <div className="course-layout-editor-list">
+                    {orderedAssignments.map(
+                      (
+                        assignment,
+                        rowIndex,
+                      ) => (
+                        <div
+                          className="course-layout-editor-item"
+                          key={
+                            assignment.id
+                          }
+                        >
+                          <span>
+                            {assignment.asn}
+                            {' - '}
+                            {
+                              assignment.name
+                            }
+                          </span>
+
+                          <div>
+                            <button
+                              type="button"
+                              disabled={
+                                rowIndex ===
+                                0
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  assignmentRowOrder:
+                                    moveCourseLayoutItem(
+                                      orderedAssignments.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      assignment.id,
+                                      -1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ↑
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                rowIndex ===
+                                orderedAssignments.length -
+                                1
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  assignmentRowOrder:
+                                    moveCourseLayoutItem(
+                                      orderedAssignments.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      assignment.id,
+                                      1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : null}
+
+            {courseLayoutEditorSection ===
+              'progress' ? (
+              <div className="course-layout-editor-grid">
+                <section>
+                  <h3>
+                    Assignment Columns
+                  </h3>
+
+                  <p className="course-layout-editor-section-note">
+                    Student and Overall
+                    Progress remain fixed on
+                    the left.
+                  </p>
+
+                  <div className="course-layout-editor-list">
+                    {orderedProgressAssignments.map(
+                      (
+                        assignment,
+                        columnIndex,
+                      ) => (
+                        <div
+                          className="course-layout-editor-item"
+                          key={
+                            assignment.id
+                          }
+                        >
+                          <span>
+                            {assignment.asn}
+                            {' - '}
+                            {
+                              assignment.name
+                            }
+                          </span>
+
+                          <div>
+                            <button
+                              type="button"
+                              disabled={
+                                columnIndex ===
+                                0
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  progressAssignmentOrder:
+                                    moveCourseLayoutItem(
+                                      orderedProgressAssignments.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      assignment.id,
+                                      -1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ←
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                columnIndex ===
+                                orderedProgressAssignments.length -
+                                1
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  progressAssignmentOrder:
+                                    moveCourseLayoutItem(
+                                      orderedProgressAssignments.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      assignment.id,
+                                      1,
+                                    ),
+                                })
+                              }}
+                            >
+                              →
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h3>
+                    Student Row Order
+                  </h3>
+
+                  <div className="course-layout-editor-list">
+                    {orderedProgressContacts.map(
+                      (
+                        contact,
+                        rowIndex,
+                      ) => (
+                        <div
+                          className="course-layout-editor-item"
+                          key={
+                            contact.id
+                          }
+                        >
+                          <span>
+                            {
+                              contact.name
+                            }
+                          </span>
+
+                          <div>
+                            <button
+                              type="button"
+                              disabled={
+                                rowIndex ===
+                                0
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  progressStudentOrder:
+                                    moveCourseLayoutItem(
+                                      orderedProgressContacts.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      contact.id,
+                                      -1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ↑
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={
+                                rowIndex ===
+                                orderedProgressContacts.length -
+                                1
+                              }
+                              onClick={() => {
+                                updateCurrentCourseTableLayout({
+                                  progressStudentOrder:
+                                    moveCourseLayoutItem(
+                                      orderedProgressContacts.map(
+                                        (
+                                          item,
+                                        ) =>
+                                          item.id,
+                                      ),
+                                      contact.id,
+                                      1,
+                                    ),
+                                })
+                              }}
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+              </div>
+            ) : null}
+
+            <footer className="course-layout-editor-footer">
+              <span>
+                Changes save automatically
+                for {courseRecord.code}.
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCourseLayoutEditorSection(
+                    null,
+                  )
+                }}
+              >
+                Done
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </section>
   )
 }
