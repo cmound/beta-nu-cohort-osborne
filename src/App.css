@@ -17112,22 +17112,26 @@ tbody td {
 }
 
 .course-assignment-table th:nth-child(1) {
-  width: 90px;
+  width: 34px;
 }
 
 .course-assignment-table th:nth-child(2) {
-  width: auto;
+  width: 90px;
 }
 
 .course-assignment-table th:nth-child(3) {
-  width: 110px;
+  width: auto;
 }
 
 .course-assignment-table th:nth-child(4) {
-  width: 180px;
+  width: 110px;
 }
 
 .course-assignment-table th:nth-child(5) {
+  width: 180px;
+}
+
+.course-assignment-table th:nth-child(6) {
   width: 90px;
 }
 
@@ -17760,6 +17764,56 @@ tbody td {
   cursor: pointer;
 }
 
+.course-assignment-drag-column,
+.course-assignment-drag-cell {
+  width: 34px;
+  min-width: 34px;
+  max-width: 34px;
+  padding: 0 !important;
+  text-align: center !important;
+}
+
+.course-assignment-drag-handle {
+  width: 100%;
+  height: 100%;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: #64748b;
+  background: transparent;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: grab;
+}
+
+.course-assignment-drag-handle:hover {
+  color: #005eb8;
+  background: #e6f2ff;
+}
+
+.course-assignment-drag-handle:active {
+  cursor: grabbing;
+}
+
+.course-assignment-drag-handle-locked {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.course-assignment-drag-handle-locked:hover {
+  color: #9ca3af;
+  background: transparent;
+}
+
+.course-assignment-row-drag-over > td {
+  border-top:
+    3px solid #005eb8 !important;
+}
+
 .course-assignment-row:hover > td {
   background: #eef6ff;
 }
@@ -18387,6 +18441,128 @@ tbody td {
   color: #64748b;
   font-size: 9px;
   line-height: 1.2;
+}
+
+.course-assignment-import-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.course-assignment-template-button {
+  height: 34px;
+  min-height: 34px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid #c89214;
+  border-radius: 5px;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 55%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    0 2px 4px
+      rgba(0, 0, 0, 0.22);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.course-assignment-template-button
+  > span {
+  color: #0b1f3b;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.course-assignment-template-button:hover {
+  border-color: #8e6508;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe58b 0%,
+      #f6c64b 55%,
+      #d6a11d 100%
+    );
+}
+
+.course-assignment-template-button:focus-visible {
+  outline: 2px solid #005eb8;
+  outline-offset: 2px;
+}
+
+.course-assignment-upload-button {
+  height: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid #547897;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #194a78 0%,
+      #0c3155 52%,
+      #061f3a 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.2),
+    0 2px 4px
+      rgba(0, 0, 0, 0.22);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.course-assignment-upload-button
+  > span {
+  color: #ffd200;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.course-assignment-upload-button:hover {
+  border-color: #ffd200;
+  background:
+    linear-gradient(
+      180deg,
+      #1f5a91 0%,
+      #10406d 52%,
+      #08284a 100%
+    );
+}
+
+.course-assignment-upload-button:focus-visible {
+  outline: 2px solid #005eb8;
+  outline-offset: 2px;
+}
+
+.course-assignment-upload-input {
+  display: none;
 }
 
 /* Spreadsheet-style assignment entry table */

@@ -29400,6 +29400,11 @@ function CoursePage({
       null,
     )
 
+  const assignmentUploadInputRef =
+    useRef<HTMLInputElement | null>(
+      null,
+    )
+
   const webinarRequirementRefs =
     useRef<
       Record<
@@ -29438,6 +29443,22 @@ function CoursePage({
   const [
     selectedAssignmentId,
     setSelectedAssignmentId,
+  ] =
+    useState<string | null>(
+      null,
+    )
+
+  const [
+    draggedCourseAssignmentId,
+    setDraggedCourseAssignmentId,
+  ] =
+    useState<string | null>(
+      null,
+    )
+
+  const [
+    dragOverCourseAssignmentId,
+    setDragOverCourseAssignmentId,
   ] =
     useState<string | null>(
       null,
@@ -29531,6 +29552,14 @@ function CoursePage({
       null,
     )
 
+    setDraggedCourseAssignmentId(
+      null,
+    )
+
+    setDragOverCourseAssignmentId(
+      null,
+    )
+
     setIsWebinarDeleteMode(
       false,
     )
@@ -29613,12 +29642,20 @@ function CoursePage({
     ] ??
     createEmptyCourseWorkspaceRecord()
 
+  const manuallyOrderedAssignments =
+    orderCourseRecordsById(
+      workspace.assignments,
+      courseTableLayouts[
+        courseSlug
+      ]?.assignmentRowOrder ?? [],
+    )
+
   const courseDisplayAssignments = [
-    ...workspace.assignments.filter(
+    ...manuallyOrderedAssignments.filter(
       isProfessionalDispositionsAssignment,
     ),
 
-    ...workspace.assignments.filter(
+    ...manuallyOrderedAssignments.filter(
       (assignment) =>
         !isProfessionalDispositionsAssignment(
           assignment,
@@ -29713,6 +29750,187 @@ function CoursePage({
           ...updates,
         },
       }),
+    )
+  }
+
+  function moveCourseAssignmentBefore(
+    sourceAssignmentId: string,
+    targetAssignmentId: string,
+  ): void {
+    if (
+      sourceAssignmentId ===
+      targetAssignmentId
+    ) {
+      return
+    }
+
+    const sourceAssignment =
+      courseDisplayAssignments.find(
+        (assignment) =>
+          assignment.id ===
+          sourceAssignmentId,
+      )
+
+    if (
+      sourceAssignment ===
+      undefined ||
+      isProfessionalDispositionsAssignment(
+        sourceAssignment,
+      )
+    ) {
+      return
+    }
+
+    const reorderedAssignments =
+      courseDisplayAssignments.filter(
+        (assignment) =>
+          assignment.id !==
+          sourceAssignmentId,
+      )
+
+    const targetIndex =
+      reorderedAssignments.findIndex(
+        (assignment) =>
+          assignment.id ===
+          targetAssignmentId,
+      )
+
+    if (targetIndex === -1) {
+      return
+    }
+
+    const targetAssignment =
+      reorderedAssignments[
+      targetIndex
+      ]
+
+    const priorityAssignmentCount =
+      reorderedAssignments.filter(
+        isProfessionalDispositionsAssignment,
+      ).length
+
+    const insertionIndex =
+      targetAssignment !==
+        undefined &&
+        isProfessionalDispositionsAssignment(
+          targetAssignment,
+        )
+        ? priorityAssignmentCount
+        : targetIndex
+
+    reorderedAssignments.splice(
+      insertionIndex,
+      0,
+      sourceAssignment,
+    )
+
+    const nextAssignmentOrder =
+      reorderedAssignments.map(
+        (assignment) =>
+          assignment.id,
+      )
+
+    updateCurrentCourseTableLayout({
+      assignmentRowOrder:
+        nextAssignmentOrder,
+
+      progressAssignmentOrder:
+        nextAssignmentOrder,
+    })
+  }
+
+  function handleCourseAssignmentDragStart(
+    event:
+      ReactDragEvent<HTMLButtonElement>,
+    assignmentId: string,
+  ): void {
+    setDraggedCourseAssignmentId(
+      assignmentId,
+    )
+
+    setDragOverCourseAssignmentId(
+      null,
+    )
+
+    event.dataTransfer.effectAllowed =
+      'move'
+
+    event.dataTransfer.setData(
+      'text/plain',
+      assignmentId,
+    )
+  }
+
+  function handleCourseAssignmentDragOver(
+    event:
+      ReactDragEvent<HTMLTableRowElement>,
+    assignmentId: string,
+  ): void {
+    const sourceAssignmentId =
+      draggedCourseAssignmentId ??
+      event.dataTransfer.getData(
+        'text/plain',
+      )
+
+    if (
+      sourceAssignmentId.length === 0 ||
+      sourceAssignmentId ===
+      assignmentId
+    ) {
+      return
+    }
+
+    event.preventDefault()
+
+    event.dataTransfer.dropEffect =
+      'move'
+
+    setDragOverCourseAssignmentId(
+      assignmentId,
+    )
+  }
+
+  function handleCourseAssignmentDrop(
+    event:
+      ReactDragEvent<HTMLTableRowElement>,
+    assignmentId: string,
+  ): void {
+    event.preventDefault()
+
+    const sourceAssignmentId =
+      draggedCourseAssignmentId ??
+      event.dataTransfer.getData(
+        'text/plain',
+      )
+
+    if (
+      sourceAssignmentId.length > 0 &&
+      sourceAssignmentId !==
+      assignmentId
+    ) {
+      moveCourseAssignmentBefore(
+        sourceAssignmentId,
+        assignmentId,
+      )
+    }
+
+    setDraggedCourseAssignmentId(
+      null,
+    )
+
+    setDragOverCourseAssignmentId(
+      null,
+    )
+  }
+
+  function handleCourseAssignmentDragEnd():
+    void {
+    setDraggedCourseAssignmentId(
+      null,
+    )
+
+    setDragOverCourseAssignmentId(
+      null,
     )
   }
 
@@ -31230,6 +31448,323 @@ function CoursePage({
     }
   }
 
+  async function handleAssignmentUploadFile(
+    event:
+      ChangeEvent<HTMLInputElement>,
+  ): Promise<void> {
+    const input =
+      event.currentTarget
+
+    const file =
+      input.files?.[0]
+
+    if (file === undefined) {
+      return
+    }
+
+    try {
+      const normalizedFileName =
+        file.name.toLowerCase()
+
+      if (
+        !normalizedFileName.endsWith(
+          '.xlsx',
+        ) &&
+        !normalizedFileName.endsWith(
+          '.xls',
+        ) &&
+        !normalizedFileName.endsWith(
+          '.csv',
+        )
+      ) {
+        setAssignmentFormError(
+          'Upload an Excel .xlsx/.xls file or a .csv file.',
+        )
+
+        return
+      }
+
+      const hasEnteredData =
+        assignmentForms.some(
+          (row) =>
+            row.asn.trim().length > 0 ||
+            row.name.trim().length > 0 ||
+            row.dueDate.trim().length > 0 ||
+            row.points.trim().length > 0,
+        )
+
+      if (
+        hasEnteredData &&
+        !window.confirm(
+          `Uploading ${file.name} will replace the assignment rows currently entered in this window. Continue?`,
+        )
+      ) {
+        return
+      }
+
+      const fileBuffer =
+        await file.arrayBuffer()
+
+      const workbook =
+        XLSX.read(
+          fileBuffer,
+          {
+            type: 'array',
+          },
+        )
+
+      const firstSheetName =
+        workbook.SheetNames[0]
+
+      if (
+        firstSheetName === undefined
+      ) {
+        setAssignmentFormError(
+          'The uploaded file does not contain a worksheet.',
+        )
+
+        return
+      }
+
+      const worksheet =
+        workbook.Sheets[
+        firstSheetName
+        ]
+
+      if (worksheet === undefined) {
+        setAssignmentFormError(
+          'The first worksheet could not be read.',
+        )
+
+        return
+      }
+
+      const spreadsheetRows =
+        XLSX.utils.sheet_to_json<
+          unknown[]
+        >(
+          worksheet,
+          {
+            header: 1,
+            defval: '',
+            raw: false,
+          },
+        )
+
+      function getCellText(
+        value: unknown,
+      ): string {
+        if (
+          typeof value === 'string'
+        ) {
+          return value.trim()
+        }
+
+        if (
+          typeof value === 'number' &&
+          Number.isFinite(value)
+        ) {
+          return String(value)
+        }
+
+        if (
+          typeof value === 'boolean'
+        ) {
+          return value
+            ? 'TRUE'
+            : 'FALSE'
+        }
+
+        return ''
+      }
+
+      function normalizeHeader(
+        value: unknown,
+      ): string {
+        return getCellText(
+          value,
+        )
+          .toLowerCase()
+          .replace(
+            /[^a-z0-9]+/g,
+            '',
+          )
+      }
+
+      const requiredHeaders = [
+        'asn',
+        'assignmentname',
+        'duedate',
+        'points',
+      ] as const
+
+      const headerRowIndex =
+        spreadsheetRows.findIndex(
+          (row, rowIndex) => {
+            if (rowIndex > 9) {
+              return false
+            }
+
+            const normalizedHeaders =
+              row.map(
+                normalizeHeader,
+              )
+
+            return requiredHeaders.every(
+              (requiredHeader) =>
+                normalizedHeaders.includes(
+                  requiredHeader,
+                ),
+            )
+          },
+        )
+
+      if (headerRowIndex === -1) {
+        setAssignmentFormError(
+          'The uploaded file must contain these headers: ASN #, Assignment Name, Due Date, and Points.',
+        )
+
+        return
+      }
+
+      const headerRow =
+        spreadsheetRows[
+        headerRowIndex
+        ]
+
+      if (headerRow === undefined) {
+        setAssignmentFormError(
+          'The assignment header row could not be read.',
+        )
+
+        return
+      }
+
+      const normalizedHeaders =
+        headerRow.map(
+          normalizeHeader,
+        )
+
+      const asnColumnIndex =
+        normalizedHeaders.indexOf(
+          'asn',
+        )
+
+      const nameColumnIndex =
+        normalizedHeaders.indexOf(
+          'assignmentname',
+        )
+
+      const dueDateColumnIndex =
+        normalizedHeaders.indexOf(
+          'duedate',
+        )
+
+      const pointsColumnIndex =
+        normalizedHeaders.indexOf(
+          'points',
+        )
+
+      if (
+        asnColumnIndex < 0 ||
+        nameColumnIndex < 0 ||
+        dueDateColumnIndex < 0 ||
+        pointsColumnIndex < 0
+      ) {
+        setAssignmentFormError(
+          'The uploaded file must contain these headers: ASN #, Assignment Name, Due Date, and Points.',
+        )
+
+        return
+      }
+
+      const importedRows:
+        CourseAssignmentFormState[] =
+        spreadsheetRows
+          .slice(
+            headerRowIndex + 1,
+          )
+          .map(
+            (row) => ({
+              asn:
+                getCellText(
+                  row[
+                  asnColumnIndex
+                  ],
+                ),
+
+              name:
+                getCellText(
+                  row[
+                  nameColumnIndex
+                  ],
+                ),
+
+              dueDate:
+                getCellText(
+                  row[
+                  dueDateColumnIndex
+                  ],
+                ),
+
+              points:
+                getCellText(
+                  row[
+                  pointsColumnIndex
+                  ],
+                ),
+            }),
+          )
+          .filter(
+            (row) =>
+              row.asn.length > 0 ||
+              row.name.length > 0 ||
+              row.dueDate.length > 0 ||
+              row.points.length > 0,
+          )
+
+      if (
+        importedRows.length === 0
+      ) {
+        setAssignmentFormError(
+          'No assignment rows were found below the header row.',
+        )
+
+        return
+      }
+
+      if (
+        importedRows.length > 50
+      ) {
+        setAssignmentFormError(
+          'A maximum of 50 assignments can be uploaded at one time.',
+        )
+
+        return
+      }
+
+      setAssignmentForms(
+        importedRows,
+      )
+
+      setAssignmentRowCountInput(
+        String(
+          importedRows.length,
+        ),
+      )
+
+      setAssignmentFormError(
+        '',
+      )
+    } catch {
+      setAssignmentFormError(
+        'The assignment file could not be read. Confirm that it is a valid Excel or CSV file.',
+      )
+    } finally {
+      input.value = ''
+    }
+  }
+
   function saveAssignments(
     event:
       FormEvent<HTMLFormElement>,
@@ -32454,7 +32989,7 @@ function CoursePage({
                 style={
                   getCourseResizeTableStyle(
                     'assignments',
-                    5,
+                    6,
                   )
                 }
                 onPointerDown={(
@@ -32477,11 +33012,23 @@ function CoursePage({
                     }
                   >
                     <th
+                      className="course-assignment-drag-column"
+                      aria-label="Reorder assignments"
                       style={
                         getCourseResizeColumnStyle(
                           'assignments',
                           0,
-                          5,
+                          6,
+                        )
+                      }
+                    />
+
+                    <th
+                      style={
+                        getCourseResizeColumnStyle(
+                          'assignments',
+                          1,
+                          6,
                         )
                       }
                     >
@@ -32492,8 +33039,8 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'assignments',
-                          1,
-                          5,
+                          2,
+                          6,
                         )
                       }
                     >
@@ -32504,8 +33051,8 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'assignments',
-                          2,
-                          5,
+                          3,
+                          6,
                         )
                       }
                     >
@@ -32516,8 +33063,8 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'assignments',
-                          3,
-                          5,
+                          4,
+                          6,
                         )
                       }
                     >
@@ -32528,8 +33075,8 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'assignments',
-                          4,
                           5,
+                          6,
                         )
                       }
                     >
@@ -32552,7 +33099,7 @@ function CoursePage({
                     >
                       <td
                         className="course-workspace-empty-state"
-                        colSpan={5}
+                        colSpan={6}
                       >
                         No assignments have
                         been added. Use the
@@ -32562,64 +33109,141 @@ function CoursePage({
                     </tr>
                   ) : (
                     courseDisplayAssignments.map(
-                      (assignment) => (
-                        <tr
-                          key={
-                            assignment.id
-                          }
-                          data-layout-row-id={
-                            assignment.id
-                          }
-                          style={
-                            getCourseResizeRowStyle(
-                              'assignments',
-                              assignment.id,
-                            )
-                          }
-                          className={
-                            assignment.id ===
-                              selectedAssignmentId
-                              ? 'course-assignment-row course-assignment-row-selected'
-                              : 'course-assignment-row'
-                          }
-                          onClick={() => {
-                            setSelectedAssignmentId(
-                              assignment.id,
-                            )
-                          }}
-                        >
-                          <td>
-                            {
-                              assignment.asn
+                      (assignment) => {
+                        const isPriorityAssignment =
+                          isProfessionalDispositionsAssignment(
+                            assignment,
+                          )
+
+                        return (
+                          <tr
+                            key={
+                              assignment.id
                             }
-                          </td>
-
-                          <td>
-                            {
-                              assignment.name
+                            data-layout-row-id={
+                              assignment.id
                             }
-                          </td>
-
-                          <td>
-                            {getCourseAssignmentWeekLabel(
-                              courseRecord.startDate,
-                              assignment.dueDate,
-                            )}
-                          </td>
-
-                          <td>
-                            {formatCourseAssignmentDate(
-                              assignment.dueDate,
-                            )}
-                          </td>
-
-                          <td>
-                            {
-                              assignment.points
+                            style={
+                              getCourseResizeRowStyle(
+                                'assignments',
+                                assignment.id,
+                              )
                             }
-                          </td>
-                        </tr>
-                      ),
+                            className={
+                              `${assignment.id ===
+                                selectedAssignmentId
+                                ? 'course-assignment-row course-assignment-row-selected'
+                                : 'course-assignment-row'
+                              }${dragOverCourseAssignmentId ===
+                                assignment.id
+                                ? ' course-assignment-row-drag-over'
+                                : ''
+                              }`
+                            }
+                            onClick={() => {
+                              setSelectedAssignmentId(
+                                assignment.id,
+                              )
+                            }}
+                            onDragOver={(
+                              event,
+                            ) => {
+                              handleCourseAssignmentDragOver(
+                                event,
+                                assignment.id,
+                              )
+                            }}
+                            onDrop={(
+                              event,
+                            ) => {
+                              handleCourseAssignmentDrop(
+                                event,
+                                assignment.id,
+                              )
+                            }}
+                          >
+                            <td className="course-assignment-drag-cell">
+                              <button
+                                type="button"
+                                className={
+                                  isPriorityAssignment
+                                    ? 'course-assignment-drag-handle course-assignment-drag-handle-locked'
+                                    : 'course-assignment-drag-handle'
+                                }
+                                draggable={
+                                  !isPriorityAssignment &&
+                                  courseLayoutEditorSection !==
+                                  'assignments'
+                                }
+                                aria-label={
+                                  isPriorityAssignment
+                                    ? `${assignment.asn} remains fixed at the top`
+                                    : `Drag ${assignment.asn} to reorder`
+                                }
+                                title={
+                                  isPriorityAssignment
+                                    ? 'SOE remains fixed at the top'
+                                    : 'Drag row to reorder'
+                                }
+                                onPointerDown={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onClick={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onDragStart={(
+                                  event,
+                                ) => {
+                                  handleCourseAssignmentDragStart(
+                                    event,
+                                    assignment.id,
+                                  )
+                                }}
+                                onDragEnd={
+                                  handleCourseAssignmentDragEnd
+                                }
+                              >
+                                ⠿
+                              </button>
+                            </td>
+
+                            <td>
+                              {
+                                assignment.asn
+                              }
+                            </td>
+
+                            <td>
+                              {
+                                assignment.name
+                              }
+                            </td>
+
+                            <td>
+                              {getCourseAssignmentWeekLabel(
+                                courseRecord.startDate,
+                                assignment.dueDate,
+                              )}
+                            </td>
+
+                            <td>
+                              {formatCourseAssignmentDate(
+                                assignment.dueDate,
+                              )}
+                            </td>
+
+                            <td>
+                              {
+                                assignment.points
+                              }
+                            </td>
+                          </tr>
+                        )
+                      },
                     )
                   )}
                 </tbody>
@@ -32696,11 +33320,58 @@ function CoursePage({
                     </label>
 
                     <small>
-                      Optional. Enter the
-                      number of assignment
-                      rows you want to start
-                      with.
+                      Optional. Enter rows
+                      manually or upload an
+                      Excel/CSV file.
                     </small>
+
+                    <div className="course-assignment-import-actions">
+                      <a
+                        className="course-assignment-template-button"
+                        href={`${import.meta.env.BASE_URL}templates/Class%20Assignments%20Upload%20Template.xlsx`}
+                        download="Class Assignments Upload Template.xlsx"
+                        title="Download Class Assignments Upload Template"
+                      >
+                        <span
+                          aria-hidden="true"
+                        >
+                          ↓
+                        </span>
+
+                        Download Template
+                      </a>
+
+                      <button
+                        type="button"
+                        className="course-assignment-upload-button"
+                        onClick={() => {
+                          assignmentUploadInputRef
+                            .current
+                            ?.click()
+                        }}
+                      >
+                        <span
+                          aria-hidden="true"
+                        >
+                          ↑
+                        </span>
+
+                        Upload Excel / CSV
+                      </button>
+                    </div>
+
+                    <input
+                      ref={
+                        assignmentUploadInputRef
+                      }
+                      className="course-assignment-upload-input"
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      aria-label="Upload assignments from Excel or CSV"
+                      onChange={
+                        handleAssignmentUploadFile
+                      }
+                    />
                   </div>
 
                   <div className="course-assignment-entry-table">
