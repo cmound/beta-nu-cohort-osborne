@@ -18789,7 +18789,7 @@ tbody td {
   column-gap: 12px;
   row-gap: 0;
   align-items: start;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .course-workspace-layout-16
@@ -18838,8 +18838,60 @@ tbody td {
 
 .course-workspace-layout-16
   .course-workspace-links-grid {
-  gap: 9px;
-  padding: 11px 14px 14px;
+  gap: 5px;
+  padding: 8px 14px 10px;
+}
+
+.course-workspace-layout-16
+  .course-link-copy-field {
+  display: grid;
+  grid-template-columns:
+    150px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  min-height: 29px;
+}
+
+.course-workspace-layout-16
+  .course-link-copy-field
+  .course-workspace-field {
+  display: contents;
+}
+
+.course-workspace-layout-16
+  .course-workspace-links-grid
+  .course-workspace-field
+  > span {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.course-workspace-layout-16
+  .course-workspace-links-grid
+  .course-workspace-field-input,
+.course-workspace-layout-16
+  .course-workspace-links-grid
+  .course-link-copy-field:first-child
+  .course-workspace-field-input {
+  width: 100%;
+  height: 29px;
+  min-height: 29px;
+  box-sizing: border-box;
+  align-self: center;
+  padding: 4px 76px 4px 10px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.course-workspace-layout-16
+  .course-link-copy-bubble {
+  top: 3px;
+  right: 4px;
 }
 
 /* Class Webinars receives the larger top-right area. */
@@ -18855,7 +18907,7 @@ tbody td {
   .course-workspace-assignments-section {
   grid-area: assignments;
   min-width: 0;
-  margin-top: 12px;
+  margin-top: 8px;
   margin-bottom: 0;
 }
 
@@ -18863,7 +18915,7 @@ tbody td {
   .course-workspace-meetings-section {
   grid-area: meetings;
   min-width: 0;
-  margin-top: 12px;
+  margin-top: 8px;
   margin-bottom: 0;
 }
 
@@ -18904,14 +18956,14 @@ tbody td {
   white-space: normal;
 }
 
-/* Strong visual divider between the
-   first term and second term meetings. */
+/* Keep all 16-week cohort meeting cards
+   visually consistent. */
 .course-workspace-layout-16
   .course-meetings-compact-grid-16
   .course-meeting-compact-card:nth-of-type(n + 3) {
-  margin-top: 6px;
+  margin-top: 0;
   border-top:
-    3px solid #c69214;
+    1px solid #8d99a8;
 }
 
 /* Webinar checkbox delete mode. */
@@ -20750,4 +20802,38 @@ tbody td {
   color: #64748b;
   font-weight: 800;
   text-align: center !important;
+}
+
+/* =========================================================
+   16-Week Course Assignment Progress Sizing
+   ========================================================= */
+
+/* Student column */
+.course-workspace-page-16
+  .course-progress-student-column,
+.course-workspace-page-16
+  .course-progress-student-name {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+}
+
+/* Overall Progress column, reduced from 175px to 125px. */
+.course-workspace-page-16
+  .course-progress-overall-column,
+.course-workspace-page-16
+  .course-progress-overall-cell {
+  width: 125px;
+  min-width: 125px;
+  max-width: 125px;
+}
+
+/* Assignment columns, reduced from 190px to 152px. */
+.course-workspace-page-16
+  .course-progress-assignment-column,
+.course-workspace-page-16
+  .course-progress-status-cell {
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
 }

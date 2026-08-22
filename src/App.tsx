@@ -30499,7 +30499,13 @@ function CoursePage({
   }
 
   return (
-    <section className="page-shell course-workspace-page">
+    <section
+      className={
+        isSixteenWeekCourse
+          ? 'page-shell course-workspace-page course-workspace-page-16'
+          : 'page-shell course-workspace-page'
+      }
+    >
       <header className="course-workspace-header">
         <div className="course-workspace-header-copy">
           <span className="course-workspace-eyebrow">
