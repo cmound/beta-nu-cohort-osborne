@@ -29469,6 +29469,11 @@ function CoursePage({
   const courseEndDate =
     courseRecord.endDate
 
+  const isSixteenWeekCourse =
+    courseRecord.length
+      .toLowerCase()
+      .startsWith('16')
+
   const workspace =
     courseWorkspaces[
     courseSlug
@@ -30776,11 +30781,6 @@ function CoursePage({
             rightMeeting.date,
           ),
       )
-
-  const isSixteenWeekCourse =
-    courseRecord.length
-      .toLowerCase()
-      .startsWith('16')
 
   const webinarLimit =
     isSixteenWeekCourse
