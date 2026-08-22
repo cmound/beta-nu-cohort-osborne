@@ -2727,12 +2727,21 @@ function extractCourseZoomMeetingId(
     return ''
   }
 
-  const meetingMatch =
+  const pathMatch =
     /\/(?:j|wc\/join)\/(\d{9,12})/i.exec(
       trimmedValue,
     )
 
-  return meetingMatch?.[1] ?? ''
+  if (pathMatch?.[1] !== undefined) {
+    return pathMatch[1]
+  }
+
+  const omnMatch =
+    /[?&]omn=(\d{9,12})(?:&|$)/i.exec(
+      trimmedValue,
+    )
+
+  return omnMatch?.[1] ?? ''
 }
 
 function normalizeCourseWebinarNumber(
@@ -29397,18 +29406,6 @@ function CoursePage({
 
         return
       }
-    }
-
-    const saveNewProfessor =
-      window.confirm(
-        `Save ${cleanedName} to professor memory so this information can auto-fill on other class pages?`,
-      )
-
-    if (!saveNewProfessor) {
-      professorEditBaselineRef.current =
-        null
-
-      return
     }
 
     const newProfessor:
