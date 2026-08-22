@@ -2934,6 +2934,30 @@ function formatCourseProfessorPhone(
   )
 }
 
+function isProfessionalDispositionsAssignment(
+  assignment: CourseAssignmentRecord,
+): boolean {
+  const normalizedAsn =
+    assignment.asn
+      .trim()
+      .toUpperCase()
+
+  const normalizedName =
+    assignment.name
+      .trim()
+      .toLowerCase()
+      .replace(
+        /\s+/g,
+        ' ',
+      )
+
+  return (
+    normalizedAsn === 'SOE' ||
+    normalizedName ===
+    'professional dispositions student acknowledgement'
+  )
+}
+
 function formatCourseAssignmentNumber(
   value: string,
 ): string {
@@ -29589,6 +29613,19 @@ function CoursePage({
     ] ??
     createEmptyCourseWorkspaceRecord()
 
+  const courseDisplayAssignments = [
+    ...workspace.assignments.filter(
+      isProfessionalDispositionsAssignment,
+    ),
+
+    ...workspace.assignments.filter(
+      (assignment) =>
+        !isProfessionalDispositionsAssignment(
+          assignment,
+        ),
+    ),
+  ]
+
   const courseProgressContacts =
     sortCohortContacts(
       contacts,
@@ -32524,7 +32561,7 @@ function CoursePage({
                       </td>
                     </tr>
                   ) : (
-                    workspace.assignments.map(
+                    courseDisplayAssignments.map(
                       (assignment) => (
                         <tr
                           key={
@@ -34047,7 +34084,7 @@ function CoursePage({
                     Assignments
                   </th>
                 ) : (
-                  workspace.assignments.map(
+                  courseDisplayAssignments.map(
                     (
                       assignment,
                       assignmentIndex,
@@ -34162,7 +34199,7 @@ function CoursePage({
                           begin tracking progress.
                         </td>
                       ) : (
-                        workspace.assignments.map(
+                        courseDisplayAssignments.map(
                           (
                             assignment,
                             assignmentIndex,
@@ -37994,6 +38031,15 @@ function App() {
                   ) {
                     classNames.push(
                       'nav-sub-link',
+                    )
+                  }
+
+                  if (
+                    item.parentId ===
+                    'cohort-identity'
+                  ) {
+                    classNames.push(
+                      'nav-sub-link-cohort',
                     )
                   }
 

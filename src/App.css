@@ -1418,6 +1418,12 @@
   isolation: isolate;
 }
 
+/* Make room for the active COHORT arrow
+   without changing any non-selected row. */
+.nav-sub-link-cohort.nav-link-active {
+  padding-left: 84px;
+}
+
 .nav-sub-link-last.nav-link-active {
   border-bottom-color: #6f879c;
 }
@@ -1449,6 +1455,12 @@
   pointer-events: none;
 }
 
+/* On the selected COHORT row, position the
+   selected box immediately after the arrow. */
+.nav-sub-link-cohort.nav-link-active::after {
+  left: 73px;
+}
+
 /* Keep connector and content above selected fill */
 .nav-sub-link.nav-link-active::before,
 .nav-sub-link.nav-link-active
@@ -1472,6 +1484,95 @@
       rgba(255, 255, 255, 0.72),
     0 0 4px
       rgba(198, 146, 20, 0.38);
+}
+
+/* Selected COHORT sub-page:
+   replace the normal gold circle with
+   the larger polished 3D gold arrow. */
+.nav-sub-link-cohort.nav-link-active
+  .nav-sub-item-dot {
+  z-index: 3;
+  left: 25px;
+  top: 50%;
+  width: 46px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  background: #8e6508;
+  box-shadow: none;
+  clip-path:
+    polygon(
+      0 25%,
+      68% 25%,
+      68% 0,
+      100% 50%,
+      68% 100%,
+      68% 75%,
+      0 75%
+    );
+  filter:
+    drop-shadow(
+      0 2px 2px
+      rgba(0, 0, 0, 0.34)
+    )
+    drop-shadow(
+      1px 1px 0
+      rgba(142, 101, 8, 0.42)
+    );
+  transform:
+    translateY(-50%);
+}
+
+/* Inner beveled gold surface. */
+.nav-sub-link-cohort.nav-link-active
+  .nav-sub-item-dot::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 1px;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 48%,
+      #dca527 70%,
+      #c89214 100%
+    );
+  clip-path:
+    polygon(
+      0 25%,
+      68% 25%,
+      68% 0,
+      100% 50%,
+      68% 100%,
+      68% 75%,
+      0 75%
+    );
+}
+
+/* Bright upper-left bevel highlight.
+   This replaces the normal horizontal
+   connector branch only while selected. */
+.nav-sub-link-cohort.nav-link-active
+  .nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: auto;
+  left: 4px;
+  width: 25px;
+  height: 2px;
+  border-radius: 999px;
+  background:
+    rgba(
+      255,
+      239,
+      166,
+      0.82
+    );
+  transform: none;
 }
 
 /* ---------------------------------------------------------
