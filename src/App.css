@@ -18835,7 +18835,27 @@ tbody td {
 }
 
 /* Completed cohort meetings use a
-   coordinated light-gray body fill. */
+   muted blue-gray header and light-gray body. */
+.course-meeting-compact-card-completed
+  .course-meeting-compact-header {
+  background:
+    linear-gradient(
+      180deg,
+      #7d91a6 0%,
+      #5c7188 100%
+    );
+}
+
+.course-meeting-compact-card-completed
+  .course-meeting-compact-header
+  strong,
+.course-meeting-compact-card-completed
+  .course-meeting-compact-header
+  span {
+  color: #ffffff;
+  font-weight: 900;
+}
+
 .course-meeting-compact-card-completed
   .course-meeting-compact-roles
   dt,
@@ -18846,7 +18866,7 @@ tbody td {
 }
 
 /* The next upcoming cohort meeting
-   receives a stronger yellow title bar. */
+   receives a strong yellow title bar. */
 .course-meeting-compact-card-upcoming
   .course-meeting-compact-header {
   background:
