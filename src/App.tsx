@@ -134,6 +134,7 @@ interface ProfessorDirectoryRecord {
   readonly canonicalName: string
   readonly phoneDigits: string
   readonly email: string
+  readonly zoomUrl?: string
 }
 
 type CourseProgressStatus =
@@ -2052,7 +2053,11 @@ function isStoredProfessorDirectoryRecord(
     'string' &&
     typeof value.phoneDigits ===
     'string' &&
-    typeof value.email === 'string'
+    typeof value.email === 'string' &&
+    (
+      value.zoomUrl === undefined ||
+      typeof value.zoomUrl === 'string'
+    )
   )
 }
 
@@ -28842,6 +28847,9 @@ function CoursePage({
   const professorAutoFillRef =
     useRef(false)
 
+  const professorInitialEntryRecordIdRef =
+    useRef<string | null>(null)
+
   const professorNameBeforeEditRef =
     useRef('')
 
@@ -28953,6 +28961,9 @@ function CoursePage({
 
     professorAutoFillRef.current =
       false
+
+    professorInitialEntryRecordIdRef.current =
+      null
 
     professorNameBeforeEditRef.current =
       ''
@@ -29165,6 +29176,19 @@ function CoursePage({
     professorEditBaselineRef.current =
       matchedProfessor
 
+    if (
+      professorInitialEntryRecordIdRef.current ===
+      matchedProfessor.id
+    ) {
+      professorAutoFillRef.current =
+        false
+
+      return
+    }
+
+    professorInitialEntryRecordIdRef.current =
+      null
+
     professorAutoFillRef.current =
       true
 
@@ -29175,6 +29199,9 @@ function CoursePage({
         matchedProfessor.phoneDigits,
       professorEmail:
         matchedProfessor.email,
+      webinarZoomUrl:
+        matchedProfessor.zoomUrl ??
+        workspace.webinarZoomUrl,
     })
   }
 
@@ -29182,6 +29209,7 @@ function CoursePage({
     professorName: string,
     professorPhoneDigits: string,
     professorEmail: string,
+    professorZoomUrl: string,
   ): void {
     const cleanedName =
       professorName.trim()
@@ -29200,6 +29228,9 @@ function CoursePage({
     const cleanedEmail =
       professorEmail.trim()
 
+    const cleanedZoomUrl =
+      professorZoomUrl.trim()
+
     if (cleanedName.length === 0) {
       professorEditBaselineRef.current =
         null
@@ -29216,6 +29247,58 @@ function CoursePage({
         cleanedName,
       )
 
+    /*
+     * A professor created while entering this
+     * course is still in the initial-entry
+     * workflow. Changes made during that
+     * initial entry are saved silently.
+     */
+    if (
+      baseline !== null &&
+      professorInitialEntryRecordIdRef.current ===
+      baseline.id
+    ) {
+      const updatedProfessor:
+        ProfessorDirectoryRecord = {
+        ...baseline,
+        canonicalName:
+          cleanedName,
+        phoneDigits:
+          cleanedPhoneDigits,
+        email:
+          cleanedEmail,
+        zoomUrl:
+          cleanedZoomUrl,
+      }
+
+      setProfessorDirectory(
+        (current) =>
+          current.map(
+            (record) =>
+              record.id ===
+                baseline.id
+                ? updatedProfessor
+                : record,
+          ),
+      )
+
+      updateCourseWorkspace({
+        professorName:
+          updatedProfessor.canonicalName,
+        professorPhoneDigits:
+          updatedProfessor.phoneDigits,
+        professorEmail:
+          updatedProfessor.email,
+        webinarZoomUrl:
+          updatedProfessor.zoomUrl ?? '',
+      })
+
+      professorEditBaselineRef.current =
+        null
+
+      return
+    }
+
     if (
       baseline === null &&
       matchedProfessor !== null
@@ -29227,6 +29310,9 @@ function CoursePage({
           matchedProfessor.phoneDigits,
         professorEmail:
           matchedProfessor.email,
+        webinarZoomUrl:
+          matchedProfessor.zoomUrl ??
+          cleanedZoomUrl,
       })
 
       professorEditBaselineRef.current =
@@ -29248,6 +29334,9 @@ function CoursePage({
           matchedProfessor.phoneDigits,
         professorEmail:
           matchedProfessor.email,
+        webinarZoomUrl:
+          matchedProfessor.zoomUrl ??
+          cleanedZoomUrl,
       })
 
       professorEditBaselineRef.current =
@@ -29286,13 +29375,57 @@ function CoursePage({
         const canonicalName =
           baseline.canonicalName
 
-        const hasChanges =
+        const phoneChanged =
           baseline.phoneDigits !==
-          cleanedPhoneDigits ||
+          cleanedPhoneDigits
+
+        const emailChanged =
           baseline.email !==
           cleanedEmail
 
+        const zoomChanged =
+          baseline.zoomUrl !== undefined &&
+          baseline.zoomUrl !==
+          cleanedZoomUrl
+
+        const hasChanges =
+          phoneChanged ||
+          emailChanged ||
+          zoomChanged
+
+        /*
+         * Older professor records did not
+         * contain Zoom. The first Zoom URL
+         * added to one of those records is
+         * remembered without a confirmation.
+         */
         if (!hasChanges) {
+          const rememberedZoomUrl =
+            baseline.zoomUrl ??
+            cleanedZoomUrl
+
+          if (
+            baseline.zoomUrl === undefined
+          ) {
+            const updatedProfessor:
+              ProfessorDirectoryRecord = {
+              ...baseline,
+              zoomUrl:
+                cleanedZoomUrl,
+            }
+
+            setProfessorDirectory(
+              (current) =>
+                current.map(
+                  (record) =>
+                    record.id ===
+                      baseline.id
+                      ? updatedProfessor
+                      : record,
+                ),
+            )
+          }
+
           updateCourseWorkspace({
             professorName:
               canonicalName,
@@ -29300,6 +29433,8 @@ function CoursePage({
               baseline.phoneDigits,
             professorEmail:
               baseline.email,
+            webinarZoomUrl:
+              rememberedZoomUrl,
           })
 
           professorEditBaselineRef.current =
@@ -29308,9 +29443,48 @@ function CoursePage({
           return
         }
 
+        const changeDescriptions:
+          string[] = []
+
+        if (phoneChanged) {
+          changeDescriptions.push(
+            `Phone #: ${
+              formatCourseProfessorPhone(
+                baseline.phoneDigits,
+              ) || 'Blank'
+            } to ${
+              formatCourseProfessorPhone(
+                cleanedPhoneDigits,
+              ) || 'Blank'
+            }`,
+          )
+        }
+
+        if (emailChanged) {
+          changeDescriptions.push(
+            `Email: ${
+              baseline.email || 'Blank'
+            } to ${
+              cleanedEmail || 'Blank'
+            }`,
+          )
+        }
+
+        if (zoomChanged) {
+          changeDescriptions.push(
+            `Zoom: ${
+              baseline.zoomUrl || 'Blank'
+            } to ${
+              cleanedZoomUrl || 'Blank'
+            }`,
+          )
+        }
+
         const confirmed =
           window.confirm(
-            `Save changes to the remembered professor information for ${baseline.canonicalName}?`,
+            `Update remembered professor information for ${baseline.canonicalName}?\n\n${changeDescriptions.join(
+              '\n',
+            )}\n\nSelect OK to save the change or Cancel to keep the remembered information.`,
           )
 
         if (!confirmed) {
@@ -29321,6 +29495,9 @@ function CoursePage({
               baseline.phoneDigits,
             professorEmail:
               baseline.email,
+            webinarZoomUrl:
+              baseline.zoomUrl ??
+              cleanedZoomUrl,
           })
 
           professorEditBaselineRef.current =
@@ -29336,6 +29513,8 @@ function CoursePage({
             cleanedPhoneDigits,
           email:
             cleanedEmail,
+          zoomUrl:
+            cleanedZoomUrl,
         }
 
         setProfessorDirectory(
@@ -29356,6 +29535,8 @@ function CoursePage({
             updatedProfessor.phoneDigits,
           professorEmail:
             updatedProfessor.email,
+          webinarZoomUrl:
+            updatedProfessor.zoomUrl ?? '',
         })
 
         professorEditBaselineRef.current =
@@ -29379,6 +29560,8 @@ function CoursePage({
             cleanedPhoneDigits,
           email:
             cleanedEmail,
+          zoomUrl:
+            cleanedZoomUrl,
         }
 
         setProfessorDirectory(
@@ -29399,6 +29582,8 @@ function CoursePage({
             updatedProfessor.phoneDigits,
           professorEmail:
             updatedProfessor.email,
+          webinarZoomUrl:
+            updatedProfessor.zoomUrl ?? '',
         })
 
         professorEditBaselineRef.current =
@@ -29417,6 +29602,8 @@ function CoursePage({
         cleanedPhoneDigits,
       email:
         cleanedEmail,
+      zoomUrl:
+        cleanedZoomUrl,
     }
 
     setProfessorDirectory(
@@ -29433,7 +29620,12 @@ function CoursePage({
         newProfessor.phoneDigits,
       professorEmail:
         newProfessor.email,
+      webinarZoomUrl:
+        newProfessor.zoomUrl ?? '',
     })
+
+    professorInitialEntryRecordIdRef.current =
+      newProfessor.id
 
     professorEditBaselineRef.current =
       null
@@ -30668,13 +30860,29 @@ function CoursePage({
                     value={
                       workspace.webinarZoomUrl
                     }
+                    onFocus={() => {
+                      beginProfessorMemoryEdit()
+                    }}
                     onChange={(
                       event,
                     ) => {
+                      professorAutoFillRef.current =
+                        false
+
                       updateCourseWorkspace({
                         webinarZoomUrl:
                           event.target.value,
                       })
+                    }}
+                    onBlur={(
+                      event,
+                    ) => {
+                      finishProfessorMemoryEdit(
+                        workspace.professorName,
+                        workspace.professorPhoneDigits,
+                        workspace.professorEmail,
+                        event.currentTarget.value,
+                      )
                     }}
                   />
                 </label>
@@ -30791,6 +30999,7 @@ function CoursePage({
                     ?.value ?? '',
                   professorEmailInput
                     ?.value ?? '',
+                  workspace.webinarZoomUrl,
                 )
               }}
             >
