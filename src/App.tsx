@@ -29589,7 +29589,7 @@ function CoursePage({
     setAssignmentFormError('')
   }
 
-    function focusAssignmentFormInput(
+  function focusAssignmentFormInput(
     rowIndex: number,
     field:
       | 'asn'
@@ -29608,7 +29608,7 @@ function CoursePage({
 
       if (
         input instanceof
-          HTMLInputElement
+        HTMLInputElement
       ) {
         input.focus()
         input.select()
@@ -29689,7 +29689,7 @@ function CoursePage({
       selectionStart === null ||
       selectionEnd === null ||
       selectionStart !==
-        selectionEnd
+      selectionEnd
     ) {
       return
     }
@@ -29704,8 +29704,8 @@ function CoursePage({
     if (
       event.key === 'ArrowRight' &&
       selectionEnd <
-        event.currentTarget
-          .value.length
+      event.currentTarget
+        .value.length
     ) {
       return
     }
@@ -29724,7 +29724,7 @@ function CoursePage({
         focusAssignmentFormInput(
           rowIndex,
           fieldOrder[
-            fieldIndex - 1
+          fieldIndex - 1
           ],
         )
 
@@ -29752,7 +29752,7 @@ function CoursePage({
       focusAssignmentFormInput(
         rowIndex,
         fieldOrder[
-          fieldIndex + 1
+        fieldIndex + 1
         ],
       )
 
@@ -30561,39 +30561,347 @@ function CoursePage({
         </div>
       </header>
 
-      <div className="course-workspace-overview-grid">
-        <section className="course-workspace-info-card course-workspace-links-card">
-          <header>
-            <div>
-              <span className="course-workspace-card-eyebrow">
-                Course Resource
-              </span>
+      <div
+        className={
+          isSixteenWeekCourse
+            ? 'course-workspace-layout course-workspace-layout-16'
+            : 'course-workspace-layout'
+        }
+      >
+        <div className="course-workspace-overview-grid">
+          <section className="course-workspace-info-card course-workspace-links-card">
+            <header>
+              <div>
+                <span className="course-workspace-card-eyebrow">
+                  Course Resource
+                </span>
 
-              <h2>
-                Links
-              </h2>
+                <h2>
+                  Links
+                </h2>
+              </div>
+            </header>
+
+            <div className="course-workspace-links-grid">
+              <div className="course-link-copy-field">
+                <label className="course-workspace-field">
+                  <span>
+                    Assignments Page
+                  </span>
+
+                  <input
+                    type="url"
+                    className="course-workspace-field-input"
+                    placeholder="Paste assignments page URL"
+                    value={
+                      workspace.assignmentsPageUrl
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      updateCourseWorkspace({
+                        assignmentsPageUrl:
+                          event.target
+                            .value,
+                      })
+                    }}
+                  />
+                </label>
+
+                {workspace.assignmentsPageUrl
+                  .trim()
+                  .length > 0 ? (
+                  <button
+                    type="button"
+                    className="course-link-copy-bubble"
+                    onMouseDown={(
+                      event,
+                    ) => {
+                      event.preventDefault()
+                    }}
+                    onClick={() => {
+                      const url =
+                        workspace.assignmentsPageUrl
+                          .trim()
+
+                      if (
+                        navigator.clipboard ===
+                        undefined
+                      ) {
+                        window.alert(
+                          'Clipboard access is not available in this browser.',
+                        )
+
+                        return
+                      }
+
+                      void navigator.clipboard
+                        .writeText(url)
+                        .catch(() => {
+                          window.alert(
+                            'Unable to copy the Assignments Page URL.',
+                          )
+                        })
+                    }}
+                  >
+                    Copy URL
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="course-link-copy-field">
+                <label className="course-workspace-field">
+                  <span>
+                    Zoom Link
+                  </span>
+
+                  <input
+                    type="url"
+                    className="course-workspace-field-input"
+                    placeholder="Paste full Zoom link"
+                    value={
+                      workspace.webinarZoomUrl
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      updateCourseWorkspace({
+                        webinarZoomUrl:
+                          event.target.value,
+                      })
+                    }}
+                  />
+                </label>
+
+                {workspace.webinarZoomUrl
+                  .trim()
+                  .length > 0 ? (
+                  <button
+                    type="button"
+                    className="course-link-copy-bubble"
+                    onMouseDown={(
+                      event,
+                    ) => {
+                      event.preventDefault()
+                    }}
+                    onClick={() => {
+                      const url =
+                        workspace.webinarZoomUrl
+                          .trim()
+
+                      if (
+                        navigator.clipboard ===
+                        undefined
+                      ) {
+                        window.alert(
+                          'Clipboard access is not available in this browser.',
+                        )
+
+                        return
+                      }
+
+                      void navigator.clipboard
+                        .writeText(url)
+                        .catch(() => {
+                          window.alert(
+                            'Unable to copy the Zoom Link URL.',
+                          )
+                        })
+                    }}
+                  >
+                    Copy URL
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </header>
+          </section>
 
-          <div className="course-workspace-links-grid">
-            <div className="course-link-copy-field">
+          <section className="course-workspace-info-card course-workspace-professor-card">
+            <header>
+              <div>
+                <span className="course-workspace-card-eyebrow">
+                  Instructor
+                </span>
+
+                <h2>
+                  Professor Information
+                </h2>
+              </div>
+            </header>
+
+            <div
+              className="course-workspace-professor-grid"
+              onFocusCapture={
+                beginProfessorMemoryEdit
+              }
+              onBlur={(event) => {
+                const nextTarget =
+                  event.relatedTarget
+
+                if (
+                  nextTarget instanceof
+                  Node &&
+                  event.currentTarget.contains(
+                    nextTarget,
+                  )
+                ) {
+                  return
+                }
+
+                if (
+                  professorAutoFillRef.current
+                ) {
+                  professorAutoFillRef.current =
+                    false
+
+                  professorEditBaselineRef.current =
+                    null
+
+                  return
+                }
+
+                const professorNameInput =
+                  event.currentTarget
+                    .querySelector<HTMLInputElement>(
+                      'input[name="courseProfessorName"]',
+                    )
+
+                const professorPhoneInput =
+                  event.currentTarget
+                    .querySelector<HTMLInputElement>(
+                      'input[name="courseProfessorPhone"]',
+                    )
+
+                const professorEmailInput =
+                  event.currentTarget
+                    .querySelector<HTMLInputElement>(
+                      'input[name="courseProfessorEmail"]',
+                    )
+
+                finishProfessorMemoryEdit(
+                  professorNameInput
+                    ?.value ?? '',
+                  professorPhoneInput
+                    ?.value ?? '',
+                  professorEmailInput
+                    ?.value ?? '',
+                )
+              }}
+            >
               <label className="course-workspace-field">
                 <span>
-                  Assignments Page
+                  Professor Name
                 </span>
 
                 <input
-                  type="url"
+                  type="text"
+                  name="courseProfessorName"
                   className="course-workspace-field-input"
-                  placeholder="Paste assignments page URL"
+                  placeholder="Enter professor name"
                   value={
-                    workspace.assignmentsPageUrl
+                    workspace.professorName
+                  }
+                  onFocus={(
+                    event,
+                  ) => {
+                    professorNameBeforeEditRef.current =
+                      event.currentTarget
+                        .value
+                  }}
+                  onChange={(
+                    event,
+                  ) => {
+                    professorAutoFillRef.current =
+                      false
+
+                    updateCourseWorkspace({
+                      professorName:
+                        event.target
+                          .value,
+                    })
+                  }}
+                  onBlur={(
+                    event,
+                  ) => {
+                    if (
+                      event.currentTarget
+                        .value
+                        .trim() ===
+                      professorNameBeforeEditRef
+                        .current
+                        .trim()
+                    ) {
+                      return
+                    }
+
+                    applyRememberedProfessor(
+                      event.currentTarget
+                        .value,
+                    )
+                  }}
+                />
+              </label>
+
+              <label className="course-workspace-field">
+                <span>
+                  Professor Phone #
+                </span>
+
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  name="courseProfessorPhone"
+                  className="course-workspace-field-input"
+                  placeholder="(555) 123-4567"
+                  value={
+                    formatCourseProfessorPhone(
+                      workspace.professorPhoneDigits,
+                    )
                   }
                   onChange={(
                     event,
                   ) => {
+                    professorAutoFillRef.current =
+                      false
+
                     updateCourseWorkspace({
-                      assignmentsPageUrl:
+                      professorPhoneDigits:
+                        event.target
+                          .value
+                          .replace(
+                            /\D/g,
+                            '',
+                          )
+                          .slice(
+                            0,
+                            10,
+                          ),
+                    })
+                  }}
+                />
+              </label>
+
+              <label className="course-workspace-field">
+                <span>
+                  Professor Email
+                </span>
+
+                <input
+                  type="email"
+                  name="courseProfessorEmail"
+                  className="course-workspace-field-input"
+                  placeholder="Enter professor email"
+                  value={
+                    workspace.professorEmail
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    professorAutoFillRef.current =
+                      false
+
+                    updateCourseWorkspace({
+                      professorEmail:
                         event.target
                           .value,
                     })
@@ -30601,718 +30909,967 @@ function CoursePage({
                 />
               </label>
 
-              {workspace.assignmentsPageUrl
-                .trim()
-                .length > 0 ? (
-                <button
-                  type="button"
-                  className="course-link-copy-bubble"
-                  onMouseDown={(
-                    event,
-                  ) => {
-                    event.preventDefault()
-                  }}
-                  onClick={() => {
-                    const url =
-                      workspace.assignmentsPageUrl
-                        .trim()
-
-                    if (
-                      navigator.clipboard ===
-                      undefined
-                    ) {
-                      window.alert(
-                        'Clipboard access is not available in this browser.',
-                      )
-
-                      return
-                    }
-
-                    void navigator.clipboard
-                      .writeText(url)
-                      .catch(() => {
-                        window.alert(
-                          'Unable to copy the Assignments Page URL.',
-                        )
-                      })
-                  }}
-                >
-                  Copy URL
-                </button>
-              ) : null}
-            </div>
-
-            <div className="course-link-copy-field">
               <label className="course-workspace-field">
                 <span>
-                  Zoom Link
+                  Professor Office Hours
                 </span>
 
                 <input
-                  type="url"
+                  type="text"
                   className="course-workspace-field-input"
-                  placeholder="Paste full Zoom link"
+                  placeholder="Enter office hours"
                   value={
-                    workspace.webinarZoomUrl
+                    workspace.professorOfficeHours
                   }
                   onChange={(
                     event,
                   ) => {
                     updateCourseWorkspace({
-                      webinarZoomUrl:
-                        event.target.value,
+                      professorOfficeHours:
+                        event.target
+                          .value,
                     })
                   }}
                 />
               </label>
+            </div>
+          </section>
+        </div>
 
-              {workspace.webinarZoomUrl
-                .trim()
-                .length > 0 ? (
+        <div className="course-workspace-operations-grid">
+          <section className="course-workspace-section course-workspace-assignments-section">
+            <header className="course-workspace-section-header">
+              <div>
+                <span className="course-workspace-section-eyebrow">
+                  Course Requirements
+                </span>
+
+                <h2>
+                  Assignments
+                </h2>
+              </div>
+
+              <div className="course-workspace-section-actions">
                 <button
                   type="button"
-                  className="course-link-copy-bubble"
-                  onMouseDown={(
-                    event,
-                  ) => {
-                    event.preventDefault()
-                  }}
-                  onClick={() => {
-                    const url =
-                      workspace.webinarZoomUrl
-                        .trim()
-
-                    if (
-                      navigator.clipboard ===
-                      undefined
-                    ) {
-                      window.alert(
-                        'Clipboard access is not available in this browser.',
-                      )
-
-                      return
-                    }
-
-                    void navigator.clipboard
-                      .writeText(url)
-                      .catch(() => {
-                        window.alert(
-                          'Unable to copy the Zoom Link URL.',
-                        )
-                      })
-                  }}
-                >
-                  Copy URL
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        <section className="course-workspace-info-card">
-          <header>
-            <div>
-              <span className="course-workspace-card-eyebrow">
-                Instructor
-              </span>
-
-              <h2>
-                Professor Information
-              </h2>
-            </div>
-          </header>
-
-          <div
-            className="course-workspace-professor-grid"
-            onFocusCapture={
-              beginProfessorMemoryEdit
-            }
-            onBlur={(event) => {
-              const nextTarget =
-                event.relatedTarget
-
-              if (
-                nextTarget instanceof
-                Node &&
-                event.currentTarget.contains(
-                  nextTarget,
-                )
-              ) {
-                return
-              }
-
-              if (
-                professorAutoFillRef.current
-              ) {
-                professorAutoFillRef.current =
-                  false
-
-                professorEditBaselineRef.current =
-                  null
-
-                return
-              }
-
-              const professorNameInput =
-                event.currentTarget
-                  .querySelector<HTMLInputElement>(
-                    'input[name="courseProfessorName"]',
-                  )
-
-              const professorPhoneInput =
-                event.currentTarget
-                  .querySelector<HTMLInputElement>(
-                    'input[name="courseProfessorPhone"]',
-                  )
-
-              const professorEmailInput =
-                event.currentTarget
-                  .querySelector<HTMLInputElement>(
-                    'input[name="courseProfessorEmail"]',
-                  )
-
-              finishProfessorMemoryEdit(
-                professorNameInput
-                  ?.value ?? '',
-                professorPhoneInput
-                  ?.value ?? '',
-                professorEmailInput
-                  ?.value ?? '',
-              )
-            }}
-          >
-            <label className="course-workspace-field">
-              <span>
-                Professor Name
-              </span>
-
-              <input
-                type="text"
-                name="courseProfessorName"
-                className="course-workspace-field-input"
-                placeholder="Enter professor name"
-                value={
-                  workspace.professorName
-                }
-                onFocus={(
-                  event,
-                ) => {
-                  professorNameBeforeEditRef.current =
-                    event.currentTarget
-                      .value
-                }}
-                onChange={(
-                  event,
-                ) => {
-                  professorAutoFillRef.current =
-                    false
-
-                  updateCourseWorkspace({
-                    professorName:
-                      event.target
-                        .value,
-                  })
-                }}
-                onBlur={(
-                  event,
-                ) => {
-                  if (
-                    event.currentTarget
-                      .value
-                      .trim() ===
-                    professorNameBeforeEditRef
-                      .current
-                      .trim()
-                  ) {
-                    return
-                  }
-
-                  applyRememberedProfessor(
-                    event.currentTarget
-                      .value,
-                  )
-                }}
-              />
-            </label>
-
-            <label className="course-workspace-field">
-              <span>
-                Professor Phone #
-              </span>
-
-              <input
-                type="tel"
-                inputMode="tel"
-                name="courseProfessorPhone"
-                className="course-workspace-field-input"
-                placeholder="(555) 123-4567"
-                value={
-                  formatCourseProfessorPhone(
-                    workspace.professorPhoneDigits,
-                  )
-                }
-                onChange={(
-                  event,
-                ) => {
-                  professorAutoFillRef.current =
-                    false
-
-                  updateCourseWorkspace({
-                    professorPhoneDigits:
-                      event.target
-                        .value
-                        .replace(
-                          /\D/g,
-                          '',
-                        )
-                        .slice(
-                          0,
-                          10,
-                        ),
-                  })
-                }}
-              />
-            </label>
-
-            <label className="course-workspace-field">
-              <span>
-                Professor Email
-              </span>
-
-              <input
-                type="email"
-                name="courseProfessorEmail"
-                className="course-workspace-field-input"
-                placeholder="Enter professor email"
-                value={
-                  workspace.professorEmail
-                }
-                onChange={(
-                  event,
-                ) => {
-                  professorAutoFillRef.current =
-                    false
-
-                  updateCourseWorkspace({
-                    professorEmail:
-                      event.target
-                        .value,
-                  })
-                }}
-              />
-            </label>
-
-            <label className="course-workspace-field">
-              <span>
-                Professor Office Hours
-              </span>
-
-              <input
-                type="text"
-                className="course-workspace-field-input"
-                placeholder="Enter office hours"
-                value={
-                  workspace.professorOfficeHours
-                }
-                onChange={(
-                  event,
-                ) => {
-                  updateCourseWorkspace({
-                    professorOfficeHours:
-                      event.target
-                        .value,
-                  })
-                }}
-              />
-            </label>
-          </div>
-        </section>
-      </div>
-
-      <div className="course-workspace-operations-grid">
-        <section className="course-workspace-section">
-          <header className="course-workspace-section-header">
-            <div>
-              <span className="course-workspace-section-eyebrow">
-                Course Requirements
-              </span>
-
-              <h2>
-                Assignments
-              </h2>
-            </div>
-
-            <div className="course-workspace-section-actions">
-              <button
-                type="button"
-                className="course-workspace-icon-button course-workspace-add-icon-button"
-                aria-label="Add assignment"
-                title="Add Assignment"
-                onClick={
-                  openAssignmentModal
-                }
-              />
-
-              <button
-                type="button"
-                className="course-workspace-icon-button course-workspace-delete-icon-button"
-                aria-label="Delete selected assignment"
-                title="Delete Selected Assignment"
-                disabled={
-                  selectedAssignmentId ===
-                  null
-                }
-                onClick={
-                  deleteSelectedAssignment
-                }
-              >
-                <svg
-                  className="course-workspace-delete-icon-svg"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M7.25 8.25h9.5l-.65 10.25H7.9L7.25 8.25Z" />
-                  <path d="M5.5 6.75h13" />
-                  <path d="M9.25 4.75h5.5" />
-                  <path d="M9.75 10.5v5.75" />
-                  <path d="M12 10.5v5.75" />
-                  <path d="M14.25 10.5v5.75" />
-                </svg>
-              </button>
-            </div>
-          </header>
-
-          <div className="course-workspace-table-frame">
-            <table className="course-workspace-table course-assignment-table">
-              <thead>
-                <tr>
-                  <th>ASN #</th>
-                  <th>Assignment Name</th>
-                  <th>
-                    Week
-                    <br />
-                    Due
-                  </th>
-                  <th>Due Date</th>
-                  <th>Points</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {workspace.assignments
-                  .length === 0 ? (
-                  <tr>
-                    <td
-                      className="course-workspace-empty-state"
-                      colSpan={5}
-                    >
-                      No assignments have
-                      been added. Use the
-                      gold + button above to
-                      begin this course.
-                    </td>
-                  </tr>
-                ) : (
-                  workspace.assignments.map(
-                    (assignment) => (
-                      <tr
-                        key={
-                          assignment.id
-                        }
-                        className={
-                          assignment.id ===
-                            selectedAssignmentId
-                            ? 'course-assignment-row course-assignment-row-selected'
-                            : 'course-assignment-row'
-                        }
-                        onClick={() => {
-                          setSelectedAssignmentId(
-                            assignment.id,
-                          )
-                        }}
-                      >
-                        <td>
-                          {
-                            assignment.asn
-                          }
-                        </td>
-
-                        <td>
-                          {
-                            assignment.name
-                          }
-                        </td>
-
-                        <td>
-                          {getCourseAssignmentWeekLabel(
-                            courseRecord.startDate,
-                            assignment.dueDate,
-                          )}
-                        </td>
-
-                        <td>
-                          {formatCourseAssignmentDate(
-                            assignment.dueDate,
-                          )}
-                        </td>
-
-                        <td>
-                          {
-                            assignment.points
-                          }
-                        </td>
-                      </tr>
-                    ),
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {isAssignmentModalOpen ? (
-          <div className="course-assignment-modal-backdrop">
-            <div
-              className="course-assignment-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="course-assignment-modal-title"
-            >
-              <header className="course-assignment-modal-header">
-                <div>
-                  <span>
-                    ADD ASSIGNMENT
-                  </span>
-
-                  <h2 id="course-assignment-modal-title">
-                    {courseRecord.code}{' '}
-                    {
-                      courseRecord.className
-                    }
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  className="course-assignment-modal-close"
-                  aria-label="Close assignment window"
+                  className="course-workspace-icon-button course-workspace-add-icon-button"
+                  aria-label="Add assignment"
+                  title="Add Assignment"
                   onClick={
-                    closeAssignmentModal
+                    openAssignmentModal
+                  }
+                />
+
+                <button
+                  type="button"
+                  className="course-workspace-icon-button course-workspace-delete-icon-button"
+                  aria-label="Delete selected assignment"
+                  title="Delete Selected Assignment"
+                  disabled={
+                    selectedAssignmentId ===
+                    null
+                  }
+                  onClick={
+                    deleteSelectedAssignment
                   }
                 >
-                  ×
-                </button>
-              </header>
-
-              <form
-                className="course-assignment-form"
-                onSubmit={
-                  saveAssignments
-                }
-              >
-                <div className="course-assignment-row-count-control">
-                  <label
-                    htmlFor="course-assignment-row-count"
+                  <svg
+                    className="course-workspace-delete-icon-svg"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
+                    <path d="M7.25 8.25h9.5l-.65 10.25H7.9L7.25 8.25Z" />
+                    <path d="M5.5 6.75h13" />
+                    <path d="M9.25 4.75h5.5" />
+                    <path d="M9.75 10.5v5.75" />
+                    <path d="M12 10.5v5.75" />
+                    <path d="M14.25 10.5v5.75" />
+                  </svg>
+                </button>
+              </div>
+            </header>
+
+            <div className="course-workspace-table-frame">
+              <table className="course-workspace-table course-assignment-table">
+                <thead>
+                  <tr>
+                    <th>ASN #</th>
+                    <th>Assignment Name</th>
+                    <th>
+                      Week
+                      <br />
+                      Due
+                    </th>
+                    <th>Due Date</th>
+                    <th>Points</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {workspace.assignments
+                    .length === 0 ? (
+                    <tr>
+                      <td
+                        className="course-workspace-empty-state"
+                        colSpan={5}
+                      >
+                        No assignments have
+                        been added. Use the
+                        gold + button above to
+                        begin this course.
+                      </td>
+                    </tr>
+                  ) : (
+                    workspace.assignments.map(
+                      (assignment) => (
+                        <tr
+                          key={
+                            assignment.id
+                          }
+                          className={
+                            assignment.id ===
+                              selectedAssignmentId
+                              ? 'course-assignment-row course-assignment-row-selected'
+                              : 'course-assignment-row'
+                          }
+                          onClick={() => {
+                            setSelectedAssignmentId(
+                              assignment.id,
+                            )
+                          }}
+                        >
+                          <td>
+                            {
+                              assignment.asn
+                            }
+                          </td>
+
+                          <td>
+                            {
+                              assignment.name
+                            }
+                          </td>
+
+                          <td>
+                            {getCourseAssignmentWeekLabel(
+                              courseRecord.startDate,
+                              assignment.dueDate,
+                            )}
+                          </td>
+
+                          <td>
+                            {formatCourseAssignmentDate(
+                              assignment.dueDate,
+                            )}
+                          </td>
+
+                          <td>
+                            {
+                              assignment.points
+                            }
+                          </td>
+                        </tr>
+                      ),
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {isAssignmentModalOpen ? (
+            <div className="course-assignment-modal-backdrop">
+              <div
+                className="course-assignment-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="course-assignment-modal-title"
+              >
+                <header className="course-assignment-modal-header">
+                  <div>
                     <span>
-                      # of rows
+                      ADD ASSIGNMENT
                     </span>
 
-                    <input
-                      id="course-assignment-row-count"
-                      type="number"
-                      inputMode="numeric"
-                      min="1"
-                      max="50"
-                      placeholder="#"
-                      value={
-                        assignmentRowCountInput
+                    <h2 id="course-assignment-modal-title">
+                      {courseRecord.code}{' '}
+                      {
+                        courseRecord.className
                       }
-                      onChange={(
-                        event,
-                      ) => {
-                        resizeAssignmentFormRows(
-                          event.target.value,
-                        )
-                      }}
-                    />
-                  </label>
-
-                  <small>
-                    Optional. Enter the
-                    number of assignment
-                    rows you want to start
-                    with.
-                  </small>
-                </div>
-
-                <div className="course-assignment-entry-table">
-                  <div className="course-assignment-entry-grid course-assignment-entry-header">
-                    <span>
-                      ASN #
-                    </span>
-
-                    <span>
-                      Assignment Name
-                    </span>
-
-                    <span>
-                      Due Date
-                    </span>
-
-                    <span>
-                      Points
-                    </span>
-
-                    <span
-                      aria-hidden="true"
-                      className="course-assignment-remove-header"
-                    />
+                    </h2>
                   </div>
 
-                  <div className="course-assignment-form-rows">
-                    {assignmentForms.map(
-                      (
-                        formRow,
-                        rowIndex,
-                      ) => (
-                        <div
-                          className="course-assignment-entry-grid course-assignment-form-row"
-                          key={`assignment-form-row-${rowIndex}`}
+                  <button
+                    type="button"
+                    className="course-assignment-modal-close"
+                    aria-label="Close assignment window"
+                    onClick={
+                      closeAssignmentModal
+                    }
+                  >
+                    ×
+                  </button>
+                </header>
+
+                <form
+                  className="course-assignment-form"
+                  onSubmit={
+                    saveAssignments
+                  }
+                >
+                  <div className="course-assignment-row-count-control">
+                    <label
+                      htmlFor="course-assignment-row-count"
+                    >
+                      <span>
+                        # of rows
+                      </span>
+
+                      <input
+                        id="course-assignment-row-count"
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        max="50"
+                        placeholder="#"
+                        value={
+                          assignmentRowCountInput
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          resizeAssignmentFormRows(
+                            event.target.value,
+                          )
+                        }}
+                      />
+                    </label>
+
+                    <small>
+                      Optional. Enter the
+                      number of assignment
+                      rows you want to start
+                      with.
+                    </small>
+                  </div>
+
+                  <div className="course-assignment-entry-table">
+                    <div className="course-assignment-entry-grid course-assignment-entry-header">
+                      <span>
+                        ASN #
+                      </span>
+
+                      <span>
+                        Assignment Name
+                      </span>
+
+                      <span>
+                        Due Date
+                      </span>
+
+                      <span>
+                        Points
+                      </span>
+
+                      <span
+                        aria-hidden="true"
+                        className="course-assignment-remove-header"
+                      />
+                    </div>
+
+                    <div className="course-assignment-form-rows">
+                      {assignmentForms.map(
+                        (
+                          formRow,
+                          rowIndex,
+                        ) => (
+                          <div
+                            className="course-assignment-entry-grid course-assignment-form-row"
+                            key={`assignment-form-row-${rowIndex}`}
+                          >
+                            <div className="course-assignment-entry-cell">
+                              <input
+                                id={
+                                  `course-assignment-asn-${rowIndex}`
+                                }
+                                autoFocus={
+                                  rowIndex === 0
+                                }
+                                type="text"
+                                aria-label={
+                                  `ASN number for row ${rowIndex + 1}`
+                                }
+                                placeholder="4, 3.5, or PQR"
+                                value={
+                                  formRow.asn
+                                }
+                                onChange={(
+                                  event,
+                                ) => {
+                                  updateAssignmentFormRow(
+                                    rowIndex,
+                                    'asn',
+                                    event.target
+                                      .value,
+                                  )
+                                }}
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  handleAssignmentFormArrowKey(
+                                    rowIndex,
+                                    'asn',
+                                    event,
+                                  )
+                                }}
+                              />
+                            </div>
+
+                            <div className="course-assignment-entry-cell">
+                              <input
+                                id={
+                                  `course-assignment-name-${rowIndex}`
+                                }
+                                type="text"
+                                aria-label={
+                                  `Assignment name for row ${rowIndex + 1}`
+                                }
+                                placeholder="Enter assignment name"
+                                value={
+                                  formRow.name
+                                }
+                                onChange={(
+                                  event,
+                                ) => {
+                                  updateAssignmentFormRow(
+                                    rowIndex,
+                                    'name',
+                                    event.target
+                                      .value,
+                                  )
+                                }}
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  handleAssignmentFormArrowKey(
+                                    rowIndex,
+                                    'name',
+                                    event,
+                                  )
+                                }}
+                              />
+                            </div>
+
+                            <div className="course-assignment-entry-cell">
+                              <input
+                                id={
+                                  `course-assignment-dueDate-${rowIndex}`
+                                }
+                                type="text"
+                                aria-label={
+                                  `Due date for row ${rowIndex + 1}`
+                                }
+                                placeholder="817, 0817, 081726, or 8/17/2026"
+                                value={
+                                  formRow.dueDate
+                                }
+                                onChange={(
+                                  event,
+                                ) => {
+                                  updateAssignmentFormRow(
+                                    rowIndex,
+                                    'dueDate',
+                                    event.target
+                                      .value,
+                                  )
+                                }}
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  handleAssignmentFormArrowKey(
+                                    rowIndex,
+                                    'dueDate',
+                                    event,
+                                  )
+                                }}
+                              />
+                            </div>
+
+                            <div className="course-assignment-entry-cell">
+                              <input
+                                id={
+                                  `course-assignment-points-${rowIndex}`
+                                }
+                                type="text"
+                                inputMode="decimal"
+                                aria-label={
+                                  `Points for row ${rowIndex + 1}`
+                                }
+                                placeholder="Points"
+                                value={
+                                  formRow.points
+                                }
+                                onChange={(
+                                  event,
+                                ) => {
+                                  updateAssignmentFormRow(
+                                    rowIndex,
+                                    'points',
+                                    event.target
+                                      .value,
+                                  )
+                                }}
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  if (
+                                    event.key ===
+                                    'Tab' &&
+                                    !event.shiftKey &&
+                                    rowIndex ===
+                                    assignmentForms.length -
+                                    1 &&
+                                    formRow.points
+                                      .trim()
+                                      .length > 0
+                                  ) {
+                                    event.preventDefault()
+
+                                    addAssignmentFormRow(
+                                      true,
+                                    )
+
+                                    return
+                                  }
+
+                                  handleAssignmentFormArrowKey(
+                                    rowIndex,
+                                    'points',
+                                    event,
+                                  )
+                                }}
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              className="course-assignment-remove-row-button"
+                              aria-label={
+                                `Remove assignment row ${rowIndex + 1}`
+                              }
+                              title="Remove row"
+                              onClick={() => {
+                                removeAssignmentFormRow(
+                                  rowIndex,
+                                )
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="course-assignment-grid-footer">
+                    <small>
+                      Week Due is calculated
+                      automatically from each
+                      Due Date.
+                    </small>
+
+                    <button
+                      type="button"
+                      className="course-assignment-add-row-button"
+                      onClick={() => {
+                        addAssignmentFormRow(
+                          true,
+                        )
+                      }}
+                    >
+                      <span aria-hidden="true">
+                        +
+                      </span>
+
+                      Add another assignment
+                    </button>
+                  </div>
+
+                  {assignmentFormError
+                    .length > 0 ? (
+                    <p className="course-assignment-form-error">
+                      {
+                        assignmentFormError
+                      }
+                    </p>
+                  ) : null}
+
+                  <div className="course-assignment-modal-actions">
+                    <button
+                      type="button"
+                      className="course-assignment-modal-cancel"
+                      onClick={
+                        closeAssignmentModal
+                      }
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="course-assignment-modal-save"
+                    >
+                      Add Assignment
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : null}
+
+          <section className="course-workspace-section course-workspace-webinars-section">
+            <header className="course-workspace-section-header">
+              <div>
+                <span className="course-workspace-section-eyebrow">
+                  Live Sessions
+                </span>
+
+                <h2>
+                  Class Webinars
+                </h2>
+              </div>
+
+              <div className="course-workspace-section-actions course-webinar-header-actions">
+                <div className="course-webinar-header-meeting-id">
+                  <span>
+                    Zoom ID
+                  </span>
+
+                  <strong>
+                    {webinarMeetingId ||
+                      'Not entered'}
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  className="course-workspace-icon-button course-workspace-add-icon-button"
+                  aria-label="Add webinar"
+                  title="Add Webinar"
+                  disabled={
+                    workspace.webinars.length >=
+                    webinarLimit
+                  }
+                  onClick={
+                    addCourseWebinar
+                  }
+                />
+
+                <button
+                  type="button"
+                  className={
+                    isWebinarDeleteMode
+                      ? 'course-workspace-icon-button course-workspace-delete-icon-button course-workspace-delete-icon-button-active'
+                      : 'course-workspace-icon-button course-workspace-delete-icon-button'
+                  }
+                  aria-label={
+                    isWebinarDeleteMode
+                      ? `Delete selected webinars, ${selectedWebinarIds.length} selected`
+                      : 'Select webinars to delete'
+                  }
+                  title={
+                    isWebinarDeleteMode
+                      ? 'Delete Selected Webinars'
+                      : 'Select Webinars to Delete'
+                  }
+                  aria-pressed={
+                    isWebinarDeleteMode
+                  }
+                  disabled={
+                    workspace.webinars.length ===
+                    0
+                  }
+                  onClick={
+                    handleDeleteCourseWebinars
+                  }
+                >
+                  <svg
+                    className="course-workspace-delete-icon-svg"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M7.25 8.25h9.5l-.65 10.25H7.9L7.25 8.25Z" />
+                    <path d="M5.5 6.75h13" />
+                    <path d="M9.25 4.75h5.5" />
+                    <path d="M9.75 10.5v5.75" />
+                    <path d="M12 10.5v5.75" />
+                    <path d="M14.25 10.5v5.75" />
+                  </svg>
+                </button>
+              </div>
+            </header>
+
+            <div className="course-workspace-table-frame course-webinar-table-frame">
+              <table
+                className={
+                  isSixteenWeekCourse
+                    ? 'course-workspace-table course-webinar-table course-webinar-table-16'
+                    : 'course-workspace-table course-webinar-table'
+                }
+                onKeyDown={
+                  handleCourseWebinarTableKeyDown
+                }
+              >
+                <thead>
+                  <tr>
+                    {isWebinarDeleteMode ? (
+                      <th
+                        className="course-webinar-select-column"
+                        aria-label="Select webinar"
+                      />
+                    ) : null}
+
+                    <th className="course-webinar-number-column">
+                      Webinar #
+                    </th>
+
+                    <th className="course-webinar-session-column">
+                      Session
+                    </th>
+
+                    {isSixteenWeekCourse ? (
+                      <th className="course-webinar-topic-column">
+                        Topic
+                      </th>
+                    ) : null}
+
+                    <th className="course-webinar-date-column">
+                      Date
+                    </th>
+
+                    <th className="course-webinar-time-column">
+                      Start Time
+
+                      <span className="course-webinar-time-zone">
+                        Pacific
+                      </span>
+                    </th>
+
+                    <th className="course-webinar-time-column">
+                      Start Time
+
+                      <span className="course-webinar-time-zone">
+                        Eastern
+                      </span>
+                    </th>
+
+                    <th className="course-webinar-required-column">
+                      Required
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {workspace.webinars.length ===
+                    0 ? (
+                    <tr>
+                      <td
+                        className="course-workspace-empty-state"
+                        colSpan={
+                          webinarColumnCount
+                        }
+                      >
+                        No class webinars have
+                        been added for this
+                        course.
+                      </td>
+                    </tr>
+                  ) : (
+                    workspace.webinars.map(
+                      (webinar) => (
+                        <tr
+                          key={webinar.id}
+                          className={
+                            selectedWebinarIds.includes(
+                              webinar.id,
+                            )
+                              ? 'course-webinar-row course-webinar-row-selected'
+                              : 'course-webinar-row'
+                          }
                         >
-                          <div className="course-assignment-entry-cell">
+                          {isWebinarDeleteMode ? (
+                            <td className="course-webinar-select-cell">
+                              <input
+                                type="checkbox"
+                                className="course-webinar-delete-checkbox"
+                                checked={
+                                  selectedWebinarIds.includes(
+                                    webinar.id,
+                                  )
+                                }
+                                aria-label={
+                                  `Select ${webinar.webinarNumber || 'webinar'} for deletion`
+                                }
+                                onChange={() => {
+                                  toggleCourseWebinarSelection(
+                                    webinar.id,
+                                  )
+                                }}
+                              />
+                            </td>
+                          ) : null}
+
+                          <td>
                             <input
-                              id={
-                                `course-assignment-asn-${rowIndex}`
-                              }
-                              autoFocus={
-                                rowIndex === 0
-                              }
                               type="text"
-                              aria-label={
-                                `ASN number for row ${rowIndex + 1}`
+                              className="course-webinar-cell-input"
+                              defaultValue={
+                                webinar.webinarNumber
                               }
-                              placeholder="4, 3.5, or PQR"
-                              value={
-                                formRow.asn
-                              }
-                              onChange={(
+                              placeholder="1"
+                              aria-label="Webinar number"
+                              onBlur={(
                                 event,
                               ) => {
-                                updateAssignmentFormRow(
-                                  rowIndex,
-                                  'asn',
-                                  event.target
-                                    .value,
-                                )
-                              }}
-                              onKeyDown={(
-                                event,
-                              ) => {
-                                handleAssignmentFormArrowKey(
-                                  rowIndex,
-                                  'asn',
-                                  event,
+                                const normalizedValue =
+                                  normalizeCourseWebinarNumber(
+                                    event
+                                      .currentTarget
+                                      .value,
+                                  )
+
+                                event.currentTarget.value =
+                                  normalizedValue
+
+                                updateCourseWebinar(
+                                  webinar.id,
+                                  'webinarNumber',
+                                  normalizedValue,
                                 )
                               }}
                             />
-                          </div>
+                          </td>
 
-                          <div className="course-assignment-entry-cell">
+                          <td>
                             <input
-                              id={
-                                `course-assignment-name-${rowIndex}`
-                              }
                               type="text"
-                              aria-label={
-                                `Assignment name for row ${rowIndex + 1}`
+                              className="course-webinar-cell-input"
+                              defaultValue={
+                                webinar.session
                               }
-                              placeholder="Enter assignment name"
-                              value={
-                                formRow.name
-                              }
-                              onChange={(
+                              placeholder="1"
+                              aria-label="Webinar session"
+                              onBlur={(
                                 event,
                               ) => {
-                                updateAssignmentFormRow(
-                                  rowIndex,
-                                  'name',
-                                  event.target
-                                    .value,
-                                )
-                              }}
-                              onKeyDown={(
-                                event,
-                              ) => {
-                                handleAssignmentFormArrowKey(
-                                  rowIndex,
-                                  'name',
-                                  event,
+                                const normalizedValue =
+                                  normalizeCourseWebinarSession(
+                                    event
+                                      .currentTarget
+                                      .value,
+                                  )
+
+                                event.currentTarget.value =
+                                  normalizedValue
+
+                                updateCourseWebinar(
+                                  webinar.id,
+                                  'session',
+                                  normalizedValue,
                                 )
                               }}
                             />
-                          </div>
+                          </td>
 
-                          <div className="course-assignment-entry-cell">
+                          {isSixteenWeekCourse ? (
+                            <td>
+                              <input
+                                type="text"
+                                className="course-webinar-cell-input"
+                                defaultValue={
+                                  webinar.topic
+                                }
+                                placeholder="Topic"
+                                aria-label="Webinar topic"
+                                onBlur={(
+                                  event,
+                                ) => {
+                                  const topic =
+                                    event
+                                      .currentTarget
+                                      .value
+                                      .trim()
+
+                                  event.currentTarget.value =
+                                    topic
+
+                                  updateCourseWebinar(
+                                    webinar.id,
+                                    'topic',
+                                    topic,
+                                  )
+                                }}
+                              />
+                            </td>
+                          ) : null}
+
+                          <td>
                             <input
-                              id={
-                                `course-assignment-dueDate-${rowIndex}`
+                              key={
+                                `${webinar.id}-${webinar.date}`
                               }
                               type="text"
-                              aria-label={
-                                `Due date for row ${rowIndex + 1}`
+                              className="course-webinar-cell-input"
+                              defaultValue={
+                                webinar.date
+                                  ? formatCourseAssignmentDate(
+                                    webinar.date,
+                                  )
+                                  : ''
                               }
-                              placeholder="817, 0817, 081726, or 8/17/2026"
-                              value={
-                                formRow.dueDate
-                              }
-                              onChange={(
+                              placeholder="817"
+                              aria-label="Webinar date"
+                              onBlur={(
                                 event,
                               ) => {
-                                updateAssignmentFormRow(
-                                  rowIndex,
-                                  'dueDate',
-                                  event.target
-                                    .value,
-                                )
-                              }}
-                              onKeyDown={(
-                                event,
-                              ) => {
-                                handleAssignmentFormArrowKey(
-                                  rowIndex,
-                                  'dueDate',
-                                  event,
+                                const originalValue =
+                                  webinar.date
+                                    ? formatCourseAssignmentDate(
+                                      webinar.date,
+                                    )
+                                    : ''
+
+                                const parsedDate =
+                                  parseCourseAssignmentDate(
+                                    event
+                                      .currentTarget
+                                      .value,
+                                    courseStartDate,
+                                    courseEndDate,
+                                  )
+
+                                if (
+                                  parsedDate === null
+                                ) {
+                                  event.currentTarget.value =
+                                    originalValue
+
+                                  window.alert(
+                                    'Enter a valid webinar date.',
+                                  )
+
+                                  return
+                                }
+
+                                if (
+                                  parsedDate <
+                                  courseStartDate ||
+                                  parsedDate >
+                                  courseEndDate
+                                ) {
+                                  event.currentTarget.value =
+                                    originalValue
+
+                                  window.alert(
+                                    'Webinar date must fall within this course start and end date.',
+                                  )
+
+                                  return
+                                }
+
+                                event.currentTarget.value =
+                                  formatCourseAssignmentDate(
+                                    parsedDate,
+                                  )
+
+                                updateCourseWebinar(
+                                  webinar.id,
+                                  'date',
+                                  parsedDate,
                                 )
                               }}
                             />
-                          </div>
+                          </td>
 
-                          <div className="course-assignment-entry-cell">
+                          <td>
                             <input
-                              id={
-                                `course-assignment-points-${rowIndex}`
+                              key={
+                                `${webinar.id}-${webinar.pacificStartTime}`
                               }
                               type="text"
-                              inputMode="decimal"
-                              aria-label={
-                                `Points for row ${rowIndex + 1}`
+                              className="course-webinar-cell-input"
+                              defaultValue={
+                                webinar.pacificStartTime
                               }
-                              placeholder="Points"
+                              placeholder="5:30"
+                              aria-label="Pacific start time"
+                              onBlur={(
+                                event,
+                              ) => {
+                                const normalizedTime =
+                                  normalizeCourseWebinarTime(
+                                    event
+                                      .currentTarget
+                                      .value,
+                                  )
+
+                                if (
+                                  normalizedTime ===
+                                  null
+                                ) {
+                                  event.currentTarget.value =
+                                    webinar.pacificStartTime
+
+                                  window.alert(
+                                    'Enter a valid start time, such as 5:30, 1730, or 9 AM.',
+                                  )
+
+                                  return
+                                }
+
+                                event.currentTarget.value =
+                                  normalizedTime
+
+                                updateCourseWebinar(
+                                  webinar.id,
+                                  'pacificStartTime',
+                                  normalizedTime,
+                                )
+                              }}
+                            />
+                          </td>
+
+                          <td>
+                            <div className="course-webinar-derived-value">
+                              {getCourseWebinarEasternTime(
+                                webinar.pacificStartTime,
+                              ) || '—'}
+                            </div>
+                          </td>
+
+                          <td>
+                            <select
+                              className="course-webinar-cell-select"
+                              aria-label="Webinar requirement"
                               value={
-                                formRow.points
+                                webinar.required
                               }
                               onChange={(
                                 event,
                               ) => {
-                                updateAssignmentFormRow(
-                                  rowIndex,
-                                  'points',
+                                updateCourseWebinarRequirement(
+                                  webinar.id,
                                   event.target
                                     .value,
                                 )
@@ -31321,713 +31878,219 @@ function CoursePage({
                                 event,
                               ) => {
                                 if (
-                                  event.key ===
-                                    'Tab' &&
-                                  !event.shiftKey &&
-                                  rowIndex ===
-                                    assignmentForms.length -
-                                    1 &&
-                                  formRow.points
-                                    .trim()
-                                    .length > 0
+                                  event.key !==
+                                  'Enter'
                                 ) {
-                                  event.preventDefault()
-
-                                  addAssignmentFormRow(
-                                    true,
-                                  )
-
                                   return
                                 }
 
-                                handleAssignmentFormArrowKey(
-                                  rowIndex,
-                                  'points',
-                                  event,
-                                )
+                                event.preventDefault()
+
+                                try {
+                                  event.currentTarget
+                                    .showPicker()
+                                } catch {
+                                  event.currentTarget
+                                    .focus()
+                                }
                               }}
-                            />
-                          </div>
+                            >
+                              <option value="">
+                                Select
+                              </option>
 
-                          <button
-                            type="button"
-                            className="course-assignment-remove-row-button"
-                            aria-label={
-                              `Remove assignment row ${rowIndex + 1}`
-                            }
-                            title="Remove row"
-                            onClick={() => {
-                              removeAssignmentFormRow(
-                                rowIndex,
-                              )
-                            }}
-                          >
-                            ×
-                          </button>
-                        </div>
+                              <option value="Required">
+                                Required
+                              </option>
+
+                              <option value="Optional">
+                                Optional
+                              </option>
+                            </select>
+                          </td>
+                        </tr>
                       ),
-                    )}
-                  </div>
-                </div>
-
-                <div className="course-assignment-grid-footer">
-                  <small>
-                    Week Due is calculated
-                    automatically from each
-                    Due Date.
-                  </small>
-
-                  <button
-                    type="button"
-                    className="course-assignment-add-row-button"
-                    onClick={() => {
-                      addAssignmentFormRow(
-                        true,
-                      )
-                    }}
-                  >
-                    <span aria-hidden="true">
-                      +
-                    </span>
-
-                    Add another assignment
-                  </button>
-                </div>
-
-                {assignmentFormError
-                  .length > 0 ? (
-                  <p className="course-assignment-form-error">
-                    {
-                      assignmentFormError
-                    }
-                  </p>
-                ) : null}
-
-                <div className="course-assignment-modal-actions">
-                  <button
-                    type="button"
-                    className="course-assignment-modal-cancel"
-                    onClick={
-                      closeAssignmentModal
-                    }
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="course-assignment-modal-save"
-                  >
-                    Add Assignment
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        ) : null}
-
-        <section className="course-workspace-section">
-          <header className="course-workspace-section-header">
-            <div>
-              <span className="course-workspace-section-eyebrow">
-                Live Sessions
-              </span>
-
-              <h2>
-                Important Webinars
-              </h2>
+                    )
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="course-workspace-section-actions course-webinar-header-actions">
-              <div className="course-webinar-header-meeting-id">
-                <span>
-                  Zoom ID
+            <div className="course-webinar-limit-note">
+              {workspace.webinars.length}
+              {' of '}
+              {webinarLimit}
+              {' webinar rows used for this course.'}
+            </div>
+          </section>
+
+          <section className="course-workspace-section course-workspace-meetings-section">
+            <header className="course-workspace-section-header">
+              <div>
+                <span className="course-workspace-section-eyebrow">
+                  Beta Nu Fall
                 </span>
 
-                <strong>
-                  {webinarMeetingId ||
-                    'Not entered'}
-                </strong>
+                <h2>
+                  Cohort Meetings
+                </h2>
               </div>
 
-              <button
-                type="button"
-                className="course-workspace-icon-button course-workspace-add-icon-button"
-                aria-label="Add webinar"
-                title="Add Webinar"
-                disabled={
-                  workspace.webinars.length >=
-                  webinarLimit
-                }
-                onClick={
-                  addCourseWebinar
-                }
-              />
+              <div className="course-cohort-zoom">
+                <span>
+                  Zoom
+                </span>
 
-              <button
-                type="button"
-                className={
-                  isWebinarDeleteMode
-                    ? 'course-workspace-icon-button course-workspace-delete-icon-button course-workspace-delete-icon-button-active'
-                    : 'course-workspace-icon-button course-workspace-delete-icon-button'
-                }
-                aria-label={
-                  isWebinarDeleteMode
-                    ? `Delete selected webinars, ${selectedWebinarIds.length} selected`
-                    : 'Select webinars to delete'
-                }
-                title={
-                  isWebinarDeleteMode
-                    ? 'Delete Selected Webinars'
-                    : 'Select Webinars to Delete'
-                }
-                aria-pressed={
-                  isWebinarDeleteMode
-                }
-                disabled={
-                  workspace.webinars.length ===
-                  0
-                }
-                onClick={
-                  handleDeleteCourseWebinars
-                }
-              >
-                <svg
-                  className="course-workspace-delete-icon-svg"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <a
+                  href="https://umassglobal.zoom.us/my/drcmo"
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  <path d="M7.25 8.25h9.5l-.65 10.25H7.9L7.25 8.25Z" />
-                  <path d="M5.5 6.75h13" />
-                  <path d="M9.25 4.75h5.5" />
-                  <path d="M9.75 10.5v5.75" />
-                  <path d="M12 10.5v5.75" />
-                  <path d="M14.25 10.5v5.75" />
-                </svg>
-              </button>
-            </div>
-          </header>
+                  umassglobal.zoom.us/my/drcmo
+                </a>
+              </div>
+            </header>
 
-          <div className="course-workspace-table-frame course-webinar-table-frame">
-            <table
+            <div
               className={
                 isSixteenWeekCourse
-                  ? 'course-workspace-table course-webinar-table course-webinar-table-16'
-                  : 'course-workspace-table course-webinar-table'
-              }
-              onKeyDown={
-                handleCourseWebinarTableKeyDown
+                  ? 'course-meetings-compact-grid course-meetings-compact-grid-16'
+                  : 'course-meetings-compact-grid'
               }
             >
-              <thead>
-                <tr>
-                  {isWebinarDeleteMode ? (
-                    <th
-                      className="course-webinar-select-column"
-                      aria-label="Select webinar"
-                    />
-                  ) : null}
-
-                  <th className="course-webinar-number-column">
-                    Webinar #
-                  </th>
-
-                  <th className="course-webinar-session-column">
-                    Session
-                  </th>
-
-                  {isSixteenWeekCourse ? (
-                    <th className="course-webinar-topic-column">
-                      Topic
-                    </th>
-                  ) : null}
-
-                  <th className="course-webinar-date-column">
-                    Date
-                  </th>
-
-                  <th className="course-webinar-time-column">
-                    Start Time
-
-                    <span className="course-webinar-time-zone">
-                      Pacific
-                    </span>
-                  </th>
-
-                  <th className="course-webinar-time-column">
-                    Start Time
-
-                    <span className="course-webinar-time-zone">
-                      Eastern
-                    </span>
-                  </th>
-
-                  <th className="course-webinar-required-column">
-                    Required
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {workspace.webinars.length ===
-                  0 ? (
-                  <tr>
-                    <td
-                      className="course-workspace-empty-state"
-                      colSpan={
-                        webinarColumnCount
-                      }
+              {courseMeetings.length ===
+                0 ? (
+                <p className="course-meetings-compact-empty">
+                  No cohort meetings fall
+                  within this course date
+                  range.
+                </p>
+              ) : (
+                courseMeetings.map(
+                  (meeting) => (
+                    <article
+                      className="course-meeting-compact-card"
+                      key={meeting.id}
                     >
-                      No important webinars
-                      have been added for this
-                      course.
-                    </td>
-                  </tr>
-                ) : (
-                  workspace.webinars.map(
-                    (webinar) => (
-                      <tr
-                        key={webinar.id}
+                      <header
                         className={
-                          selectedWebinarIds.includes(
-                            webinar.id,
-                          )
-                            ? 'course-webinar-row course-webinar-row-selected'
-                            : 'course-webinar-row'
+                          isSixteenWeekCourse
+                            ? 'course-meeting-compact-header course-meeting-compact-header-16'
+                            : 'course-meeting-compact-header'
                         }
                       >
-                        {isWebinarDeleteMode ? (
-                          <td className="course-webinar-select-cell">
-                            <input
-                              type="checkbox"
-                              className="course-webinar-delete-checkbox"
-                              checked={
-                                selectedWebinarIds.includes(
-                                  webinar.id,
-                                )
-                              }
-                              aria-label={
-                                `Select ${webinar.webinarNumber || 'webinar'} for deletion`
-                              }
-                              onChange={() => {
-                                toggleCourseWebinarSelection(
-                                  webinar.id,
-                                )
-                              }}
-                            />
-                          </td>
-                        ) : null}
-
-                        <td>
-                          <input
-                            type="text"
-                            className="course-webinar-cell-input"
-                            defaultValue={
-                              webinar.webinarNumber
-                            }
-                            placeholder="1"
-                            aria-label="Webinar number"
-                            onBlur={(
-                              event,
-                            ) => {
-                              const normalizedValue =
-                                normalizeCourseWebinarNumber(
-                                  event
-                                    .currentTarget
-                                    .value,
-                                )
-
-                              event.currentTarget.value =
-                                normalizedValue
-
-                              updateCourseWebinar(
-                                webinar.id,
-                                'webinarNumber',
-                                normalizedValue,
-                              )
-                            }}
-                          />
-                        </td>
-
-                        <td>
-                          <input
-                            type="text"
-                            className="course-webinar-cell-input"
-                            defaultValue={
-                              webinar.session
-                            }
-                            placeholder="1"
-                            aria-label="Webinar session"
-                            onBlur={(
-                              event,
-                            ) => {
-                              const normalizedValue =
-                                normalizeCourseWebinarSession(
-                                  event
-                                    .currentTarget
-                                    .value,
-                                )
-
-                              event.currentTarget.value =
-                                normalizedValue
-
-                              updateCourseWebinar(
-                                webinar.id,
-                                'session',
-                                normalizedValue,
-                              )
-                            }}
-                          />
-                        </td>
-
                         {isSixteenWeekCourse ? (
-                          <td>
-                            <input
-                              type="text"
-                              className="course-webinar-cell-input"
-                              defaultValue={
-                                webinar.topic
-                              }
-                              placeholder="Topic"
-                              aria-label="Webinar topic"
-                              onBlur={(
-                                event,
-                              ) => {
-                                const topic =
-                                  event
-                                    .currentTarget
-                                    .value
-                                    .trim()
+                          <strong>
+                            {meeting.meetingNumber.replace(
+                              'Cohort Meeting ',
+                              'Meeting ',
+                            )}
+                            {' – '}
+                            {meeting.term.replace(
+                              /\s+\d{4}$/,
+                              '',
+                            )}
+                            {' – '}
+                            {formatCohortAcademicPlanDate(
+                              meeting.date,
+                            ).replace(
+                              /^[A-Za-z]{3}\.\s+/,
+                              '',
+                            )}
+                          </strong>
+                        ) : (
+                          <>
+                            <strong>
+                              {meeting.meetingNumber.replace(
+                                'Cohort Meeting ',
+                                'Meeting #',
+                              )}
+                            </strong>
 
-                                event.currentTarget.value =
-                                  topic
+                            <span>
+                              {formatCohortAcademicPlanDate(
+                                meeting.date,
+                              )}
+                            </span>
+                          </>
+                        )}
+                      </header>
 
-                                updateCourseWebinar(
-                                  webinar.id,
-                                  'topic',
-                                  topic,
-                                )
-                              }}
-                            />
-                          </td>
-                        ) : null}
+                      <dl className="course-meeting-compact-roles">
+                        <div>
+                          <dt>
+                            Facilitator:
+                          </dt>
 
-                        <td>
-                          <input
-                            key={
-                              `${webinar.id}-${webinar.date}`
-                            }
-                            type="text"
-                            className="course-webinar-cell-input"
-                            defaultValue={
-                              webinar.date
-                                ? formatCourseAssignmentDate(
-                                  webinar.date,
-                                )
-                                : ''
-                            }
-                            placeholder="817"
-                            aria-label="Webinar date"
-                            onBlur={(
-                              event,
-                            ) => {
-                              const originalValue =
-                                webinar.date
-                                  ? formatCourseAssignmentDate(
-                                    webinar.date,
-                                  )
-                                  : ''
+                          <dd>
+                            {meeting.facilitator ||
+                              'TBD'}
+                          </dd>
+                        </div>
 
-                              const parsedDate =
-                                parseCourseAssignmentDate(
-                                  event
-                                    .currentTarget
-                                    .value,
-                                  courseStartDate,
-                                  courseEndDate,
-                                )
+                        <div>
+                          <dt>
+                            Community Builder:
+                          </dt>
 
-                              if (
-                                parsedDate === null
-                              ) {
-                                event.currentTarget.value =
-                                  originalValue
+                          <dd>
+                            {meeting.communityBuilder ||
+                              'TBD'}
+                          </dd>
+                        </div>
 
-                                window.alert(
-                                  'Enter a valid webinar date.',
-                                )
+                        <div>
+                          <dt>
+                            Recorder:
+                          </dt>
 
-                                return
-                              }
+                          <dd>
+                            {meeting.recorder ||
+                              'TBD'}
+                          </dd>
+                        </div>
 
-                              if (
-                                parsedDate <
-                                courseStartDate ||
-                                parsedDate >
-                                courseEndDate
-                              ) {
-                                event.currentTarget.value =
-                                  originalValue
+                        <div>
+                          <dt>
+                            Timekeeper:
+                          </dt>
 
-                                window.alert(
-                                  'Webinar date must fall within this course start and end date.',
-                                )
+                          <dd>
+                            {meeting.timeKeeper ||
+                              'TBD'}
+                          </dd>
+                        </div>
 
-                                return
-                              }
+                        <div>
+                          <dt>
+                            Process Observer:
+                          </dt>
 
-                              event.currentTarget.value =
-                                formatCourseAssignmentDate(
-                                  parsedDate,
-                                )
-
-                              updateCourseWebinar(
-                                webinar.id,
-                                'date',
-                                parsedDate,
-                              )
-                            }}
-                          />
-                        </td>
-
-                        <td>
-                          <input
-                            key={
-                              `${webinar.id}-${webinar.pacificStartTime}`
-                            }
-                            type="text"
-                            className="course-webinar-cell-input"
-                            defaultValue={
-                              webinar.pacificStartTime
-                            }
-                            placeholder="5:30"
-                            aria-label="Pacific start time"
-                            onBlur={(
-                              event,
-                            ) => {
-                              const normalizedTime =
-                                normalizeCourseWebinarTime(
-                                  event
-                                    .currentTarget
-                                    .value,
-                                )
-
-                              if (
-                                normalizedTime ===
-                                null
-                              ) {
-                                event.currentTarget.value =
-                                  webinar.pacificStartTime
-
-                                window.alert(
-                                  'Enter a valid start time, such as 5:30, 1730, or 9 AM.',
-                                )
-
-                                return
-                              }
-
-                              event.currentTarget.value =
-                                normalizedTime
-
-                              updateCourseWebinar(
-                                webinar.id,
-                                'pacificStartTime',
-                                normalizedTime,
-                              )
-                            }}
-                          />
-                        </td>
-
-                        <td>
-                          <div className="course-webinar-derived-value">
-                            {getCourseWebinarEasternTime(
-                              webinar.pacificStartTime,
-                            ) || '—'}
-                          </div>
-                        </td>
-
-                        <td>
-                          <select
-                            className="course-webinar-cell-select"
-                            aria-label="Webinar requirement"
-                            value={
-                              webinar.required
-                            }
-                            onChange={(
-                              event,
-                            ) => {
-                              updateCourseWebinarRequirement(
-                                webinar.id,
-                                event.target
-                                  .value,
-                              )
-                            }}
-                          >
-                            <option value="">
-                              Select
-                            </option>
-
-                            <option value="Required">
-                              Required
-                            </option>
-
-                            <option value="Optional">
-                              Optional
-                            </option>
-                          </select>
-                        </td>
-                      </tr>
-                    ),
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="course-webinar-limit-note">
-            {workspace.webinars.length}
-            {' of '}
-            {webinarLimit}
-            {' webinar rows used for this course.'}
-          </div>
-        </section>
-
-        <section className="course-workspace-section">
-          <header className="course-workspace-section-header">
-            <div>
-              <span className="course-workspace-section-eyebrow">
-                Beta Nu Fall
-              </span>
-
-              <h2>
-                Cohort Meetings
-              </h2>
+                          <dd>
+                            {meeting.processObserver ||
+                              'TBD'}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ),
+                )
+              )}
             </div>
 
-            <div className="course-cohort-zoom">
-              <span>
-                Zoom
-              </span>
-
-              <a
-                href="https://umassglobal.zoom.us/my/drcmo"
-                target="_blank"
-                rel="noreferrer"
+            <p className="course-meeting-readonly-note">
+              *Cohort meeting dates and role
+              assignments are managed on the
+              Cohort Dates &amp; Roles page.{' '}
+              <NavLink
+                className="course-meeting-readonly-link"
+                to="/cohort-dates-roles"
               >
-                umassglobal.zoom.us/my/drcmo
-              </a>
-            </div>
-          </header>
-
-          <div className="course-meetings-compact-grid">
-            {courseMeetings.length ===
-              0 ? (
-              <p className="course-meetings-compact-empty">
-                No cohort meetings fall
-                within this course date
-                range.
-              </p>
-            ) : (
-              courseMeetings.map(
-                (meeting) => (
-                  <article
-                    className="course-meeting-compact-card"
-                    key={meeting.id}
-                  >
-                    <header className="course-meeting-compact-header">
-                      <strong>
-                        {meeting.meetingNumber.replace(
-                          'Cohort Meeting ',
-                          'Meeting #',
-                        )}
-                      </strong>
-
-                      <span>
-                        {formatCohortAcademicPlanDate(
-                          meeting.date,
-                        )}
-                      </span>
-                    </header>
-
-                    <dl className="course-meeting-compact-roles">
-                      <div>
-                        <dt>
-                          Facilitator:
-                        </dt>
-
-                        <dd>
-                          {meeting.facilitator ||
-                            'TBD'}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>
-                          Community Builder:
-                        </dt>
-
-                        <dd>
-                          {meeting.communityBuilder ||
-                            'TBD'}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>
-                          Recorder:
-                        </dt>
-
-                        <dd>
-                          {meeting.recorder ||
-                            'TBD'}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>
-                          Timekeeper:
-                        </dt>
-
-                        <dd>
-                          {meeting.timeKeeper ||
-                            'TBD'}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt>
-                          Process Observer:
-                        </dt>
-
-                        <dd>
-                          {meeting.processObserver ||
-                            'TBD'}
-                        </dd>
-                      </div>
-                    </dl>
-                  </article>
-                ),
-              )
-            )}
-          </div>
-
-          <p className="course-meeting-readonly-note">
-            *Cohort meeting dates and role
-            assignments are managed on the
-            Cohort Dates &amp; Roles page.{' '}
-            <NavLink
-              className="course-meeting-readonly-link"
-              to="/cohort-dates-roles"
-            >
-              Click Here
-            </NavLink>
-          </p>
-        </section>
+                Click Here
+              </NavLink>
+            </p>
+          </section>
+        </div>
       </div>
 
       <section className="course-workspace-section">

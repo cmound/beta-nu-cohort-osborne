@@ -18773,6 +18773,147 @@ tbody td {
   text-align: center;
 }
 
+/* =========================================================
+   16-Week Course Workspace Layout
+   ========================================================= */
+
+.course-workspace-layout-16 {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 0.84fr)
+    minmax(0, 1.16fr);
+  grid-template-areas:
+    "professor webinars"
+    "links webinars"
+    "assignments meetings";
+  column-gap: 12px;
+  row-gap: 0;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.course-workspace-layout-16
+  > .course-workspace-overview-grid,
+.course-workspace-layout-16
+  > .course-workspace-operations-grid {
+  display: contents;
+}
+
+/* Professor Information becomes the upper-left section. */
+.course-workspace-layout-16
+  .course-workspace-professor-card {
+  grid-area: professor;
+  margin: 0;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  box-shadow: none;
+}
+
+/* Let the professor inputs use the full available width. */
+.course-workspace-layout-16
+  .course-workspace-professor-grid {
+  grid-template-columns:
+    150px minmax(0, 1fr);
+}
+
+/* Links visually become the lower portion
+   of Professor Information. */
+.course-workspace-layout-16
+  .course-workspace-links-card {
+  grid-area: links;
+  margin: 0;
+  border-top:
+    2px solid #c89214;
+  border-radius: 0 0 7px 7px;
+  box-shadow:
+    0 6px 15px
+      rgba(0, 0, 0, 0.2);
+}
+
+.course-workspace-layout-16
+  .course-workspace-links-card
+  > header {
+  display: none;
+}
+
+.course-workspace-layout-16
+  .course-workspace-links-grid {
+  gap: 9px;
+  padding: 11px 14px 14px;
+}
+
+/* Class Webinars receives the larger top-right area. */
+.course-workspace-layout-16
+  .course-workspace-webinars-section {
+  grid-area: webinars;
+  min-width: 0;
+  margin: 0;
+}
+
+/* Bottom row */
+.course-workspace-layout-16
+  .course-workspace-assignments-section {
+  grid-area: assignments;
+  min-width: 0;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.course-workspace-layout-16
+  .course-workspace-meetings-section {
+  grid-area: meetings;
+  min-width: 0;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+/* Give the 16-week webinar table the full
+   width of its larger right-side panel. */
+.course-workspace-layout-16
+  .course-webinar-table-frame {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.course-workspace-layout-16
+  .course-webinar-table-16 {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+/* Merge meeting number, term, and date
+   into one gold header box. */
+.course-workspace-layout-16
+  .course-meeting-compact-header-16 {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0;
+}
+
+.course-workspace-layout-16
+  .course-meeting-compact-header-16
+  strong {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border-right: 0;
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+/* Strong visual divider between the
+   first term and second term meetings. */
+.course-workspace-layout-16
+  .course-meetings-compact-grid-16
+  .course-meeting-compact-card:nth-of-type(n + 3) {
+  margin-top: 6px;
+  border-top:
+    3px solid #c69214;
+}
+
 /* Webinar checkbox delete mode. */
 .course-webinar-row {
   cursor: default;
