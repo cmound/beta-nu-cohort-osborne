@@ -3222,6 +3222,31 @@ function formatCourseAssignmentDate(
   )
 }
 
+function formatCourseWebinarDate(
+  value: string,
+): string {
+  const date = new Date(
+    `${value}T00:00:00Z`,
+  )
+
+  if (
+    !Number.isFinite(
+      date.getTime(),
+    )
+  ) {
+    return value
+  }
+
+  return (
+    `${courseAssignmentWeekdayLabels[
+    date.getUTCDay()
+    ]} ` +
+    `${date.getUTCMonth() + 1}/` +
+    `${date.getUTCDate()}/` +
+    date.getUTCFullYear()
+  )
+}
+
 function getCourseAssignmentWeekLabel(
   courseStartDate: string,
   dueDate: string,
@@ -34356,7 +34381,7 @@ function CoursePage({
                               className="course-webinar-cell-input"
                               defaultValue={
                                 webinar.date
-                                  ? formatCourseAssignmentDate(
+                                  ? formatCourseWebinarDate(
                                     webinar.date,
                                   )
                                   : ''
@@ -34368,7 +34393,7 @@ function CoursePage({
                               ) => {
                                 const originalValue =
                                   webinar.date
-                                    ? formatCourseAssignmentDate(
+                                    ? formatCourseWebinarDate(
                                       webinar.date,
                                     )
                                     : ''
@@ -34377,7 +34402,11 @@ function CoursePage({
                                   parseCourseAssignmentDate(
                                     event
                                       .currentTarget
-                                      .value,
+                                      .value
+                                      .replace(
+                                        /^[A-Za-z]{3}\.\s*/,
+                                        '',
+                                      ),
                                     courseStartDate,
                                     courseEndDate,
                                   )
@@ -34412,7 +34441,7 @@ function CoursePage({
                                 }
 
                                 event.currentTarget.value =
-                                  formatCourseAssignmentDate(
+                                  formatCourseWebinarDate(
                                     parsedDate,
                                   )
 
