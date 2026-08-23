@@ -30642,7 +30642,7 @@ function CoursePage({
       )
   }
 
-    function getRememberedProfessorZoomUrl(
+  function getRememberedProfessorZoomUrl(
     professor:
       ProfessorDirectoryRecord,
   ): string {
@@ -30717,7 +30717,7 @@ function CoursePage({
 
     const professorWithZoom =
       rememberedZoomUrl.length > 0 &&
-      storedProfessorZoomUrl !==
+        storedProfessorZoomUrl !==
         rememberedZoomUrl
         ? {
           ...matchedProfessor,
@@ -30958,7 +30958,7 @@ function CoursePage({
         const zoomChanged =
           existingZoomUrl.length > 0 &&
           existingZoomUrl !==
-            cleanedZoomUrl
+          cleanedZoomUrl
 
         const hasChanges =
           phoneChanged ||
@@ -30979,7 +30979,7 @@ function CoursePage({
 
           if (
             existingZoomUrl.length ===
-              0 &&
+            0 &&
             cleanedZoomUrl.length > 0
           ) {
             const updatedProfessor:
@@ -34704,7 +34704,7 @@ function CoursePage({
                         className={
                           isSixteenWeekCourse
                             ? 'course-meeting-compact-header course-meeting-compact-header-16'
-                            : 'course-meeting-compact-header'
+                            : 'course-meeting-compact-header course-meeting-compact-header-merged'
                         }
                       >
                         {isSixteenWeekCourse ? (
@@ -34727,20 +34727,16 @@ function CoursePage({
                             )}
                           </strong>
                         ) : (
-                          <>
-                            <strong>
-                              {meeting.meetingNumber.replace(
-                                'Cohort Meeting ',
-                                'Meeting #',
-                              )}
-                            </strong>
-
-                            <span>
-                              {formatCohortAcademicPlanDate(
-                                meeting.date,
-                              )}
-                            </span>
-                          </>
+                          <strong>
+                            {meeting.meetingNumber.replace(
+                              'Cohort Meeting ',
+                              'Meeting #',
+                            )}
+                            {' – '}
+                            {formatCohortAcademicPlanDate(
+                              meeting.date,
+                            )}
+                          </strong>
                         )}
                       </header>
 

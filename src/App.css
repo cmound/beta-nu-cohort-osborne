@@ -19138,6 +19138,26 @@ tbody td {
   text-align: left;
 }
 
+/* Merge the meeting number and date into
+   one continuous header on 8-week pages. */
+.course-meeting-compact-header-merged {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0;
+}
+
+.course-meeting-compact-header-merged
+  strong {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border-right: 0;
+  font-size: 10.5px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
 .course-meeting-compact-roles {
   margin: 0;
   padding: 0;
@@ -19200,19 +19220,28 @@ tbody td {
 .course-meeting-compact-card-completed
   .course-meeting-compact-header
   span {
-  color: #ffffff;
+  color: #000000;
   font-weight: 900;
 }
 
+/* Completed meeting role labels stay bold black
+   and receive a darker divider before the names. */
 .course-meeting-compact-card-completed
   .course-meeting-compact-roles
-  dt,
+  dt {
+  color: #000000;
+  background: #e8edf3;
+  border-right: 2px solid #5c7188;
+  font-weight: 900;
+}
+
+/* Completed meeting names use regular black text. */
 .course-meeting-compact-card-completed
   .course-meeting-compact-roles
   dd {
   color: #000000;
   background: #e8edf3;
-  font-weight: 900;
+  font-weight: 400;
 }
 
 /* The next upcoming cohort meeting
