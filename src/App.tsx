@@ -3387,6 +3387,12 @@ function parseCourseWebinarTimeMinutes(
         -meridiem.length,
       )
 
+  const isMilitaryTime =
+    meridiem === null &&
+    /^\d{4}$/.test(
+      timeValue,
+    )
+
   let hour = 0
   let minute = 0
 
@@ -3469,14 +3475,16 @@ function parseCourseWebinarTimeMinutes(
           : hour + 12
     }
   } else if (
+    !isMilitaryTime &&
     hour >= 1 &&
     hour <= 12
   ) {
     /*
-     * Per the Beta Nu Course Page
-     * requirement, times without an
+     * Shorthand times without an
      * explicit AM/PM designation
-     * default to PM.
+     * continue to default to PM.
+     * Four-digit values are treated
+     * as 24-hour military time.
      */
     hour =
       hour === 12
