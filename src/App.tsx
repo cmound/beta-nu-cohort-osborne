@@ -30642,6 +30642,54 @@ function CoursePage({
       )
   }
 
+    function getRememberedProfessorZoomUrl(
+    professor:
+      ProfessorDirectoryRecord,
+  ): string {
+    const directoryZoomUrl =
+      professor.zoomUrl
+        ?.trim() ?? ''
+
+    if (
+      directoryZoomUrl.length > 0
+    ) {
+      return directoryZoomUrl
+    }
+
+    const normalizedProfessorName =
+      normalizeProfessorLookupName(
+        professor.canonicalName,
+      )
+
+    for (
+      const storedWorkspace
+      of Object.values(
+        courseWorkspaces,
+      )
+    ) {
+      if (
+        normalizeProfessorLookupName(
+          storedWorkspace.professorName,
+        ) !==
+        normalizedProfessorName
+      ) {
+        continue
+      }
+
+      const storedZoomUrl =
+        storedWorkspace.webinarZoomUrl
+          .trim()
+
+      if (
+        storedZoomUrl.length > 0
+      ) {
+        return storedZoomUrl
+      }
+    }
+
+    return ''
+  }
+
   function applyRememberedProfessor(
     professorName: string,
   ): void {
@@ -30658,8 +30706,44 @@ function CoursePage({
       return
     }
 
-    professorEditBaselineRef.current =
+    const rememberedZoomUrl =
+      getRememberedProfessorZoomUrl(
+        matchedProfessor,
+      )
+
+    const storedProfessorZoomUrl =
+      matchedProfessor.zoomUrl
+        ?.trim() ?? ''
+
+    const professorWithZoom =
+      rememberedZoomUrl.length > 0 &&
+      storedProfessorZoomUrl !==
+        rememberedZoomUrl
+        ? {
+          ...matchedProfessor,
+          zoomUrl:
+            rememberedZoomUrl,
+        }
+        : matchedProfessor
+
+    if (
+      professorWithZoom !==
       matchedProfessor
+    ) {
+      setProfessorDirectory(
+        (current) =>
+          current.map(
+            (record) =>
+              record.id ===
+                matchedProfessor.id
+                ? professorWithZoom
+                : record,
+          ),
+      )
+    }
+
+    professorEditBaselineRef.current =
+      professorWithZoom
 
     if (
       professorInitialEntryRecordIdRef.current ===
@@ -30679,14 +30763,13 @@ function CoursePage({
 
     updateCourseWorkspace({
       professorName:
-        matchedProfessor.canonicalName,
+        professorWithZoom.canonicalName,
       professorPhoneDigits:
-        matchedProfessor.phoneDigits,
+        professorWithZoom.phoneDigits,
       professorEmail:
-        matchedProfessor.email,
+        professorWithZoom.email,
       webinarZoomUrl:
-        matchedProfessor.zoomUrl ??
-        workspace.webinarZoomUrl,
+        rememberedZoomUrl,
     })
   }
 
@@ -30868,10 +30951,14 @@ function CoursePage({
           baseline.email !==
           cleanedEmail
 
+        const existingZoomUrl =
+          baseline.zoomUrl
+            ?.trim() ?? ''
+
         const zoomChanged =
-          baseline.zoomUrl !== undefined &&
-          baseline.zoomUrl !==
-          cleanedZoomUrl
+          existingZoomUrl.length > 0 &&
+          existingZoomUrl !==
+            cleanedZoomUrl
 
         const hasChanges =
           phoneChanged ||
@@ -30879,18 +30966,21 @@ function CoursePage({
           zoomChanged
 
         /*
-         * Older professor records did not
-         * contain Zoom. The first Zoom URL
-         * added to one of those records is
-         * remembered without a confirmation.
+         * A professor record with no saved
+         * Zoom URL receives its first Zoom
+         * URL silently. Later Zoom changes
+         * still use the confirmation flow.
          */
         if (!hasChanges) {
           const rememberedZoomUrl =
-            baseline.zoomUrl ??
-            cleanedZoomUrl
+            existingZoomUrl.length > 0
+              ? existingZoomUrl
+              : cleanedZoomUrl
 
           if (
-            baseline.zoomUrl === undefined
+            existingZoomUrl.length ===
+              0 &&
+            cleanedZoomUrl.length > 0
           ) {
             const updatedProfessor:
               ProfessorDirectoryRecord = {
