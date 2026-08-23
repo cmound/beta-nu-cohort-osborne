@@ -29449,6 +29449,19 @@ function CoursePage({
     )
 
   const [
+    isAssignmentDeleteMode,
+    setIsAssignmentDeleteMode,
+  ] = useState(false)
+
+  const [
+    selectedAssignmentIds,
+    setSelectedAssignmentIds,
+  ] =
+    useState<readonly string[]>(
+      [],
+    )
+
+  const [
     draggedCourseAssignmentId,
     setDraggedCourseAssignmentId,
   ] =
@@ -29550,6 +29563,14 @@ function CoursePage({
 
     setSelectedAssignmentId(
       null,
+    )
+
+    setIsAssignmentDeleteMode(
+      false,
+    )
+
+    setSelectedAssignmentIds(
+      [],
     )
 
     setDraggedCourseAssignmentId(
@@ -31954,39 +31975,64 @@ function CoursePage({
     closeAssignmentModal()
   }
 
-  function deleteSelectedAssignment():
+  function toggleCourseAssignmentSelection(
+    assignmentId: string,
+  ): void {
+    setSelectedAssignmentIds(
+      (currentIds) =>
+        currentIds.includes(
+          assignmentId,
+        )
+          ? currentIds.filter(
+            (selectedId) =>
+              selectedId !==
+              assignmentId,
+          )
+          : [
+            ...currentIds,
+            assignmentId,
+          ],
+    )
+  }
+
+  function handleDeleteCourseAssignments():
     void {
-    if (
-      selectedAssignmentId ===
-      null
-    ) {
-      return
-    }
-
-    const selectedAssignment =
-      workspace.assignments.find(
-        (assignment) =>
-          assignment.id ===
-          selectedAssignmentId,
-      )
-
-    if (
-      selectedAssignment ===
-      undefined
-    ) {
+    if (!isAssignmentDeleteMode) {
       setSelectedAssignmentId(
         null,
       )
 
+      setSelectedAssignmentIds(
+        [],
+      )
+
+      setIsAssignmentDeleteMode(
+        true,
+      )
+
       return
     }
 
-    const shouldDelete =
-      window.confirm(
-        `Delete ${selectedAssignment.asn} - ${selectedAssignment.name}?`,
+    if (
+      selectedAssignmentIds.length ===
+      0
+    ) {
+      window.alert(
+        'Select at least one assignment to delete.',
       )
 
-    if (!shouldDelete) {
+      return
+    }
+
+    const assignmentCount =
+      selectedAssignmentIds.length
+
+    const confirmed =
+      window.confirm(
+        `Delete ${assignmentCount} selected assignment${assignmentCount === 1 ? '' : 's'}?`,
+      )
+
+    if (!confirmed) {
       return
     }
 
@@ -31994,13 +32040,22 @@ function CoursePage({
       assignments:
         workspace.assignments.filter(
           (assignment) =>
-            assignment.id !==
-            selectedAssignmentId,
+            !selectedAssignmentIds.includes(
+              assignment.id,
+            ),
         ),
     })
 
+    setSelectedAssignmentIds(
+      [],
+    )
+
     setSelectedAssignmentId(
       null,
+    )
+
+    setIsAssignmentDeleteMode(
+      false,
     )
   }
 
@@ -32964,15 +33019,30 @@ function CoursePage({
 
                 <button
                   type="button"
-                  className="course-workspace-icon-button course-workspace-delete-icon-button"
-                  aria-label="Delete selected assignment"
-                  title="Delete Selected Assignment"
+                  className={
+                    isAssignmentDeleteMode
+                      ? 'course-workspace-icon-button course-workspace-delete-icon-button course-workspace-delete-icon-button-active'
+                      : 'course-workspace-icon-button course-workspace-delete-icon-button'
+                  }
+                  aria-label={
+                    isAssignmentDeleteMode
+                      ? `Delete selected assignments, ${selectedAssignmentIds.length} selected`
+                      : 'Select assignments to delete'
+                  }
+                  title={
+                    isAssignmentDeleteMode
+                      ? 'Delete Selected Assignments'
+                      : 'Select Assignments to Delete'
+                  }
+                  aria-pressed={
+                    isAssignmentDeleteMode
+                  }
                   disabled={
-                    selectedAssignmentId ===
-                    null
+                    workspace.assignments.length ===
+                    0
                   }
                   onClick={
-                    deleteSelectedAssignment
+                    handleDeleteCourseAssignments
                   }
                 >
                   <svg
@@ -33161,6 +33231,14 @@ function CoursePage({
                             assignment,
                           )
 
+                        const isAssignmentSelected =
+                          isAssignmentDeleteMode
+                            ? selectedAssignmentIds.includes(
+                              assignment.id,
+                            )
+                            : assignment.id ===
+                            selectedAssignmentId
+
                         return (
                           <tr
                             key={
@@ -33176,8 +33254,7 @@ function CoursePage({
                               )
                             }
                             className={
-                              `${assignment.id ===
-                                selectedAssignmentId
+                              `${isAssignmentSelected
                                 ? 'course-assignment-row course-assignment-row-selected'
                                 : 'course-assignment-row'
                               }${dragOverCourseAssignmentId ===
@@ -33187,6 +33264,16 @@ function CoursePage({
                               }`
                             }
                             onClick={() => {
+                              if (
+                                isAssignmentDeleteMode
+                              ) {
+                                toggleCourseAssignmentSelection(
+                                  assignment.id,
+                                )
+
+                                return
+                              }
+
                               setSelectedAssignmentId(
                                 assignment.id,
                               )
@@ -33209,52 +33296,82 @@ function CoursePage({
                             }}
                           >
                             <td className="course-assignment-drag-cell">
-                              <button
-                                type="button"
-                                className={
-                                  isPriorityAssignment
-                                    ? 'course-assignment-drag-handle course-assignment-drag-handle-locked'
-                                    : 'course-assignment-drag-handle'
-                                }
-                                draggable={
-                                  !isPriorityAssignment &&
-                                  courseLayoutEditorSection !==
-                                  'assignments'
-                                }
-                                aria-label={
-                                  isPriorityAssignment
-                                    ? `${assignment.asn} remains fixed at the top`
-                                    : `Drag ${assignment.asn} to reorder`
-                                }
-                                title={
-                                  isPriorityAssignment
-                                    ? 'SOE remains fixed at the top'
-                                    : 'Drag row to reorder'
-                                }
-                                onPointerDown={(
-                                  event,
-                                ) => {
-                                  event.stopPropagation()
-                                }}
-                                onClick={(
-                                  event,
-                                ) => {
-                                  event.stopPropagation()
-                                }}
-                                onDragStart={(
-                                  event,
-                                ) => {
-                                  handleCourseAssignmentDragStart(
+                              {isAssignmentDeleteMode ? (
+                                <input
+                                  type="checkbox"
+                                  className="course-assignment-delete-checkbox"
+                                  checked={
+                                    selectedAssignmentIds.includes(
+                                      assignment.id,
+                                    )
+                                  }
+                                  aria-label={
+                                    `Select ${assignment.asn} for deletion`
+                                  }
+                                  onPointerDown={(
                                     event,
-                                    assignment.id,
-                                  )
-                                }}
-                                onDragEnd={
-                                  handleCourseAssignmentDragEnd
-                                }
-                              >
-                                ⠿
-                              </button>
+                                  ) => {
+                                    event.stopPropagation()
+                                  }}
+                                  onClick={(
+                                    event,
+                                  ) => {
+                                    event.stopPropagation()
+                                  }}
+                                  onChange={() => {
+                                    toggleCourseAssignmentSelection(
+                                      assignment.id,
+                                    )
+                                  }}
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={
+                                    isPriorityAssignment
+                                      ? 'course-assignment-drag-handle course-assignment-drag-handle-locked'
+                                      : 'course-assignment-drag-handle'
+                                  }
+                                  draggable={
+                                    !isPriorityAssignment &&
+                                    courseLayoutEditorSection !==
+                                    'assignments'
+                                  }
+                                  aria-label={
+                                    isPriorityAssignment
+                                      ? `${assignment.asn} remains fixed at the top`
+                                      : `Drag ${assignment.asn} to reorder`
+                                  }
+                                  title={
+                                    isPriorityAssignment
+                                      ? 'SOE remains fixed at the top'
+                                      : 'Drag row to reorder'
+                                  }
+                                  onPointerDown={(
+                                    event,
+                                  ) => {
+                                    event.stopPropagation()
+                                  }}
+                                  onClick={(
+                                    event,
+                                  ) => {
+                                    event.stopPropagation()
+                                  }}
+                                  onDragStart={(
+                                    event,
+                                  ) => {
+                                    handleCourseAssignmentDragStart(
+                                      event,
+                                      assignment.id,
+                                    )
+                                  }}
+                                  onDragEnd={
+                                    handleCourseAssignmentDragEnd
+                                  }
+                                >
+                                  ⠿
+                                </button>
+                              )}
                             </td>
 
                             <td>
