@@ -33989,7 +33989,7 @@ function CoursePage({
                         )
                       }
                     >
-                      Webinar #
+                      Web #
                     </th>
 
                     <th

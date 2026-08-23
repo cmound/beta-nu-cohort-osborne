@@ -21959,3 +21959,10 @@ tbody td {
       0.82
     );
 }
+
+/* Class Webinars column headers align
+   consistently along the bottom edge. */
+.course-workspace-table.course-webinar-table
+  th {
+  vertical-align: bottom;
+}
