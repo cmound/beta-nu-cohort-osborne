@@ -29663,7 +29663,37 @@ function CoursePage({
     ),
   ]
 
-  const courseProgressContacts =
+  const courseWaivers =
+    readStoredCohortCourseWaivers()
+
+  const currentCourseWaiverCode =
+    cohortCourseWaiverCourseCodes.find(
+      (courseCode) =>
+        courseCode ===
+        courseRecord.code,
+    )
+
+  function isContactWaivedFromCurrentCourse(
+    contactId: string,
+  ): boolean {
+    if (
+      currentCourseWaiverCode ===
+      undefined
+    ) {
+      return false
+    }
+
+    return (
+      courseWaivers[
+      getCohortCourseWaiverKey(
+        contactId,
+        currentCourseWaiverCode,
+      )
+      ] === 'W'
+    )
+  }
+
+  const activeCourseContacts =
     sortCohortContacts(
       contacts,
     ).filter(
@@ -29674,6 +29704,22 @@ function CoursePage({
           contact.id
           ] ?? 'Active'
         ) === 'Active',
+    )
+
+  const waivedCourseContacts =
+    activeCourseContacts.filter(
+      (contact) =>
+        isContactWaivedFromCurrentCourse(
+          contact.id,
+        ),
+    )
+
+  const courseProgressContacts =
+    activeCourseContacts.filter(
+      (contact) =>
+        !isContactWaivedFromCurrentCourse(
+          contact.id,
+        ),
     )
 
   const courseTableLayout =
@@ -34943,6 +34989,35 @@ function CoursePage({
           each course.
         </p>
       </section>
+
+      {waivedCourseContacts.length > 0 ? (
+        <section
+          className="course-workspace-section course-waived-students-section"
+          aria-labelledby="course-waived-students-heading"
+        >
+          <header className="course-workspace-section-header">
+            <div>
+              <h2 id="course-waived-students-heading">
+                Students Waived From{' '}
+                {courseRecord.code}
+              </h2>
+            </div>
+          </header>
+
+          <div className="course-waived-students-list">
+            {waivedCourseContacts.map(
+              (contact) => (
+                <div
+                  className="course-waived-student-name"
+                  key={contact.id}
+                >
+                  {contact.name}
+                </div>
+              ),
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {courseLayoutEditorSection !==
         null ? (
