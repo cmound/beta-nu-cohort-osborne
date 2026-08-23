@@ -34859,6 +34859,14 @@ function CoursePage({
                 ▶
               </span>
             </button>
+
+            {waivedCourseContacts.length ===
+              0 ? (
+              <span className="course-progress-no-waivers-note">
+                No Students Waived from{' '}
+                {courseRecord.code}
+              </span>
+            ) : null}
           </div>
 
           <div className="course-progress-header-actions">
