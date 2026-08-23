@@ -17367,8 +17367,9 @@ tbody td {
 }
 
 .course-progress-key-not-started {
-  color: #111827;
+  color: #c00000;
   background: #ffffff;
+  font-weight: 400;
 }
 
 .course-progress-key-progress {
@@ -17499,7 +17500,7 @@ tbody td {
   color: #111827;
   background: #ffffff;
   font-size: 11px;
-  font-weight: 400;
+  font-weight: 800;
   text-align: left;
   white-space: nowrap;
 }
@@ -17673,8 +17674,9 @@ tbody td {
 }
 
 .course-progress-status-not-started {
-  color: #111827;
+  color: #c00000;
   background: #ffffff;
+  font-weight: 400;
 }
 
 .course-progress-status-progress {
