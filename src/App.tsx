@@ -3299,13 +3299,16 @@ function extractCourseZoomMeetingId(
     return ''
   }
 
-  const pathMatch =
+  const numericPathMatch =
     /\/(?:j|wc\/join)\/(\d{9,12})/i.exec(
       trimmedValue,
     )
 
-  if (pathMatch?.[1] !== undefined) {
-    return pathMatch[1]
+  if (
+    numericPathMatch?.[1] !==
+    undefined
+  ) {
+    return numericPathMatch[1]
   }
 
   const omnMatch =
@@ -3313,7 +3316,31 @@ function extractCourseZoomMeetingId(
       trimmedValue,
     )
 
-  return omnMatch?.[1] ?? ''
+  if (
+    omnMatch?.[1] !== undefined
+  ) {
+    return omnMatch[1]
+  }
+
+  const personalLinkMatch =
+    /\/my\/([^/?#]+)/i.exec(
+      trimmedValue,
+    )
+
+  if (
+    personalLinkMatch?.[1] !==
+    undefined
+  ) {
+    try {
+      return decodeURIComponent(
+        personalLinkMatch[1],
+      )
+    } catch {
+      return personalLinkMatch[1]
+    }
+  }
+
+  return ''
 }
 
 function normalizeCourseWebinarNumber(
