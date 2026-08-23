@@ -37838,6 +37838,14 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const [
+    collapsedSidebarGroupIds,
+    setCollapsedSidebarGroupIds,
+  ] =
+    useState<
+      readonly SidebarNavigationGroupId[]
+    >([])
+
+  const [
     isAdminAccessTrayOpen,
     setIsAdminAccessTrayOpen,
   ] =
@@ -37923,6 +37931,26 @@ function App() {
   }, [
     location.pathname,
   ])
+
+  function toggleSidebarGroup(
+    groupId: SidebarNavigationGroupId,
+  ): void {
+    setCollapsedSidebarGroupIds(
+      (currentGroupIds) =>
+        currentGroupIds.includes(
+          groupId,
+        )
+          ? currentGroupIds.filter(
+            (currentGroupId) =>
+              currentGroupId !==
+              groupId,
+          )
+          : [
+            ...currentGroupIds,
+            groupId,
+          ],
+    )
+  }
 
   function handleAdminTorchClick():
     void {
@@ -38127,10 +38155,23 @@ function App() {
     let archiveTimer:
       number | null = null
 
-    let isCancelled = false
+    let archiveWatchdog:
+      number | null = null
 
-    async function createTopOfHourArchive():
+    let isCancelled = false
+    let isArchiveCheckRunning = false
+
+    async function ensureCurrentHourArchive():
       Promise<void> {
+      if (
+        isCancelled ||
+        isArchiveCheckRunning
+      ) {
+        return
+      }
+
+      isArchiveCheckRunning = true
+
       const now =
         new Date()
 
@@ -38146,47 +38187,51 @@ function App() {
             storedLastArchive,
           )
 
-      if (
-        Number.isFinite(
-          lastArchiveTime,
-        ) &&
-        getAdminPacificHourKey(
-          new Date(
-            lastArchiveTime,
-          ),
-        ) ===
-        getAdminPacificHourKey(
-          now,
-        )
-      ) {
-        return
-      }
-
-      const archiveReservationTime =
-        now.toISOString()
-
-      window.localStorage.setItem(
-        ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
-        archiveReservationTime,
-      )
-
       try {
-        await createAdminArchive(
-          'auto',
-        )
-      } catch {
         if (
-          storedLastArchive === null
+          Number.isFinite(
+            lastArchiveTime,
+          ) &&
+          getAdminPacificHourKey(
+            new Date(
+              lastArchiveTime,
+            ),
+          ) ===
+          getAdminPacificHourKey(
+            now,
+          )
         ) {
-          window.localStorage.removeItem(
-            ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
-          )
-        } else {
-          window.localStorage.setItem(
-            ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
-            storedLastArchive,
-          )
+          return
         }
+
+        const archiveReservationTime =
+          now.toISOString()
+
+        window.localStorage.setItem(
+          ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+          archiveReservationTime,
+        )
+
+        try {
+          await createAdminArchive(
+            'auto',
+          )
+        } catch {
+          if (
+            storedLastArchive === null
+          ) {
+            window.localStorage.removeItem(
+              ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+            )
+          } else {
+            window.localStorage.setItem(
+              ADMIN_LAST_AUTO_ARCHIVE_STORAGE_KEY,
+              storedLastArchive,
+            )
+          }
+        }
+      } finally {
+        isArchiveCheckRunning = false
       }
     }
 
@@ -38222,7 +38267,7 @@ function App() {
       archiveTimer =
         window.setTimeout(
           () => {
-            void createTopOfHourArchive()
+            void ensureCurrentHourArchive()
               .finally(
                 () => {
                   scheduleNextTopOfHour()
@@ -38236,21 +38281,58 @@ function App() {
         )
     }
 
+    function runArchiveCheck():
+      void {
+      void ensureCurrentHourArchive()
+    }
+
     function handleAdminArchiveVisibility():
       void {
       if (
         document.visibilityState ===
         'visible'
       ) {
+        runArchiveCheck()
         scheduleNextTopOfHour()
       }
     }
 
+    /*
+     * Check immediately when the Hub
+     * starts. This protects the current
+     * hour if the browser previously
+     * suspended its timer.
+     */
+    runArchiveCheck()
+
     scheduleNextTopOfHour()
+
+    /*
+     * Browser timers can be delayed when
+     * a tab is in the background. The
+     * watchdog verifies once per minute
+     * that the current Pacific hour has
+     * an automatic archive.
+     */
+    archiveWatchdog =
+      window.setInterval(
+        runArchiveCheck,
+        60 * 1000,
+      )
 
     document.addEventListener(
       'visibilitychange',
       handleAdminArchiveVisibility,
+    )
+
+    window.addEventListener(
+      'focus',
+      runArchiveCheck,
+    )
+
+    window.addEventListener(
+      'pageshow',
+      runArchiveCheck,
     )
 
     return () => {
@@ -38264,9 +38346,27 @@ function App() {
         )
       }
 
+      if (
+        archiveWatchdog !== null
+      ) {
+        window.clearInterval(
+          archiveWatchdog,
+        )
+      }
+
       document.removeEventListener(
         'visibilitychange',
         handleAdminArchiveVisibility,
+      )
+
+      window.removeEventListener(
+        'focus',
+        runArchiveCheck,
+      )
+
+      window.removeEventListener(
+        'pageshow',
+        runArchiveCheck,
       )
     }
   }, [])
@@ -39021,10 +39121,45 @@ function App() {
             if (
               item.navigationOnly === true
             ) {
+              const isGroupExpanded =
+                item.groupId ===
+                undefined ||
+                !collapsedSidebarGroupIds.includes(
+                  item.groupId,
+                )
+
               return (
-                <div
+                <button
                   key={item.path}
+                  type="button"
                   className="nav-group-button nav-section-header"
+                  aria-expanded={
+                    isGroupExpanded
+                  }
+                  aria-label={
+                    `${isGroupExpanded
+                      ? 'Collapse'
+                      : 'Expand'
+                    } ${item.label}`
+                  }
+                  title={
+                    `${isGroupExpanded
+                      ? 'Collapse'
+                      : 'Expand'
+                    } ${item.label}`
+                  }
+                  onClick={() => {
+                    if (
+                      item.groupId ===
+                      undefined
+                    ) {
+                      return
+                    }
+
+                    toggleSidebarGroup(
+                      item.groupId,
+                    )
+                  }}
                 >
                   {renderSidebarSectionIcon(
                     item.groupId,
@@ -39033,8 +39168,27 @@ function App() {
                   <span>
                     {item.label}
                   </span>
-                </div>
+
+                  <span
+                    className="nav-section-toggle"
+                    aria-hidden="true"
+                  >
+                    {isGroupExpanded
+                      ? '−'
+                      : '+'}
+                  </span>
+                </button>
               )
+            }
+
+            if (
+              item.parentId !==
+              undefined &&
+              collapsedSidebarGroupIds.includes(
+                item.parentId,
+              )
+            ) {
+              return null
             }
 
             return (
@@ -40163,7 +40317,15 @@ function App() {
             )
           })}
 
-          <div className="nav-group">
+          <div
+            className={
+              collapsedSidebarGroupIds.includes(
+                'academic-plan',
+              )
+                ? 'nav-group nav-group-collapsed'
+                : 'nav-group'
+            }
+          >
             <button
               type="button"
               className="nav-group-button"

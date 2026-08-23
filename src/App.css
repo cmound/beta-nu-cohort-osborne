@@ -792,6 +792,10 @@
   margin-top: 0;
 }
 
+.nav-group-collapsed {
+  display: none;
+}
+
 .nav-group-button {
   font-weight: 800;
 }
@@ -1954,10 +1958,54 @@
    Final Sidebar Section Layout
    ========================================================= */
 
-/* Cohort, Resources, and Academics are section headers only */
+/* Cohort, Resources, and Academics
+   expand and collapse their contents. */
 .nav-section-header {
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+}
+
+.nav-section-toggle {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  border: 1px solid #c89214;
+  border-radius: 4px;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffd76a 0%,
+      #f2b632 52%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    inset 0 -2px 2px
+      rgba(100, 67, 0, 0.25),
+    0 2px 3px
+      rgba(0, 0, 0, 0.28);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+}
+
+.nav-section-header:hover
+  .nav-section-toggle {
+  border-color: #ffd76a;
+  filter: brightness(1.05);
+}
+
+.nav-section-header:focus-visible {
+  outline: 2px solid #ffd200;
+  outline-offset: 2px;
 }
 
 .nav-section-header:hover {
