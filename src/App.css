@@ -19210,7 +19210,9 @@ tbody td {
 .course-meeting-compact-card-completed
   .course-meeting-compact-roles
   dd {
+  color: #000000;
   background: #e8edf3;
+  font-weight: 900;
 }
 
 /* The next upcoming cohort meeting
