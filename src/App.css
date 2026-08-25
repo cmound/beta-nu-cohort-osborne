@@ -22121,6 +22121,84 @@ tbody td {
 }
 
 /* ---------------------------------------------------------
+   Permanent Academic Plan section header
+   --------------------------------------------------------- */
+
+/* Academic Plan always displays as its own
+   yellow section box, even when not selected. */
+.nav-sub-link-academic-plan:not(.nav-link-active)::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  display: block;
+  top: 1px;
+  right: 10px;
+  bottom: auto;
+  left: 29px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 1px solid #c89214;
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      #fff7a8 0%,
+      #ffe866 50%,
+      #ffd84d 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.78),
+    inset 0 -2px 2px
+      rgba(138, 101, 0, 0.14),
+    0 2px 3px
+      rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+
+/* When Academic Plan is selected, keep the
+   exact same yellow treatment and shift the
+   box right to make room for the arrow. */
+.nav-sub-link-academic-plan.nav-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  display: block;
+  top: 1px;
+  right: 10px;
+  bottom: auto;
+  left: 61px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 1px solid #c89214;
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      180deg,
+      #fff7a8 0%,
+      #ffe866 50%,
+      #ffd84d 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.78),
+    inset 0 -2px 2px
+      rgba(138, 101, 0, 0.14),
+    0 2px 3px
+      rgba(0, 0, 0, 0.14);
+  pointer-events: none;
+}
+
+/* Keep Academic Plan wording above the
+   permanent yellow fill. */
+.nav-sub-link-academic-plan
+  > span,
+.nav-sub-link-academic-plan.nav-link-active
+  > span {
+  z-index: 2;
+}
+
+/* ---------------------------------------------------------
    Selected individual course
    --------------------------------------------------------- */
 
