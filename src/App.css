@@ -14683,7 +14683,7 @@ tbody td {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 18px 17px;
+  padding: 16px 10px 17px;
 }
 
 /* Header */
@@ -14917,7 +14917,7 @@ tbody td {
   display: grid;
   grid-template-columns:
     repeat(5, minmax(0, 1fr));
-  gap: 7px;
+  gap: 5px;
   margin-top: 7px;
 }
 
@@ -14928,7 +14928,7 @@ tbody td {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 7px 7px 8px;
+  padding: 7px 5px 8px;
   overflow: hidden;
   border: 1px solid #879bae;
   border-radius: 7px;
@@ -14952,7 +14952,7 @@ tbody td {
   min-height: 31px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .dashboard-meeting-role-header
@@ -14963,6 +14963,9 @@ tbody td {
   font-weight: 900;
   line-height: 1.1;
   text-transform: uppercase;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 /* Raised gold role icon */
@@ -15013,13 +15016,18 @@ tbody td {
 }
 
 .dashboard-meeting-role-name {
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
+  align-self: center;
   color: #005EB8;
   font-size: 10.5px;
   font-weight: 800;
   line-height: 1.2;
-  text-align: center;
-  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 /* No upcoming meeting fallback */
