@@ -15033,12 +15033,29 @@ tbody td {
 }
 
 .dashboard-meeting-role-name-unassigned {
-  width: fit-content;
-  max-width: calc(100% - 30px);
-  align-self: flex-start;
-  margin-left: 30px;
-  padding: 2px 5px;
-  border-radius: 3px;
+  width: auto;
+  max-width: none;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-self: stretch;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin:
+    -6px
+    -4px
+    -8px;
+  padding:
+    6px
+    4px
+    8px
+    30px;
+  border-radius:
+    0
+    0
+    6px
+    6px;
   color: #ffffff;
   background: #C00000;
   font-weight: 900;
