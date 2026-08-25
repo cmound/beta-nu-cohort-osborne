@@ -1153,60 +1153,60 @@ const DASHBOARD_BREAK_SIGN_LAYOUTS: Readonly<
   Record<number, DashboardBreakSignLayout>
 > = {
   1: {
-    top: '29%',
-    left: '50%',
-    width: '28%',
-    height: '20%',
-    topFontSize: '34px',
-    bottomFontSize: '29px',
-  },
-  2: {
-    top: '24%',
-    left: '50%',
-    width: '32%',
-    height: '18%',
-    topFontSize: '33px',
-    bottomFontSize: '28px',
-  },
-  3: {
-    top: '24%',
-    left: '50%',
-    width: '27%',
-    height: '19%',
-    topFontSize: '33px',
-    bottomFontSize: '28px',
-  },
-  4: {
-    top: '22%',
-    left: '50%',
-    width: '36%',
-    height: '18%',
-    topFontSize: '34px',
-    bottomFontSize: '28px',
-  },
-  5: {
-    top: '20%',
-    left: '50%',
-    width: '32%',
-    height: '21%',
-    topFontSize: '33px',
-    bottomFontSize: '28px',
-  },
-  6: {
-    top: '23%',
-    left: '50%',
-    width: '31%',
-    height: '18%',
-    topFontSize: '33px',
-    bottomFontSize: '28px',
-  },
-  7: {
-    top: '22%',
+    top: '40%',
     left: '50%',
     width: '29%',
-    height: '20%',
-    topFontSize: '33px',
-    bottomFontSize: '28px',
+    height: '30%',
+    topFontSize: '31px',
+    bottomFontSize: '25px',
+  },
+  2: {
+    top: '36%',
+    left: '50%',
+    width: '33%',
+    height: '30%',
+    topFontSize: '31px',
+    bottomFontSize: '25px',
+  },
+  3: {
+    top: '33%',
+    left: '50%',
+    width: '29%',
+    height: '29%',
+    topFontSize: '30px',
+    bottomFontSize: '25px',
+  },
+  4: {
+    top: '28%',
+    left: '50%',
+    width: '35%',
+    height: '30%',
+    topFontSize: '32px',
+    bottomFontSize: '26px',
+  },
+  5: {
+    top: '33%',
+    left: '50%',
+    width: '34%',
+    height: '30%',
+    topFontSize: '31px',
+    bottomFontSize: '25px',
+  },
+  6: {
+    top: '33%',
+    left: '50%',
+    width: '29%',
+    height: '30%',
+    topFontSize: '30px',
+    bottomFontSize: '25px',
+  },
+  7: {
+    top: '30%',
+    left: '50%',
+    width: '31%',
+    height: '30%',
+    topFontSize: '30px',
+    bottomFontSize: '25px',
   },
 }
 
@@ -8040,6 +8040,11 @@ function DashboardPage({
     ] ??
     DASHBOARD_BREAK_SIGN_LAYOUTS[1]
 
+  const dashboardBreakTopFontSize =
+    dashboardDaysUntilNextCourse >= 10
+      ? '28px'
+      : dashboardBreakSignLayout.topFontSize
+
   const dashboardBreakSignStyle = {
     '--dashboard-break-zone-top':
       dashboardBreakSignLayout.top,
@@ -8050,7 +8055,7 @@ function DashboardPage({
     '--dashboard-break-zone-height':
       dashboardBreakSignLayout.height,
     '--dashboard-break-top-font-size':
-      dashboardBreakSignLayout.topFontSize,
+      dashboardBreakTopFontSize,
     '--dashboard-break-bottom-font-size':
       dashboardBreakSignLayout.bottomFontSize,
   } as CSSProperties
