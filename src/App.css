@@ -21,10 +21,10 @@
   --umass-navy: #0B1F3B;
   --umass-gold: #C69214;
 
-  min-width: 1205px;
+  min-width: 1220px;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 275px minmax(0, 1fr);
+  grid-template-columns: 290px minmax(0, 1fr);
   color: var(--text-main);
   background-image:
     linear-gradient(
@@ -75,7 +75,7 @@
 .sidebar-collapse-button {
   position: fixed;
   top: 12px;
-  left: 265px;
+  left: 280px;
   z-index: 30;
   width: 20px;
   height: 20px;
@@ -106,7 +106,7 @@
 .sidebar:not(.sidebar-collapsed) .sidebar-collapse-button {
   width: 18px;
   height: 18px;
-  left: 266px;
+  left: 281px;
   border: 1px solid #94a3b8;
   border-radius: 3px;
   color: #061321;
@@ -1433,7 +1433,7 @@
 /* Make room for the active sub-page arrow
    without changing any non-selected row. */
 .nav-sub-link.nav-link-active {
-  padding-left: 84px;
+  padding-left: 72px;
 }
 
 .nav-sub-link-last.nav-link-active {
@@ -1470,7 +1470,7 @@
 /* On every selected sub-page, position the
    selected box immediately after the arrow. */
 .nav-sub-link.nav-link-active::after {
-  left: 73px;
+  left: 61px;
 }
 
 /* Keep connector and content above selected fill */
@@ -1506,7 +1506,7 @@
   z-index: 3;
   left: 25px;
   top: 50%;
-  width: 46px;
+  width: 34px;
   height: 22px;
   box-sizing: border-box;
   border: 0;
@@ -1574,7 +1574,7 @@
   top: 6px;
   right: auto;
   left: 4px;
-  width: 25px;
+  width: 17px;
   height: 2px;
   border-radius: 999px;
   background:
@@ -22026,17 +22026,17 @@ tbody td {
   font-weight: 900;
 }
 
-/* When Academic Plan is active, use exactly the
-   same arrow and selected box as other sub-pages. */
+/* When Academic Plan is active, use the
+   compact selected-page arrow. */
 .nav-sub-link-academic-plan.nav-link-active {
-  padding-left: 84px;
+  padding-left: 72px;
 }
 
 .nav-sub-link-academic-plan.nav-link-active::after {
   top: 2px;
   right: 6px;
   bottom: 2px;
-  left: 73px;
+  left: 61px;
   height: auto;
   border: 1px solid #d7a91f;
   border-radius: 5px;
@@ -22058,7 +22058,7 @@ tbody td {
   z-index: 3;
   left: 15px;
   top: 50%;
-  width: 56px;
+  width: 44px;
   height: 22px;
   border: 0;
   border-radius: 0;
@@ -22107,7 +22107,7 @@ tbody td {
   z-index: 2;
   top: 6px;
   left: 4px;
-  width: 29px;
+  width: 22px;
   height: 2px;
   border-radius: 999px;
   background:
@@ -22127,7 +22127,7 @@ tbody td {
 .course-status-link-active {
   position: relative;
   min-height: 28px;
-  padding-left: 67px;
+  padding-left: 55px;
   color: #0b1f3b;
   background: transparent;
   box-shadow: none;
@@ -22143,7 +22143,7 @@ tbody td {
   top: 1px;
   right: 3px;
   bottom: 1px;
-  left: 55px;
+  left: 43px;
   border: 1px solid #d7a91f;
   border-radius: 5px;
   background:
@@ -22174,7 +22174,7 @@ tbody td {
   z-index: 3;
   left: 7px;
   top: 50%;
-  width: 46px;
+  width: 34px;
   height: 22px;
   border: 0;
   border-radius: 0;
@@ -22225,7 +22225,7 @@ tbody td {
   z-index: 2;
   top: 6px;
   left: 4px;
-  width: 25px;
+  width: 17px;
   height: 2px;
   border-radius: 999px;
   background:
