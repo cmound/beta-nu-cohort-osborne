@@ -1322,6 +1322,14 @@
   transform: none;
 }
 
+/* Slightly compact COHORT and RESOURCES
+   sub-page rows only. */
+.nav-sub-link:not(
+    .nav-sub-link-academic-plan
+  ) {
+  min-height: 27px;
+}
+
 /* Connect first sub-page directly to parent tab */
 .nav-link:not(.nav-sub-link)
   + .nav-sub-link,
