@@ -37,6 +37,7 @@ import {
   WidthType,
 } from 'docx'
 import * as XLSX from 'xlsx'
+import { db } from './db'
 import './App.css'
 
 type SidebarNavigationGroupId =
@@ -38114,6 +38115,14 @@ function App() {
   const location =
     useLocation()
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return
+    }
+
+    void db.cloud.login()
+  }, [])
+
   const [coursesOpen, setCoursesOpen] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
@@ -38267,7 +38276,7 @@ function App() {
     location.pathname,
   ])
 
-    function getGlobalTableLayoutKey(
+  function getGlobalTableLayoutKey(
     table: HTMLTableElement,
   ): string | null {
     const appMain =
@@ -38439,8 +38448,8 @@ function App() {
     const layout =
       globalTableLayoutsRef
         .current[
-        layoutKey
-        ]
+      layoutKey
+      ]
 
     if (layout === undefined) {
       return
@@ -38887,8 +38896,8 @@ function App() {
       const currentLayout =
         globalTableLayoutsRef
           .current[
-          activeLayoutKey
-          ] ?? {
+        activeLayoutKey
+        ] ?? {
           columnWidths: [],
           rowHeights: {},
         }
