@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+dexie-cloud.json
+dexie-cloud.key
