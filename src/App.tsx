@@ -1139,6 +1139,77 @@ const pacificCalendarDateFormatter = new Intl.DateTimeFormat(
 const DASHBOARD_DATE_WRAP_CHARACTER_THRESHOLD = 24
 
 const DASHBOARD_BREAK_IMAGE_COUNT = 7
+
+interface DashboardBreakSignLayout {
+  readonly top: string
+  readonly left: string
+  readonly width: string
+  readonly height: string
+  readonly topFontSize: string
+  readonly bottomFontSize: string
+}
+
+const DASHBOARD_BREAK_SIGN_LAYOUTS: Readonly<
+  Record<number, DashboardBreakSignLayout>
+> = {
+  1: {
+    top: '29%',
+    left: '50%',
+    width: '28%',
+    height: '20%',
+    topFontSize: '34px',
+    bottomFontSize: '29px',
+  },
+  2: {
+    top: '24%',
+    left: '50%',
+    width: '32%',
+    height: '18%',
+    topFontSize: '33px',
+    bottomFontSize: '28px',
+  },
+  3: {
+    top: '24%',
+    left: '50%',
+    width: '27%',
+    height: '19%',
+    topFontSize: '33px',
+    bottomFontSize: '28px',
+  },
+  4: {
+    top: '22%',
+    left: '50%',
+    width: '36%',
+    height: '18%',
+    topFontSize: '34px',
+    bottomFontSize: '28px',
+  },
+  5: {
+    top: '20%',
+    left: '50%',
+    width: '32%',
+    height: '21%',
+    topFontSize: '33px',
+    bottomFontSize: '28px',
+  },
+  6: {
+    top: '23%',
+    left: '50%',
+    width: '31%',
+    height: '18%',
+    topFontSize: '33px',
+    bottomFontSize: '28px',
+  },
+  7: {
+    top: '22%',
+    left: '50%',
+    width: '29%',
+    height: '20%',
+    topFontSize: '33px',
+    bottomFontSize: '28px',
+  },
+}
+
 const DASHBOARD_MILLISECONDS_PER_DAY =
   24 * 60 * 60 * 1000
 
@@ -7963,6 +8034,27 @@ function DashboardPage({
       ? '1 Day'
       : `${dashboardDaysUntilNextCourse} Days`
 
+  const dashboardBreakSignLayout =
+    DASHBOARD_BREAK_SIGN_LAYOUTS[
+    dashboardBreakImageNumber
+    ] ??
+    DASHBOARD_BREAK_SIGN_LAYOUTS[1]
+
+  const dashboardBreakSignStyle = {
+    '--dashboard-break-zone-top':
+      dashboardBreakSignLayout.top,
+    '--dashboard-break-zone-left':
+      dashboardBreakSignLayout.left,
+    '--dashboard-break-zone-width':
+      dashboardBreakSignLayout.width,
+    '--dashboard-break-zone-height':
+      dashboardBreakSignLayout.height,
+    '--dashboard-break-top-font-size':
+      dashboardBreakSignLayout.topFontSize,
+    '--dashboard-break-bottom-font-size':
+      dashboardBreakSignLayout.bottomFontSize,
+  } as CSSProperties
+
   const dashboardDaysUntilNextMeeting =
     dashboardUpcomingMeeting === undefined
       ? '—'
@@ -8495,6 +8587,7 @@ function DashboardPage({
 
               <div
                 className="dashboard-break-sign-message"
+                style={dashboardBreakSignStyle}
                 aria-hidden="true"
               >
                 <strong className="dashboard-break-sign-top">

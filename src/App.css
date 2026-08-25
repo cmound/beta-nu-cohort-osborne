@@ -14441,7 +14441,7 @@ tbody td {
   height: 100%;
   display: block;
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
 }
 
 /* Dynamic lettering positioned over
@@ -14449,78 +14449,71 @@ tbody td {
 .dashboard-break-sign-message {
   position: absolute;
   z-index: 2;
-  top: 34%;
-  left: 50%;
-  width: 46%;
+  top: var(--dashboard-break-zone-top);
+  left: var(--dashboard-break-zone-left);
+  width: var(--dashboard-break-zone-width);
+  height: var(--dashboard-break-zone-height);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
+  padding: 4px 8px;
   pointer-events: none;
   text-align: center;
-  transform:
-    translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  overflow: hidden;
 }
 
 /* Raised polished gold top line */
 .dashboard-break-sign-top {
   display: block;
+  max-width: 100%;
   color: #F2B632;
   font-family:
     'Arial Rounded MT Bold',
     'Nunito ExtraBold',
     Arial,
     sans-serif;
-  font-size: 32px;
+  font-size: var(--dashboard-break-top-font-size);
   font-weight: 900;
-  line-height: 0.98;
+  line-height: 0.95;
   letter-spacing: 0.1px;
   white-space: nowrap;
 
   text-shadow:
-    -1px -1px 0
-      #FFD76A,
-    1px 1px 0
-      #C89214,
-    2px 2px 0
-      #C89214,
-    3px 3px 0
-      #7A4B05,
-    4px 4px 1px
-      #7A4B05,
-    6px 7px 7px
-      rgba(60, 35, 3, 0.48);
+    -1px -1px 0 #FFD76A,
+    1px 1px 0 #C89214,
+    2px 2px 0 #C89214,
+    3px 3px 0 #7A4B05,
+    4px 4px 1px #7A4B05,
+    6px 7px 7px rgba(60, 35, 3, 0.48);
 }
 
 /* Raised warm-ivory bottom line */
 .dashboard-break-sign-bottom {
   display: block;
+  max-width: 100%;
   color: #F5F1E8;
   font-family:
     'Arial Rounded MT Bold',
     'Nunito ExtraBold',
     Arial,
     sans-serif;
-  font-size: 27px;
+  font-size: var(--dashboard-break-bottom-font-size);
   font-weight: 900;
-  line-height: 1;
+  line-height: 0.98;
   letter-spacing: 0.1px;
   white-space: nowrap;
 
   text-shadow:
-    -1px -1px 0
-      #FFFFFF,
-    1px 1px 0
-      #D4CEC2,
-    2px 2px 0
-      #D4CEC2,
-    3px 3px 0
-      #6B4A2D,
-    4px 4px 1px
-      #6B4A2D,
-    6px 7px 7px
-      rgba(53, 31, 17, 0.5);
+    -1px -1px 0 #FFFFFF,
+    1px 1px 0 #D4CEC2,
+    2px 2px 0 #D4CEC2,
+    3px 3px 0 #6B4A2D,
+    4px 4px 1px #6B4A2D,
+    6px 7px 7px rgba(53, 31, 17, 0.5);
 }
 
 /* Active course list */
