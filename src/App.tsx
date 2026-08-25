@@ -27171,16 +27171,6 @@ function CohortAcademicPlanPage() {
           <div className="academic-stat-group">
             <div className="academic-stat-box">
               <span className="academic-stat-label">
-                Total Classes
-              </span>
-
-              <strong className="academic-stat-value">
-                {academicPlan.length}
-              </strong>
-            </div>
-
-            <div className="academic-stat-box">
-              <span className="academic-stat-label">
                 Total Completed
               </span>
 
@@ -27189,6 +27179,13 @@ function CohortAcademicPlanPage() {
               </strong>
             </div>
 
+            <span
+              className="academic-stat-operator"
+              aria-hidden="true"
+            >
+              +
+            </span>
+
             <div className="academic-stat-box">
               <span className="academic-stat-label">
                 Remaining
@@ -27196,6 +27193,23 @@ function CohortAcademicPlanPage() {
 
               <strong className="academic-stat-value">
                 {academicPlanRemainingCount}
+              </strong>
+            </div>
+
+            <span
+              className="academic-stat-operator"
+              aria-hidden="true"
+            >
+              =
+            </span>
+
+            <div className="academic-stat-box academic-stat-box-total">
+              <span className="academic-stat-label">
+                Total Classes
+              </span>
+
+              <strong className="academic-stat-value">
+                {academicPlan.length}
               </strong>
             </div>
           </div>

@@ -10129,9 +10129,21 @@ tbody td {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   justify-self: center;
   align-self: end;
+}
+
+.academic-stat-operator {
+  flex: 0 0 auto;
+  color: #ffd200;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 #8f6500,
+    0 2px 3px
+      rgba(0, 0, 0, 0.45);
 }
 
 .academic-stat-box {
@@ -10167,6 +10179,33 @@ tbody td {
       rgba(0, 0, 0, 0.38),
     0 0 8px
       rgba(224, 170, 22, 0.18);
+}
+
+.academic-stat-box-total {
+  width: 178px;
+  border-color: #ffd200;
+  background:
+    linear-gradient(
+      to bottom,
+      #1b5694 0%,
+      #0d3b70 42%,
+      #06264d 100%
+    );
+  box-shadow:
+    inset 0 3px 3px
+      rgba(255, 255, 255, 0.26),
+    inset 0 -4px 5px
+      rgba(0, 0, 0, 0.38),
+    0 4px 8px
+      rgba(0, 0, 0, 0.4),
+    0 0 11px
+      rgba(255, 210, 0, 0.3);
+}
+
+.academic-stat-box-total
+  .academic-stat-value {
+  color: #ffd200;
+  font-size: 28px;
 }
 
 .academic-stat-box::before {
