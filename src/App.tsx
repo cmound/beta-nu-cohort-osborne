@@ -79,6 +79,7 @@ interface CoursePageProps {
   readonly CohortContactRecord[]
   readonly contactStatuses:
   Readonly<CohortContactStatusState>
+  readonly isTableEditMode: boolean
 }
 
 interface CourseAssignmentRecord {
@@ -212,6 +213,19 @@ interface CourseTableLayoutRecord {
 type CourseTableLayoutState = Record<
   string,
   CourseTableLayoutRecord
+>
+
+interface GlobalTableLayoutRecord {
+  readonly columnWidths:
+  readonly number[]
+
+  readonly rowHeights:
+  Readonly<Record<string, number>>
+}
+
+type GlobalTableLayoutState = Record<
+  string,
+  GlobalTableLayoutRecord
 >
 
 interface ActiveCourseDashboardItem {
@@ -2042,6 +2056,9 @@ const PROFESSOR_DIRECTORY_STORAGE_KEY =
 const COURSE_TABLE_LAYOUT_STORAGE_KEY =
   'beta-nu-course-table-layout-v1'
 
+const GLOBAL_TABLE_LAYOUT_STORAGE_KEY =
+  'beta-nu-global-table-layout-v1'
+
 const DEFAULT_COURSE_WEBINAR_COLUMN_ORDER:
   readonly CourseWebinarColumnKey[] = [
     'webinarNumber',
@@ -2205,6 +2222,71 @@ function readStoredCourseLayoutNumberRecord(
   }
 
   return numbers
+}
+
+function readStoredGlobalTableLayouts():
+  GlobalTableLayoutState {
+  const storedValue =
+    window.localStorage.getItem(
+      GLOBAL_TABLE_LAYOUT_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return {}
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (
+      typeof parsedValue !== 'object' ||
+      parsedValue === null
+    ) {
+      return {}
+    }
+
+    const layouts:
+      GlobalTableLayoutState = {}
+
+    for (
+      const [
+        layoutKey,
+        layoutValue,
+      ] of Object.entries(
+        parsedValue,
+      )
+    ) {
+      if (
+        typeof layoutValue !==
+        'object' ||
+        layoutValue === null
+      ) {
+        continue
+      }
+
+      const record =
+        layoutValue as Record<
+          string,
+          unknown
+        >
+
+      layouts[layoutKey] = {
+        columnWidths:
+          readStoredCourseLayoutNumberArray(
+            record.columnWidths,
+          ),
+        rowHeights:
+          readStoredCourseLayoutNumberRecord(
+            record.rowHeights,
+          ),
+      }
+    }
+
+    return layouts
+  } catch {
+    return {}
+  }
 }
 
 function readStoredCourseTableLayouts():
@@ -29688,6 +29770,7 @@ function CoursePage({
   meetings,
   contacts,
   contactStatuses,
+  isTableEditMode,
 }: CoursePageProps) {
   const { courseCode } = useParams()
 
@@ -29849,6 +29932,30 @@ function CoursePage({
     useState<CourseLayoutEditorSection>(
       null,
     )
+
+  useEffect(() => {
+    if (!isTableEditMode) {
+      return
+    }
+
+    setIsAssignmentDeleteMode(
+      false,
+    )
+
+    setSelectedAssignmentIds(
+      [],
+    )
+
+    setIsWebinarDeleteMode(
+      false,
+    )
+
+    setSelectedWebinarIds(
+      [],
+    )
+  }, [
+    isTableEditMode,
+  ])
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -30569,34 +30676,11 @@ function CoursePage({
       'progress',
   ): string {
     return (
-      courseLayoutEditorSection ===
+      isTableEditMode ||
+        courseLayoutEditorSection ===
         section
         ? `${baseClassName} course-layout-resizable-table course-layout-resize-active`
         : `${baseClassName} course-layout-resizable-table`
-    )
-  }
-
-  function toggleCourseResizeMode(
-    section:
-      'webinars' |
-      'assignments' |
-      'progress',
-  ): void {
-    if (section === 'webinars') {
-      setIsWebinarDeleteMode(
-        false,
-      )
-
-      setSelectedWebinarIds(
-        [],
-      )
-    }
-
-    setCourseLayoutEditorSection(
-      (current) =>
-        current === section
-          ? null
-          : section,
     )
   }
 
@@ -30609,6 +30693,7 @@ function CoursePage({
       'progress',
   ): void {
     if (
+      !isTableEditMode &&
       courseLayoutEditorSection !==
       section
     ) {
@@ -33490,33 +33575,6 @@ function CoursePage({
                   </svg>
                 </button>
 
-                <button
-                  type="button"
-                  className={
-                    courseLayoutEditorSection ===
-                      'assignments'
-                      ? 'course-workspace-icon-button course-layout-settings-button course-layout-settings-button-active'
-                      : 'course-workspace-icon-button course-layout-settings-button'
-                  }
-                  aria-label="Toggle Course Assignments resize mode"
-                  title={
-                    courseLayoutEditorSection ===
-                      'assignments'
-                      ? 'Finish Resizing Course Assignments'
-                      : 'Resize Course Assignments'
-                  }
-                  aria-pressed={
-                    courseLayoutEditorSection ===
-                    'assignments'
-                  }
-                  onClick={() => {
-                    toggleCourseResizeMode(
-                      'assignments',
-                    )
-                  }}
-                >
-                  ⚙
-                </button>
               </div>
             </header>
 
@@ -33760,6 +33818,7 @@ function CoursePage({
                                   }
                                   draggable={
                                     !isPriorityAssignment &&
+                                    !isTableEditMode &&
                                     courseLayoutEditorSection !==
                                     'assignments'
                                   }
@@ -34321,34 +34380,6 @@ function CoursePage({
                     <path d="M12 10.5v5.75" />
                     <path d="M14.25 10.5v5.75" />
                   </svg>
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    courseLayoutEditorSection ===
-                      'webinars'
-                      ? 'course-workspace-icon-button course-layout-settings-button course-layout-settings-button-active'
-                      : 'course-workspace-icon-button course-layout-settings-button'
-                  }
-                  aria-label="Toggle Class Webinars resize mode"
-                  title={
-                    courseLayoutEditorSection ===
-                      'webinars'
-                      ? 'Finish Resizing Class Webinars'
-                      : 'Resize Class Webinars'
-                  }
-                  aria-pressed={
-                    courseLayoutEditorSection ===
-                    'webinars'
-                  }
-                  onClick={() => {
-                    toggleCourseResizeMode(
-                      'webinars',
-                    )
-                  }}
-                >
-                  ⚙
                 </button>
               </div>
             </header>
@@ -35228,33 +35259,6 @@ function CoursePage({
               </span>
             </div>
 
-            <button
-              type="button"
-              className={
-                courseLayoutEditorSection ===
-                  'progress'
-                  ? 'course-workspace-icon-button course-layout-settings-button course-layout-settings-button-active'
-                  : 'course-workspace-icon-button course-layout-settings-button'
-              }
-              aria-label="Toggle Cohort Assignment Progress resize mode"
-              title={
-                courseLayoutEditorSection ===
-                  'progress'
-                  ? 'Finish Resizing Cohort Assignment Progress'
-                  : 'Resize Cohort Assignment Progress'
-              }
-              aria-pressed={
-                courseLayoutEditorSection ===
-                'progress'
-              }
-              onClick={() => {
-                toggleCourseResizeMode(
-                  'progress',
-                )
-              }}
-            >
-              ⚙
-            </button>
           </div>
         </header>
 
@@ -38128,6 +38132,23 @@ function App() {
     useState(false)
 
   const [
+    isTableEditAccessTrayOpen,
+    setIsTableEditAccessTrayOpen,
+  ] =
+    useState(false)
+
+  const [
+    isTableEditMode,
+    setIsTableEditMode,
+  ] =
+    useState(false)
+
+  const globalTableLayoutsRef =
+    useRef<GlobalTableLayoutState>(
+      readStoredGlobalTableLayouts(),
+    )
+
+  const [
     isAdminLoginOpen,
     setIsAdminLoginOpen,
   ] =
@@ -38186,6 +38207,44 @@ function App() {
   ])
 
   useEffect(() => {
+    if (
+      !isTableEditAccessTrayOpen
+    ) {
+      return
+    }
+
+    const retractTimeout =
+      window.setTimeout(
+        () => {
+          setIsTableEditAccessTrayOpen(
+            false,
+          )
+        },
+        4_000,
+      )
+
+    return () => {
+      window.clearTimeout(
+        retractTimeout,
+      )
+    }
+  }, [
+    isTableEditAccessTrayOpen,
+  ])
+
+  useEffect(() => {
+    setIsTableEditAccessTrayOpen(
+      false,
+    )
+
+    setIsTableEditMode(
+      false,
+    )
+  }, [
+    location.pathname,
+  ])
+
+  useEffect(() => {
     const previousPath =
       previousRoutePathRef.current
 
@@ -38205,6 +38264,786 @@ function App() {
     previousRoutePathRef.current =
       location.pathname
   }, [
+    location.pathname,
+  ])
+
+    function getGlobalTableLayoutKey(
+    table: HTMLTableElement,
+  ): string | null {
+    const appMain =
+      table.closest('.app-main')
+
+    if (
+      !(appMain instanceof HTMLElement)
+    ) {
+      return null
+    }
+
+    const className =
+      (
+        table.getAttribute(
+          'class',
+        ) ?? ''
+      ).trim()
+
+    const tableIdentity =
+      className.length === 0
+        ? 'table'
+        : className.replace(
+          /\s+/g,
+          '.',
+        )
+
+    const matchingTables =
+      Array.from(
+        appMain.querySelectorAll(
+          'table',
+        ),
+      ).filter(
+        (
+          candidate,
+        ): candidate is HTMLTableElement =>
+          candidate instanceof
+          HTMLTableElement &&
+          !candidate.classList.contains(
+            'course-layout-resizable-table',
+          ) &&
+          (
+            candidate.getAttribute(
+              'class',
+            ) ?? ''
+          ).trim() ===
+          className,
+      )
+
+    const tableIndex =
+      matchingTables.indexOf(
+        table,
+      )
+
+    if (tableIndex < 0) {
+      return null
+    }
+
+    return (
+      `${location.pathname}::` +
+      `${tableIdentity}::` +
+      tableIndex
+    )
+  }
+
+  function getGlobalTableHeaderRow(
+    table: HTMLTableElement,
+  ): HTMLTableRowElement | null {
+    return (
+      table.tHead?.rows.item(
+        0,
+      ) ??
+      table.rows.item(
+        0,
+      )
+    )
+  }
+
+  function getGlobalTableRowKey(
+    row: HTMLTableRowElement,
+  ): string {
+    return (
+      row.dataset.layoutRowId ??
+      `row-${row.rowIndex}`
+    )
+  }
+
+  function applyGlobalTableColumnWidths(
+    table: HTMLTableElement,
+    widths: readonly number[],
+  ): void {
+    const totalWidth =
+      widths.reduce(
+        (
+          total,
+          width,
+        ) =>
+          total + width,
+        0,
+      )
+
+    table.style.width =
+      `${Math.round(
+        totalWidth,
+      )}px`
+
+    table.style.minWidth =
+      `${Math.round(
+        totalWidth,
+      )}px`
+
+    for (
+      const row
+      of Array.from(
+        table.rows,
+      )
+    ) {
+      for (
+        const cell
+        of Array.from(
+          row.cells,
+        )
+      ) {
+        const width =
+          widths[
+          cell.cellIndex
+          ]
+
+        if (width === undefined) {
+          continue
+        }
+
+        const widthValue =
+          `${Math.round(
+            width,
+          )}px`
+
+        cell.style.width =
+          widthValue
+
+        cell.style.minWidth =
+          widthValue
+
+        cell.style.maxWidth =
+          widthValue
+      }
+    }
+  }
+
+  function applyGlobalTableLayout(
+    table: HTMLTableElement,
+  ): void {
+    if (
+      table.classList.contains(
+        'course-layout-resizable-table',
+      )
+    ) {
+      return
+    }
+
+    const layoutKey =
+      getGlobalTableLayoutKey(
+        table,
+      )
+
+    if (layoutKey === null) {
+      return
+    }
+
+    const layout =
+      globalTableLayoutsRef
+        .current[
+        layoutKey
+        ]
+
+    if (layout === undefined) {
+      return
+    }
+
+    const headerRow =
+      getGlobalTableHeaderRow(
+        table,
+      )
+
+    if (
+      headerRow !== null &&
+      layout.columnWidths.length ===
+      headerRow.cells.length
+    ) {
+      applyGlobalTableColumnWidths(
+        table,
+        layout.columnWidths,
+      )
+    }
+
+    for (
+      const row
+      of Array.from(
+        table.rows,
+      )
+    ) {
+      const rowHeight =
+        layout.rowHeights[
+        getGlobalTableRowKey(
+          row,
+        )
+        ]
+
+      if (rowHeight === undefined) {
+        continue
+      }
+
+      row.style.height =
+        `${Math.round(
+          rowHeight,
+        )}px`
+    }
+  }
+
+  function applyGlobalTableLayoutsForCurrentPage():
+    void {
+    const appMain =
+      document.querySelector(
+        '.app-main',
+      )
+
+    if (
+      !(appMain instanceof HTMLElement)
+    ) {
+      return
+    }
+
+    for (
+      const table
+      of Array.from(
+        appMain.querySelectorAll(
+          'table',
+        ),
+      )
+    ) {
+      if (
+        table instanceof
+        HTMLTableElement
+      ) {
+        applyGlobalTableLayout(
+          table,
+        )
+      }
+    }
+  }
+
+  function saveGlobalTableLayout(
+    layoutKey: string,
+    layout: GlobalTableLayoutRecord,
+  ): void {
+    globalTableLayoutsRef.current = {
+      ...globalTableLayoutsRef.current,
+      [layoutKey]: layout,
+    }
+
+    window.localStorage.setItem(
+      GLOBAL_TABLE_LAYOUT_STORAGE_KEY,
+      JSON.stringify(
+        globalTableLayoutsRef.current,
+      ),
+    )
+  }
+
+  function getGlobalTableEditElements(
+    target: EventTarget | null,
+  ): {
+    readonly table: HTMLTableElement
+    readonly cell: HTMLTableCellElement
+    readonly row: HTMLTableRowElement
+    readonly headerRow: HTMLTableRowElement
+  } | null {
+    if (
+      !(target instanceof Element)
+    ) {
+      return null
+    }
+
+    const table =
+      target.closest(
+        'table',
+      )
+
+    const cell =
+      target.closest(
+        'th, td',
+      )
+
+    const row =
+      target.closest(
+        'tr',
+      )
+
+    if (
+      !(
+        table instanceof
+        HTMLTableElement
+      ) ||
+      !(
+        cell instanceof
+        HTMLTableCellElement
+      ) ||
+      !(
+        row instanceof
+        HTMLTableRowElement
+      ) ||
+      table.classList.contains(
+        'course-layout-resizable-table',
+      ) ||
+      table.closest(
+        '.app-main',
+      ) === null ||
+      cell.closest(
+        'table',
+      ) !== table ||
+      row.closest(
+        'table',
+      ) !== table
+    ) {
+      return null
+    }
+
+    const headerRow =
+      getGlobalTableHeaderRow(
+        table,
+      )
+
+    if (headerRow === null) {
+      return null
+    }
+
+    return {
+      table,
+      cell,
+      row,
+      headerRow,
+    }
+  }
+
+  function handleGlobalTableEditPointerMove(
+    event: PointerEvent,
+  ): void {
+    const elements =
+      getGlobalTableEditElements(
+        event.target,
+      )
+
+    if (elements === null) {
+      document.body.style.cursor =
+        ''
+      return
+    }
+
+    const {
+      cell,
+      row,
+      headerRow,
+    } = elements
+
+    const cellRect =
+      cell.getBoundingClientRect()
+
+    const rowRect =
+      row.getBoundingClientRect()
+
+    const distanceFromRight =
+      Math.abs(
+        cellRect.right -
+        event.clientX,
+      )
+
+    const distanceFromBottom =
+      Math.abs(
+        rowRect.bottom -
+        event.clientY,
+      )
+
+    const canResizeColumn =
+      distanceFromRight <= 7 &&
+      cell.cellIndex <
+      headerRow.cells.length - 1
+
+    const canResizeRow =
+      distanceFromBottom <= 7
+
+    if (
+      canResizeColumn &&
+      (
+        !canResizeRow ||
+        distanceFromRight <=
+        distanceFromBottom
+      )
+    ) {
+      document.body.style.cursor =
+        'col-resize'
+      return
+    }
+
+    if (canResizeRow) {
+      document.body.style.cursor =
+        'row-resize'
+      return
+    }
+
+    document.body.style.cursor =
+      ''
+  }
+
+  function handleGlobalTableEditPointerDown(
+    event: PointerEvent,
+  ): void {
+    const elements =
+      getGlobalTableEditElements(
+        event.target,
+      )
+
+    if (elements === null) {
+      return
+    }
+
+    const {
+      table,
+      cell,
+      row,
+      headerRow,
+    } = elements
+
+    const layoutKey =
+      getGlobalTableLayoutKey(
+        table,
+      )
+
+    if (layoutKey === null) {
+      return
+    }
+
+    const activeLayoutKey =
+      layoutKey
+
+    const cellRect =
+      cell.getBoundingClientRect()
+
+    const rowRect =
+      row.getBoundingClientRect()
+
+    const distanceFromRight =
+      Math.abs(
+        cellRect.right -
+        event.clientX,
+      )
+
+    const distanceFromBottom =
+      Math.abs(
+        rowRect.bottom -
+        event.clientY,
+      )
+
+    const canResizeColumn =
+      distanceFromRight <= 7 &&
+      cell.cellIndex <
+      headerRow.cells.length - 1
+
+    const canResizeRow =
+      distanceFromBottom <= 7
+
+    if (
+      !canResizeColumn &&
+      !canResizeRow
+    ) {
+      return
+    }
+
+    const resizeColumn =
+      canResizeColumn &&
+      (
+        !canResizeRow ||
+        distanceFromRight <=
+        distanceFromBottom
+      )
+
+    const startingWidths =
+      Array.from(
+        headerRow.cells,
+      ).map(
+        (headerCell) =>
+          Math.round(
+            headerCell
+              .getBoundingClientRect()
+              .width,
+          ),
+      )
+
+    const columnIndex =
+      cell.cellIndex
+
+    const startingWidth =
+      startingWidths[
+      columnIndex
+      ] ??
+      cellRect.width
+
+    const rowKey =
+      getGlobalTableRowKey(
+        row,
+      )
+
+    const startingHeight =
+      rowRect.height
+
+    const startX =
+      event.clientX
+
+    const startY =
+      event.clientY
+
+    let latestWidths =
+      startingWidths
+
+    let latestRowHeight =
+      startingHeight
+
+    const previousUserSelect =
+      document.body.style.userSelect
+
+    const previousCursor =
+      document.body.style.cursor
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    document.body.style.userSelect =
+      'none'
+
+    document.body.style.cursor =
+      resizeColumn
+        ? 'col-resize'
+        : 'row-resize'
+
+    function handlePointerMove(
+      pointerEvent: PointerEvent,
+    ): void {
+      if (resizeColumn) {
+        const nextWidth =
+          Math.max(
+            48,
+            Math.round(
+              startingWidth +
+              (
+                pointerEvent.clientX -
+                startX
+              ),
+            ),
+          )
+
+        const nextWidths = [
+          ...startingWidths,
+        ]
+
+        nextWidths[
+          columnIndex
+        ] =
+          nextWidth
+
+        latestWidths =
+          nextWidths
+
+        applyGlobalTableColumnWidths(
+          table,
+          nextWidths,
+        )
+
+        return
+      }
+
+      latestRowHeight =
+        Math.max(
+          24,
+          Math.round(
+            startingHeight +
+            (
+              pointerEvent.clientY -
+              startY
+            ),
+          ),
+        )
+
+      row.style.height =
+        `${latestRowHeight}px`
+    }
+
+    function finishResize():
+      void {
+      window.removeEventListener(
+        'pointermove',
+        handlePointerMove,
+      )
+
+      window.removeEventListener(
+        'pointerup',
+        finishResize,
+      )
+
+      window.removeEventListener(
+        'pointercancel',
+        finishResize,
+      )
+
+      document.body.style.userSelect =
+        previousUserSelect
+
+      document.body.style.cursor =
+        previousCursor
+
+      const currentLayout =
+        globalTableLayoutsRef
+          .current[
+          activeLayoutKey
+          ] ?? {
+          columnWidths: [],
+          rowHeights: {},
+        }
+
+      saveGlobalTableLayout(
+        activeLayoutKey,
+        resizeColumn
+          ? {
+            columnWidths:
+              latestWidths,
+            rowHeights:
+              currentLayout
+                .rowHeights,
+          }
+          : {
+            columnWidths:
+              currentLayout
+                .columnWidths,
+            rowHeights: {
+              ...currentLayout
+                .rowHeights,
+              [rowKey]:
+                latestRowHeight,
+            },
+          },
+      )
+    }
+
+    window.addEventListener(
+      'pointermove',
+      handlePointerMove,
+    )
+
+    window.addEventListener(
+      'pointerup',
+      finishResize,
+    )
+
+    window.addEventListener(
+      'pointercancel',
+      finishResize,
+    )
+  }
+
+  useEffect(() => {
+    let animationFrameId:
+      number | null = null
+
+    function scheduleLayoutApply():
+      void {
+      if (
+        animationFrameId !== null
+      ) {
+        window.cancelAnimationFrame(
+          animationFrameId,
+        )
+      }
+
+      animationFrameId =
+        window.requestAnimationFrame(
+          () => {
+            animationFrameId =
+              null
+
+            applyGlobalTableLayoutsForCurrentPage()
+          },
+        )
+    }
+
+    scheduleLayoutApply()
+
+    const appMain =
+      document.querySelector(
+        '.app-main',
+      )
+
+    if (
+      !(appMain instanceof HTMLElement)
+    ) {
+      return () => {
+        if (
+          animationFrameId !== null
+        ) {
+          window.cancelAnimationFrame(
+            animationFrameId,
+          )
+        }
+      }
+    }
+
+    const observer =
+      new MutationObserver(
+        scheduleLayoutApply,
+      )
+
+    observer.observe(
+      appMain,
+      {
+        childList: true,
+        subtree: true,
+      },
+    )
+
+    return () => {
+      observer.disconnect()
+
+      if (
+        animationFrameId !== null
+      ) {
+        window.cancelAnimationFrame(
+          animationFrameId,
+        )
+      }
+    }
+  }, [
+    location.pathname,
+  ])
+
+  useEffect(() => {
+    if (!isTableEditMode) {
+      document.body.style.cursor =
+        ''
+      return
+    }
+
+    document.addEventListener(
+      'pointermove',
+      handleGlobalTableEditPointerMove,
+      true,
+    )
+
+    document.addEventListener(
+      'pointerdown',
+      handleGlobalTableEditPointerDown,
+      true,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'pointermove',
+        handleGlobalTableEditPointerMove,
+        true,
+      )
+
+      document.removeEventListener(
+        'pointerdown',
+        handleGlobalTableEditPointerDown,
+        true,
+      )
+
+      document.body.style.cursor =
+        ''
+    }
+  }, [
+    isTableEditMode,
     location.pathname,
   ])
 
@@ -39358,8 +40197,17 @@ function App() {
 
   return (
     <div
-      className={`bnf-app ${sidebarCollapsed ? 'bnf-app-sidebar-collapsed' : ''
-        }`}
+      className={
+        `bnf-app ` +
+        `${sidebarCollapsed
+          ? 'bnf-app-sidebar-collapsed'
+          : ''
+        } ` +
+        `${isTableEditMode
+          ? 'bnf-app-table-edit-mode'
+          : ''
+        }`
+      }
       style={appBackgroundStyle}
     >
       <aside
@@ -40922,12 +41770,16 @@ function App() {
           aria-expanded={
             isAdminAccessTrayOpen
           }
-          onClick={() =>
+          onClick={() => {
+            setIsTableEditAccessTrayOpen(
+              false,
+            )
+
             setIsAdminAccessTrayOpen(
               (currentValue) =>
                 !currentValue,
             )
-          }
+          }}
         />
 
         <div className="admin-access-edge-drawer">
@@ -40944,6 +41796,79 @@ function App() {
               src={`${import.meta.env.BASE_URL}Admin Torch.png`}
               alt=""
             />
+          </button>
+        </div>
+      </div>
+
+      <div
+        className={
+          `admin-access-edge table-edit-access-edge ` +
+          `${isTableEditAccessTrayOpen
+            ? 'admin-access-edge-open'
+            : ''
+          } ` +
+          `${isTableEditMode
+            ? 'table-edit-access-edge-active'
+            : ''
+          }`
+        }
+      >
+        <button
+          type="button"
+          className="admin-access-edge-trigger"
+          aria-label={
+            isTableEditAccessTrayOpen
+              ? 'Close table layout access'
+              : 'Open table layout access'
+          }
+          aria-expanded={
+            isTableEditAccessTrayOpen
+          }
+          onClick={() => {
+            setIsAdminAccessTrayOpen(
+              false,
+            )
+
+            setIsTableEditAccessTrayOpen(
+              (currentValue) =>
+                !currentValue,
+            )
+          }}
+        />
+
+        <div className="admin-access-edge-drawer">
+          <button
+            type="button"
+            className={
+              isTableEditMode
+                ? 'sidebar-admin-torch table-edit-edge-button table-edit-edge-button-active'
+                : 'sidebar-admin-torch table-edit-edge-button'
+            }
+            aria-label={
+              isTableEditMode
+                ? 'Finish editing table layouts'
+                : 'Edit table layouts'
+            }
+            title={
+              isTableEditMode
+                ? 'Finish Table Layout Editing'
+                : 'Edit Table Layouts'
+            }
+            aria-pressed={
+              isTableEditMode
+            }
+            onClick={() => {
+              setIsTableEditMode(
+                (currentValue) =>
+                  !currentValue,
+              )
+
+              setIsTableEditAccessTrayOpen(
+                false,
+              )
+            }}
+          >
+            ⚙
           </button>
         </div>
       </div>
@@ -41240,6 +42165,9 @@ function App() {
                   contacts={contacts}
                   contactStatuses={
                     contactStatuses
+                  }
+                  isTableEditMode={
+                    isTableEditMode
                   }
                 />
               }
