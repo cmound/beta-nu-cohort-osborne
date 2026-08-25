@@ -13768,7 +13768,7 @@ tbody td {
 
 .dashboard-progress-milestones h3 {
   margin: 0 0 8px;
-  color: #0b1f3b;
+  color: #8A6500;
   font-size: 13px;
   font-weight: 900;
   line-height: 1.2;
@@ -13891,6 +13891,21 @@ tbody td {
 
 .dashboard-today-heading-date {
   min-width: 0;
+  white-space: nowrap;
+}
+
+.dashboard-today-heading-date-wrapped {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  white-space: normal;
+}
+
+.dashboard-today-heading-date-wrapped
+  span {
+  display: block;
   white-space: nowrap;
 }
 

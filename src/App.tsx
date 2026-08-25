@@ -1118,13 +1118,25 @@ function renderSidebarSectionIcon(
 const PROGRAM_START_DATE = Date.UTC(2025, 7, 25)
 const PROGRAM_END_DATE = Date.UTC(2027, 5, 27)
 
-const pacificDateFormatter = new Intl.DateTimeFormat('en-US', {
-  weekday: 'long',
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'America/Los_Angeles',
-})
+const pacificWeekdayFormatter = new Intl.DateTimeFormat(
+  'en-US',
+  {
+    weekday: 'long',
+    timeZone: 'America/Los_Angeles',
+  },
+)
+
+const pacificCalendarDateFormatter = new Intl.DateTimeFormat(
+  'en-US',
+  {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/Los_Angeles',
+  },
+)
+
+const DASHBOARD_DATE_WRAP_CHARACTER_THRESHOLD = 24
 
 const pacificTimeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
@@ -7615,6 +7627,24 @@ function DashboardPage({
 }: DashboardPageProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date())
 
+  const dashboardPacificWeekday =
+    pacificWeekdayFormatter.format(
+      currentDate,
+    )
+
+  const dashboardPacificCalendarDate =
+    pacificCalendarDateFormatter.format(
+      currentDate,
+    )
+
+  const dashboardFullPacificDate =
+    `${dashboardPacificWeekday}, ` +
+    dashboardPacificCalendarDate
+
+  const dashboardDateNeedsWrap =
+    dashboardFullPacificDate.length >=
+    DASHBOARD_DATE_WRAP_CHARACTER_THRESHOLD
+
   const [dashboardQuoteIndex, setDashboardQuoteIndex] =
     useState(0)
 
@@ -8199,9 +8229,25 @@ function DashboardPage({
               </svg>
             </span>
 
-            <p className="dashboard-card-label dashboard-today-heading-date">
-              {pacificDateFormatter.format(
-                currentDate,
+            <p
+              className={
+                dashboardDateNeedsWrap
+                  ? 'dashboard-card-label dashboard-today-heading-date dashboard-today-heading-date-wrapped'
+                  : 'dashboard-card-label dashboard-today-heading-date'
+              }
+            >
+              {dashboardDateNeedsWrap ? (
+                <>
+                  <span>
+                    {dashboardPacificWeekday}
+                  </span>
+
+                  <span>
+                    {dashboardPacificCalendarDate}
+                  </span>
+                </>
+              ) : (
+                dashboardFullPacificDate
               )}
             </p>
           </div>
