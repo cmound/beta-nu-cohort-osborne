@@ -1153,60 +1153,60 @@ const DASHBOARD_BREAK_SIGN_LAYOUTS: Readonly<
   Record<number, DashboardBreakSignLayout>
 > = {
   1: {
-    top: '40%',
+    top: '39%',
     left: '50%',
     width: '29%',
-    height: '30%',
+    height: '28%',
     topFontSize: '31px',
-    bottomFontSize: '25px',
+    bottomFontSize: '24px',
   },
   2: {
-    top: '36%',
+    top: '35%',
     left: '50%',
     width: '33%',
-    height: '30%',
+    height: '28%',
     topFontSize: '31px',
-    bottomFontSize: '25px',
+    bottomFontSize: '24px',
   },
   3: {
-    top: '33%',
+    top: '32%',
     left: '50%',
     width: '29%',
-    height: '29%',
+    height: '28%',
     topFontSize: '30px',
-    bottomFontSize: '25px',
+    bottomFontSize: '24px',
   },
   4: {
     top: '28%',
     left: '50%',
     width: '35%',
-    height: '30%',
-    topFontSize: '32px',
-    bottomFontSize: '26px',
-  },
-  5: {
-    top: '33%',
-    left: '50%',
-    width: '34%',
-    height: '30%',
+    height: '29%',
     topFontSize: '31px',
     bottomFontSize: '25px',
   },
-  6: {
-    top: '33%',
+  5: {
+    top: '31%',
     left: '50%',
-    width: '29%',
-    height: '30%',
+    width: '34%',
+    height: '28%',
     topFontSize: '30px',
-    bottomFontSize: '25px',
+    bottomFontSize: '24px',
+  },
+  6: {
+    top: '31%',
+    left: '50%',
+    width: '30%',
+    height: '27%',
+    topFontSize: '30px',
+    bottomFontSize: '24px',
   },
   7: {
-    top: '30%',
+    top: '29%',
     left: '50%',
     width: '31%',
-    height: '30%',
+    height: '28%',
     topFontSize: '30px',
-    bottomFontSize: '25px',
+    bottomFontSize: '24px',
   },
 }
 
@@ -8042,7 +8042,7 @@ function DashboardPage({
 
   const dashboardBreakTopFontSize =
     dashboardDaysUntilNextCourse >= 10
-      ? '28px'
+      ? '27px'
       : dashboardBreakSignLayout.topFontSize
 
   const dashboardBreakSignStyle = {

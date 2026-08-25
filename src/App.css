@@ -14458,11 +14458,11 @@ tbody td {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  padding: 2px 8px;
+  gap: 0;
+  padding: 1px 8px 0;
   pointer-events: none;
   text-align: center;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) translateY(-8px);
   overflow: visible;
 }
 
@@ -14503,17 +14503,18 @@ tbody td {
     sans-serif;
   font-size: var(--dashboard-break-bottom-font-size);
   font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: 0.1px;
+  line-height: 0.94;
+  letter-spacing: 0;
   white-space: nowrap;
+  text-rendering: geometricPrecision;
 
   text-shadow:
     -1px -1px 0 #FFFFFF,
-    1px 1px 0 #D4CEC2,
-    2px 2px 0 #D4CEC2,
-    3px 3px 0 #6B4A2D,
-    4px 4px 1px #6B4A2D,
-    6px 7px 7px rgba(53, 31, 17, 0.5);
+    0 1px 0 #D4CEC2,
+    1px 2px 0 #D4CEC2,
+    2px 3px 0 #6B4A2D,
+    3px 4px 0 rgba(107, 74, 45, 0.85),
+    4px 5px 0 rgba(53, 31, 17, 0.35);
 }
 
 /* Active course list */
