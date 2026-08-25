@@ -1138,6 +1138,10 @@ const pacificCalendarDateFormatter = new Intl.DateTimeFormat(
 
 const DASHBOARD_DATE_WRAP_CHARACTER_THRESHOLD = 24
 
+const DASHBOARD_BREAK_IMAGE_COUNT = 7
+const DASHBOARD_MILLISECONDS_PER_DAY =
+  24 * 60 * 60 * 1000
+
 const pacificTimeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
@@ -7793,6 +7797,20 @@ function DashboardPage({
         }
       })
 
+  const dashboardNextCourse =
+    [...dashboardAcademicPlan]
+      .filter(
+        (record) =>
+          record.startDate >
+          currentPacificDate,
+      )
+      .sort(
+        (firstRecord, secondRecord) =>
+          firstRecord.startDate.localeCompare(
+            secondRecord.startDate,
+          ),
+      )[0]
+
   const dashboardTotalCourses =
     dashboardAcademicPlan.length
 
@@ -7885,6 +7903,65 @@ function DashboardPage({
     Date.parse(
       `${currentPacificDate}T00:00:00Z`,
     )
+
+  const dashboardNextCourseStartTime =
+    dashboardNextCourse === undefined
+      ? Number.NaN
+      : Date.parse(
+        `${dashboardNextCourse.startDate}T00:00:00Z`,
+      )
+
+  const dashboardDaysUntilNextCourse =
+    Number.isFinite(
+      dashboardNextCourseStartTime,
+    )
+      ? Math.max(
+        0,
+        Math.round(
+          (
+            dashboardNextCourseStartTime -
+            currentPacificDateTime
+          ) /
+          DASHBOARD_MILLISECONDS_PER_DAY,
+        ),
+      )
+      : 0
+
+  const dashboardIsBetweenTerms =
+    dashboardActiveCourses.length === 0 &&
+    dashboardNextCourse !== undefined &&
+    dashboardDaysUntilNextCourse > 0
+
+  const dashboardBreakDayNumber =
+    Math.floor(
+      currentPacificDateTime /
+      DASHBOARD_MILLISECONDS_PER_DAY,
+    )
+
+  const dashboardBreakImageNumber =
+    (
+      (
+        dashboardBreakDayNumber %
+        DASHBOARD_BREAK_IMAGE_COUNT
+      ) +
+      DASHBOARD_BREAK_IMAGE_COUNT
+    ) %
+    DASHBOARD_BREAK_IMAGE_COUNT +
+    1
+
+  const dashboardBreakImageSource =
+    `${import.meta.env.BASE_URL}` +
+    `dashboard-break-${String(
+      dashboardBreakImageNumber,
+    ).padStart(
+      2,
+      '0',
+    )}.png`
+
+  const dashboardBreakTopMessage =
+    dashboardDaysUntilNextCourse === 1
+      ? '1 Day'
+      : `${dashboardDaysUntilNextCourse} Days`
 
   const dashboardDaysUntilNextMeeting =
     dashboardUpcomingMeeting === undefined
@@ -8404,42 +8481,69 @@ function DashboardPage({
             </span>
           </div>
 
-          <div className="active-course-list">
-            {dashboardActiveCourses.map(
-              (course) => (
-                <div
-                  className="active-course-item"
-                  key={course.id}
-                >
-                  <span className="dashboard-active-course-code">
-                    {course.code}
-                  </span>
+          {dashboardIsBetweenTerms &&
+            dashboardNextCourse !== undefined ? (
+            <div className="dashboard-break-display">
+              <img
+                className="dashboard-break-image"
+                src={dashboardBreakImageSource}
+                alt={
+                  `${dashboardBreakTopMessage} left until ` +
+                  `${dashboardNextCourse.code} begins`
+                }
+              />
 
-                  <div className="dashboard-active-course-details">
-                    <strong className="dashboard-active-course-title">
-                      {course.className}
-                    </strong>
+              <div
+                className="dashboard-break-sign-message"
+                aria-hidden="true"
+              >
+                <strong className="dashboard-break-sign-top">
+                  {dashboardBreakTopMessage}
+                </strong>
 
-                    <p className="dashboard-active-course-meta">
-                      {course.termYear}
-                      {' | '}
-                      {dashboardCourseDateFormatter.format(
-                        new Date(
-                          `${course.startDate}T00:00:00Z`,
-                        ),
-                      )}
-                      {' - '}
-                      {dashboardCourseDateFormatter.format(
-                        new Date(
-                          `${course.endDate}T00:00:00Z`,
-                        ),
-                      )}
-                    </p>
+                <strong className="dashboard-break-sign-bottom">
+                  Left
+                </strong>
+              </div>
+            </div>
+          ) : (
+            <div className="active-course-list">
+              {dashboardActiveCourses.map(
+                (course) => (
+                  <div
+                    className="active-course-item"
+                    key={course.id}
+                  >
+                    <span className="dashboard-active-course-code">
+                      {course.code}
+                    </span>
+
+                    <div className="dashboard-active-course-details">
+                      <strong className="dashboard-active-course-title">
+                        {course.className}
+                      </strong>
+
+                      <p className="dashboard-active-course-meta">
+                        {course.termYear}
+                        {' | '}
+                        {dashboardCourseDateFormatter.format(
+                          new Date(
+                            `${course.startDate}T00:00:00Z`,
+                          ),
+                        )}
+                        {' - '}
+                        {dashboardCourseDateFormatter.format(
+                          new Date(
+                            `${course.endDate}T00:00:00Z`,
+                          ),
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ),
-            )}
-          </div>
+                ),
+              )}
+            </div>
+          )}
 
           <NavLink
             className="dashboard-view-all-classes"

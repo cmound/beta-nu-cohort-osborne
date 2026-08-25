@@ -14418,6 +14418,111 @@ tbody td {
   white-space: nowrap;
 }
 
+/* Between-term rotating break image */
+.dashboard-break-display {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  box-sizing: border-box;
+  margin: 9px 0 10px;
+  overflow: hidden;
+  border: 1px solid #8298ad;
+  border-radius: 8px;
+  background: #d7e2ec;
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.88),
+    0 3px 7px
+      rgba(11, 31, 59, 0.16);
+}
+
+.dashboard-break-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Dynamic lettering positioned over
+   the blank wooden sign in each image */
+.dashboard-break-sign-message {
+  position: absolute;
+  z-index: 2;
+  top: 34%;
+  left: 50%;
+  width: 46%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+  text-align: center;
+  transform:
+    translate(-50%, -50%);
+}
+
+/* Raised polished gold top line */
+.dashboard-break-sign-top {
+  display: block;
+  color: #F2B632;
+  font-family:
+    'Arial Rounded MT Bold',
+    'Nunito ExtraBold',
+    Arial,
+    sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+
+  text-shadow:
+    -1px -1px 0
+      #FFD76A,
+    1px 1px 0
+      #C89214,
+    2px 2px 0
+      #C89214,
+    3px 3px 0
+      #7A4B05,
+    4px 4px 1px
+      #7A4B05,
+    6px 7px 7px
+      rgba(60, 35, 3, 0.48);
+}
+
+/* Raised warm-ivory bottom line */
+.dashboard-break-sign-bottom {
+  display: block;
+  color: #F5F1E8;
+  font-family:
+    'Arial Rounded MT Bold',
+    'Nunito ExtraBold',
+    Arial,
+    sans-serif;
+  font-size: 27px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+
+  text-shadow:
+    -1px -1px 0
+      #FFFFFF,
+    1px 1px 0
+      #D4CEC2,
+    2px 2px 0
+      #D4CEC2,
+    3px 3px 0
+      #6B4A2D,
+    4px 4px 1px
+      #6B4A2D,
+    6px 7px 7px
+      rgba(53, 31, 17, 0.5);
+}
+
 /* Active course list */
 .dashboard-overview
   .dashboard-classes-card
