@@ -37,6 +37,7 @@ import {
   WidthType,
 } from 'docx'
 import * as XLSX from 'xlsx'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db'
 import './App.css'
 
@@ -9518,7 +9519,7 @@ function DashboardPage({
                   </span>
 
                   <strong>
-                    22
+                    {dashboardTotalCourses}
                   </strong>
                 </div>
 
@@ -9548,7 +9549,7 @@ function DashboardPage({
                   </span>
 
                   <strong>
-                    10
+                    {dashboardPendingCourses}
                   </strong>
                 </div>
               </div>
@@ -26816,6 +26817,133 @@ function CohortAcademicPlanPage() {
       CohortAcademicPlanField
     } | null>(null)
 
+  const cloudAcademicPlan =
+    useLiveQuery(
+      async () => {
+        if (!import.meta.env.DEV) {
+          return []
+        }
+
+        return db.academicPlan.toArray()
+      },
+      [],
+    )
+
+  const [
+    isAcademicPlanCloudReady,
+    setIsAcademicPlanCloudReady,
+  ] =
+    useState(
+      !import.meta.env.DEV,
+    )
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return
+    }
+
+    let isCancelled = false
+
+    async function initializeAcademicPlanCloud():
+      Promise<void> {
+      await db.cloud.sync()
+
+      const existingCloudPlan =
+        await db.academicPlan.toArray()
+
+      if (
+        existingCloudPlan.length === 0
+      ) {
+        const currentUserId =
+          db.cloud.currentUserId
+
+        if (
+          currentUserId ===
+          'unauthorized'
+        ) {
+          throw new Error(
+            'Dexie Cloud login is required.',
+          )
+        }
+
+        const localPlan =
+          readStoredCohortAcademicPlan()
+
+        await db.academicPlan.bulkPut(
+          localPlan.map(
+            (record) => ({
+              ...record,
+              realmId:
+                currentUserId,
+            }),
+          ),
+        )
+
+        await db.cloud.sync()
+      }
+
+      if (!isCancelled) {
+        setIsAcademicPlanCloudReady(
+          true,
+        )
+      }
+    }
+
+    void initializeAcademicPlanCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Academic Plan cloud sync.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (
+      !import.meta.env.DEV ||
+      !isAcademicPlanCloudReady ||
+      cloudAcademicPlan ===
+      undefined ||
+      cloudAcademicPlan.length === 0
+    ) {
+      return
+    }
+
+    const nextAcademicPlan =
+      cloudAcademicPlan.map(
+        (record) => ({
+          id: record.id,
+          programYear:
+            record.programYear,
+          calendarYear:
+            record.calendarYear,
+          code: record.code,
+          className:
+            record.className,
+          startDate:
+            record.startDate,
+          endDate:
+            record.endDate,
+          termYear:
+            record.termYear,
+          length: record.length,
+        }),
+      )
+
+    setAcademicPlan(
+      normalizeCohortAcademicPlan(
+        nextAcademicPlan,
+      ),
+    )
+  }, [
+    cloudAcademicPlan,
+    isAcademicPlanCloudReady,
+  ])
+
   useEffect(() => {
     window.localStorage.setItem(
       COHORT_ACADEMIC_PLAN_STORAGE_KEY,
@@ -26829,23 +26957,73 @@ function CohortAcademicPlanPage() {
     )
   }, [academicPlan])
 
+  const academicPlanCompletedCount =
+    academicPlan.filter(
+      (record) =>
+        getCohortAcademicPlanStatus(
+          record.startDate,
+          record.endDate,
+        ) === 'Done',
+    ).length
+
+  const academicPlanRemainingCount =
+    Math.max(
+      0,
+      academicPlan.length -
+      academicPlanCompletedCount,
+    )
+
   function updateAcademicPlanRecord(
     recordId: string,
     field: CohortAcademicPlanField,
     value: string,
   ): void {
+    const currentRecord =
+      academicPlan.find(
+        (record) =>
+          record.id === recordId,
+      )
+
+    if (
+      currentRecord === undefined
+    ) {
+      return
+    }
+
+    const updatedRecord = {
+      ...currentRecord,
+      [field]: value,
+    }
+
     setAcademicPlan(
       (currentPlan) =>
         currentPlan.map(
           (record) =>
             record.id === recordId
-              ? {
-                ...record,
-                [field]: value,
-              }
+              ? updatedRecord
               : record,
         ),
     )
+
+    if (!import.meta.env.DEV) {
+      return
+    }
+
+    const currentUserId =
+      db.cloud.currentUserId
+
+    if (
+      currentUserId ===
+      'unauthorized'
+    ) {
+      return
+    }
+
+    void db.academicPlan.put({
+      ...updatedRecord,
+      realmId:
+        currentUserId,
+    })
   }
 
   function focusAcademicPlanCell(
@@ -26997,7 +27175,7 @@ function CohortAcademicPlanPage() {
               </span>
 
               <strong className="academic-stat-value">
-                22
+                {academicPlan.length}
               </strong>
             </div>
 
@@ -27007,7 +27185,7 @@ function CohortAcademicPlanPage() {
               </span>
 
               <strong className="academic-stat-value">
-                9
+                {academicPlanCompletedCount}
               </strong>
             </div>
 
@@ -27017,7 +27195,7 @@ function CohortAcademicPlanPage() {
               </span>
 
               <strong className="academic-stat-value">
-                10
+                {academicPlanRemainingCount}
               </strong>
             </div>
           </div>
