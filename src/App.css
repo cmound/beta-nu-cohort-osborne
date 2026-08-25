@@ -21,10 +21,10 @@
   --umass-navy: #0B1F3B;
   --umass-gold: #C69214;
 
-  min-width: 1220px;
+  min-width: 1205px;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 290px minmax(0, 1fr);
+  grid-template-columns: 275px minmax(0, 1fr);
   color: var(--text-main);
   background-image:
     linear-gradient(
@@ -75,7 +75,7 @@
 .sidebar-collapse-button {
   position: fixed;
   top: 12px;
-  left: 280px;
+  left: 265px;
   z-index: 30;
   width: 20px;
   height: 20px;
@@ -106,7 +106,7 @@
 .sidebar:not(.sidebar-collapsed) .sidebar-collapse-button {
   width: 18px;
   height: 18px;
-  left: 281px;
+  left: 266px;
   border: 1px solid #94a3b8;
   border-radius: 3px;
   color: #061321;
@@ -1328,6 +1328,7 @@
     .nav-sub-link-academic-plan
   ) {
   min-height: 27px;
+  font-size: 12px;
 }
 
 /* Connect first sub-page directly to parent tab */
