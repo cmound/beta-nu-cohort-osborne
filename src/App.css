@@ -14683,7 +14683,7 @@ tbody td {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 10px 17px;
+  padding: 16px 4px 17px;
 }
 
 /* Header */
@@ -14917,7 +14917,7 @@ tbody td {
   display: grid;
   grid-template-columns:
     repeat(5, minmax(0, 1fr));
-  gap: 5px;
+  gap: 3px;
   margin-top: 7px;
 }
 
@@ -14928,7 +14928,7 @@ tbody td {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 7px 5px 8px;
+  padding: 7px 4px 8px;
   overflow: hidden;
   border: 1px solid #879bae;
   border-radius: 7px;
@@ -14952,14 +14952,14 @@ tbody td {
   min-height: 31px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .dashboard-meeting-role-header
   > strong {
   min-width: 0;
   color: #0B1F3B;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 900;
   line-height: 1.1;
   text-transform: uppercase;
@@ -14970,9 +14970,9 @@ tbody td {
 
 /* Raised gold role icon */
 .dashboard-meeting-role-icon {
-  width: 29px;
-  height: 29px;
-  flex: 0 0 29px;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
   box-sizing: border-box;
   display: grid;
   place-items: center;
@@ -14996,8 +14996,8 @@ tbody td {
 }
 
 .dashboard-meeting-role-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
   display: block;
   overflow: visible;
   filter:
@@ -15016,10 +15016,12 @@ tbody td {
 }
 
 .dashboard-meeting-role-name {
-  width: fit-content;
-  max-width: 100%;
+  width: auto;
+  max-width: none;
   min-width: 0;
-  align-self: center;
+  align-self: stretch;
+  box-sizing: border-box;
+  padding-left: 30px;
   color: #005EB8;
   font-size: 10.5px;
   font-weight: 800;
@@ -15028,6 +15030,19 @@ tbody td {
   white-space: normal;
   overflow-wrap: normal;
   word-break: normal;
+}
+
+.dashboard-meeting-role-name-unassigned {
+  width: fit-content;
+  max-width: calc(100% - 30px);
+  align-self: flex-start;
+  margin-left: 30px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #ffffff;
+  background: #C00000;
+  font-weight: 900;
+  text-align: left;
 }
 
 /* No upcoming meeting fallback */

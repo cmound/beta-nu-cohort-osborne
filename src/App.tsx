@@ -7695,6 +7695,14 @@ function PageShell({
   )
 }
 
+function getDashboardMeetingRoleNameClassName(
+  value: string,
+): string {
+  return value.trim().length === 0
+    ? 'dashboard-meeting-role-name dashboard-meeting-role-name-unassigned'
+    : 'dashboard-meeting-role-name'
+}
+
 function DashboardPage({
   meetings,
   contacts,
@@ -8824,7 +8832,11 @@ function DashboardPage({
 
                     <span className="dashboard-meeting-role-divider" />
 
-                    <span className="dashboard-meeting-role-name">
+                    <span
+                      className={getDashboardMeetingRoleNameClassName(
+                        dashboardUpcomingMeeting.facilitator,
+                      )}
+                    >
                       {dashboardUpcomingMeeting.facilitator ||
                         'Unassigned'}
                     </span>
@@ -8879,7 +8891,11 @@ function DashboardPage({
 
                     <span className="dashboard-meeting-role-divider" />
 
-                    <span className="dashboard-meeting-role-name">
+                    <span
+                      className={getDashboardMeetingRoleNameClassName(
+                        dashboardUpcomingMeeting.communityBuilder,
+                      )}
+                    >
                       {dashboardUpcomingMeeting.communityBuilder ||
                         'Unassigned'}
                     </span>
@@ -8932,7 +8948,11 @@ function DashboardPage({
 
                     <span className="dashboard-meeting-role-divider" />
 
-                    <span className="dashboard-meeting-role-name">
+                    <span
+                      className={getDashboardMeetingRoleNameClassName(
+                        dashboardUpcomingMeeting.timeKeeper,
+                      )}
+                    >
                       {dashboardUpcomingMeeting.timeKeeper ||
                         'Unassigned'}
                     </span>
@@ -8979,7 +8999,11 @@ function DashboardPage({
 
                     <span className="dashboard-meeting-role-divider" />
 
-                    <span className="dashboard-meeting-role-name">
+                    <span
+                      className={getDashboardMeetingRoleNameClassName(
+                        dashboardUpcomingMeeting.processObserver,
+                      )}
+                    >
                       {dashboardUpcomingMeeting.processObserver ||
                         'Unassigned'}
                     </span>
@@ -9024,7 +9048,11 @@ function DashboardPage({
 
                     <span className="dashboard-meeting-role-divider" />
 
-                    <span className="dashboard-meeting-role-name">
+                    <span
+                      className={getDashboardMeetingRoleNameClassName(
+                        dashboardUpcomingMeeting.recorder,
+                      )}
+                    >
                       {dashboardUpcomingMeeting.recorder ||
                         'Unassigned'}
                     </span>
