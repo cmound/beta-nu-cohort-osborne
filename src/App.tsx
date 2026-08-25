@@ -1602,6 +1602,12 @@ const cohortZoomWallpapers:
     },
   ]
 
+const BETA_NU_SHARED_REALM_ID =
+  '1ecd3705-9ef7-4e93-86aa-cf597fab8f50'
+
+const BETA_NU_OWNER_MEMBER_ID =
+  '65d72ad3-319e-4bea-91cf-d3b88ad937bd'
+
 const COHORT_ACADEMIC_PLAN_STORAGE_KEY =
   'beta-nu-academic-plan-v1'
 
@@ -26848,35 +26854,72 @@ function CohortAcademicPlanPage() {
       Promise<void> {
       await db.cloud.sync()
 
+      const currentUserId =
+        db.cloud.currentUserId
+
+      if (
+        currentUserId ===
+        'unauthorized'
+      ) {
+        throw new Error(
+          'Dexie Cloud login is required.',
+        )
+      }
+
       const existingCloudPlan =
         await db.academicPlan.toArray()
 
+      const existingSharedRealm =
+        await db.realms.get(
+          BETA_NU_SHARED_REALM_ID,
+        )
+
       if (
-        existingCloudPlan.length === 0
+        existingSharedRealm ===
+          undefined &&
+        existingCloudPlan.length > 0
       ) {
-        const currentUserId =
-          db.cloud.currentUserId
-
-        if (
-          currentUserId ===
-          'unauthorized'
-        ) {
-          throw new Error(
-            'Dexie Cloud login is required.',
-          )
-        }
-
-        const localPlan =
-          readStoredCohortAcademicPlan()
-
-        await db.academicPlan.bulkPut(
-          localPlan.map(
-            (record) => ({
-              ...record,
+        await db.transaction(
+          'rw',
+          [
+            db.realms,
+            db.members,
+            db.academicPlan,
+          ],
+          async () => {
+            await db.realms.put({
               realmId:
+                BETA_NU_SHARED_REALM_ID,
+              name:
+                'Beta Nu Fall Cohort',
+              represents:
+                'the shared Beta Nu Fall Cohort Hub',
+            })
+
+            await db.members.put({
+              id:
+                BETA_NU_OWNER_MEMBER_ID,
+              realmId:
+                BETA_NU_SHARED_REALM_ID,
+              userId:
                 currentUserId,
-            }),
-          ),
+              name:
+                'Beta Nu Hub Owner',
+              permissions: {
+                manage: '*',
+              },
+            })
+
+            await db.academicPlan.bulkPut(
+              existingCloudPlan.map(
+                (record) => ({
+                  ...record,
+                  realmId:
+                    BETA_NU_SHARED_REALM_ID,
+                }),
+              ),
+            )
+          },
         )
 
         await db.cloud.sync()
@@ -27009,11 +27052,8 @@ function CohortAcademicPlanPage() {
       return
     }
 
-    const currentUserId =
-      db.cloud.currentUserId
-
     if (
-      currentUserId ===
+      db.cloud.currentUserId ===
       'unauthorized'
     ) {
       return
@@ -27022,7 +27062,7 @@ function CohortAcademicPlanPage() {
     void db.academicPlan.put({
       ...updatedRecord,
       realmId:
-        currentUserId,
+        BETA_NU_SHARED_REALM_ID,
     })
   }
 
