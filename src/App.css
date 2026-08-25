@@ -14497,24 +14497,28 @@ tbody td {
   max-width: 100%;
   color: #F5F1E8;
   font-family:
-    'Arial Rounded MT Bold',
-    'Nunito ExtraBold',
+    'Arial Black',
     Arial,
     sans-serif;
   font-size: var(--dashboard-break-bottom-font-size);
   font-weight: 900;
   line-height: 0.94;
-  letter-spacing: 0;
+  letter-spacing: -0.25px;
   white-space: nowrap;
   text-rendering: geometricPrecision;
 
   text-shadow:
-    -1px -1px 0 #FFFFFF,
-    0 1px 0 #D4CEC2,
-    1px 2px 0 #D4CEC2,
-    2px 3px 0 #6B4A2D,
-    3px 4px 0 rgba(107, 74, 45, 0.85),
-    4px 5px 0 rgba(53, 31, 17, 0.35);
+    -1px -1px 0 #111111,
+    0 -1px 0 #111111,
+    1px -1px 0 #111111,
+    -1px 0 0 #111111,
+    1px 0 0 #111111,
+    -1px 1px 0 #111111,
+    1px 1px 0 #111111,
+    0 1px 0 #111111,
+    2px 2px 0 #D4CEC2,
+    3px 3px 0 #6B4A2D,
+    4px 4px 0 rgba(53, 31, 17, 0.58);
 }
 
 /* Active course list */
