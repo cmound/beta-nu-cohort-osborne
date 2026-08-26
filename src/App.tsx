@@ -46,6 +46,7 @@ import {
   type CloudCohortGroupAssignmentsRecord,
   type CloudCohortMeetingRecord,
   type CloudCohortPurposeResearchWorkspaceRecord,
+  type CloudCohortSharedDocumentRecord,
   type CloudCohortSharedUrlRecord,
   type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
@@ -4008,6 +4009,9 @@ const COHORT_SHARED_FILE_DATABASE_NAME =
 const COHORT_SHARED_FILE_STORE_NAME =
   'files'
 
+const COHORT_SHARED_DOCUMENTS_CLOUD_STATE_ID =
+  'shared-documents-cloud-state-v1'
+
 interface CohortSharedFileStoredRecord {
   readonly id: string
   readonly title: string
@@ -4019,6 +4023,143 @@ interface CohortSharedFileStoredRecord {
   readonly sizeBytes: number
   readonly originalBlob: Blob
   readonly previewBlob?: Blob
+}
+
+function createCloudCohortSharedDocumentRecord(
+  storedFile:
+    CohortSharedFileStoredRecord,
+): CloudCohortSharedDocumentRecord {
+  return {
+    id: storedFile.id,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner:
+      BETA_NU_OWNER_USER_ID,
+    title:
+      storedFile.title,
+    fileName:
+      storedFile.fileName,
+    ...(storedFile.previewFileName ===
+      undefined
+      ? {}
+      : {
+        previewFileName:
+          storedFile.previewFileName,
+      }),
+    category:
+      storedFile.category,
+    description:
+      storedFile.description,
+    dateAdded:
+      storedFile.dateAdded,
+    sizeBytes:
+      storedFile.sizeBytes,
+    originalBlob:
+      storedFile.originalBlob,
+    ...(storedFile.previewBlob ===
+      undefined
+      ? {}
+      : {
+        previewBlob:
+          storedFile.previewBlob,
+      }),
+  }
+}
+
+function createStoredCohortSharedDocumentRecord(
+  record:
+    CloudCohortSharedDocumentRecord,
+): CohortSharedFileStoredRecord {
+  return {
+    id: record.id,
+    title:
+      record.title,
+    fileName:
+      record.fileName,
+    ...(record.previewFileName ===
+      undefined
+      ? {}
+      : {
+        previewFileName:
+          record.previewFileName,
+      }),
+    category:
+      record.category,
+    description:
+      record.description,
+    dateAdded:
+      record.dateAdded,
+    sizeBytes:
+      record.sizeBytes,
+    originalBlob:
+      record.originalBlob,
+    ...(record.previewBlob ===
+      undefined
+      ? {}
+      : {
+        previewBlob:
+          record.previewBlob,
+      }),
+  }
+}
+
+function createRuntimeCohortSharedFile(
+  storedFile:
+    CohortSharedFileStoredRecord,
+  objectUrls: string[],
+): CohortSharedFile {
+  const originalUrl =
+    URL.createObjectURL(
+      storedFile.originalBlob,
+    )
+
+  objectUrls.push(
+    originalUrl,
+  )
+
+  let previewUrl =
+    originalUrl
+
+  if (
+    storedFile.previewBlob !==
+    undefined
+  ) {
+    previewUrl =
+      URL.createObjectURL(
+        storedFile.previewBlob,
+      )
+
+    objectUrls.push(
+      previewUrl,
+    )
+  }
+
+  return {
+    id: storedFile.id,
+    title:
+      storedFile.title,
+    fileName:
+      storedFile.fileName,
+    ...(storedFile.previewFileName ===
+      undefined
+      ? {}
+      : {
+        previewFileName:
+          storedFile.previewFileName,
+      }),
+    category:
+      storedFile.category,
+    description:
+      storedFile.description,
+    dateAdded:
+      storedFile.dateAdded,
+    sizeBytes:
+      storedFile.sizeBytes,
+    runtimeOriginalUrl:
+      originalUrl,
+    runtimePreviewUrl:
+      previewUrl,
+  }
 }
 
 interface CohortSharedCellPopoverState {
@@ -23716,6 +23857,34 @@ function CohortSharedFilesPage() {
     BETA_NU_OWNER_USER_ID
       .toLowerCase()
 
+  const cloudSharedDocuments =
+    useLiveQuery(
+      () =>
+        db.sharedDocuments
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
+  const cloudSharedDocumentState =
+    useLiveQuery(
+      () =>
+        db.sharedDocumentState.get(
+          COHORT_SHARED_DOCUMENTS_CLOUD_STATE_ID,
+        ),
+      [],
+    )
+
+  const isSharedDocumentOwner =
+    db.cloud.currentUserId
+      .trim()
+      .toLowerCase() ===
+    BETA_NU_OWNER_USER_ID
+      .toLowerCase()
+
   const [
     isAddUrlOpen,
     setIsAddUrlOpen,
@@ -24320,6 +24489,253 @@ function CohortSharedFilesPage() {
   useEffect(() => {
     let isCancelled = false
 
+    async function initializeSharedDocumentsCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (isCancelled) {
+        return
+      }
+
+      const currentUserIsOwner =
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() ===
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+
+      if (!currentUserIsOwner) {
+        return
+      }
+
+      const migrationState =
+        await db.sharedDocumentState.get(
+          COHORT_SHARED_DOCUMENTS_CLOUD_STATE_ID,
+        )
+
+      if (
+        migrationState?.migrationComplete ===
+        true
+      ) {
+        return
+      }
+
+      const localRecords =
+        await readStoredCohortSharedFiles()
+
+      const existingCloudRecords =
+        await db.sharedDocuments
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const existingCloudIds =
+        new Set(
+          existingCloudRecords.map(
+            (record) =>
+              record.id,
+          ),
+        )
+
+      const missingLocalRecords =
+        localRecords.filter(
+          (record) =>
+            !existingCloudIds.has(
+              record.id,
+            ),
+        )
+
+      if (
+        missingLocalRecords.length >
+        0
+      ) {
+        await db.sharedDocuments.bulkPut(
+          missingLocalRecords.map(
+            createCloudCohortSharedDocumentRecord,
+          ),
+        )
+      }
+
+      await db.cloud.sync()
+
+      if (isCancelled) {
+        return
+      }
+
+      await db.sharedDocumentState.put({
+        id:
+          COHORT_SHARED_DOCUMENTS_CLOUD_STATE_ID,
+        realmId:
+          BETA_NU_SHARED_REALM_ID,
+        owner:
+          BETA_NU_OWNER_USER_ID,
+        migrationComplete: true,
+      })
+
+      await db.cloud.sync()
+    }
+
+    void initializeSharedDocumentsCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Shared Documents in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function hydrateSharedDocumentsFromCloud():
+      Promise<void> {
+      if (
+        cloudSharedDocuments ===
+        undefined ||
+        cloudSharedDocumentState ===
+        undefined ||
+        !cloudSharedDocumentState
+          .migrationComplete
+      ) {
+        return
+      }
+
+      const storedCloudRecords =
+        cloudSharedDocuments.map(
+          createStoredCohortSharedDocumentRecord,
+        )
+
+      const cachedRecords =
+        await readStoredCohortSharedFiles()
+
+      const cloudDocumentIds =
+        new Set(
+          storedCloudRecords.map(
+            (record) =>
+              record.id,
+          ),
+        )
+
+      const staleCachedIds =
+        cachedRecords
+          .filter(
+            (record) =>
+              !cloudDocumentIds.has(
+                record.id,
+              ),
+          )
+          .map(
+            (record) =>
+              record.id,
+          )
+
+      if (
+        staleCachedIds.length >
+        0
+      ) {
+        await deleteStoredCohortSharedFiles(
+          staleCachedIds,
+        )
+      }
+
+      if (
+        storedCloudRecords.length >
+        0
+      ) {
+        await putStoredCohortSharedFiles(
+          storedCloudRecords,
+        )
+      }
+
+      if (isCancelled) {
+        return
+      }
+
+      const runtimeFiles =
+        storedCloudRecords.map(
+          (storedFile) =>
+            createRuntimeCohortSharedFile(
+              storedFile,
+              sharedFileObjectUrlsRef.current,
+            ),
+        )
+
+      setAddedSharedFiles(
+        (currentFiles) => {
+          for (
+            const currentFile
+            of currentFiles
+          ) {
+            revokeSharedFileRuntimeUrls(
+              currentFile,
+            )
+          }
+
+          return runtimeFiles
+        },
+      )
+
+      setSelectedDocumentIds(
+        (currentIds) =>
+          currentIds.filter(
+            (id) =>
+              cloudDocumentIds.has(id),
+          ),
+      )
+
+      setSelectedFileId(
+        (currentId) =>
+          currentId !== null &&
+            cloudDocumentIds.has(
+              currentId,
+            )
+            ? currentId
+            : (
+              runtimeFiles[0]?.id ??
+              null
+            ),
+      )
+
+      setIsSharedFileStoreReady(
+        true,
+      )
+    }
+
+    void hydrateSharedDocumentsFromCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to hydrate Shared Documents from Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    cloudSharedDocuments,
+    cloudSharedDocumentState,
+  ])
+
+  useEffect(() => {
+    let isCancelled = false
+
     async function initializeSharedUrlsCloud():
       Promise<void> {
       if (
@@ -24746,6 +25162,10 @@ function CohortSharedFilesPage() {
   }
 
   function openAddDocument(): void {
+    if (!isSharedDocumentOwner) {
+      return
+    }
+
     resetAddDocumentForm()
     setAddDocumentMode('single')
     setIsAddDocumentOpen(true)
@@ -24873,6 +25293,13 @@ function CohortSharedFilesPage() {
 
   async function saveMassUpload():
     Promise<void> {
+    if (!isSharedDocumentOwner) {
+      window.alert(
+        'Only the site owner can add shared documents.',
+      )
+      return
+    }
+
     if (massUploadFiles.length === 0) {
       window.alert(
         'Select at least one file for Mass Upload.',
@@ -25109,6 +25536,25 @@ function CohortSharedFilesPage() {
       return
     }
 
+    try {
+      await db.sharedDocuments.bulkPut(
+        storedFiles.map(
+          createCloudCohortSharedDocumentRecord,
+        ),
+      )
+
+      await db.cloud.sync()
+    } catch (error: unknown) {
+      console.error(
+        'Unable to synchronize the Mass Upload to Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The documents were saved locally, but cloud synchronization did not complete.',
+      )
+    }
+
     const addedFiles =
       storedFiles.map(
         (storedFile) => {
@@ -25210,6 +25656,13 @@ function CohortSharedFilesPage() {
 
   async function saveAddedDocument():
     Promise<void> {
+    if (!isSharedDocumentOwner) {
+      window.alert(
+        'Only the site owner can add shared documents.',
+      )
+      return
+    }
+
     const originalFile =
       addDocumentOriginalFile
 
@@ -25306,6 +25759,25 @@ function CohortSharedFilesPage() {
         'The document could not be saved to persistent browser storage.',
       )
       return
+    }
+
+    try {
+      await db.sharedDocuments.put(
+        createCloudCohortSharedDocumentRecord(
+          storedFile,
+        ),
+      )
+
+      await db.cloud.sync()
+    } catch (error: unknown) {
+      console.error(
+        'Unable to synchronize the Shared Document to Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The document was saved locally, but cloud synchronization did not complete.',
+      )
     }
 
     const originalUrl =
@@ -25740,6 +26212,10 @@ function CohortSharedFilesPage() {
   function openDocumentEdit(
     file: CohortSharedFile,
   ): void {
+    if (!isSharedDocumentOwner) {
+      return
+    }
+
     setEditingDocumentId(file.id)
     setEditDocumentTitle(file.title)
     setEditDocumentCategory(
@@ -25760,6 +26236,13 @@ function CohortSharedFilesPage() {
 
   async function saveDocumentEdit():
     Promise<void> {
+    if (!isSharedDocumentOwner) {
+      window.alert(
+        'Only the site owner can edit shared documents.',
+      )
+      return
+    }
+
     const fileId = editingDocumentId
 
     if (fileId === null) {
@@ -25808,6 +26291,37 @@ function CohortSharedFilesPage() {
         'The document changes could not be saved.',
       )
       return
+    }
+
+    try {
+      const updatedRecordCount =
+        await db.sharedDocuments.update(
+          fileId,
+          {
+            title,
+            category,
+            description,
+          },
+        )
+
+      if (
+        updatedRecordCount === 0
+      ) {
+        throw new Error(
+          'Shared Document cloud record was not found.',
+        )
+      }
+
+      await db.cloud.sync()
+    } catch (error: unknown) {
+      console.error(
+        'Unable to synchronize Shared Document changes to Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The document changes were saved locally, but cloud synchronization did not complete.',
+      )
     }
 
     setAddedSharedFiles(
@@ -25911,6 +26425,13 @@ function CohortSharedFilesPage() {
   async function deleteDocumentIds(
     fileIds: readonly string[],
   ): Promise<void> {
+    if (!isSharedDocumentOwner) {
+      window.alert(
+        'Only the site owner can delete shared documents.',
+      )
+      return
+    }
+
     const deletableFiles =
       addedSharedFiles.filter(
         (file) =>
@@ -25928,41 +26449,72 @@ function CohortSharedFilesPage() {
 
     if (
       !window.confirm(
-        `${confirmationLabel}\n\nThis removes the stored document from this browser and cannot be undone from the Shared Files page.`,
+        `${confirmationLabel}\n\nThis removes the shared document for all cohort users and cannot be undone from the Shared Files page.`,
       )
     ) {
       return
     }
 
-    try {
-      await deleteStoredCohortSharedFiles(
-        deletableFiles.map(
-          (file) => file.id,
-        ),
+    const deletedFileIds =
+      deletableFiles.map(
+        (file) =>
+          file.id,
       )
-    } catch {
+
+    try {
+      await db.sharedDocuments.bulkDelete(
+        deletedFileIds,
+      )
+    } catch (error: unknown) {
+      console.error(
+        'Unable to delete Shared Documents from Dexie Cloud.',
+        error,
+      )
+
       window.alert(
-        'The selected document(s) could not be deleted from persistent storage.',
+        'The selected document(s) could not be removed from shared cloud storage.',
       )
       return
     }
 
-    for (const file of deletableFiles) {
-      revokeSharedFileRuntimeUrls(file)
+    let localCacheCleanupFailed =
+      false
+
+    try {
+      await deleteStoredCohortSharedFiles(
+        deletedFileIds,
+      )
+    } catch (error: unknown) {
+      localCacheCleanupFailed =
+        true
+
+      console.error(
+        'Unable to clean deleted Shared Documents from the browser cache.',
+        error,
+      )
+    }
+
+    for (
+      const file
+      of deletableFiles
+    ) {
+      revokeSharedFileRuntimeUrls(
+        file,
+      )
     }
 
     const deletedIds =
       new Set(
-        deletableFiles.map(
-          (file) => file.id,
-        ),
+        deletedFileIds,
       )
 
     setAddedSharedFiles(
       (currentFiles) =>
         currentFiles.filter(
           (file) =>
-            !deletedIds.has(file.id),
+            !deletedIds.has(
+              file.id,
+            ),
         ),
     )
 
@@ -25974,14 +26526,36 @@ function CohortSharedFilesPage() {
         ),
     )
 
-    if (
-      selectedFileId !== null &&
-      deletedIds.has(selectedFileId)
-    ) {
-      setSelectedFileId(null)
-    }
+    setSelectedFileId(
+      (currentId) =>
+        currentId !== null &&
+          deletedIds.has(
+            currentId,
+          )
+          ? null
+          : currentId,
+    )
 
     setDocumentMenuId(null)
+
+    try {
+      await db.cloud.sync()
+    } catch (error: unknown) {
+      console.error(
+        'Shared Document deletion is pending Dexie Cloud synchronization.',
+        error,
+      )
+
+      window.alert(
+        'The document was removed locally, but cloud synchronization did not complete.',
+      )
+    }
+
+    if (localCacheCleanupFailed) {
+      window.alert(
+        'The shared document was deleted, but this browser could not completely clean its local cache.',
+      )
+    }
   }
 
   function deleteSelectedDocuments():
@@ -26659,6 +27233,9 @@ function CohortSharedFilesPage() {
                 <button
                   type="button"
                   className="shared-files-quick-document-button"
+                  disabled={
+                    !isSharedDocumentOwner
+                  }
                   onClick={openAddDocument}
                 >
                   <span aria-hidden="true">
@@ -26690,6 +27267,9 @@ function CohortSharedFilesPage() {
                 <button
                   type="button"
                   className="shared-files-panel-action-button"
+                  disabled={
+                    !isSharedDocumentOwner
+                  }
                   onClick={openAddDocument}
                 >
                   <svg
@@ -26706,6 +27286,7 @@ function CohortSharedFilesPage() {
                   type="button"
                   className="shared-files-panel-action-button shared-files-panel-action-button-danger"
                   disabled={
+                    !isSharedDocumentOwner ||
                     selectedDocumentIds.length ===
                     0
                   }
@@ -26855,6 +27436,9 @@ function CohortSharedFilesPage() {
                               <div className="shared-files-row-menu">
                                 <button
                                   type="button"
+                                  disabled={
+                                    !isSharedDocumentOwner
+                                  }
                                   onClick={() =>
                                     openDocumentEdit(
                                       file,
@@ -26910,6 +27494,9 @@ function CohortSharedFilesPage() {
                                 <button
                                   type="button"
                                   className="shared-files-row-menu-delete"
+                                  disabled={
+                                    !isSharedDocumentOwner
+                                  }
                                   onClick={() => {
                                     void deleteDocumentIds([
                                       file.id,
