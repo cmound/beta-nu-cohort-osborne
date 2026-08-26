@@ -1611,9 +1611,6 @@ const BETA_NU_OWNER_MEMBER_ID =
 const BETA_NU_OWNER_USER_ID =
   'cmound@mail.umassglobal.edu'
 
-const BETA_NU_TEST_MEMBER_EMAIL =
-  'christopher.mound@gmail.com'
-
 const COHORT_ACADEMIC_PLAN_STORAGE_KEY =
   'beta-nu-academic-plan-v1'
 
@@ -26914,17 +26911,6 @@ function CohortAcademicPlanPage() {
               }),
             )
 
-        const existingTestMember =
-          await db.members
-            .where(
-              '[email+realmId]',
-            )
-            .equals([
-              BETA_NU_TEST_MEMBER_EMAIL,
-              BETA_NU_SHARED_REALM_ID,
-            ])
-            .first()
-
         await db.transaction(
           'rw',
           [
@@ -26966,24 +26952,6 @@ function CohortAcademicPlanPage() {
             await db.academicPlan.bulkPut(
               completeSharedPlan,
             )
-
-            if (
-              existingTestMember ===
-              undefined
-            ) {
-              await db.members.add({
-                realmId:
-                  BETA_NU_SHARED_REALM_ID,
-                email:
-                  BETA_NU_TEST_MEMBER_EMAIL,
-                name:
-                  'Chris Mound',
-                invite: true,
-                permissions: {
-                  manage: '*',
-                },
-              })
-            }
           },
         )
 
