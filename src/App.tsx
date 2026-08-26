@@ -42,6 +42,7 @@ import {
   db,
   type CloudCohortContactRecord,
   type CloudCohortMeetingRecord,
+  type CloudCourseWaiverRecord,
   type CloudCourseWorkspaceRecord,
 } from './db'
 import './App.css'
@@ -28263,6 +28264,78 @@ function readStoredCohortCourseWaivers():
   }
 }
 
+function parseCohortCourseWaiverKey(
+  waiverKey: string,
+): {
+  readonly contactId: string
+  readonly courseCode:
+  CohortCourseWaiverCode
+} | null {
+  for (
+    const courseCode
+    of cohortCourseWaiverCourseCodes
+  ) {
+    const courseSuffix =
+      `::${courseCode}`
+
+    if (
+      !waiverKey.endsWith(
+        courseSuffix,
+      )
+    ) {
+      continue
+    }
+
+    const contactId =
+      waiverKey.slice(
+        0,
+        -courseSuffix.length,
+      )
+
+    if (contactId.length === 0) {
+      return null
+    }
+
+    return {
+      contactId,
+      courseCode,
+    }
+  }
+
+  return null
+}
+
+function createCloudCourseWaiverRecord(
+  contactId: string,
+  courseCode: CohortCourseWaiverCode,
+): CloudCourseWaiverRecord {
+  return {
+    id:
+      getCohortCourseWaiverKey(
+        contactId,
+        courseCode,
+      ),
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    contactId,
+    courseCode,
+  }
+}
+
+function createLocalCourseWaiverState(
+  records:
+    readonly CloudCourseWaiverRecord[],
+): CohortCourseWaiverState {
+  const nextWaivers:
+    CohortCourseWaiverState = {}
+
+  for (const record of records) {
+    nextWaivers[record.id] = 'W'
+  }
+
+  return nextWaivers
+}
+
 function CohortCourseWaiversPage({
   contacts,
   contactStatuses,
@@ -28271,6 +28344,27 @@ function CohortCourseWaiversPage({
     useState<CohortCourseWaiverState>(
       readStoredCohortCourseWaivers,
     )
+
+  const courseWaiverBootstrapRef =
+    useRef<CohortCourseWaiverState>(
+      courseWaivers,
+    )
+
+  const cloudCourseWaivers =
+    useLiveQuery(
+      () =>
+        db.courseWaivers
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
+  const isCourseWaiversOwner =
+    db.cloud.currentUserId ===
+    BETA_NU_OWNER_USER_ID
 
   const [nameSearch, setNameSearch] =
     useState('')
@@ -28289,6 +28383,137 @@ function CohortCourseWaiversPage({
       JSON.stringify(courseWaivers),
     )
   }, [courseWaivers])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCourseWaiversCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId !==
+        BETA_NU_OWNER_USER_ID
+      ) {
+        return
+      }
+
+      const existingCloudWaivers =
+        await db.courseWaivers
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const existingWaiverIds =
+        new Set(
+          existingCloudWaivers.map(
+            (record) => record.id,
+          ),
+        )
+
+      const missingCloudWaivers:
+        CloudCourseWaiverRecord[] = []
+
+      for (
+        const waiverKey
+        of Object.keys(
+          courseWaiverBootstrapRef.current,
+        )
+      ) {
+        if (
+          existingWaiverIds.has(
+            waiverKey,
+          )
+        ) {
+          continue
+        }
+
+        const parsedWaiver =
+          parseCohortCourseWaiverKey(
+            waiverKey,
+          )
+
+        if (parsedWaiver === null) {
+          continue
+        }
+
+        missingCloudWaivers.push(
+          createCloudCourseWaiverRecord(
+            parsedWaiver.contactId,
+            parsedWaiver.courseCode,
+          ),
+        )
+      }
+
+      if (
+        missingCloudWaivers.length >
+        0
+      ) {
+        await db.courseWaivers.bulkPut(
+          missingCloudWaivers,
+        )
+
+        await db.cloud.sync()
+      }
+    }
+
+    void initializeCourseWaiversCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Course Waivers in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (
+      cloudCourseWaivers ===
+      undefined
+    ) {
+      return
+    }
+
+    const hasLocalBootstrapWaivers =
+      Object.keys(
+        courseWaiverBootstrapRef.current,
+      ).length > 0
+
+    if (
+      db.cloud.currentUserId ===
+      BETA_NU_OWNER_USER_ID &&
+      cloudCourseWaivers.length ===
+      0 &&
+      hasLocalBootstrapWaivers
+    ) {
+      return
+    }
+
+    setCourseWaivers(
+      createLocalCourseWaiverState(
+        cloudCourseWaivers,
+      ),
+    )
+  }, [
+    cloudCourseWaivers,
+  ])
 
   const activeStudents = contacts
     .filter(
@@ -28328,6 +28553,13 @@ function CohortCourseWaiversPage({
     courseCode: CohortCourseWaiverCode,
     rawValue: string,
   ): void {
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
+
     const normalizedValue =
       rawValue.trim().toUpperCase()
 
@@ -28356,6 +28588,28 @@ function CohortCourseWaiversPage({
       }
 
       return nextWaivers
+    })
+
+    void (async (): Promise<void> => {
+      if (normalizedValue === 'W') {
+        await db.courseWaivers.put(
+          createCloudCourseWaiverRecord(
+            contactId,
+            courseCode,
+          ),
+        )
+      } else {
+        await db.courseWaivers.delete(
+          waiverKey,
+        )
+      }
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to update Course Waivers in Dexie Cloud.',
+        error,
+      )
     })
   }
 
@@ -28521,12 +28775,21 @@ function CohortCourseWaiversPage({
           id="course-waiver-entry-help"
           className="course-waivers-entry-help"
         >
-          Click a course cell and enter
-          <strong> W </strong>
-          if that course was waived. Leave the
-          cell blank if it was not waived. Use
-          Tab, Shift+Tab, Enter, or the arrow keys
-          to move between cells.
+          {isCourseWaiversOwner ? (
+            <>
+              Click a course cell and enter
+              <strong> W </strong>
+              if that course was waived. Leave the
+              cell blank if it was not waived. Use
+              Tab, Shift+Tab, Enter, or the arrow keys
+              to move between cells.
+            </>
+          ) : (
+            <>
+              Course waiver information is
+              read-only.
+            </>
+          )}
         </div>
 
         <div
@@ -28630,6 +28893,9 @@ function CohortCourseWaiversPage({
                                   waiverKey
                                   ] ?? ''
                                 }
+                                readOnly={
+                                  !isCourseWaiversOwner
+                                }
                                 maxLength={1}
                                 autoComplete="off"
                                 aria-label={
@@ -28688,7 +28954,8 @@ function CohortCourseWaiversPage({
                                 }}
                               />
 
-                              {focusedWaiverKey ===
+                              {isCourseWaiversOwner &&
+                                focusedWaiverKey ===
                                 waiverKey ? (
                                 <span
                                   className="course-waiver-cell-hint"
@@ -30728,6 +30995,18 @@ function CoursePage({
       [],
     )
 
+  const cloudCourseWaivers =
+    useLiveQuery(
+      () =>
+        db.courseWaivers
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
   const [
     courseProgress,
     setCourseProgress,
@@ -31240,7 +31519,12 @@ function CoursePage({
   ]
 
   const courseWaivers =
-    readStoredCohortCourseWaivers()
+    cloudCourseWaivers ===
+      undefined
+      ? readStoredCohortCourseWaivers()
+      : createLocalCourseWaiverState(
+        cloudCourseWaivers,
+      )
 
   const currentCourseWaiverCode =
     cohortCourseWaiverCourseCodes.find(
