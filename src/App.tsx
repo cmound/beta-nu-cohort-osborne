@@ -735,6 +735,14 @@ interface ParsedBirthday {
   readonly day: number
 }
 
+interface AdminPageProps {
+  readonly contacts:
+  readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
+}
+
 type AppBackgroundStyle = CSSProperties & {
   '--bnf-background-image': string
 }
@@ -38356,7 +38364,10 @@ async function hashAdminPin(
   ).join('')
 }
 
-function AdminPage() {
+function AdminPage({
+  contacts,
+  contactStatuses,
+}: AdminPageProps) {
   const [
     archives,
     setArchives,
@@ -38413,10 +38424,506 @@ function AdminPage() {
   ] =
     useState(false)
 
+  const [
+    selectedInviteContactIds,
+    setSelectedInviteContactIds,
+  ] =
+    useState<
+      readonly string[]
+    >([])
+
+  const [
+    isSendingCohortInvitations,
+    setIsSendingCohortInvitations,
+  ] =
+    useState(false)
+
+  const [
+    cohortInviteMessage,
+    setCohortInviteMessage,
+  ] =
+    useState('')
+
   const importInputRef =
     useRef<HTMLInputElement>(
       null,
     )
+
+  const isCohortAccessOwner =
+    db.cloud.currentUserId ===
+    BETA_NU_OWNER_USER_ID
+
+  const sharedRealmMembers =
+    useLiveQuery(
+      async () => {
+        if (
+          !isCohortAccessOwner
+        ) {
+          return []
+        }
+
+        return db.members
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+      },
+      [
+        isCohortAccessOwner,
+      ],
+    )
+
+  const activeCohortContacts =
+    contacts
+      .filter(
+        (contact) =>
+          contact.isMentor ||
+          (
+            contactStatuses[
+            contact.id
+            ] ??
+            'Active'
+          ) === 'Active',
+      )
+      .sort(
+        (
+          firstContact,
+          secondContact,
+        ) =>
+          firstContact.name.localeCompare(
+            secondContact.name,
+          ),
+      )
+
+  const ownerCohortContacts =
+    activeCohortContacts.filter(
+      (contact) =>
+        contact.email
+          .trim()
+          .toLowerCase() ===
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase(),
+    )
+
+  const nonOwnerCohortContacts =
+    activeCohortContacts.filter(
+      (contact) =>
+        contact.email
+          .trim()
+          .toLowerCase() !==
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase(),
+    )
+
+  const cohortAccessRows =
+    sharedRealmMembers ===
+      undefined
+      ? []
+      : activeCohortContacts.map(
+        (contact) => {
+          const normalizedEmail =
+            contact.email
+              .trim()
+              .toLowerCase()
+
+          const isOwner =
+            normalizedEmail ===
+            BETA_NU_OWNER_USER_ID
+              .toLowerCase()
+
+          const matchingMember =
+            sharedRealmMembers.find(
+              (member) => {
+                const memberEmail =
+                  member.email
+                    ?.trim()
+                    .toLowerCase()
+
+                const memberUserId =
+                  member.userId
+                    ?.trim()
+                    .toLowerCase()
+
+                return (
+                  memberEmail ===
+                  normalizedEmail ||
+                  memberUserId ===
+                  normalizedEmail
+                )
+              },
+            )
+
+          let accessStatus =
+            'Ready to Invite'
+
+          if (isOwner) {
+            accessStatus =
+              'Owner'
+          } else if (
+            matchingMember
+              ?.accepted !==
+            undefined
+          ) {
+            accessStatus =
+              'Access Active'
+          } else if (
+            matchingMember
+              ?.rejected !==
+            undefined
+          ) {
+            accessStatus =
+              'Invitation Rejected'
+          } else if (
+            matchingMember
+              ?.invitedDate !==
+            undefined ||
+            matchingMember
+              ?.invite === true
+          ) {
+            accessStatus =
+              'Invitation Pending'
+          }
+
+          return {
+            contact,
+            accessStatus,
+          }
+        },
+      )
+        .sort(
+          (
+            firstRow,
+            secondRow,
+          ) => {
+            const firstIsOwner =
+              firstRow.accessStatus ===
+              'Owner'
+
+            const secondIsOwner =
+              secondRow.accessStatus ===
+              'Owner'
+
+            if (
+              firstIsOwner &&
+              !secondIsOwner
+            ) {
+              return -1
+            }
+
+            if (
+              !firstIsOwner &&
+              secondIsOwner
+            ) {
+              return 1
+            }
+
+            return firstRow.contact.name.localeCompare(
+              secondRow.contact.name,
+            )
+          },
+        )
+
+  const readyToInviteRows =
+    cohortAccessRows.filter(
+      (row) =>
+        row.accessStatus ===
+        'Ready to Invite',
+    )
+
+  const readyToInviteCount =
+    readyToInviteRows.length
+
+  const readyToInviteContactIds =
+    readyToInviteRows.map(
+      (row) =>
+        row.contact.id,
+    )
+
+  const selectedReadyToInviteCount =
+    selectedInviteContactIds.filter(
+      (contactId) =>
+        readyToInviteContactIds.includes(
+          contactId,
+        ),
+    ).length
+
+  const areAllReadyContactsSelected =
+    readyToInviteCount > 0 &&
+    readyToInviteContactIds.every(
+      (contactId) =>
+        selectedInviteContactIds.includes(
+          contactId,
+        ),
+    )
+
+  function toggleCohortInviteSelection(
+    contactId: string,
+  ): void {
+    if (
+      !readyToInviteContactIds.includes(
+        contactId,
+      ) ||
+      isSendingCohortInvitations
+    ) {
+      return
+    }
+
+    setSelectedInviteContactIds(
+      (currentIds) =>
+        currentIds.includes(
+          contactId,
+        )
+          ? currentIds.filter(
+            (currentId) =>
+              currentId !==
+              contactId,
+          )
+          : [
+            ...currentIds,
+            contactId,
+          ],
+    )
+
+    setCohortInviteMessage('')
+  }
+
+  function toggleAllReadyCohortInvites():
+    void {
+    if (
+      isSendingCohortInvitations
+    ) {
+      return
+    }
+
+    setSelectedInviteContactIds(
+      areAllReadyContactsSelected
+        ? []
+        : readyToInviteContactIds,
+    )
+
+    setCohortInviteMessage('')
+  }
+
+  async function sendSelectedCohortInvitations():
+    Promise<void> {
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID ||
+      isSendingCohortInvitations
+    ) {
+      return
+    }
+
+    const selectedContacts =
+      readyToInviteRows
+        .filter(
+          (row) =>
+            selectedInviteContactIds.includes(
+              row.contact.id,
+            ),
+        )
+        .map(
+          (row) =>
+            row.contact,
+        )
+
+    if (
+      selectedContacts.length ===
+      0
+    ) {
+      setCohortInviteMessage(
+        'Select at least one Ready to Invite cohort member.',
+      )
+      return
+    }
+
+    const confirmed =
+      window.confirm(
+        (
+          `Send Dexie Cloud invitations to ` +
+          `${selectedContacts.length} selected ` +
+          `cohort member${selectedContacts.length === 1
+            ? ''
+            : 's'
+          }?\n\n` +
+          `They will receive read-only access initially.`
+        ),
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    setIsSendingCohortInvitations(
+      true,
+    )
+
+    setCohortInviteMessage(
+      'Preparing cohort invitations...',
+    )
+
+    let createdInviteCount = 0
+
+    try {
+      const latestRealmMembers =
+        await db.members
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const existingMemberIdentifiers =
+        new Set<string>()
+
+      for (
+        const member
+        of latestRealmMembers
+      ) {
+        const memberEmail =
+          member.email
+            ?.trim()
+            .toLowerCase()
+
+        const memberUserId =
+          member.userId
+            ?.trim()
+            .toLowerCase()
+
+        if (
+          memberEmail !==
+          undefined &&
+          memberEmail.length > 0
+        ) {
+          existingMemberIdentifiers.add(
+            memberEmail,
+          )
+        }
+
+        if (
+          memberUserId !==
+          undefined &&
+          memberUserId.length > 0
+        ) {
+          existingMemberIdentifiers.add(
+            memberUserId,
+          )
+        }
+      }
+
+      const pendingInviteEmails =
+        new Set<string>()
+
+      const contactsStillEligible =
+        selectedContacts.filter(
+          (contact) => {
+            const normalizedEmail =
+              contact.email
+                .trim()
+                .toLowerCase()
+
+            if (
+              normalizedEmail.length ===
+              0 ||
+              normalizedEmail ===
+              BETA_NU_OWNER_USER_ID
+                .toLowerCase() ||
+              existingMemberIdentifiers.has(
+                normalizedEmail,
+              ) ||
+              pendingInviteEmails.has(
+                normalizedEmail,
+              )
+            ) {
+              return false
+            }
+
+            pendingInviteEmails.add(
+              normalizedEmail,
+            )
+
+            return true
+          },
+        )
+
+      if (
+        contactsStillEligible.length ===
+        0
+      ) {
+        setSelectedInviteContactIds(
+          [],
+        )
+
+        setCohortInviteMessage(
+          'No new invitations were needed. The selected accounts already have Dexie Cloud membership records.',
+        )
+
+        return
+      }
+
+      await db.transaction(
+        'rw',
+        [
+          db.members,
+        ],
+        async () => {
+          for (
+            const contact
+            of contactsStillEligible
+          ) {
+            await db.members.add({
+              realmId:
+                BETA_NU_SHARED_REALM_ID,
+              email:
+                contact.email.trim(),
+              name:
+                contact.name,
+              invite: true,
+              permissions: {},
+            })
+
+            createdInviteCount += 1
+          }
+        },
+      )
+
+      await db.cloud.sync()
+
+      setSelectedInviteContactIds(
+        [],
+      )
+
+      setCohortInviteMessage(
+        (
+          `${createdInviteCount} Dexie Cloud ` +
+          `invitation${createdInviteCount === 1
+            ? ''
+            : 's'
+          } submitted successfully.`
+        ),
+      )
+    } catch (error: unknown) {
+      console.error(
+        'Unable to send Cohort Access invitations.',
+        error,
+      )
+
+      setCohortInviteMessage(
+        createdInviteCount > 0
+          ? (
+            'Invitation records were created locally, but cloud synchronization did not complete. Do not resend until the membership status is checked.'
+          )
+          : (
+            'Unable to create the selected cohort invitations.'
+          ),
+      )
+    } finally {
+      setIsSendingCohortInvitations(
+        false,
+      )
+    }
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -39129,6 +39636,306 @@ function AdminPage() {
           </table>
         </div>
       </section>
+
+      {isCohortAccessOwner && (
+        <section
+          className="admin-cohort-access-panel"
+          aria-labelledby="admin-cohort-access-title"
+        >
+          <div className="admin-cohort-access-header">
+            <div>
+              <h2
+                id="admin-cohort-access-title"
+              >
+                Cohort Access Manager
+              </h2>
+
+              <p>
+                Manage Dexie Cloud access
+                for active Beta Nu cohort
+                members. Invitations are
+                sent only after explicit
+                owner selection and
+                confirmation.
+              </p>
+            </div>
+
+            <span className="admin-cohort-access-preview-badge">
+              OWNER CONTROL
+            </span>
+          </div>
+
+          <div className="admin-cohort-access-summary">
+            <article>
+              <span>
+                Active Cohort
+              </span>
+
+              <strong>
+                {
+                  activeCohortContacts.length
+                }
+              </strong>
+            </article>
+
+            <article>
+              <span>
+                Owner
+              </span>
+
+              <strong>
+                {
+                  ownerCohortContacts.length
+                }
+              </strong>
+            </article>
+
+            <article>
+              <span>
+                Cohort Members
+              </span>
+
+              <strong>
+                {
+                  nonOwnerCohortContacts.length
+                }
+              </strong>
+            </article>
+
+            <article>
+              <span>
+                Ready to Invite
+              </span>
+
+              <strong>
+                {
+                  sharedRealmMembers ===
+                    undefined
+                    ? '...'
+                    : readyToInviteCount
+                }
+              </strong>
+            </article>
+          </div>
+
+          <div className="admin-cohort-access-controls">
+            <div className="admin-cohort-access-selection-count">
+              <span>
+                Selected
+              </span>
+
+              <strong>
+                {
+                  selectedReadyToInviteCount
+                }
+              </strong>
+            </div>
+
+            <button
+              type="button"
+              className="admin-cohort-access-select-button"
+              disabled={
+                readyToInviteCount ===
+                0 ||
+                isSendingCohortInvitations
+              }
+              onClick={
+                toggleAllReadyCohortInvites
+              }
+            >
+              {
+                areAllReadyContactsSelected
+                  ? 'Clear Selection'
+                  : 'Select All Ready to Invite'
+              }
+            </button>
+
+            <button
+              type="button"
+              className="admin-cohort-access-send-button"
+              disabled={
+                selectedReadyToInviteCount ===
+                0 ||
+                isSendingCohortInvitations
+              }
+              onClick={() =>
+                void sendSelectedCohortInvitations()
+              }
+            >
+              {
+                isSendingCohortInvitations
+                  ? 'Sending...'
+                  : (
+                    `Send Selected Invitations ` +
+                    `(${selectedReadyToInviteCount})`
+                  )
+              }
+            </button>
+          </div>
+
+          {cohortInviteMessage.length >
+            0 && (
+              <p
+                className="admin-cohort-access-message"
+                role="status"
+              >
+                {cohortInviteMessage}
+              </p>
+            )}
+
+          <div className="admin-cohort-access-table-frame">
+            <table className="admin-cohort-access-table">
+              <thead>
+                <tr>
+                  <th>
+                    Select
+                  </th>
+
+                  <th>
+                    Name
+                  </th>
+
+                  <th>
+                    Cohort Role
+                  </th>
+
+                  <th>
+                    Email
+                  </th>
+
+                  <th>
+                    Access Status
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {sharedRealmMembers ===
+                  undefined ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="admin-cohort-access-loading"
+                    >
+                      Loading Dexie Cloud
+                      access records...
+                    </td>
+                  </tr>
+                ) : (
+                  cohortAccessRows.map(
+                    ({
+                      contact,
+                      accessStatus,
+                    }) => (
+                      <tr
+                        key={
+                          contact.id
+                        }
+                        className={
+                          accessStatus ===
+                            'Owner'
+                            ? 'admin-cohort-access-owner-row'
+                            : undefined
+                        }
+                      >
+                        <td className="admin-cohort-access-select-cell">
+                          {
+                            accessStatus ===
+                              'Ready to Invite'
+                              ? (
+                                <input
+                                  type="checkbox"
+                                  className="admin-cohort-access-checkbox"
+                                  checked={
+                                    selectedInviteContactIds.includes(
+                                      contact.id,
+                                    )
+                                  }
+                                  disabled={
+                                    isSendingCohortInvitations
+                                  }
+                                  aria-label={
+                                    `Select ${contact.name} for Dexie Cloud invitation`
+                                  }
+                                  onChange={() =>
+                                    toggleCohortInviteSelection(
+                                      contact.id,
+                                    )
+                                  }
+                                />
+                              )
+                              : (
+                                <span
+                                  aria-hidden="true"
+                                >
+                                  —
+                                </span>
+                              )
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            contact.name
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            contact.isMentor
+                              ? 'Mentor'
+                              : 'Student'
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            contact.email
+                          }
+                        </td>
+
+                        <td>
+                          <span
+                            className={
+                              accessStatus ===
+                                'Owner'
+                                ? 'admin-cohort-access-status admin-cohort-access-status-owner'
+                                : accessStatus ===
+                                  'Access Active'
+                                  ? 'admin-cohort-access-status admin-cohort-access-status-active'
+                                  : accessStatus ===
+                                    'Invitation Pending'
+                                    ? 'admin-cohort-access-status admin-cohort-access-status-pending'
+                                    : accessStatus ===
+                                      'Invitation Rejected'
+                                      ? 'admin-cohort-access-status admin-cohort-access-status-rejected'
+                                      : 'admin-cohort-access-status admin-cohort-access-status-ready'
+                            }
+                          >
+                            {
+                              accessStatus
+                            }
+                          </span>
+                        </td>
+                      </tr>
+                    ),
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="admin-cohort-access-note">
+            Only active Cohort Contacts
+            marked Ready to Invite can be
+            selected. The owner, inactive
+            members, existing Dexie Cloud
+            members, and non-cohort test
+            accounts are automatically
+            excluded.
+          </p>
+        </section>
+      )}
     </section>
   )
 }
@@ -43694,7 +44501,14 @@ function App() {
               path="/admin"
               element={
                 isAdminUnlocked ? (
-                  <AdminPage />
+                  <AdminPage
+                    contacts={
+                      contacts
+                    }
+                    contactStatuses={
+                      contactStatuses
+                    }
+                  />
                 ) : (
                   <Navigate
                     to="/"

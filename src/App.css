@@ -21199,6 +21199,334 @@ tbody td {
 }
 
 /* =========================================================
+   Admin Cohort Access Preview
+   ========================================================= */
+
+.admin-page
+  .admin-cohort-access-panel {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  min-width: 0;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #7f9db7;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #edf5fb 54%,
+      #dce9f3 100%
+    );
+  box-shadow:
+    inset 1px 1px 0
+      rgba(255, 255, 255, 0.96),
+    inset -2px -3px 3px
+      rgba(49, 87, 122, 0.1),
+    0 5px 10px
+      rgba(0, 0, 0, 0.22);
+}
+
+.admin-cohort-access-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-cohort-access-header h2 {
+  margin: 0;
+  color: #0b1f3b;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.admin-cohort-access-header p {
+  margin: 6px 0 0;
+  color: #27476b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.admin-cohort-access-preview-badge {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #c69214;
+  border-radius: 5px;
+  color: #061321;
+  background: #ffd200;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.admin-cohort-access-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-cohort-access-summary article {
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #9aaec1;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.admin-cohort-access-summary span {
+  display: block;
+  color: #27476b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-cohort-access-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: #005eb8;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.admin-cohort-access-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-cohort-access-selection-count {
+  min-height: 36px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid #9aaec1;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.admin-cohort-access-selection-count span {
+  color: #27476b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-cohort-access-selection-count strong {
+  color: #005eb8;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.admin-cohort-access-select-button,
+.admin-cohort-access-send-button {
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 7px 13px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-cohort-access-select-button {
+  border: 1px solid #718aa1;
+  color: #0b1f3b;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #e4edf4 100%
+    );
+}
+
+.admin-cohort-access-send-button {
+  border: 1px solid #9c700c;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #ffd200 52%,
+      #c69214 100%
+    );
+}
+
+.admin-cohort-access-select-button:hover:not(:disabled),
+.admin-cohort-access-send-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.admin-cohort-access-select-button:disabled,
+.admin-cohort-access-send-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.admin-cohort-access-select-button:focus-visible,
+.admin-cohort-access-send-button:focus-visible,
+.admin-cohort-access-checkbox:focus-visible {
+  outline: 2px solid #005eb8;
+  outline-offset: 2px;
+}
+
+.admin-cohort-access-message {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #9aaec1;
+  border-radius: 5px;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.admin-cohort-access-table-frame {
+  overflow-x: auto;
+  margin-top: 14px;
+  border: 1px solid #718aa1;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.admin-cohort-access-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.admin-cohort-access-table th,
+.admin-cohort-access-table td {
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #a6b5c3;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-cohort-access-table th {
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #123c6a 0%,
+      #061b31 100%
+    );
+  font-weight: 900;
+}
+
+.admin-cohort-access-table th:nth-child(1) {
+  width: 6%;
+}
+
+.admin-cohort-access-table th:nth-child(2) {
+  width: 20%;
+}
+
+.admin-cohort-access-table th:nth-child(3) {
+  width: 13%;
+}
+
+.admin-cohort-access-table th:nth-child(4) {
+  width: 35%;
+}
+
+.admin-cohort-access-table th:nth-child(5) {
+  width: 26%;
+}
+
+.admin-cohort-access-select-cell {
+  text-align: center !important;
+}
+
+.admin-cohort-access-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #005eb8;
+  cursor: pointer;
+}
+
+.admin-cohort-access-table
+  tbody
+  tr:nth-child(even)
+  td {
+  background: #f3f6f9;
+}
+
+.admin-cohort-access-owner-row td {
+  border-bottom:
+    3px solid #000000 !important;
+}
+
+.admin-cohort-access-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  box-sizing: border-box;
+  padding: 4px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.admin-cohort-access-status-owner {
+  border-color: #c69214;
+  color: #061321;
+  background: #ffd200;
+}
+
+.admin-cohort-access-status-active {
+  border-color: #27885e;
+  color: #115c3d;
+  background: #d9f7e8;
+}
+
+.admin-cohort-access-status-ready {
+  border-color: #5d8db7;
+  color: #004b93;
+  background: #e5f2ff;
+}
+
+.admin-cohort-access-status-pending {
+  border-color: #c69214;
+  color: #745200;
+  background: #fff3bd;
+}
+
+.admin-cohort-access-status-rejected {
+  border-color: #c62828;
+  color: #9b1c1c;
+  background: #ffe1e1;
+}
+
+.admin-cohort-access-loading {
+  height: 60px;
+  color: #64748b;
+  font-weight: 800;
+  text-align: center !important;
+}
+
+.admin-cohort-access-note {
+  margin: 10px 0 0;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* =========================================================
    Admin Backup & Recovery - Approved Polished Layout
    ========================================================= */
 
