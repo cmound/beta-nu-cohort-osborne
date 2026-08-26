@@ -144,6 +144,23 @@ export interface CloudCohortAttendanceRecord {
   readonly mark: CloudCohortAttendanceMark
 }
 
+export type CloudCohortAvailabilityMark =
+  | ''
+  | 'P'
+  | 'C'
+  | 'A'
+  | 'I'
+
+export interface CloudCohortAvailabilityRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly participantId: string
+  readonly dateId: string
+  readonly mark:
+  CloudCohortAvailabilityMark
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -165,6 +182,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly cohortAttendance:
     Table<CloudCohortAttendanceRecord, string>
+
+  readonly cohortAvailability:
+    Table<CloudCohortAvailabilityRecord, string>
 
   constructor() {
     super(
@@ -220,6 +240,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, contactId, meetingId',
     })
 
+    this.version(8).stores({
+      cohortAvailability:
+        'id, realmId, participantId, dateId',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -253,6 +278,11 @@ class BetaNuDatabase extends Dexie {
     this.cohortAttendance =
       this.table(
         'cohortAttendance',
+      )
+
+    this.cohortAvailability =
+      this.table(
+        'cohortAvailability',
       )
 
     this.cloud.configure({

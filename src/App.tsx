@@ -41,6 +41,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import {
   db,
   type CloudCohortAttendanceRecord,
+  type CloudCohortAvailabilityRecord,
   type CloudCohortContactRecord,
   type CloudCohortMeetingRecord,
   type CloudCourseProgressRecord,
@@ -525,6 +526,12 @@ interface CohortDataSurveyParticipantSeed {
 
 interface CohortDataSurveyPageProps {
   readonly survey: CohortDataSurveyState
+
+  readonly canEditSurveyCell: (
+    participantId: string,
+    dateId: string,
+  ) => boolean
+
   readonly onUpdateSurvey: (
     participantId: string,
     dateId: string,
@@ -6463,6 +6470,73 @@ const dataSurveyParticipantDisplayOrder:
     'data-survey-participant-18',
   ]
 
+const dataSurveyParticipantContactIds:
+  Readonly<Record<string, string>> = {
+  'data-survey-participant-6':
+    'cheryl-marie-osborne',
+
+  'data-survey-participant-8':
+    'elanis-cruz',
+
+  'data-survey-participant-9':
+    'sergiy-bryk',
+
+  'data-survey-participant-10':
+    'jessica-leon',
+
+  'data-survey-participant-11':
+    'reynaldo-dulaney',
+
+  'data-survey-participant-12':
+    'jessica-jackson',
+
+  'data-survey-participant-13':
+    'celia-cipres',
+
+  'data-survey-participant-14':
+    'chris-mound',
+
+  'data-survey-participant-15':
+    'monica-romero',
+
+  'data-survey-participant-16':
+    'asa-jones-mcghee',
+
+  'data-survey-participant-17':
+    'tracy-rico',
+
+  'data-survey-participant-18':
+    'victoria-vildosola',
+
+  'data-survey-participant-19':
+    'bashiyra-windley',
+
+  'data-survey-participant-20':
+    'trevor-desouza',
+}
+
+function getCohortDataSurveyParticipantContact(
+  participantId: string,
+  contacts:
+    readonly CohortContactRecord[],
+): CohortContactRecord | null {
+  const contactId =
+    dataSurveyParticipantContactIds[
+    participantId
+    ]
+
+  if (contactId === undefined) {
+    return null
+  }
+
+  return (
+    contacts.find(
+      (contact) =>
+        contact.id === contactId,
+    ) ?? null
+  )
+}
+
 const DATA_SURVEY_STORAGE_KEY =
   'beta-nu-data-survey-v1'
 
@@ -6531,6 +6605,46 @@ function normalizeCohortDataSurveyMark(
   }
 
   return ''
+}
+
+function createCloudCohortAvailabilityRecord(
+  participantId: string,
+  dateId: string,
+  mark: CohortDataSurveyMark,
+  owner: string,
+): CloudCohortAvailabilityRecord {
+  return {
+    id:
+      getCohortDataSurveyKey(
+        participantId,
+        dateId,
+      ),
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner,
+    participantId,
+    dateId,
+    mark,
+  }
+}
+
+function createLocalCohortAvailabilityState(
+  records:
+    readonly CloudCohortAvailabilityRecord[],
+): CohortDataSurveyState {
+  const survey:
+    CohortDataSurveyState = {}
+
+  for (const record of records) {
+    survey[
+      getCohortDataSurveyKey(
+        record.participantId,
+        record.dateId,
+      )
+    ] = record.mark
+  }
+
+  return survey
 }
 
 function readStoredCohortDataSurvey():
@@ -17886,6 +18000,7 @@ function CohortAttendancePage({
 
 function CohortDataSurveyPage({
   survey,
+  canEditSurveyCell,
   onUpdateSurvey,
 }: CohortDataSurveyPageProps) {
   const activeParticipants =
@@ -18146,6 +18261,12 @@ function CohortDataSurveyPage({
                           const surveyMark =
                             survey[surveyKey] ?? ''
 
+                          const canEditMark =
+                            canEditSurveyCell(
+                              participant.id,
+                              dateOption.id,
+                            )
+
                           const markClass =
                             surveyMark === 'P'
                               ? ' data-survey-mark-preferred'
@@ -18171,17 +18292,24 @@ function CohortDataSurveyPage({
                                 autoComplete="off"
                                 className={`data-survey-mark-input${markClass}`}
                                 value={surveyMark}
+                                readOnly={!canEditMark}
                                 aria-label={`${displayName}, ${dateOption.dateLabel}, ${dateOption.cohort}, ${dateOption.week}`}
-                                title="P = Preferred | C = Conflict | A = Available | I = Not Ideal but I will adjust"
-                                onFocus={(event) =>
-                                  event.currentTarget.select()
+                                title={
+                                  canEditMark
+                                    ? 'P = Preferred | C = Conflict | A = Available | I = Not Ideal but I will adjust'
+                                    : 'This cohort member availability is read-only'
                                 }
+                                onFocus={(event) => {
+                                  if (canEditMark) {
+                                    event.currentTarget.select()
+                                  }
+                                }}
                                 onChange={(event) =>
                                   onUpdateSurvey(
                                     participant.id,
                                     dateOption.id,
                                     normalizeCohortDataSurveyMark(
-                                      event.target.value,
+                                      event.currentTarget.value,
                                     ),
                                   )
                                 }
@@ -42439,12 +42567,19 @@ function App() {
     )
 
   const [
-    cohortDataSurvey,
-    setCohortDataSurvey,
+    initialCohortDataSurvey,
   ] =
     useState<CohortDataSurveyState>(
       () =>
         readStoredCohortDataSurvey(),
+    )
+
+  const [
+    cohortDataSurvey,
+    setCohortDataSurvey,
+  ] =
+    useState<CohortDataSurveyState>(
+      initialCohortDataSurvey,
     )
 
   const [
@@ -42486,6 +42621,18 @@ function App() {
     useLiveQuery(
       () =>
         db.cohortAttendance
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
+  const cloudCohortAvailability =
+    useLiveQuery(
+      () =>
+        db.cohortAvailability
           .where('realmId')
           .equals(
             BETA_NU_SHARED_REALM_ID,
@@ -42949,6 +43096,164 @@ function App() {
   }, [
     cloudCohortAttendance,
     initialRuntimeState,
+  ])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCohortAvailabilityCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() !==
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+      ) {
+        return
+      }
+
+      const initialCloudRecords:
+        CloudCohortAvailabilityRecord[] = []
+
+      for (
+        const participantId
+        of dataSurveyParticipantDisplayOrder
+      ) {
+        const contact =
+          getCohortDataSurveyParticipantContact(
+            participantId,
+            contacts,
+          )
+
+        if (contact === null) {
+          continue
+        }
+
+        const owner =
+          contact.email
+            .trim()
+            .toLowerCase()
+
+        if (owner.length === 0) {
+          continue
+        }
+
+        for (
+          const dateOption
+          of dataSurveyDateOptions
+        ) {
+          const surveyKey =
+            getCohortDataSurveyKey(
+              participantId,
+              dateOption.id,
+            )
+
+          initialCloudRecords.push(
+            createCloudCohortAvailabilityRecord(
+              participantId,
+              dateOption.id,
+              initialCohortDataSurvey[
+              surveyKey
+              ] ?? '',
+              owner,
+            ),
+          )
+        }
+      }
+
+      if (
+        initialCloudRecords.length ===
+        0
+      ) {
+        return
+      }
+
+      const existingCloudRecords =
+        await db.cohortAvailability
+          .bulkGet(
+            initialCloudRecords.map(
+              (record) =>
+                record.id,
+            ),
+          )
+
+      const missingCloudRecords =
+        initialCloudRecords.filter(
+          (
+            _record,
+            index,
+          ) =>
+            existingCloudRecords[
+            index
+            ] === undefined,
+        )
+
+      if (
+        missingCloudRecords.length ===
+        0
+      ) {
+        return
+      }
+
+      await db.cohortAvailability
+        .bulkPut(
+          missingCloudRecords,
+        )
+
+      await db.cloud.sync()
+    }
+
+    void initializeCohortAvailabilityCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Cohort Availability in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    contacts,
+    initialCohortDataSurvey,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudCohortAvailability ===
+      undefined
+    ) {
+      return
+    }
+
+    const cloudSurveyState =
+      createLocalCohortAvailabilityState(
+        cloudCohortAvailability,
+      )
+
+    setCohortDataSurvey(
+      (currentSurvey) => ({
+        ...currentSurvey,
+        ...cloudSurveyState,
+      }),
+    )
+  }, [
+    cloudCohortAvailability,
   ])
 
   useEffect(() => {
@@ -43844,20 +44149,181 @@ function App() {
     })
   }
 
+  function canEditCohortDataSurveyCell(
+    participantId: string,
+    dateId: string,
+  ): boolean {
+    const currentUserId =
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase()
+
+    if (
+      currentUserId ===
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return true
+    }
+
+    const contact =
+      getCohortDataSurveyParticipantContact(
+        participantId,
+        contacts,
+      )
+
+    if (
+      contact === null ||
+      contact.email
+        .trim()
+        .toLowerCase() !==
+      currentUserId
+    ) {
+      return false
+    }
+
+    const surveyKey =
+      getCohortDataSurveyKey(
+        participantId,
+        dateId,
+      )
+
+    const cloudRecord =
+      cloudCohortAvailability?.find(
+        (record) =>
+          record.id === surveyKey,
+      )
+
+    return (
+      cloudRecord !== undefined &&
+      cloudRecord.owner
+        .trim()
+        .toLowerCase() ===
+      currentUserId
+    )
+  }
+
   function updateCohortDataSurvey(
     participantId: string,
     dateId: string,
     mark: CohortDataSurveyMark,
   ): void {
-    const surveyKey = getCohortDataSurveyKey(
-      participantId,
-      dateId,
-    )
+    const contact =
+      getCohortDataSurveyParticipantContact(
+        participantId,
+        contacts,
+      )
 
-    setCohortDataSurvey((currentSurvey) => ({
-      ...currentSurvey,
-      [surveyKey]: mark,
-    }))
+    if (contact === null) {
+      return
+    }
+
+    const currentUserId =
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase()
+
+    const isAdmin =
+      currentUserId ===
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+
+    const recordOwner =
+      contact.email
+        .trim()
+        .toLowerCase()
+
+    const isOwnAvailability =
+      recordOwner === currentUserId
+
+    if (
+      !isAdmin &&
+      !isOwnAvailability
+    ) {
+      return
+    }
+
+    if (recordOwner.length === 0) {
+      return
+    }
+
+    const surveyKey =
+      getCohortDataSurveyKey(
+        participantId,
+        dateId,
+      )
+
+    const existingCloudRecord =
+      cloudCohortAvailability?.find(
+        (record) =>
+          record.id === surveyKey,
+      )
+
+    if (
+      !isAdmin &&
+      (
+        existingCloudRecord ===
+        undefined ||
+        existingCloudRecord.owner
+          .trim()
+          .toLowerCase() !==
+        currentUserId
+      )
+    ) {
+      return
+    }
+
+    void (async (): Promise<void> => {
+      if (
+        existingCloudRecord ===
+        undefined
+      ) {
+        if (!isAdmin) {
+          return
+        }
+
+        await db.cohortAvailability
+          .put(
+            createCloudCohortAvailabilityRecord(
+              participantId,
+              dateId,
+              mark,
+              recordOwner,
+            ),
+          )
+      } else {
+        const updatedRecordCount =
+          await db.cohortAvailability
+            .update(
+              surveyKey,
+              {
+                mark,
+              },
+            )
+
+        if (
+          updatedRecordCount === 0
+        ) {
+          throw new Error(
+            'Cohort Availability record was not found.',
+          )
+        }
+      }
+
+      setCohortDataSurvey(
+        (currentSurvey) => ({
+          ...currentSurvey,
+          [surveyKey]: mark,
+        }),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to update Cohort Availability in Dexie Cloud.',
+        error,
+      )
+    })
   }
 
   function addPurposeResearchRecord(): void {
@@ -45997,6 +46463,9 @@ function App() {
               element={
                 <CohortDataSurveyPage
                   survey={cohortDataSurvey}
+                  canEditSurveyCell={
+                    canEditCohortDataSurveyCell
+                  }
                   onUpdateSurvey={
                     updateCohortDataSurvey
                   }
