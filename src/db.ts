@@ -113,6 +113,23 @@ export interface CloudCourseWaiverRecord {
   readonly courseCode: string
 }
 
+export type CloudCourseProgressStatus =
+  | "Haven't Started"
+  | 'In Progress'
+  | 'Done'
+  | 'Help!'
+
+export interface CloudCourseProgressRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly courseSlug: string
+  readonly contactId: string
+  readonly assignmentId: string
+  readonly status:
+    CloudCourseProgressStatus
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -128,6 +145,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly courseWaivers:
     Table<CloudCourseWaiverRecord, string>
+
+  readonly courseProgress:
+    Table<CloudCourseProgressRecord, string>
 
   constructor() {
     super(
@@ -173,6 +193,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, contactId, courseCode',
     })
 
+    this.version(6).stores({
+      courseProgress:
+        'id, realmId, courseSlug, contactId, assignmentId',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -196,6 +221,11 @@ class BetaNuDatabase extends Dexie {
     this.courseWaivers =
       this.table(
         'courseWaivers',
+      )
+
+    this.courseProgress =
+      this.table(
+        'courseProgress',
       )
 
     this.cloud.configure({

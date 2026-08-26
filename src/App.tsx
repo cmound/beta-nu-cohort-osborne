@@ -42,6 +42,7 @@ import {
   db,
   type CloudCohortContactRecord,
   type CloudCohortMeetingRecord,
+  type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
   type CloudCourseWorkspaceRecord,
 } from './db'
@@ -3171,6 +3172,46 @@ function readStoredCourseProgress():
   } catch {
     return {}
   }
+}
+
+function createCloudCourseProgressRecord(
+  courseSlug: string,
+  contactId: string,
+  assignmentId: string,
+  status: CourseProgressStatus,
+  owner: string,
+): CloudCourseProgressRecord {
+  return {
+    id:
+      getCourseProgressKey(
+        courseSlug,
+        contactId,
+        assignmentId,
+      ),
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner,
+    courseSlug,
+    contactId,
+    assignmentId,
+    status,
+  }
+}
+
+function createLocalCourseProgressState(
+  records:
+    readonly CloudCourseProgressRecord[],
+): CourseProgressState {
+  const nextProgress:
+    CourseProgressState = {}
+
+  for (const record of records) {
+    nextProgress[
+      record.id
+    ] = record.status
+  }
+
+  return nextProgress
 }
 
 function getNextCourseProgressStatus(
@@ -31007,12 +31048,29 @@ function CoursePage({
       [],
     )
 
+  const cloudCourseProgress =
+    useLiveQuery(
+      () =>
+        db.courseProgress
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
   const [
     courseProgress,
     setCourseProgress,
   ] =
     useState<CourseProgressState>(
       readStoredCourseProgress,
+    )
+
+  const courseProgressBootstrapRef =
+    useRef<CourseProgressState>(
+      courseProgress,
     )
 
   const [
@@ -31317,6 +31375,225 @@ function CoursePage({
   ])
 
   useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCourseProgressCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId !==
+        BETA_NU_OWNER_USER_ID ||
+        cloudCourseWorkspaces ===
+        undefined ||
+        cloudCourseWaivers ===
+        undefined
+      ) {
+        return
+      }
+
+      const existingCloudProgress =
+        await db.courseProgress
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      if (isCancelled) {
+        return
+      }
+
+      const existingProgressIds =
+        new Set(
+          existingCloudProgress.map(
+            (record) => record.id,
+          ),
+        )
+
+      const cloudWaiverIds =
+        new Set(
+          cloudCourseWaivers.map(
+            (record) => record.id,
+          ),
+        )
+
+      const activeStudents =
+        contacts.filter(
+          (contact) =>
+            !contact.isMentor &&
+            (
+              contactStatuses[
+              contact.id
+              ] ?? 'Active'
+            ) === 'Active',
+        )
+
+      const missingProgressRecords:
+        CloudCourseProgressRecord[] = []
+
+      for (
+        const cloudWorkspace
+        of cloudCourseWorkspaces
+      ) {
+        const configuredCourse =
+          courses.find(
+            (course) =>
+              course.slug ===
+              cloudWorkspace.courseSlug,
+          )
+
+        if (
+          configuredCourse ===
+          undefined
+        ) {
+          continue
+        }
+
+        const academicPlanRecord =
+          academicPlan.find(
+            (record) =>
+              record.code ===
+              configuredCourse.code,
+          )
+
+        const waiverCourseCode =
+          academicPlanRecord ===
+            undefined
+            ? undefined
+            : cohortCourseWaiverCourseCodes
+              .find(
+                (courseCode) =>
+                  courseCode ===
+                  academicPlanRecord.code,
+              )
+
+        for (
+          const contact
+          of activeStudents
+        ) {
+          if (
+            waiverCourseCode !==
+            undefined &&
+            cloudWaiverIds.has(
+              getCohortCourseWaiverKey(
+                contact.id,
+                waiverCourseCode,
+              ),
+            )
+          ) {
+            continue
+          }
+
+          const ownerUserId =
+            contact.email
+              .trim()
+              .toLowerCase()
+
+          if (
+            ownerUserId.length === 0
+          ) {
+            continue
+          }
+
+          for (
+            const assignment
+            of cloudWorkspace.assignments
+          ) {
+            const progressKey =
+              getCourseProgressKey(
+                cloudWorkspace.courseSlug,
+                contact.id,
+                assignment.id,
+              )
+
+            if (
+              existingProgressIds.has(
+                progressKey,
+              )
+            ) {
+              continue
+            }
+
+            const storedStatus =
+              courseProgressBootstrapRef
+                .current[
+              progressKey
+              ] ??
+              "Haven't Started"
+
+            missingProgressRecords.push(
+              createCloudCourseProgressRecord(
+                cloudWorkspace.courseSlug,
+                contact.id,
+                assignment.id,
+                storedStatus,
+                ownerUserId,
+              ),
+            )
+
+            existingProgressIds.add(
+              progressKey,
+            )
+          }
+        }
+      }
+
+      if (
+        missingProgressRecords.length ===
+        0
+      ) {
+        return
+      }
+
+      await db.courseProgress.bulkPut(
+        missingProgressRecords,
+      )
+
+      await db.cloud.sync()
+    }
+
+    void initializeCourseProgressCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Course Progress in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    academicPlan,
+    cloudCourseWaivers,
+    cloudCourseWorkspaces,
+    contactStatuses,
+    contacts,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudCourseProgress ===
+      undefined
+    ) {
+      return
+    }
+
+    const cloudProgressState =
+      createLocalCourseProgressState(
+        cloudCourseProgress,
+      )
+
+    setCourseProgress(
+      (currentProgress) => ({
+        ...currentProgress,
+        ...cloudProgressState,
+      }),
+    )
+  }, [
+    cloudCourseProgress,
+  ])
+
+  useEffect(() => {
     window.localStorage.setItem(
       PROFESSOR_DIRECTORY_STORAGE_KEY,
       JSON.stringify(
@@ -31581,6 +31858,55 @@ function CoursePage({
           contact.id,
         ),
     )
+
+  const currentCourseProgressUserId =
+    db.cloud.currentUserId
+      .trim()
+      .toLowerCase()
+
+  const isCourseProgressAdmin =
+    currentCourseProgressUserId ===
+    BETA_NU_OWNER_USER_ID
+      .toLowerCase()
+
+  const currentCourseProgressContactId =
+    courseProgressContacts.find(
+      (contact) =>
+        contact.email
+          .trim()
+          .toLowerCase() ===
+        currentCourseProgressUserId,
+    )?.id ?? null
+
+  function canEditCourseProgress(
+    contact: CohortContactRecord,
+    progressKey: string,
+  ): boolean {
+    if (isCourseProgressAdmin) {
+      return true
+    }
+
+    if (
+      currentCourseProgressContactId !==
+      contact.id
+    ) {
+      return false
+    }
+
+    const progressRecord =
+      cloudCourseProgress?.find(
+        (record) =>
+          record.id === progressKey,
+      )
+
+    return (
+      progressRecord !== undefined &&
+      progressRecord.owner
+        .trim()
+        .toLowerCase() ===
+      currentCourseProgressUserId
+    )
+  }
 
   const courseTableLayout =
     courseTableLayouts[
@@ -32334,6 +32660,40 @@ function CoursePage({
     assignmentId: string,
     status: CourseProgressStatus,
   ): void {
+    const contact =
+      courseProgressContacts.find(
+        (progressContact) =>
+          progressContact.id ===
+          contactId,
+      )
+
+    if (contact === undefined) {
+      return
+    }
+
+    const currentUserId =
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase()
+
+    const isAdmin =
+      currentUserId ===
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+
+    const isOwnProgress =
+      contact.email
+        .trim()
+        .toLowerCase() ===
+      currentUserId
+
+    if (
+      !isAdmin &&
+      !isOwnProgress
+    ) {
+      return
+    }
+
     const progressKey =
       getCourseProgressKey(
         courseSlug,
@@ -32341,12 +32701,86 @@ function CoursePage({
         assignmentId,
       )
 
-    setCourseProgress(
-      (current) => ({
-        ...current,
-        [progressKey]: status,
-      }),
-    )
+    const existingCloudRecord =
+      cloudCourseProgress?.find(
+        (record) =>
+          record.id === progressKey,
+      )
+
+    if (
+      !isAdmin &&
+      (
+        existingCloudRecord ===
+        undefined ||
+        existingCloudRecord.owner
+          .trim()
+          .toLowerCase() !==
+        currentUserId
+      )
+    ) {
+      return
+    }
+
+    const recordOwner =
+      contact.email
+        .trim()
+        .toLowerCase()
+
+    if (recordOwner.length === 0) {
+      return
+    }
+
+    void (async (): Promise<void> => {
+      if (
+        existingCloudRecord ===
+        undefined
+      ) {
+        if (!isAdmin) {
+          return
+        }
+
+        await db.courseProgress.put(
+          createCloudCourseProgressRecord(
+            courseSlug,
+            contactId,
+            assignmentId,
+            status,
+            recordOwner,
+          ),
+        )
+      } else {
+        const updatedRecordCount =
+          await db.courseProgress.update(
+            progressKey,
+            {
+              status,
+            },
+          )
+
+        if (
+          updatedRecordCount === 0
+        ) {
+          throw new Error(
+            'Course progress record was not found.',
+          )
+        }
+      }
+
+      setCourseProgress(
+        (currentProgress) => ({
+          ...currentProgress,
+          [progressKey]:
+            status,
+        }),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to update Course Progress in Dexie Cloud.',
+        error,
+      )
+    })
   }
 
   function getStudentCourseProgress(
@@ -37145,6 +37579,12 @@ function CoursePage({
                               ] ??
                               "Haven't Started"
 
+                            const canEditProgress =
+                              canEditCourseProgress(
+                                contact,
+                                progressKey,
+                              )
+
                             return (
                               <td
                                 className="course-progress-status-cell"
@@ -37165,6 +37605,9 @@ function CoursePage({
                                   className={`course-progress-status-button ${getCourseProgressStatusClassName(
                                     status,
                                   )}`}
+                                  disabled={
+                                    !canEditProgress
+                                  }
                                   onClick={() =>
                                     updateCourseProgress(
                                       contact.id,
@@ -37174,8 +37617,16 @@ function CoursePage({
                                       ),
                                     )
                                   }
-                                  title="Click to change progress status"
-                                  aria-label={`${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. Click to change status.`}
+                                  title={
+                                    canEditProgress
+                                      ? 'Click to change progress status'
+                                      : 'Read-only. You can only change your own assignment progress.'
+                                  }
+                                  aria-label={
+                                    canEditProgress
+                                      ? `${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. Click to change status.`
+                                      : `${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. Read-only.`
+                                  }
                                 >
                                   {status}
                                 </button>
@@ -37193,11 +37644,27 @@ function CoursePage({
         </div>
 
         <p className="course-progress-instruction">
-          Click a student assignment cell to
-          cycle through Haven&apos;t Started,
-          In Progress, Done, and Help!.
-          Progress is stored separately for
-          each course.
+          {isCourseProgressAdmin ? (
+            <>
+              Click a student assignment cell to
+              cycle through Haven&apos;t Started,
+              In Progress, Done, and Help!.
+              Progress is shared through Dexie
+              Cloud.
+            </>
+          ) : currentCourseProgressContactId !==
+            null ? (
+            <>
+              Click your assignment cells to
+              update your progress. Other cohort
+              members&apos; progress is read-only.
+            </>
+          ) : (
+            <>
+              Assignment progress is read-only
+              for this account.
+            </>
+          )}
         </p>
       </section>
 
