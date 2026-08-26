@@ -48,12 +48,33 @@ export interface CloudCohortContactRecord {
   readonly sortOrder: number
 }
 
+export type CloudCohortProgramYear =
+  | 'Year 1'
+  | 'Year 2'
+
+export interface CloudCohortMeetingRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly year: CloudCohortProgramYear
+  readonly date: string
+  readonly term: string
+  readonly meetingNumber: string
+  readonly facilitator: string
+  readonly communityBuilder: string
+  readonly recorder: string
+  readonly timeKeeper: string
+  readonly processObserver: string
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
 
   readonly cohortContacts:
     Table<CloudCohortContactRecord, string>
+
+  readonly cohortMeetings:
+    Table<CloudCohortMeetingRecord, string>
 
   constructor() {
     super(
@@ -84,6 +105,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, email, status',
     })
 
+    this.version(3).stores({
+      cohortMeetings:
+        'id, realmId, date, year',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -92,6 +118,11 @@ class BetaNuDatabase extends Dexie {
     this.cohortContacts =
       this.table(
         'cohortContacts',
+      )
+
+    this.cohortMeetings =
+      this.table(
+        'cohortMeetings',
       )
 
     this.cloud.configure({

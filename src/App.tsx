@@ -41,6 +41,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import {
   db,
   type CloudCohortContactRecord,
+  type CloudCohortMeetingRecord,
 } from './db'
 import './App.css'
 
@@ -5527,6 +5528,54 @@ function createLocalCohortContactRecord(
       record.dissertationInterest,
     isMentor:
       record.isMentor,
+  }
+}
+
+function createCloudCohortMeetingRecord(
+  meeting: CohortMeetingRecord,
+): CloudCohortMeetingRecord {
+  return {
+    id: meeting.id,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    year: meeting.year,
+    date: meeting.date,
+    term: meeting.term,
+    meetingNumber:
+      meeting.meetingNumber,
+    facilitator:
+      meeting.facilitator,
+    communityBuilder:
+      meeting.communityBuilder,
+    recorder:
+      meeting.recorder,
+    timeKeeper:
+      meeting.timeKeeper,
+    processObserver:
+      meeting.processObserver,
+  }
+}
+
+function createLocalCohortMeetingRecord(
+  record: CloudCohortMeetingRecord,
+): CohortMeetingRecord {
+  return {
+    id: record.id,
+    year: record.year,
+    date: record.date,
+    term: record.term,
+    meetingNumber:
+      record.meetingNumber,
+    facilitator:
+      record.facilitator,
+    communityBuilder:
+      record.communityBuilder,
+    recorder:
+      record.recorder,
+    timeKeeper:
+      record.timeKeeper,
+    processObserver:
+      record.processObserver,
   }
 }
 
@@ -11259,6 +11308,10 @@ function CohortDatesRolesPage({
   const [newMeeting, setNewMeeting] = useState(createEmptyMeetingForm)
   const [meetingFormError, setMeetingFormError] = useState('')
 
+  const isCohortMeetingsOwner =
+    db.cloud.currentUserId ===
+    BETA_NU_OWNER_USER_ID
+
   useEffect(() => {
     const timerId = window.setInterval(() => {
       setCurrentDate(new Date())
@@ -11451,6 +11504,9 @@ function CohortDatesRolesPage({
           className={className}
           value={value}
           title={title}
+          readOnly={
+            !isCohortMeetingsOwner
+          }
           onChange={(event) =>
             onUpdateRole(
               meeting.id,
@@ -11485,24 +11541,38 @@ function CohortDatesRolesPage({
             />
           </label>
 
-          <button
-            type="button"
-            className="cohort-add-meeting-button"
-            onClick={openAddMeetingModal}
-          >
-            <span aria-hidden="true">+</span>
-            Add Meeting
-          </button>
+          {isCohortMeetingsOwner && (
+            <>
+              <button
+                type="button"
+                className="cohort-add-meeting-button"
+                onClick={
+                  openAddMeetingModal
+                }
+              >
+                <span
+                  aria-hidden="true"
+                >
+                  +
+                </span>
+                Add Meeting
+              </button>
 
-          <button
-            type="button"
-            className="cohort-delete-meeting-button"
-            aria-disabled="true"
-            title="Delete behavior will be enabled after the meeting-selection workflow is defined."
-          >
-            <span aria-hidden="true">🗑️</span>
-            Delete
-          </button>
+              <button
+                type="button"
+                className="cohort-delete-meeting-button"
+                aria-disabled="true"
+                title="Delete behavior will be enabled after the meeting-selection workflow is defined."
+              >
+                <span
+                  aria-hidden="true"
+                >
+                  🗑️
+                </span>
+                Delete
+              </button>
+            </>
+          )}
         </div>
 
         <div className="cohort-meeting-stats">
@@ -41286,6 +41356,18 @@ function App() {
       [],
     )
 
+  const cloudCohortMeetings =
+    useLiveQuery(
+      () =>
+        db.cohortMeetings
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
   const minimumCloudContactCount =
     initialRuntimeState
       .contacts.length +
@@ -41500,6 +41582,136 @@ function App() {
   }, [
     cloudCohortContacts,
     minimumCloudContactCount,
+  ])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCohortMeetingsCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId !==
+        BETA_NU_OWNER_USER_ID
+      ) {
+        return
+      }
+
+      const existingCloudMeetings =
+        await db.cohortMeetings
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const existingMeetingIds =
+        new Set(
+          existingCloudMeetings.map(
+            (meeting) =>
+              meeting.id,
+          ),
+        )
+
+      const missingCloudMeetings =
+        initialRuntimeState
+          .cohortMeetings
+          .filter(
+            (meeting) =>
+              !existingMeetingIds.has(
+                meeting.id,
+              ),
+          )
+          .map(
+            createCloudCohortMeetingRecord,
+          )
+
+      if (
+        missingCloudMeetings.length >
+        0
+      ) {
+        await db.cohortMeetings.bulkPut(
+          missingCloudMeetings,
+        )
+
+        await db.cloud.sync()
+      }
+    }
+
+    void initializeCohortMeetingsCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Cohort Meetings in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    initialRuntimeState,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudCohortMeetings ===
+        undefined ||
+      cloudCohortMeetings.length ===
+        0
+    ) {
+      return
+    }
+
+    const nextCohortMeetings =
+      cloudCohortMeetings
+        .map(
+          createLocalCohortMeetingRecord,
+        )
+        .sort(
+          (
+            firstMeeting,
+            secondMeeting,
+          ) => {
+            const dateComparison =
+              firstMeeting.date.localeCompare(
+                secondMeeting.date,
+              )
+
+            if (
+              dateComparison !== 0
+            ) {
+              return dateComparison
+            }
+
+            return firstMeeting.meetingNumber.localeCompare(
+              secondMeeting.meetingNumber,
+              'en-US',
+              {
+                numeric: true,
+                sensitivity: 'base',
+              },
+            )
+          },
+        )
+
+    setCohortMeetings(
+      nextCohortMeetings,
+    )
+  }, [
+    cloudCohortMeetings,
   ])
 
   useEffect(() => {
@@ -42150,39 +42362,63 @@ function App() {
           nextName !== undefined &&
           nextName !== previousName
         ) {
-          setCohortMeetings(
-            (currentMeetings) =>
-              currentMeetings.map(
-                (meeting) => ({
-                  ...meeting,
-                  facilitator:
-                    meeting.facilitator ===
-                      previousName
-                      ? nextName
-                      : meeting.facilitator,
-                  communityBuilder:
-                    meeting.communityBuilder ===
-                      previousName
-                      ? nextName
-                      : meeting.communityBuilder,
-                  recorder:
-                    meeting.recorder ===
-                      previousName
-                      ? nextName
-                      : meeting.recorder,
-                  timeKeeper:
-                    meeting.timeKeeper ===
-                      previousName
-                      ? nextName
-                      : meeting.timeKeeper,
-                  processObserver:
-                    meeting.processObserver ===
-                      previousName
-                      ? nextName
-                      : meeting.processObserver,
-                }),
-              ),
-          )
+          const updatedMeetings =
+            cohortMeetings
+              .filter(
+                (meeting) =>
+                  meeting.facilitator ===
+                    previousName ||
+                  meeting.communityBuilder ===
+                    previousName ||
+                  meeting.recorder ===
+                    previousName ||
+                  meeting.timeKeeper ===
+                    previousName ||
+                  meeting.processObserver ===
+                    previousName,
+              )
+              .map(
+                (meeting) =>
+                  createCloudCohortMeetingRecord({
+                    ...meeting,
+                    facilitator:
+                      meeting.facilitator ===
+                        previousName
+                        ? nextName
+                        : meeting.facilitator,
+                    communityBuilder:
+                      meeting.communityBuilder ===
+                        previousName
+                        ? nextName
+                        : meeting.communityBuilder,
+                    recorder:
+                      meeting.recorder ===
+                        previousName
+                        ? nextName
+                        : meeting.recorder,
+                    timeKeeper:
+                      meeting.timeKeeper ===
+                        previousName
+                        ? nextName
+                        : meeting.timeKeeper,
+                    processObserver:
+                      meeting.processObserver ===
+                        previousName
+                        ? nextName
+                        : meeting.processObserver,
+                  }),
+              )
+
+          if (
+            updatedMeetings.length >
+            0
+          ) {
+            await db.cohortMeetings.bulkPut(
+              updatedMeetings,
+            )
+
+            await db.cloud.sync()
+          }
         }
       })
       .catch((error: unknown) => {
@@ -42422,27 +42658,61 @@ function App() {
   function addCohortMeeting(
     meeting: CohortMeetingRecord,
   ): void {
-    setCohortMeetings((currentMeetings) =>
-      [...currentMeetings, meeting].sort(
-        (firstMeeting, secondMeeting) => {
-          const dateComparison =
-            firstMeeting.date.localeCompare(secondMeeting.date)
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
 
-          if (dateComparison !== 0) {
-            return dateComparison
-          }
+    setCohortMeetings(
+      (currentMeetings) =>
+        [
+          ...currentMeetings,
+          meeting,
+        ].sort(
+          (
+            firstMeeting,
+            secondMeeting,
+          ) => {
+            const dateComparison =
+              firstMeeting.date.localeCompare(
+                secondMeeting.date,
+              )
 
-          return firstMeeting.meetingNumber.localeCompare(
-            secondMeeting.meetingNumber,
-            'en-US',
-            {
-              numeric: true,
-              sensitivity: 'base',
-            },
-          )
-        },
-      ),
+            if (
+              dateComparison !== 0
+            ) {
+              return dateComparison
+            }
+
+            return firstMeeting.meetingNumber.localeCompare(
+              secondMeeting.meetingNumber,
+              'en-US',
+              {
+                numeric: true,
+                sensitivity: 'base',
+              },
+            )
+          },
+        ),
     )
+
+    void db.cohortMeetings
+      .put(
+        createCloudCohortMeetingRecord(
+          meeting,
+        ),
+      )
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to add the Cohort Meeting.',
+          error,
+        )
+      })
   }
 
   function updateCohortMeetingRole(
@@ -42450,45 +42720,88 @@ function App() {
     roleField: CohortMeetingRoleField,
     value: string,
   ): void {
-    setCohortMeetings((currentMeetings) =>
-      currentMeetings.map((meeting) => {
-        if (meeting.id !== meetingId) {
-          return meeting
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
+
+    let cloudUpdate:
+      Partial<CloudCohortMeetingRecord>
+
+    switch (roleField) {
+      case 'facilitator':
+        cloudUpdate = {
+          facilitator: value,
         }
+        break
 
-        switch (roleField) {
-          case 'facilitator':
-            return {
-              ...meeting,
-              facilitator: value,
-            }
-
-          case 'communityBuilder':
-            return {
-              ...meeting,
-              communityBuilder: value,
-            }
-
-          case 'recorder':
-            return {
-              ...meeting,
-              recorder: value,
-            }
-
-          case 'timeKeeper':
-            return {
-              ...meeting,
-              timeKeeper: value,
-            }
-
-          case 'processObserver':
-            return {
-              ...meeting,
-              processObserver: value,
-            }
+      case 'communityBuilder':
+        cloudUpdate = {
+          communityBuilder: value,
         }
-      }),
+        break
+
+      case 'recorder':
+        cloudUpdate = {
+          recorder: value,
+        }
+        break
+
+      case 'timeKeeper':
+        cloudUpdate = {
+          timeKeeper: value,
+        }
+        break
+
+      case 'processObserver':
+        cloudUpdate = {
+          processObserver: value,
+        }
+        break
+    }
+
+    setCohortMeetings(
+      (currentMeetings) =>
+        currentMeetings.map(
+          (meeting) =>
+            meeting.id ===
+              meetingId
+              ? {
+                ...meeting,
+                ...cloudUpdate,
+              }
+              : meeting,
+        ),
     )
+
+    void db.cohortMeetings
+      .update(
+        meetingId,
+        cloudUpdate,
+      )
+      .then(
+        async (
+          updatedCount,
+        ) => {
+          if (
+            updatedCount === 0
+          ) {
+            throw new Error(
+              'The Cohort Meeting could not be found in Dexie Cloud.',
+            )
+          }
+
+          await db.cloud.sync()
+        },
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to update the Cohort Meeting role.',
+          error,
+        )
+      })
   }
 
   const activeSidebarCourses =
