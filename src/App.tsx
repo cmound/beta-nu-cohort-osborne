@@ -43,6 +43,7 @@ import {
   type CloudCohortAttendanceRecord,
   type CloudCohortAvailabilityRecord,
   type CloudCohortContactRecord,
+  type CloudCohortGroupAssignmentsRecord,
   type CloudCohortMeetingRecord,
   type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
@@ -29312,6 +29313,9 @@ function CohortCourseWaiversPage({
 const COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY =
   'beta-nu-group-assignments-v1'
 
+const COHORT_GROUP_ASSIGNMENTS_CLOUD_ID =
+  'cohort-group-assignments-current'
+
 const MAX_COHORT_ASSIGNMENT_GROUPS = 10
 
 interface CohortGroupAssignmentRecord {
@@ -29350,6 +29354,59 @@ function createEmptyCohortGroupAssignmentState():
     activityDate: '',
     excludedStudentIds: [],
     groups: [],
+  }
+}
+
+function createCloudCohortGroupAssignmentsRecord(
+  state: CohortGroupAssignmentState,
+): CloudCohortGroupAssignmentsRecord {
+  return {
+    id:
+      COHORT_GROUP_ASSIGNMENTS_CLOUD_ID,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner:
+      BETA_NU_OWNER_USER_ID,
+    activityDate:
+      state.activityDate,
+    excludedStudentIds: [
+      ...state.excludedStudentIds,
+    ],
+    groups:
+      state.groups.map(
+        (group) => ({
+          id: group.id,
+          memberIds: [
+            ...group.memberIds,
+          ],
+          targetSize:
+            group.targetSize,
+        }),
+      ),
+  }
+}
+
+function createLocalCohortGroupAssignmentState(
+  record:
+    CloudCohortGroupAssignmentsRecord,
+): CohortGroupAssignmentState {
+  return {
+    activityDate:
+      record.activityDate,
+    excludedStudentIds: [
+      ...record.excludedStudentIds,
+    ],
+    groups:
+      record.groups.map(
+        (group) => ({
+          id: group.id,
+          memberIds: [
+            ...group.memberIds,
+          ],
+          targetSize:
+            group.targetSize,
+        }),
+      ),
   }
 }
 
@@ -29880,12 +29937,40 @@ function CohortGroupAssignmentsPage({
   contactStatuses,
 }: CohortGroupAssignmentsPageProps) {
   const [
-    groupAssignmentState,
-    setGroupAssignmentState,
+    initialGroupAssignmentState,
   ] =
     useState<CohortGroupAssignmentState>(
       readStoredCohortGroupAssignments,
     )
+
+  const [
+    groupAssignmentState,
+    setGroupAssignmentState,
+  ] =
+    useState<CohortGroupAssignmentState>(
+      initialGroupAssignmentState,
+    )
+
+  const [
+    isGroupAssignmentCloudReady,
+    setIsGroupAssignmentCloudReady,
+  ] = useState(false)
+
+  const cloudGroupAssignmentRecord =
+    useLiveQuery(
+      () =>
+        db.cohortGroupAssignments.get(
+          COHORT_GROUP_ASSIGNMENTS_CLOUD_ID,
+        ),
+      [],
+    )
+
+  const isGroupAssignmentsOwner =
+    db.cloud.currentUserId
+      .trim()
+      .toLowerCase() ===
+    BETA_NU_OWNER_USER_ID
+      .toLowerCase()
 
   const [
     activityDateInput,
@@ -29927,13 +30012,168 @@ function CohortGroupAssignmentsPage({
   ] = useState<string | null>(null)
 
   useEffect(() => {
+    let isCancelled = false
+
+    async function initializeGroupAssignmentsCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (isCancelled) {
+        return
+      }
+
+      const existingCloudRecord =
+        await db.cohortGroupAssignments.get(
+          COHORT_GROUP_ASSIGNMENTS_CLOUD_ID,
+        )
+
+      const currentUserIsOwner =
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() ===
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+
+      if (
+        existingCloudRecord ===
+        undefined &&
+        currentUserIsOwner
+      ) {
+        await db.cohortGroupAssignments.put(
+          createCloudCohortGroupAssignmentsRecord(
+            initialGroupAssignmentState,
+          ),
+        )
+
+        await db.cloud.sync()
+      } else if (
+        existingCloudRecord !==
+        undefined
+      ) {
+        const cloudState =
+          createLocalCohortGroupAssignmentState(
+            existingCloudRecord,
+          )
+
+        setGroupAssignmentState(
+          cloudState,
+        )
+
+        setActivityDateInput(
+          formatCohortGroupActivityDate(
+            cloudState.activityDate,
+          ),
+        )
+
+        setGroupCountInput(
+          cloudState.groups.length > 0
+            ? String(
+              cloudState.groups.length,
+            )
+            : '4',
+        )
+      }
+
+      if (!isCancelled) {
+        setIsGroupAssignmentCloudReady(
+          true,
+        )
+      }
+    }
+
+    void initializeGroupAssignmentsCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Group Assignments in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    initialGroupAssignmentState,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudGroupAssignmentRecord ===
+      undefined
+    ) {
+      return
+    }
+
+    const cloudState =
+      createLocalCohortGroupAssignmentState(
+        cloudGroupAssignmentRecord,
+      )
+
+    setGroupAssignmentState(
+      cloudState,
+    )
+
+    setActivityDateInput(
+      formatCohortGroupActivityDate(
+        cloudState.activityDate,
+      ),
+    )
+
+    setGroupCountInput(
+      cloudState.groups.length > 0
+        ? String(
+          cloudState.groups.length,
+        )
+        : '4',
+    )
+  }, [
+    cloudGroupAssignmentRecord,
+  ])
+
+  useEffect(() => {
     localStorage.setItem(
       COHORT_GROUP_ASSIGNMENTS_STORAGE_KEY,
       JSON.stringify(
         groupAssignmentState,
       ),
     )
-  }, [groupAssignmentState])
+
+    if (
+      !isGroupAssignmentCloudReady ||
+      !isGroupAssignmentsOwner
+    ) {
+      return
+    }
+
+    void (async (): Promise<void> => {
+      await db.cohortGroupAssignments.put(
+        createCloudCohortGroupAssignmentsRecord(
+          groupAssignmentState,
+        ),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to save Group Assignments to Dexie Cloud.',
+        error,
+      )
+    })
+  }, [
+    groupAssignmentState,
+    isGroupAssignmentCloudReady,
+    isGroupAssignmentsOwner,
+  ])
 
   const activeStudents =
     sortCohortContacts(contacts).filter(
@@ -30640,6 +30880,9 @@ function CohortGroupAssignmentsPage({
             <input
               type="text"
               value={activityDateInput}
+              disabled={
+                !isGroupAssignmentsOwner
+              }
               placeholder="M/D/YYYY"
               maxLength={10}
               autoComplete="off"
@@ -30678,7 +30921,10 @@ function CohortGroupAssignmentsPage({
               }
               step={1}
               value={groupCountInput}
-              disabled={groupsCreated}
+              disabled={
+                !isGroupAssignmentsOwner ||
+                groupsCreated
+              }
               onChange={(event) => {
                 setGroupCountInput(
                   event.currentTarget.value,
@@ -30691,6 +30937,7 @@ function CohortGroupAssignmentsPage({
             type="button"
             className="cohort-groups-create-button"
             disabled={
+              !isGroupAssignmentsOwner ||
               !groupCountIsValid ||
               groupsCreated
             }
@@ -30707,7 +30954,10 @@ function CohortGroupAssignmentsPage({
           <button
             type="button"
             className="cohort-groups-clear-button"
-            disabled={!hasPageData}
+            disabled={
+              !isGroupAssignmentsOwner ||
+              !hasPageData
+            }
             onClick={
               clearGroupAssignments
             }
@@ -30786,6 +31036,9 @@ function CohortGroupAssignmentsPage({
                         type="checkbox"
                         checked={
                           isParticipating
+                        }
+                        disabled={
+                          !isGroupAssignmentsOwner
                         }
                         aria-label={
                           isParticipating
@@ -30955,6 +31208,9 @@ function CohortGroupAssignmentsPage({
 
                                 <input
                                   type="number"
+                                  disabled={
+                                    !isGroupAssignmentsOwner
+                                  }
                                   min={
                                     groupStudents
                                       .length
@@ -31037,6 +31293,7 @@ function CohortGroupAssignmentsPage({
                                           )
                                         }
                                         draggable={
+                                          isGroupAssignmentsOwner &&
                                           student !==
                                           undefined
                                         }
@@ -31101,6 +31358,9 @@ function CohortGroupAssignmentsPage({
                                             <button
                                               type="button"
                                               className="cohort-group-slot-remove-button"
+                                              disabled={
+                                                !isGroupAssignmentsOwner
+                                              }
                                               aria-label={
                                                 `Remove ${student.name} ` +
                                                 `from Group ${groupIndex + 1}`
@@ -31152,6 +31412,7 @@ function CohortGroupAssignmentsPage({
                                   }
                                   autoComplete="off"
                                   disabled={
+                                    !isGroupAssignmentsOwner ||
                                     targetReached ||
                                     availableStudents
                                       .length === 0
