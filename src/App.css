@@ -19209,6 +19209,41 @@ tbody td {
 }
 
 .course-workspace-operations-grid
+  .course-assignment-table
+  td.course-assignment-edit-cell {
+  padding: 0;
+}
+
+.course-assignment-cell-input {
+  width: 100%;
+  min-height: 28px;
+  box-sizing: border-box;
+  display: block;
+  margin: 0;
+  padding: 3px 5px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  line-height: 1.1;
+}
+
+.course-assignment-cell-input:focus,
+.course-assignment-cell-input:focus-visible {
+  position: relative;
+  z-index: 3;
+  outline: 2px solid #005eb8;
+  outline-offset: -2px;
+  background: #eaf4ff;
+}
+
+.course-assignment-cell-input[readonly] {
+  cursor: default;
+}
+
+.course-workspace-operations-grid
   .course-assignment-column-name {
   overflow: hidden;
   line-height: 1.25;

@@ -31353,6 +31353,31 @@ function CoursePage({
     )
   }
 
+  function updateCourseAssignment(
+    assignmentId: string,
+    updates:
+      Partial<
+        Omit<
+          CourseAssignmentRecord,
+          'id'
+        >
+      >,
+  ): void {
+    updateCourseWorkspace({
+      assignments:
+        workspace.assignments.map(
+          (assignment) =>
+            assignment.id ===
+              assignmentId
+              ? {
+                ...assignment,
+                ...updates,
+              }
+              : assignment,
+        ),
+    })
+  }
+
   function beginProfessorMemoryEdit():
     void {
     if (
@@ -34165,35 +34190,249 @@ function CoursePage({
                               )}
                             </td>
 
-                            <td>
-                              {
-                                assignment.asn
-                              }
+                            <td className="course-assignment-edit-cell">
+                              <input
+                                key={`${assignment.id}-asn-${assignment.asn}`}
+                                type="text"
+                                className="course-assignment-cell-input"
+                                defaultValue={
+                                  assignment.asn
+                                }
+                                aria-label={`ASN for ${assignment.name}`}
+                                readOnly={
+                                  isAssignmentDeleteMode ||
+                                  isTableEditMode ||
+                                  courseLayoutEditorSection ===
+                                  'assignments'
+                                }
+                                onPointerDown={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onClick={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onBlur={(
+                                  event,
+                                ) => {
+                                  const normalizedValue =
+                                    formatCourseAssignmentNumber(
+                                      event
+                                        .currentTarget
+                                        .value,
+                                    )
+
+                                  event.currentTarget.value =
+                                    normalizedValue
+
+                                  updateCourseAssignment(
+                                    assignment.id,
+                                    {
+                                      asn:
+                                        normalizedValue,
+                                    },
+                                  )
+                                }}
+                              />
                             </td>
 
-                            <td>
-                              {
-                                assignment.name
-                              }
+                            <td className="course-assignment-edit-cell">
+                              <input
+                                key={`${assignment.id}-name-${assignment.name}`}
+                                type="text"
+                                className="course-assignment-cell-input"
+                                defaultValue={
+                                  assignment.name
+                                }
+                                aria-label={`Assignment name for ${assignment.asn}`}
+                                readOnly={
+                                  isAssignmentDeleteMode ||
+                                  isTableEditMode ||
+                                  courseLayoutEditorSection ===
+                                  'assignments'
+                                }
+                                onPointerDown={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onClick={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onBlur={(
+                                  event,
+                                ) => {
+                                  const normalizedValue =
+                                    event
+                                      .currentTarget
+                                      .value
+                                      .trim()
+
+                                  event.currentTarget.value =
+                                    normalizedValue
+
+                                  updateCourseAssignment(
+                                    assignment.id,
+                                    {
+                                      name:
+                                        normalizedValue,
+                                    },
+                                  )
+                                }}
+                              />
                             </td>
 
-                            <td>
+                            <td
+                              title="Calculated automatically from Due Date"
+                            >
                               {getCourseAssignmentWeekLabel(
                                 courseRecord.startDate,
                                 assignment.dueDate,
                               )}
                             </td>
 
-                            <td>
-                              {formatCourseAssignmentDate(
-                                assignment.dueDate,
-                              )}
+                            <td className="course-assignment-edit-cell">
+                              <input
+                                key={`${assignment.id}-due-${assignment.dueDate}`}
+                                type="text"
+                                className="course-assignment-cell-input"
+                                defaultValue={
+                                  formatCourseAssignmentDate(
+                                    assignment.dueDate,
+                                  )
+                                }
+                                aria-label={`Due date for ${assignment.asn}`}
+                                readOnly={
+                                  isAssignmentDeleteMode ||
+                                  isTableEditMode ||
+                                  courseLayoutEditorSection ===
+                                  'assignments'
+                                }
+                                onPointerDown={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onClick={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onBlur={(
+                                  event,
+                                ) => {
+                                  const originalValue =
+                                    formatCourseAssignmentDate(
+                                      assignment.dueDate,
+                                    )
+
+                                  const parsedDate =
+                                    parseCourseAssignmentDate(
+                                      event
+                                        .currentTarget
+                                        .value,
+                                      courseStartDate,
+                                      courseEndDate,
+                                    )
+
+                                  if (
+                                    parsedDate ===
+                                    null
+                                  ) {
+                                    event.currentTarget.value =
+                                      originalValue
+
+                                    window.alert(
+                                      'Enter a valid assignment due date.',
+                                    )
+
+                                    return
+                                  }
+
+                                  if (
+                                    parsedDate <
+                                    courseStartDate ||
+                                    parsedDate >
+                                    courseEndDate
+                                  ) {
+                                    event.currentTarget.value =
+                                      originalValue
+
+                                    window.alert(
+                                      'Assignment due date must fall within this course start and end date.',
+                                    )
+
+                                    return
+                                  }
+
+                                  event.currentTarget.value =
+                                    formatCourseAssignmentDate(
+                                      parsedDate,
+                                    )
+
+                                  updateCourseAssignment(
+                                    assignment.id,
+                                    {
+                                      dueDate:
+                                        parsedDate,
+                                    },
+                                  )
+                                }}
+                              />
                             </td>
 
-                            <td>
-                              {
-                                assignment.points
-                              }
+                            <td className="course-assignment-edit-cell">
+                              <input
+                                key={`${assignment.id}-points-${assignment.points}`}
+                                type="text"
+                                inputMode="decimal"
+                                className="course-assignment-cell-input"
+                                defaultValue={
+                                  assignment.points
+                                }
+                                aria-label={`Points for ${assignment.asn}`}
+                                readOnly={
+                                  isAssignmentDeleteMode ||
+                                  isTableEditMode ||
+                                  courseLayoutEditorSection ===
+                                  'assignments'
+                                }
+                                onPointerDown={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onClick={(
+                                  event,
+                                ) => {
+                                  event.stopPropagation()
+                                }}
+                                onBlur={(
+                                  event,
+                                ) => {
+                                  const normalizedValue =
+                                    event
+                                      .currentTarget
+                                      .value
+                                      .trim()
+
+                                  event.currentTarget.value =
+                                    normalizedValue
+
+                                  updateCourseAssignment(
+                                    assignment.id,
+                                    {
+                                      points:
+                                        normalizedValue,
+                                    },
+                                  )
+                                }}
+                              />
                             </td>
                           </tr>
                         )
