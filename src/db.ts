@@ -87,7 +87,7 @@ export interface CloudCourseWebinarRecord {
   readonly date: string
   readonly pacificStartTime: string
   readonly required:
-    CloudCourseWebinarRequirement
+  CloudCourseWebinarRequirement
 }
 
 export interface CloudCourseWorkspaceRecord {
@@ -100,10 +100,10 @@ export interface CloudCourseWorkspaceRecord {
   readonly professorPhoneDigits: string
   readonly professorOfficeHours: string
   readonly assignments:
-    readonly CloudCourseAssignmentRecord[]
+  readonly CloudCourseAssignmentRecord[]
   readonly webinarZoomUrl: string
   readonly webinars:
-    readonly CloudCourseWebinarRecord[]
+  readonly CloudCourseWebinarRecord[]
 }
 
 export interface CloudCourseWaiverRecord {
@@ -127,7 +127,21 @@ export interface CloudCourseProgressRecord {
   readonly contactId: string
   readonly assignmentId: string
   readonly status:
-    CloudCourseProgressStatus
+  CloudCourseProgressStatus
+}
+
+export type CloudCohortAttendanceMark =
+  | ''
+  | 'X'
+  | 'A'
+
+export interface CloudCohortAttendanceRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly contactId: string
+  readonly meetingId: string
+  readonly mark: CloudCohortAttendanceMark
 }
 
 class BetaNuDatabase extends Dexie {
@@ -148,6 +162,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly courseProgress:
     Table<CloudCourseProgressRecord, string>
+
+  readonly cohortAttendance:
+    Table<CloudCohortAttendanceRecord, string>
 
   constructor() {
     super(
@@ -198,6 +215,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, courseSlug, contactId, assignmentId',
     })
 
+    this.version(7).stores({
+      cohortAttendance:
+        'id, realmId, contactId, meetingId',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -226,6 +248,11 @@ class BetaNuDatabase extends Dexie {
     this.courseProgress =
       this.table(
         'courseProgress',
+      )
+
+    this.cohortAttendance =
+      this.table(
+        'cohortAttendance',
       )
 
     this.cloud.configure({

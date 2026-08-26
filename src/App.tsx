@@ -40,6 +40,7 @@ import * as XLSX from 'xlsx'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   db,
+  type CloudCohortAttendanceRecord,
   type CloudCohortContactRecord,
   type CloudCohortMeetingRecord,
   type CloudCourseProgressRecord,
@@ -479,6 +480,7 @@ interface CohortAttendancePageProps {
   readonly contacts: readonly CohortContactRecord[]
   readonly meetings: readonly CohortMeetingRecord[]
   readonly attendance: CohortAttendanceState
+  readonly isEditable: boolean
   readonly onUpdateAttendance: (
     contactId: string,
     meetingId: string,
@@ -7609,6 +7611,93 @@ function normalizeAttendanceMark(
   }
 
   return ''
+}
+
+function createCloudCohortAttendanceRecord(
+  contactId: string,
+  meetingId: string,
+  mark: CohortAttendanceMark,
+): CloudCohortAttendanceRecord {
+  return {
+    id:
+      getAttendanceKey(
+        contactId,
+        meetingId,
+      ),
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner:
+      BETA_NU_OWNER_USER_ID,
+    contactId,
+    meetingId,
+    mark,
+  }
+}
+
+function createCloudCohortAttendanceRecords(
+  attendance:
+    Readonly<CohortAttendanceState>,
+): readonly CloudCohortAttendanceRecord[] {
+  const records:
+    CloudCohortAttendanceRecord[] = []
+
+  for (
+    const [
+      attendanceKey,
+      mark,
+    ] of Object.entries(attendance)
+  ) {
+    const separatorIndex =
+      attendanceKey.indexOf('::')
+
+    if (
+      separatorIndex <= 0 ||
+      separatorIndex >=
+      attendanceKey.length - 2
+    ) {
+      continue
+    }
+
+    const contactId =
+      attendanceKey.slice(
+        0,
+        separatorIndex,
+      )
+
+    const meetingId =
+      attendanceKey.slice(
+        separatorIndex + 2,
+      )
+
+    records.push(
+      createCloudCohortAttendanceRecord(
+        contactId,
+        meetingId,
+        mark,
+      ),
+    )
+  }
+
+  return records
+}
+
+function createLocalCohortAttendanceState(
+  records:
+    readonly CloudCohortAttendanceRecord[],
+): CohortAttendanceState {
+  const attendance:
+    CohortAttendanceState = {}
+
+  for (const record of records) {
+    attendance[
+      getAttendanceKey(
+        record.contactId,
+        record.meetingId,
+      )
+    ] = record.mark
+  }
+
+  return attendance
 }
 
 function getAttendanceMeetingCode(
@@ -17643,6 +17732,7 @@ function CohortAttendancePage({
   contacts,
   meetings,
   attendance,
+  isEditable,
   onUpdateAttendance,
 }: CohortAttendancePageProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date())
@@ -17755,7 +17845,12 @@ function CohortAttendancePage({
                           }`}
                         value={attendanceMark}
                         aria-label={`${contact.name}, ${formatCohortMeetingDate(meeting.date)} attendance`}
-                        title="Enter X for attended or A for absent"
+                        readOnly={!isEditable}
+                        title={
+                          isEditable
+                            ? 'Enter X for attended or A for absent'
+                            : 'Attendance is read-only for cohort members'
+                        }
                         onChange={(event) =>
                           onUpdateAttendance(
                             contact.id,
@@ -42387,6 +42482,18 @@ function App() {
       [],
     )
 
+  const cloudCohortAttendance =
+    useLiveQuery(
+      () =>
+        db.cohortAttendance
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
   const minimumCloudContactCount =
     initialRuntimeState
       .contacts.length +
@@ -42731,6 +42838,117 @@ function App() {
     )
   }, [
     cloudCohortMeetings,
+  ])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCohortAttendanceCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() !==
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+      ) {
+        return
+      }
+
+      const initialCloudRecords =
+        createCloudCohortAttendanceRecords(
+          initialRuntimeState
+            .cohortAttendance,
+        )
+
+      if (
+        initialCloudRecords.length ===
+        0
+      ) {
+        return
+      }
+
+      const existingCloudRecords =
+        await db.cohortAttendance.bulkGet(
+          initialCloudRecords.map(
+            (record) =>
+              record.id,
+          ),
+        )
+
+      const missingCloudRecords =
+        initialCloudRecords.filter(
+          (
+            _record,
+            index,
+          ) =>
+            existingCloudRecords[
+            index
+            ] === undefined,
+        )
+
+      if (
+        missingCloudRecords.length ===
+        0
+      ) {
+        return
+      }
+
+      await db.cohortAttendance.bulkPut(
+        missingCloudRecords,
+      )
+
+      await db.cloud.sync()
+    }
+
+    void initializeCohortAttendanceCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Cohort Attendance in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    initialRuntimeState,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudCohortAttendance ===
+      undefined ||
+      cloudCohortAttendance.length ===
+      0
+    ) {
+      return
+    }
+
+    setCohortAttendance({
+      ...initialRuntimeState
+        .cohortAttendance,
+      ...createLocalCohortAttendanceState(
+        cloudCohortAttendance,
+      ),
+    })
+  }, [
+    cloudCohortAttendance,
+    initialRuntimeState,
   ])
 
   useEffect(() => {
@@ -43581,15 +43799,49 @@ function App() {
     meetingId: string,
     mark: CohortAttendanceMark,
   ): void {
-    const attendanceKey = getAttendanceKey(
-      contactId,
-      meetingId,
-    )
+    if (
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase() !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
 
-    setCohortAttendance((currentAttendance) => ({
-      ...currentAttendance,
-      [attendanceKey]: mark,
-    }))
+    const attendanceKey =
+      getAttendanceKey(
+        contactId,
+        meetingId,
+      )
+
+    const cloudRecord =
+      createCloudCohortAttendanceRecord(
+        contactId,
+        meetingId,
+        mark,
+      )
+
+    void (async (): Promise<void> => {
+      await db.cohortAttendance.put(
+        cloudRecord,
+      )
+
+      setCohortAttendance(
+        (currentAttendance) => ({
+          ...currentAttendance,
+          [attendanceKey]:
+            mark,
+        }),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to update Cohort Attendance in Dexie Cloud.',
+        error,
+      )
+    })
   }
 
   function updateCohortDataSurvey(
@@ -45698,6 +45950,13 @@ function App() {
                   contacts={contacts}
                   meetings={cohortMeetings}
                   attendance={cohortAttendance}
+                  isEditable={
+                    db.cloud.currentUserId
+                      .trim()
+                      .toLowerCase() ===
+                    BETA_NU_OWNER_USER_ID
+                      .toLowerCase()
+                  }
                   onUpdateAttendance={updateCohortAttendance}
                 />
               }
