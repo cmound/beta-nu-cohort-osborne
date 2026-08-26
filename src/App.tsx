@@ -42,6 +42,7 @@ import {
   db,
   type CloudCohortContactRecord,
   type CloudCohortMeetingRecord,
+  type CloudCourseWorkspaceRecord,
 } from './db'
 import './App.css'
 
@@ -2138,6 +2139,110 @@ function createEmptyCourseWorkspaceRecord():
     assignments: [],
     webinarZoomUrl: '',
     webinars: [],
+  }
+}
+
+function createCloudCourseWorkspaceRecord(
+  courseSlug: string,
+  workspace: CourseWorkspaceRecord,
+): CloudCourseWorkspaceRecord {
+  return {
+    id:
+      `course-workspace-${courseSlug}`,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    courseSlug,
+    assignmentsPageUrl:
+      workspace.assignmentsPageUrl,
+    professorName:
+      workspace.professorName,
+    professorEmail:
+      workspace.professorEmail,
+    professorPhoneDigits:
+      workspace.professorPhoneDigits,
+    professorOfficeHours:
+      workspace.professorOfficeHours,
+    assignments:
+      workspace.assignments.map(
+        (assignment) => ({
+          id: assignment.id,
+          asn: assignment.asn,
+          name: assignment.name,
+          dueDate:
+            assignment.dueDate,
+          points:
+            assignment.points,
+        }),
+      ),
+    webinarZoomUrl:
+      workspace.webinarZoomUrl,
+    webinars:
+      workspace.webinars.map(
+        (webinar) => ({
+          id: webinar.id,
+          webinarNumber:
+            webinar.webinarNumber,
+          session:
+            webinar.session,
+          topic:
+            webinar.topic,
+          date:
+            webinar.date,
+          pacificStartTime:
+            webinar.pacificStartTime,
+          required:
+            webinar.required,
+        }),
+      ),
+  }
+}
+
+function createLocalCourseWorkspaceRecord(
+  record: CloudCourseWorkspaceRecord,
+): CourseWorkspaceRecord {
+  return {
+    assignmentsPageUrl:
+      record.assignmentsPageUrl,
+    professorName:
+      record.professorName,
+    professorEmail:
+      record.professorEmail,
+    professorPhoneDigits:
+      record.professorPhoneDigits,
+    professorOfficeHours:
+      record.professorOfficeHours,
+    assignments:
+      record.assignments.map(
+        (assignment) => ({
+          id: assignment.id,
+          asn: assignment.asn,
+          name: assignment.name,
+          dueDate:
+            assignment.dueDate,
+          points:
+            assignment.points,
+        }),
+      ),
+    webinarZoomUrl:
+      record.webinarZoomUrl,
+    webinars:
+      record.webinars.map(
+        (webinar) => ({
+          id: webinar.id,
+          webinarNumber:
+            webinar.webinarNumber,
+          session:
+            webinar.session,
+          topic:
+            webinar.topic,
+          date:
+            webinar.date,
+          pacificStartTime:
+            webinar.pacificStartTime,
+          required:
+            webinar.required,
+        }),
+      ),
   }
 }
 
@@ -30606,6 +30711,23 @@ function CoursePage({
       readStoredCourseWorkspaces,
     )
 
+  const courseWorkspaceBootstrapRef =
+    useRef<CourseWorkspaceState>(
+      courseWorkspaces,
+    )
+
+  const cloudCourseWorkspaces =
+    useLiveQuery(
+      () =>
+        db.courseWorkspaces
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
   const [
     courseProgress,
     setCourseProgress,
@@ -30789,6 +30911,131 @@ function CoursePage({
       ),
     )
   }, [courseWorkspaces])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCourseWorkspacesCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId !==
+        BETA_NU_OWNER_USER_ID
+      ) {
+        return
+      }
+
+      const existingCloudWorkspaces =
+        await db.courseWorkspaces
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const existingCourseSlugs =
+        new Set(
+          existingCloudWorkspaces.map(
+            (record) =>
+              record.courseSlug,
+          ),
+        )
+
+      const missingCloudWorkspaces =
+        Object.entries(
+          courseWorkspaceBootstrapRef.current,
+        )
+          .filter(
+            ([
+              courseSlug,
+            ]) =>
+              !existingCourseSlugs.has(
+                courseSlug,
+              ),
+          )
+          .map(
+            ([
+              courseSlug,
+              workspace,
+            ]) =>
+              createCloudCourseWorkspaceRecord(
+                courseSlug,
+                workspace,
+              ),
+          )
+
+      if (
+        missingCloudWorkspaces.length >
+        0
+      ) {
+        await db.courseWorkspaces.bulkPut(
+          missingCloudWorkspaces,
+        )
+
+        await db.cloud.sync()
+      }
+    }
+
+    void initializeCourseWorkspacesCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Course Workspaces in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (
+      cloudCourseWorkspaces ===
+      undefined ||
+      cloudCourseWorkspaces.length ===
+      0
+    ) {
+      return
+    }
+
+    setCourseWorkspaces(
+      (currentWorkspaces) => {
+        const nextWorkspaces:
+          CourseWorkspaceState = {
+          ...currentWorkspaces,
+        }
+
+        for (
+          const cloudWorkspace
+          of cloudCourseWorkspaces
+        ) {
+          nextWorkspaces[
+            cloudWorkspace.courseSlug
+          ] =
+            createLocalCourseWorkspaceRecord(
+              cloudWorkspace,
+            )
+        }
+
+        return nextWorkspaces
+      },
+    )
+  }, [
+    cloudCourseWorkspaces,
+  ])
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -31894,22 +32141,43 @@ function CoursePage({
     updates:
       Partial<CourseWorkspaceRecord>,
   ): void {
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
+
+    const nextWorkspace:
+      CourseWorkspaceRecord = {
+      ...workspace,
+      ...updates,
+    }
+
     setCourseWorkspaces(
       (current) => ({
         ...current,
-
-        [courseSlug]: {
-          ...(
-            current[
-            courseSlug
-            ] ??
-            createEmptyCourseWorkspaceRecord()
-          ),
-
-          ...updates,
-        },
+        [courseSlug]:
+          nextWorkspace,
       }),
     )
+
+    void db.courseWorkspaces
+      .put(
+        createCloudCourseWorkspaceRecord(
+          courseSlug,
+          nextWorkspace,
+        ),
+      )
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to update the Course Workspace.',
+          error,
+        )
+      })
   }
 
   function updateCourseAssignment(
@@ -41668,9 +41936,9 @@ function App() {
   useEffect(() => {
     if (
       cloudCohortMeetings ===
-        undefined ||
+      undefined ||
       cloudCohortMeetings.length ===
-        0
+      0
     ) {
       return
     }
@@ -42367,15 +42635,15 @@ function App() {
               .filter(
                 (meeting) =>
                   meeting.facilitator ===
-                    previousName ||
+                  previousName ||
                   meeting.communityBuilder ===
-                    previousName ||
+                  previousName ||
                   meeting.recorder ===
-                    previousName ||
+                  previousName ||
                   meeting.timeKeeper ===
-                    previousName ||
+                  previousName ||
                   meeting.processObserver ===
-                    previousName,
+                  previousName,
               )
               .map(
                 (meeting) =>

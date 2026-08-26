@@ -66,6 +66,46 @@ export interface CloudCohortMeetingRecord {
   readonly processObserver: string
 }
 
+export interface CloudCourseAssignmentRecord {
+  readonly id: string
+  readonly asn: string
+  readonly name: string
+  readonly dueDate: string
+  readonly points: string
+}
+
+export type CloudCourseWebinarRequirement =
+  | ''
+  | 'Required'
+  | 'Optional'
+
+export interface CloudCourseWebinarRecord {
+  readonly id: string
+  readonly webinarNumber: string
+  readonly session: string
+  readonly topic: string
+  readonly date: string
+  readonly pacificStartTime: string
+  readonly required:
+    CloudCourseWebinarRequirement
+}
+
+export interface CloudCourseWorkspaceRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly courseSlug: string
+  readonly assignmentsPageUrl: string
+  readonly professorName: string
+  readonly professorEmail: string
+  readonly professorPhoneDigits: string
+  readonly professorOfficeHours: string
+  readonly assignments:
+    readonly CloudCourseAssignmentRecord[]
+  readonly webinarZoomUrl: string
+  readonly webinars:
+    readonly CloudCourseWebinarRecord[]
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -75,6 +115,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly cohortMeetings:
     Table<CloudCohortMeetingRecord, string>
+
+  readonly courseWorkspaces:
+    Table<CloudCourseWorkspaceRecord, string>
 
   constructor() {
     super(
@@ -110,6 +153,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, date, year',
     })
 
+    this.version(4).stores({
+      courseWorkspaces:
+        'id, realmId, courseSlug',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -123,6 +171,11 @@ class BetaNuDatabase extends Dexie {
     this.cohortMeetings =
       this.table(
         'cohortMeetings',
+      )
+
+    this.courseWorkspaces =
+      this.table(
+        'courseWorkspaces',
       )
 
     this.cloud.configure({
