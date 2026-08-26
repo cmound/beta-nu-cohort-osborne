@@ -2901,21 +2901,21 @@
 .add-contact-button {
   min-height: 36px;
   padding: 7px 14px;
-  border: 1px solid #004b93;
+  border: 1px solid #C69214;
   border-radius: 4px;
-  color: #ffffff;
-  background: var(--umass-blue);
+  color: #111827;
+  background: #FFD200;
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
 }
 
 .add-contact-button:hover {
-  background: #004b93;
+  background: #FFE45C;
 }
 
 .add-contact-button:focus-visible {
-  outline: 2px solid var(--umass-gold);
+  outline: 2px solid var(--umass-blue);
   outline-offset: 2px;
 }
 
@@ -2938,6 +2938,13 @@
   color: var(--umass-blue);
   font-size: 14px;
   font-weight: 900;
+}
+
+.contacts-toolbar-equals {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .contacts-table-frame {
@@ -2975,8 +2982,18 @@
 
 .contacts-table td:focus-within {
   position: relative;
-  z-index: 2;
-  box-shadow: inset 0 0 0 2px #005EB8;
+  z-index: 3;
+  box-shadow: none;
+}
+
+.contacts-table td:focus-within::after {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  inset: -1px;
+  box-sizing: border-box;
+  border: 2px solid #005EB8;
+  pointer-events: none;
 }
 
 .contacts-table th {
@@ -12445,9 +12462,18 @@ tbody td {
 
 .contacts-inactive-table td:focus-within {
   position: relative;
-  z-index: 2;
-  box-shadow:
-    inset 0 0 0 2px #005eb8;
+  z-index: 3;
+  box-shadow: none;
+}
+
+.contacts-inactive-table td:focus-within::after {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  inset: -1px;
+  box-sizing: border-box;
+  border: 2px solid #005EB8;
+  pointer-events: none;
 }
 
 .contact-modal-backdrop {

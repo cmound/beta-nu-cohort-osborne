@@ -38,7 +38,10 @@ import {
 } from 'docx'
 import * as XLSX from 'xlsx'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from './db'
+import {
+  db,
+  type CloudCohortContactRecord,
+} from './db'
 import './App.css'
 
 type SidebarNavigationGroupId =
@@ -5465,6 +5468,60 @@ const inactiveFormerContactsSeed:
     inactiveDate: member.inactiveAfterDate,
   }))
 
+function createCloudCohortContactRecord(
+  contact: CohortContactRecord,
+  status: CohortContactStatus,
+  inactiveDate: string,
+  isFormer: boolean,
+  sortOrder: number,
+): CloudCohortContactRecord {
+  return {
+    id: contact.id,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    name: contact.name,
+    timeZone: contact.timeZone,
+    phoneDigits:
+      contact.phoneDigits,
+    email: contact.email,
+    industry: contact.industry,
+    birthdayMonth:
+      contact.birthdayMonth,
+    birthdayDay:
+      contact.birthdayDay,
+    dissertationInterest:
+      contact.dissertationInterest,
+    isMentor:
+      contact.isMentor,
+    status,
+    inactiveDate,
+    isFormer,
+    sortOrder,
+  }
+}
+
+function createLocalCohortContactRecord(
+  record: CloudCohortContactRecord,
+): CohortContactRecord {
+  return {
+    id: record.id,
+    name: record.name,
+    timeZone: record.timeZone,
+    phoneDigits:
+      record.phoneDigits,
+    email: record.email,
+    industry: record.industry,
+    birthdayMonth:
+      record.birthdayMonth,
+    birthdayDay:
+      record.birthdayDay,
+    dissertationInterest:
+      record.dissertationInterest,
+    isMentor:
+      record.isMentor,
+  }
+}
+
 const cohortMeetingsSeed: readonly CohortMeetingRecord[] = [
   {
     id: 'meeting-2025-09-21',
@@ -9990,6 +10047,22 @@ function CohortContactPage({
       (contactStatuses[contact.id] ?? 'Active') === 'Active',
   )
 
+  const activeMentorCount =
+    activeContacts.filter(
+      (contact) =>
+        contact.isMentor,
+    ).length
+
+  const activeStudentCount =
+    activeContacts.filter(
+      (contact) =>
+        !contact.isMentor,
+    ).length
+
+  const totalActiveCohortCount =
+    activeMentorCount +
+    activeStudentCount
+
   const inactiveContacts = sortedContacts.filter(
     (contact) =>
       !contact.isMentor &&
@@ -10069,6 +10142,312 @@ function CohortContactPage({
     textarea.style.height = `${textarea.scrollHeight}px`
   }
 
+  function handleContactTableKeyDown(
+    event: ReactKeyboardEvent<HTMLTableElement>,
+  ): void {
+    const table =
+      event.currentTarget
+
+    const target =
+      event.target
+
+    const isArrowKey =
+      event.key === 'ArrowLeft' ||
+      event.key === 'ArrowRight' ||
+      event.key === 'ArrowUp' ||
+      event.key === 'ArrowDown'
+
+    if (isArrowKey) {
+      if (
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        !(target instanceof Element)
+      ) {
+        return
+      }
+
+      const sourceCell =
+        target.closest('td')
+
+      if (
+        !(
+          sourceCell instanceof
+          HTMLTableCellElement
+        )
+      ) {
+        return
+      }
+
+      const sourceRow =
+        sourceCell.parentElement
+
+      if (
+        !(
+          sourceRow instanceof
+          HTMLTableRowElement
+        )
+      ) {
+        return
+      }
+
+      const tableBody =
+        sourceRow.parentElement
+
+      if (
+        !(
+          tableBody instanceof
+          HTMLTableSectionElement
+        ) ||
+        tableBody.tagName !== 'TBODY'
+      ) {
+        return
+      }
+
+      const rows =
+        Array.from(
+          tableBody.rows,
+        )
+
+      const sourceRowIndex =
+        rows.indexOf(
+          sourceRow,
+        )
+
+      if (sourceRowIndex < 0) {
+        return
+      }
+
+      let nextRowIndex =
+        sourceRowIndex
+
+      let nextColumnIndex =
+        sourceCell.cellIndex
+
+      if (
+        event.key ===
+        'ArrowLeft'
+      ) {
+        nextColumnIndex -= 1
+      } else if (
+        event.key ===
+        'ArrowRight'
+      ) {
+        nextColumnIndex += 1
+      } else if (
+        event.key ===
+        'ArrowUp'
+      ) {
+        nextRowIndex -= 1
+      } else {
+        nextRowIndex += 1
+      }
+
+      if (
+        nextRowIndex < 0 ||
+        nextRowIndex >=
+        rows.length
+      ) {
+        return
+      }
+
+      const nextRow =
+        rows[nextRowIndex]
+
+      const nextCell =
+        nextRow?.cells.item(
+          nextColumnIndex,
+        )
+
+      if (nextCell === null) {
+        return
+      }
+
+      event.preventDefault()
+
+      if (
+        target instanceof
+        HTMLElement
+      ) {
+        target.blur()
+      }
+
+      window.setTimeout(
+        () => {
+          const refreshedRow =
+            table.tBodies
+              .item(0)
+              ?.rows.item(
+                nextRowIndex,
+              )
+
+          const refreshedCell =
+            refreshedRow?.cells.item(
+              nextColumnIndex,
+            )
+
+          if (
+            refreshedCell ===
+            null ||
+            refreshedCell ===
+            undefined
+          ) {
+            return
+          }
+
+          const nextControl =
+            refreshedCell.querySelector<
+              | HTMLInputElement
+              | HTMLTextAreaElement
+              | HTMLSelectElement
+            >(
+              'input:not(:disabled), ' +
+              'textarea:not(:disabled), ' +
+              'select:not(:disabled)',
+            )
+
+          if (
+            nextControl !== null
+          ) {
+            nextControl.focus()
+
+            nextControl.scrollIntoView({
+              block: 'nearest',
+              inline: 'nearest',
+            })
+
+            return
+          }
+
+          refreshedCell.tabIndex =
+            -1
+
+          refreshedCell.focus({
+            preventScroll: true,
+          })
+
+          refreshedCell.scrollIntoView({
+            block: 'nearest',
+            inline: 'nearest',
+          })
+        },
+        0,
+      )
+
+      return
+    }
+
+    const isTab =
+      event.key === 'Tab'
+
+    const isEnter =
+      event.key === 'Enter'
+
+    if (
+      !isTab &&
+      !isEnter
+    ) {
+      return
+    }
+
+    if (
+      isEnter &&
+      event.shiftKey
+    ) {
+      return
+    }
+
+    if (
+      !(
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      )
+    ) {
+      return
+    }
+
+    const controls =
+      Array.from(
+        table.querySelectorAll<
+          | HTMLInputElement
+          | HTMLTextAreaElement
+          | HTMLSelectElement
+        >(
+          'input:not(:disabled), ' +
+          'textarea:not(:disabled), ' +
+          'select:not(:disabled)',
+        ),
+      )
+
+    const currentIndex =
+      controls.indexOf(
+        target,
+      )
+
+    if (currentIndex < 0) {
+      return
+    }
+
+    const direction =
+      isTab &&
+        event.shiftKey
+        ? -1
+        : 1
+
+    const nextIndex =
+      currentIndex +
+      direction
+
+    if (
+      nextIndex < 0 ||
+      nextIndex >= controls.length
+    ) {
+      return
+    }
+
+    event.preventDefault()
+
+    target.blur()
+
+    window.setTimeout(
+      () => {
+        const refreshedControls =
+          Array.from(
+            table.querySelectorAll<
+              | HTMLInputElement
+              | HTMLTextAreaElement
+              | HTMLSelectElement
+            >(
+              'input:not(:disabled), ' +
+              'textarea:not(:disabled), ' +
+              'select:not(:disabled)',
+            ),
+          )
+
+        const nextControl =
+          refreshedControls[
+          nextIndex
+          ]
+
+        if (
+          nextControl === undefined
+        ) {
+          return
+        }
+
+        nextControl.focus()
+
+        nextControl.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest',
+        })
+      },
+      0,
+    )
+  }
+
   function handleAddContact(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault()
 
@@ -10134,16 +10513,43 @@ function CohortContactPage({
           className="add-contact-button"
           onClick={openAddContactModal}
         >
-          + Add Contact
+          + Contact
         </button>
 
         <div className="contacts-total-count">
-          Total Count = <strong>{contacts.length}</strong>
+          Cohort Mentor =
+          <strong>
+            {activeMentorCount}
+          </strong>
+        </div>
+
+        <div className="contacts-total-count">
+          Cohort Students =
+          <strong>
+            {activeStudentCount}
+          </strong>
+        </div>
+
+        <span
+          className="contacts-toolbar-equals"
+          aria-hidden="true"
+        >
+          =
+        </span>
+
+        <div className="contacts-total-count">
+          TOTAL COHORT =
+          <strong>
+            {totalActiveCohortCount}
+          </strong>
         </div>
       </div>
 
       <div className="contacts-table-frame">
-        <table className="contacts-table">
+        <table
+          className="contacts-table"
+          onKeyDown={handleContactTableKeyDown}
+        >
           <thead>
             <tr>
               <th>Name</th>
@@ -10172,6 +10578,7 @@ function CohortContactPage({
                     }
                   >
                     <input
+                      key={contact.name}
                       type="text"
                       className="contact-cell-input"
                       defaultValue={contact.name}
@@ -10223,6 +10630,7 @@ function CohortContactPage({
 
                   <td>
                     <input
+                      key={contact.phoneDigits}
                       type="text"
                       inputMode="tel"
                       className="contact-cell-input"
@@ -10255,6 +10663,7 @@ function CohortContactPage({
 
                   <td>
                     <input
+                      key={contact.email}
                       type="email"
                       className="contact-cell-input contact-email-input"
                       defaultValue={contact.email}
@@ -10289,6 +10698,7 @@ function CohortContactPage({
 
                   <td>
                     <input
+                      key={contact.industry}
                       type="text"
                       className="contact-cell-input"
                       defaultValue={contact.industry}
@@ -10310,6 +10720,10 @@ function CohortContactPage({
 
                   <td>
                     <input
+                      key={
+                        `${contact.birthdayMonth ?? ''}-` +
+                        `${contact.birthdayDay ?? ''}`
+                      }
                       type="text"
                       className="contact-cell-input"
                       defaultValue={formatBirthday(
@@ -10372,6 +10786,7 @@ function CohortContactPage({
 
                   <td>
                     <textarea
+                      key={contact.dissertationInterest}
                       className="contact-cell-textarea"
                       rows={1}
                       defaultValue={contact.dissertationInterest}
@@ -10448,12 +10863,8 @@ function CohortContactPage({
       >
         <div className="contacts-inactive-heading">
           <h2 id="inactive-contacts-title">
-            Inactive
+            Inactive = {inactiveContactRows.length}
           </h2>
-
-          <span>
-            {inactiveContactRows.length}
-          </span>
         </div>
 
         {inactiveContactRows.length === 0 ? (
@@ -10461,7 +10872,10 @@ function CohortContactPage({
             No inactive cohort members.
           </p>
         ) : (
-          <table className="contacts-inactive-table">
+          <table
+            className="contacts-inactive-table"
+            onKeyDown={handleContactTableKeyDown}
+          >
             <thead>
               <tr>
                 <th>Name</th>
@@ -10480,6 +10894,9 @@ function CohortContactPage({
                   >
                     <td>
                       <input
+                        key={
+                          inactiveContact.contact.name
+                        }
                         type="text"
                         className={
                           'contacts-inactive-input ' +
@@ -38732,6 +39149,88 @@ function App() {
         purpose: 'pull',
         wait: true,
       })
+
+      const currentUserId =
+        db.cloud.currentUserId
+
+      if (
+        currentUserId !==
+        BETA_NU_OWNER_USER_ID ||
+        isCancelled
+      ) {
+        return
+      }
+
+      const cohortMemberRole =
+        await db.roles.get([
+          BETA_NU_SHARED_REALM_ID,
+          'cohort-member',
+        ])
+
+      const sharedMembers =
+        await db.members
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const broadAccessMembers =
+        sharedMembers.filter(
+          (member) =>
+            member.id !==
+            BETA_NU_OWNER_MEMBER_ID &&
+            member.userId !==
+            BETA_NU_OWNER_USER_ID &&
+            member.permissions
+              ?.manage === '*',
+        )
+
+      if (
+        cohortMemberRole ===
+        undefined ||
+        broadAccessMembers.length >
+        0
+      ) {
+        await db.transaction(
+          'rw',
+          [
+            db.roles,
+            db.members,
+          ],
+          async () => {
+            if (
+              cohortMemberRole ===
+              undefined
+            ) {
+              await db.roles.put({
+                realmId:
+                  BETA_NU_SHARED_REALM_ID,
+                name:
+                  'cohort-member',
+                permissions: {},
+              })
+            }
+
+            for (
+              const member
+              of broadAccessMembers
+            ) {
+              await db.members.update(
+                member.id,
+                {
+                  roles: [
+                    'cohort-member',
+                  ],
+                  permissions: {},
+                },
+              )
+            }
+          },
+        )
+
+        await db.cloud.sync()
+      }
     }
 
     void initializeCloudAccess()
@@ -38744,6 +39243,90 @@ function App() {
 
     return () => {
       isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let isPulling = false
+    let isCancelled = false
+
+    async function pullLatestCloudChanges():
+      Promise<void> {
+      if (
+        isCancelled ||
+        isPulling ||
+        document.visibilityState !==
+        'visible' ||
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        return
+      }
+
+      isPulling = true
+
+      try {
+        await db.cloud.sync({
+          purpose: 'pull',
+          wait: true,
+        })
+      } catch (error: unknown) {
+        console.error(
+          'Unable to refresh Dexie Cloud changes.',
+          error,
+        )
+      } finally {
+        isPulling = false
+      }
+    }
+
+    function handleWindowFocus(): void {
+      void pullLatestCloudChanges()
+    }
+
+    function handleVisibilityChange(): void {
+      if (
+        document.visibilityState ===
+        'visible'
+      ) {
+        void pullLatestCloudChanges()
+      }
+    }
+
+    const cloudRefreshInterval =
+      window.setInterval(
+        () => {
+          void pullLatestCloudChanges()
+        },
+        5_000,
+      )
+
+    window.addEventListener(
+      'focus',
+      handleWindowFocus,
+    )
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange,
+    )
+
+    return () => {
+      isCancelled = true
+
+      window.clearInterval(
+        cloudRefreshInterval,
+      )
+
+      window.removeEventListener(
+        'focus',
+        handleWindowFocus,
+      )
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      )
     }
   }, [])
 
@@ -39873,6 +40456,234 @@ function App() {
         readStoredPurposeResearchRecords(),
     )
 
+  const cloudCohortContacts =
+    useLiveQuery(
+      () =>
+        db.cohortContacts
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
+  const minimumCloudContactCount =
+    initialRuntimeState
+      .contacts.length +
+    initialRuntimeState
+      .inactiveFormerContacts.length
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeCohortContactsCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId !==
+        BETA_NU_OWNER_USER_ID
+      ) {
+        return
+      }
+
+      const initialCloudRecords: CloudCohortContactRecord[] =
+        [
+          ...initialRuntimeState
+            .contacts.map(
+              (
+                contact,
+                index,
+              ) =>
+                createCloudCohortContactRecord(
+                  contact,
+                  contact.isMentor
+                    ? 'Active'
+                    : (
+                      initialRuntimeState
+                        .contactStatuses[
+                      contact.id
+                      ] ??
+                      'Active'
+                    ),
+                  initialRuntimeState
+                    .contactInactiveDates[
+                  contact.id
+                  ] ?? '',
+                  false,
+                  index,
+                ),
+            ),
+
+          ...initialRuntimeState
+            .inactiveFormerContacts.map(
+              (
+                contact,
+                index,
+              ) =>
+                createCloudCohortContactRecord(
+                  contact,
+                  'Inactive',
+                  contact.inactiveDate,
+                  true,
+                  initialRuntimeState
+                    .contacts.length +
+                  index,
+                ),
+            ),
+        ]
+
+      const existingCloudCount =
+        await db.cohortContacts
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .count()
+
+      if (
+        existingCloudCount <
+        initialCloudRecords.length
+      ) {
+        await db.cohortContacts.bulkPut(
+          initialCloudRecords,
+        )
+
+        await db.cloud.sync()
+      }
+    }
+
+    void initializeCohortContactsCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Cohort Contacts in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    initialRuntimeState,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudCohortContacts ===
+      undefined ||
+      cloudCohortContacts.length <
+      minimumCloudContactCount
+    ) {
+      return
+    }
+
+    const orderedCloudContacts = [
+      ...cloudCohortContacts,
+    ].sort(
+      (
+        firstContact,
+        secondContact,
+      ) =>
+        firstContact.sortOrder -
+        secondContact.sortOrder,
+    )
+
+    const nextContacts =
+      orderedCloudContacts
+        .filter(
+          (record) =>
+            !record.isFormer,
+        )
+        .map(
+          createLocalCohortContactRecord,
+        )
+
+    const nextContactStatuses:
+      CohortContactStatusState = {}
+
+    const nextContactInactiveDates:
+      CohortContactInactiveDateState = {}
+
+    for (
+      const record
+      of orderedCloudContacts
+    ) {
+      if (
+        record.isFormer ||
+        record.isMentor
+      ) {
+        continue
+      }
+
+      nextContactStatuses[
+        record.id
+      ] =
+        record.status
+
+      if (
+        record.status ===
+        'Inactive' &&
+        record.inactiveDate.length >
+        0
+      ) {
+        nextContactInactiveDates[
+          record.id
+        ] =
+          record.inactiveDate
+      }
+    }
+
+    const nextInactiveFormerContacts =
+      orderedCloudContacts
+        .filter(
+          (record) =>
+            record.isFormer,
+        )
+        .map(
+          (
+            record,
+          ): InactiveFormerContactRecord => ({
+            ...createLocalCohortContactRecord(
+              record,
+            ),
+            inactiveDate:
+              record.inactiveDate,
+          }),
+        )
+
+    setContacts(
+      nextContacts,
+    )
+
+    setContactStatuses(
+      nextContactStatuses,
+    )
+
+    setContactInactiveDates(
+      nextContactInactiveDates,
+    )
+
+    setInactiveFormerContacts(
+      nextInactiveFormerContacts,
+    )
+  }, [
+    cloudCohortContacts,
+    minimumCloudContactCount,
+  ])
+
   useEffect(() => {
     const runtimeState:
       BetaNuRuntimeState = {
@@ -40427,217 +41238,269 @@ function App() {
     )
   }, [purposeResearchRecords])
 
-  function addCohortContact(contact: CohortContactRecord): void {
-    setContacts((currentContacts) => [
-      ...currentContacts,
-      contact,
-    ])
-
-    if (!contact.isMentor) {
-      setContactStatuses((currentStatuses) => ({
-        ...currentStatuses,
-        [contact.id]: 'Active',
-      }))
+  function addCohortContact(
+    contact: CohortContactRecord,
+  ): void {
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
     }
+
+    const nextSortOrder =
+      (
+        cloudCohortContacts ?? []
+      ).reduce(
+        (
+          highestSortOrder,
+          cloudContact,
+        ) =>
+          Math.max(
+            highestSortOrder,
+            cloudContact.sortOrder,
+          ),
+        -1,
+      ) + 1
+
+    const cloudContact =
+      createCloudCohortContactRecord(
+        contact,
+        'Active',
+        '',
+        false,
+        nextSortOrder,
+      )
+
+    void db.cohortContacts
+      .put(cloudContact)
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to add the Cohort Contact.',
+          error,
+        )
+      })
   }
 
   function updateCohortContact(
     contactId: string,
     updates: CohortContactUpdate,
   ): void {
-    const existingContact = contacts.find(
-      (contact) => contact.id === contactId,
-    )
-
-    if (!existingContact) {
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
       return
     }
 
-    const previousName = existingContact.name
-    const nextName = updates.name
-
-    setContacts((currentContacts) =>
-      currentContacts.map((contact) =>
-        contact.id === contactId
-          ? {
-            ...contact,
-            ...updates,
-          }
-          : contact,
-      ),
-    )
+    const existingContact =
+      contacts.find(
+        (contact) =>
+          contact.id === contactId,
+      )
 
     if (
-      nextName !== undefined &&
-      nextName !== previousName
+      existingContact === undefined
     ) {
-      setCohortMeetings((currentMeetings) =>
-        currentMeetings.map((meeting) => ({
-          ...meeting,
-          facilitator:
-            meeting.facilitator === previousName
-              ? nextName
-              : meeting.facilitator,
-          communityBuilder:
-            meeting.communityBuilder === previousName
-              ? nextName
-              : meeting.communityBuilder,
-          recorder:
-            meeting.recorder === previousName
-              ? nextName
-              : meeting.recorder,
-          timeKeeper:
-            meeting.timeKeeper === previousName
-              ? nextName
-              : meeting.timeKeeper,
-          processObserver:
-            meeting.processObserver === previousName
-              ? nextName
-              : meeting.processObserver,
-        })),
-      )
+      return
     }
+
+    const previousName =
+      existingContact.name
+
+    const nextName =
+      updates.name
+
+    void db.cohortContacts
+      .update(
+        contactId,
+        updates,
+      )
+      .then(async (updatedCount) => {
+        if (updatedCount === 0) {
+          throw new Error(
+            'The Cohort Contact could not be found in Dexie Cloud.',
+          )
+        }
+
+        await db.cloud.sync()
+
+        if (
+          nextName !== undefined &&
+          nextName !== previousName
+        ) {
+          setCohortMeetings(
+            (currentMeetings) =>
+              currentMeetings.map(
+                (meeting) => ({
+                  ...meeting,
+                  facilitator:
+                    meeting.facilitator ===
+                      previousName
+                      ? nextName
+                      : meeting.facilitator,
+                  communityBuilder:
+                    meeting.communityBuilder ===
+                      previousName
+                      ? nextName
+                      : meeting.communityBuilder,
+                  recorder:
+                    meeting.recorder ===
+                      previousName
+                      ? nextName
+                      : meeting.recorder,
+                  timeKeeper:
+                    meeting.timeKeeper ===
+                      previousName
+                      ? nextName
+                      : meeting.timeKeeper,
+                  processObserver:
+                    meeting.processObserver ===
+                      previousName
+                      ? nextName
+                      : meeting.processObserver,
+                }),
+              ),
+          )
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to update the Cohort Contact.',
+          error,
+        )
+      })
   }
 
   function updateCohortContactStatus(
     contactId: string,
     status: CohortContactStatus,
   ): void {
-    setContactStatuses(
-      (currentStatuses) => ({
-        ...currentStatuses,
-        [contactId]: status,
-      }),
-    )
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
 
-    setContactInactiveDates(
-      (currentDates) => {
-        if (status === 'Inactive') {
-          return {
-            ...currentDates,
-            [contactId]:
-              currentDates[contactId] ??
-              getPacificDateKey(
-                new Date(),
-              ),
-          }
-        }
+    const inactiveDate =
+      status === 'Inactive'
+        ? (
+          contactInactiveDates[
+          contactId
+          ] ??
+          getPacificDateKey(
+            new Date(),
+          )
+        )
+        : ''
 
-        const nextDates = {
-          ...currentDates,
-        }
-
-        delete nextDates[contactId]
-
-        return nextDates
-      },
-    )
+    void db.cohortContacts
+      .update(
+        contactId,
+        {
+          status,
+          inactiveDate,
+        },
+      )
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to update Cohort Contact status.',
+          error,
+        )
+      })
   }
 
   function updateCohortContactInactiveDate(
     contactId: string,
     inactiveDate: string,
   ): void {
-    setContactInactiveDates(
-      (currentDates) => ({
-        ...currentDates,
-        [contactId]: inactiveDate,
-      }),
-    )
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
+
+    void db.cohortContacts
+      .update(
+        contactId,
+        {
+          inactiveDate,
+        },
+      )
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to update the inactive date.',
+          error,
+        )
+      })
   }
 
   function updateInactiveFormerContact(
     contactId: string,
     updates: InactiveFormerContactUpdate,
   ): void {
-    setInactiveFormerContacts(
-      (currentContacts) =>
-        currentContacts.map((contact) =>
-          contact.id === contactId
-            ? {
-              ...contact,
-              ...updates,
-            }
-            : contact,
-        ),
-    )
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
+      return
+    }
+
+    void db.cohortContacts
+      .update(
+        contactId,
+        updates,
+      )
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to update the inactive Cohort Contact.',
+          error,
+        )
+      })
   }
 
   function reactivateInactiveFormerContact(
     contactId: string,
   ): void {
-    const inactiveContact =
-      inactiveFormerContacts.find(
-        (contact) =>
-          contact.id === contactId,
-      )
-
-    if (inactiveContact === undefined) {
+    if (
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID
+    ) {
       return
     }
 
-    const reactivatedContact:
-      CohortContactRecord = {
-      id: inactiveContact.id,
-      name: inactiveContact.name,
-      timeZone: inactiveContact.timeZone,
-      phoneDigits:
-        inactiveContact.phoneDigits,
-      email: inactiveContact.email,
-      industry: inactiveContact.industry,
-      birthdayMonth:
-        inactiveContact.birthdayMonth,
-      birthdayDay:
-        inactiveContact.birthdayDay,
-      dissertationInterest:
-        inactiveContact.dissertationInterest,
-      isMentor: inactiveContact.isMentor,
-    }
-
-    setContacts((currentContacts) => {
-      const contactAlreadyExists =
-        currentContacts.some(
-          (contact) =>
-            contact.id ===
-            reactivatedContact.id,
+    void db.cohortContacts
+      .update(
+        contactId,
+        {
+          status: 'Active',
+          inactiveDate: '',
+          isFormer: false,
+        },
+      )
+      .then(() =>
+        db.cloud.sync(),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to reactivate the Cohort Contact.',
+          error,
         )
-
-      if (contactAlreadyExists) {
-        return currentContacts
-      }
-
-      return [
-        ...currentContacts,
-        reactivatedContact,
-      ]
-    })
-
-    setContactStatuses(
-      (currentStatuses) => ({
-        ...currentStatuses,
-        [contactId]: 'Active',
-      }),
-    )
-
-    setContactInactiveDates(
-      (currentDates) => {
-        const nextDates = {
-          ...currentDates,
-        }
-
-        delete nextDates[contactId]
-
-        return nextDates
-      },
-    )
-
-    setInactiveFormerContacts(
-      (currentContacts) =>
-        currentContacts.filter(
-          (contact) =>
-            contact.id !== contactId,
-        ),
-    )
+      })
   }
 
   function updateCohortAttendance(

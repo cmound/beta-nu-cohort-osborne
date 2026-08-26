@@ -17,9 +17,43 @@ export interface CloudAcademicPlanRecord {
   readonly length: string
 }
 
+export type CloudCohortTimeZone =
+  | 'Eastern'
+  | 'Central'
+  | 'Mountain'
+  | 'Arizona (MST)'
+  | 'Pacific'
+  | 'Alaska'
+  | 'Hawaii-Aleutian'
+
+export type CloudCohortContactStatus =
+  | 'Active'
+  | 'Inactive'
+
+export interface CloudCohortContactRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly name: string
+  readonly timeZone: CloudCohortTimeZone
+  readonly phoneDigits: string
+  readonly email: string
+  readonly industry: string
+  readonly birthdayMonth: number | null
+  readonly birthdayDay: number | null
+  readonly dissertationInterest: string
+  readonly isMentor: boolean
+  readonly status: CloudCohortContactStatus
+  readonly inactiveDate: string
+  readonly isFormer: boolean
+  readonly sortOrder: number
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
+
+  readonly cohortContacts:
+    Table<CloudCohortContactRecord, string>
 
   constructor() {
     super(
@@ -45,9 +79,19 @@ class BetaNuDatabase extends Dexie {
         '[realmId+name]',
     })
 
+    this.version(2).stores({
+      cohortContacts:
+        'id, realmId, email, status',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
+      )
+
+    this.cohortContacts =
+      this.table(
+        'cohortContacts',
       )
 
     this.cloud.configure({
@@ -55,6 +99,8 @@ class BetaNuDatabase extends Dexie {
         'https://zaw13gypb.dexie.cloud',
 
       requireAuth: true,
+      disableWebSocket: false,
+      disableEagerSync: false,
     })
   }
 }
