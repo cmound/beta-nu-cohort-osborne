@@ -10039,6 +10039,10 @@ function CohortContactPage({
   const [newContact, setNewContact] = useState(createEmptyContactForm)
   const [formError, setFormError] = useState('')
 
+  const isCohortContactsOwner =
+    db.cloud.currentUserId ===
+    BETA_NU_OWNER_USER_ID
+
   const sortedContacts = sortCohortContacts(contacts)
 
   const activeContacts = sortedContacts.filter(
@@ -10508,13 +10512,15 @@ function CohortContactPage({
       </header>
 
       <div className="contacts-toolbar">
-        <button
-          type="button"
-          className="add-contact-button"
-          onClick={openAddContactModal}
-        >
-          + Contact
-        </button>
+        {isCohortContactsOwner && (
+          <button
+            type="button"
+            className="add-contact-button"
+            onClick={openAddContactModal}
+          >
+            + Contact
+          </button>
+        )}
 
         <div className="contacts-total-count">
           Cohort Mentor =
@@ -10545,499 +10551,504 @@ function CohortContactPage({
         </div>
       </div>
 
-      <div className="contacts-table-frame">
-        <table
-          className="contacts-table"
-          onKeyDown={handleContactTableKeyDown}
-        >
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Time Zone</th>
-              <th>Phone Number</th>
-              <th>Email</th>
-              <th>Industry</th>
-              <th>Birthday</th>
-              <th>Dissertation Interest</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {activeContacts.map((contact) => {
-              const contactStatus =
-                contactStatuses[contact.id] ?? 'Active'
-
-              return (
-                <tr key={contact.id}>
-                  <td
-                    className={
-                      contact.isMentor
-                        ? 'contact-mentor-name'
-                        : undefined
-                    }
-                  >
-                    <input
-                      key={contact.name}
-                      type="text"
-                      className="contact-cell-input"
-                      defaultValue={contact.name}
-                      aria-label={`${contact.name} name`}
-                      onBlur={(event) => {
-                        const nextName =
-                          event.currentTarget.value.trim()
-
-                        if (!nextName) {
-                          event.currentTarget.value = contact.name
-                          return
-                        }
-
-                        event.currentTarget.value = nextName
-
-                        if (nextName !== contact.name) {
-                          onUpdateContact(contact.id, {
-                            name: nextName,
-                          })
-                        }
-                      }}
-                    />
-                  </td>
-
-                  <td>
-                    <select
-                      className="contact-cell-select"
-                      value={contact.timeZone}
-                      aria-label={`${contact.name} time zone`}
-                      onChange={(event) => {
-                        const nextTimeZone = event.target.value
-
-                        if (!isCohortTimeZone(nextTimeZone)) {
-                          return
-                        }
-
-                        onUpdateContact(contact.id, {
-                          timeZone: nextTimeZone,
-                        })
-                      }}
-                    >
-                      {cohortTimeZoneOptions.map((timeZone) => (
-                        <option key={timeZone} value={timeZone}>
-                          {timeZone}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-
-                  <td>
-                    <input
-                      key={contact.phoneDigits}
-                      type="text"
-                      inputMode="tel"
-                      className="contact-cell-input"
-                      defaultValue={formatPhoneNumber(
-                        contact.phoneDigits,
-                      )}
-                      aria-label={`${contact.name} phone number`}
-                      onBlur={(event) => {
-                        const phoneDigits = sanitizePhoneDigits(
-                          event.currentTarget.value,
-                        )
-
-                        if (phoneDigits.length !== 10) {
-                          event.currentTarget.value =
-                            formatPhoneNumber(contact.phoneDigits)
-                          return
-                        }
-
-                        event.currentTarget.value =
-                          formatPhoneNumber(phoneDigits)
-
-                        if (phoneDigits !== contact.phoneDigits) {
-                          onUpdateContact(contact.id, {
-                            phoneDigits,
-                          })
-                        }
-                      }}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      key={contact.email}
-                      type="email"
-                      className="contact-cell-input contact-email-input"
-                      defaultValue={contact.email}
-                      aria-label={`${contact.name} email address`}
-                      onBlur={(event) => {
-                        const normalizedEmail =
-                          normalizeCohortEmail(
-                            event.currentTarget.value,
-                          )
-
-                        if (
-                          !normalizedEmail ||
-                          !normalizedEmail.includes('@') ||
-                          !normalizedEmail.includes('.')
-                        ) {
-                          event.currentTarget.value =
-                            contact.email
-                          return
-                        }
-
-                        event.currentTarget.value =
-                          normalizedEmail
-
-                        if (normalizedEmail !== contact.email) {
-                          onUpdateContact(contact.id, {
-                            email: normalizedEmail,
-                          })
-                        }
-                      }}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      key={contact.industry}
-                      type="text"
-                      className="contact-cell-input"
-                      defaultValue={contact.industry}
-                      aria-label={`${contact.name} industry`}
-                      onBlur={(event) => {
-                        const nextIndustry =
-                          event.currentTarget.value.trim()
-
-                        event.currentTarget.value = nextIndustry
-
-                        if (nextIndustry !== contact.industry) {
-                          onUpdateContact(contact.id, {
-                            industry: nextIndustry,
-                          })
-                        }
-                      }}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      key={
-                        `${contact.birthdayMonth ?? ''}-` +
-                        `${contact.birthdayDay ?? ''}`
-                      }
-                      type="text"
-                      className="contact-cell-input"
-                      defaultValue={formatBirthday(
-                        contact.birthdayMonth,
-                        contact.birthdayDay,
-                      )}
-                      placeholder="M/DD"
-                      aria-label={`${contact.name} birthday`}
-                      onBlur={(event) => {
-                        const birthdayValue =
-                          event.currentTarget.value.trim()
-
-                        const currentBirthday = formatBirthday(
-                          contact.birthdayMonth,
-                          contact.birthdayDay,
-                        )
-
-                        if (!birthdayValue) {
-                          event.currentTarget.value = ''
-
-                          if (
-                            contact.birthdayMonth !== null ||
-                            contact.birthdayDay !== null
-                          ) {
-                            onUpdateContact(contact.id, {
-                              birthdayMonth: null,
-                              birthdayDay: null,
-                            })
-                          }
-
-                          return
-                        }
-
-                        if (birthdayValue === currentBirthday) {
-                          return
-                        }
-
-                        const parsedBirthday =
-                          parseBirthdayInput(birthdayValue)
-
-                        if (!parsedBirthday) {
-                          event.currentTarget.value =
-                            currentBirthday
-                          return
-                        }
-
-                        event.currentTarget.value =
-                          formatBirthday(
-                            parsedBirthday.month,
-                            parsedBirthday.day,
-                          )
-
-                        onUpdateContact(contact.id, {
-                          birthdayMonth: parsedBirthday.month,
-                          birthdayDay: parsedBirthday.day,
-                        })
-                      }}
-                    />
-                  </td>
-
-                  <td>
-                    <textarea
-                      key={contact.dissertationInterest}
-                      className="contact-cell-textarea"
-                      rows={1}
-                      defaultValue={contact.dissertationInterest}
-                      aria-label={`${contact.name} dissertation interest`}
-                      ref={(textarea) => {
-                        if (textarea !== null) {
-                          resizeContactTextarea(textarea)
-                        }
-                      }}
-                      onInput={(event) => {
-                        resizeContactTextarea(event.currentTarget)
-                      }}
-                      onBlur={(event) => {
-                        const nextInterest =
-                          event.currentTarget.value.trim()
-
-                        event.currentTarget.value = nextInterest
-                        resizeContactTextarea(event.currentTarget)
-
-                        if (
-                          nextInterest !==
-                          contact.dissertationInterest
-                        ) {
-                          onUpdateContact(contact.id, {
-                            dissertationInterest: nextInterest,
-                          })
-                        }
-                      }}
-                    />
-                  </td>
-
-                  <td className="contact-status-cell">
-                    {contact.isMentor ? (
-                      <span className="contact-status-mentor">
-                        —
-                      </span>
-                    ) : (
-                      <select
-                        className="contact-status-select"
-                        value={contactStatus}
-                        aria-label={`${contact.name} status`}
-                        onChange={(event) => {
-                          const nextStatus =
-                            event.target.value
-
-                          if (
-                            nextStatus !== 'Active' &&
-                            nextStatus !== 'Inactive'
-                          ) {
-                            return
-                          }
-
-                          onUpdateStatus(
-                            contact.id,
-                            nextStatus,
-                          )
-                        }}
-                      >
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
-                      </select>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <section
-        className="contacts-inactive-section"
-        aria-labelledby="inactive-contacts-title"
+      <fieldset
+        className="contacts-access-fieldset"
+        disabled={!isCohortContactsOwner}
       >
-        <div className="contacts-inactive-heading">
-          <h2 id="inactive-contacts-title">
-            Inactive = {inactiveContactRows.length}
-          </h2>
-        </div>
-
-        {inactiveContactRows.length === 0 ? (
-          <p className="contacts-inactive-empty">
-            No inactive cohort members.
-          </p>
-        ) : (
+        <div className="contacts-table-frame">
           <table
-            className="contacts-inactive-table"
+            className="contacts-table"
             onKeyDown={handleContactTableKeyDown}
           >
             <thead>
               <tr>
                 <th>Name</th>
-                <th>As of</th>
+                <th>Time Zone</th>
+                <th>Phone Number</th>
+                <th>Email</th>
+                <th>Industry</th>
+                <th>Birthday</th>
+                <th>Dissertation Interest</th>
                 <th>Status</th>
               </tr>
             </thead>
 
             <tbody>
-              {inactiveContactRows.map(
-                (inactiveContact) => (
-                  <tr
-                    key={
-                      `${inactiveContact.source}-${inactiveContact.contact.id}`
-                    }
-                  >
-                    <td>
+              {activeContacts.map((contact) => {
+                const contactStatus =
+                  contactStatuses[contact.id] ?? 'Active'
+
+                return (
+                  <tr key={contact.id}>
+                    <td
+                      className={
+                        contact.isMentor
+                          ? 'contact-mentor-name'
+                          : undefined
+                      }
+                    >
                       <input
-                        key={
-                          inactiveContact.contact.name
-                        }
+                        key={contact.name}
                         type="text"
-                        className={
-                          'contacts-inactive-input ' +
-                          'contacts-inactive-name-input'
-                        }
-                        defaultValue={
-                          inactiveContact.contact.name
-                        }
-                        aria-label={
-                          `${inactiveContact.contact.name} name`
-                        }
+                        className="contact-cell-input"
+                        defaultValue={contact.name}
+                        aria-label={`${contact.name} name`}
                         onBlur={(event) => {
                           const nextName =
                             event.currentTarget.value.trim()
 
                           if (!nextName) {
-                            event.currentTarget.value =
-                              inactiveContact.contact.name
+                            event.currentTarget.value = contact.name
                             return
                           }
 
-                          event.currentTarget.value =
-                            nextName
+                          event.currentTarget.value = nextName
 
-                          if (
-                            nextName ===
-                            inactiveContact.contact.name
-                          ) {
-                            return
-                          }
-
-                          if (
-                            inactiveContact.source ===
-                            'former'
-                          ) {
-                            onUpdateInactiveFormerContact(
-                              inactiveContact.contact.id,
-                              {
-                                name: nextName,
-                              },
-                            )
-                            return
-                          }
-
-                          onUpdateContact(
-                            inactiveContact.contact.id,
-                            {
+                          if (nextName !== contact.name) {
+                            onUpdateContact(contact.id, {
                               name: nextName,
-                            },
-                          )
-                        }}
-                      />
-                    </td>
-
-                    <td>
-                      <input
-                        type="date"
-                        className="contacts-inactive-input"
-                        value={
-                          inactiveContact.inactiveDate
-                        }
-                        aria-label={
-                          `${inactiveContact.contact.name} inactive date, ` +
-                          formatInactiveContactDate(
-                            inactiveContact.inactiveDate,
-                          )
-                        }
-                        onChange={(event) => {
-                          const nextDate =
-                            event.currentTarget.value
-
-                          if (
-                            inactiveContact.source ===
-                            'former'
-                          ) {
-                            onUpdateInactiveFormerContact(
-                              inactiveContact.contact.id,
-                              {
-                                inactiveDate: nextDate,
-                              },
-                            )
-                            return
+                            })
                           }
-
-                          onUpdateInactiveDate(
-                            inactiveContact.contact.id,
-                            nextDate,
-                          )
                         }}
                       />
                     </td>
 
                     <td>
                       <select
-                        className={
-                          'contacts-inactive-status-select'
-                        }
-                        value="Inactive"
-                        aria-label={
-                          `${inactiveContact.contact.name} status`
-                        }
+                        className="contact-cell-select"
+                        value={contact.timeZone}
+                        aria-label={`${contact.name} time zone`}
                         onChange={(event) => {
-                          if (
-                            event.currentTarget.value !==
-                            'Active'
-                          ) {
+                          const nextTimeZone = event.target.value
+
+                          if (!isCohortTimeZone(nextTimeZone)) {
                             return
                           }
 
-                          if (
-                            inactiveContact.source ===
-                            'former'
-                          ) {
-                            onReactivateInactiveFormerContact(
-                              inactiveContact.contact.id,
-                            )
-                            return
-                          }
-
-                          onUpdateStatus(
-                            inactiveContact.contact.id,
-                            'Active',
-                          )
+                          onUpdateContact(contact.id, {
+                            timeZone: nextTimeZone,
+                          })
                         }}
                       >
-                        <option value="Inactive">
-                          Inactive
-                        </option>
-
-                        <option value="Active">
-                          Active
-                        </option>
+                        {cohortTimeZoneOptions.map((timeZone) => (
+                          <option key={timeZone} value={timeZone}>
+                            {timeZone}
+                          </option>
+                        ))}
                       </select>
                     </td>
+
+                    <td>
+                      <input
+                        key={contact.phoneDigits}
+                        type="text"
+                        inputMode="tel"
+                        className="contact-cell-input"
+                        defaultValue={formatPhoneNumber(
+                          contact.phoneDigits,
+                        )}
+                        aria-label={`${contact.name} phone number`}
+                        onBlur={(event) => {
+                          const phoneDigits = sanitizePhoneDigits(
+                            event.currentTarget.value,
+                          )
+
+                          if (phoneDigits.length !== 10) {
+                            event.currentTarget.value =
+                              formatPhoneNumber(contact.phoneDigits)
+                            return
+                          }
+
+                          event.currentTarget.value =
+                            formatPhoneNumber(phoneDigits)
+
+                          if (phoneDigits !== contact.phoneDigits) {
+                            onUpdateContact(contact.id, {
+                              phoneDigits,
+                            })
+                          }
+                        }}
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        key={contact.email}
+                        type="email"
+                        className="contact-cell-input contact-email-input"
+                        defaultValue={contact.email}
+                        aria-label={`${contact.name} email address`}
+                        onBlur={(event) => {
+                          const normalizedEmail =
+                            normalizeCohortEmail(
+                              event.currentTarget.value,
+                            )
+
+                          if (
+                            !normalizedEmail ||
+                            !normalizedEmail.includes('@') ||
+                            !normalizedEmail.includes('.')
+                          ) {
+                            event.currentTarget.value =
+                              contact.email
+                            return
+                          }
+
+                          event.currentTarget.value =
+                            normalizedEmail
+
+                          if (normalizedEmail !== contact.email) {
+                            onUpdateContact(contact.id, {
+                              email: normalizedEmail,
+                            })
+                          }
+                        }}
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        key={contact.industry}
+                        type="text"
+                        className="contact-cell-input"
+                        defaultValue={contact.industry}
+                        aria-label={`${contact.name} industry`}
+                        onBlur={(event) => {
+                          const nextIndustry =
+                            event.currentTarget.value.trim()
+
+                          event.currentTarget.value = nextIndustry
+
+                          if (nextIndustry !== contact.industry) {
+                            onUpdateContact(contact.id, {
+                              industry: nextIndustry,
+                            })
+                          }
+                        }}
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        key={
+                          `${contact.birthdayMonth ?? ''}-` +
+                          `${contact.birthdayDay ?? ''}`
+                        }
+                        type="text"
+                        className="contact-cell-input"
+                        defaultValue={formatBirthday(
+                          contact.birthdayMonth,
+                          contact.birthdayDay,
+                        )}
+                        placeholder="M/DD"
+                        aria-label={`${contact.name} birthday`}
+                        onBlur={(event) => {
+                          const birthdayValue =
+                            event.currentTarget.value.trim()
+
+                          const currentBirthday = formatBirthday(
+                            contact.birthdayMonth,
+                            contact.birthdayDay,
+                          )
+
+                          if (!birthdayValue) {
+                            event.currentTarget.value = ''
+
+                            if (
+                              contact.birthdayMonth !== null ||
+                              contact.birthdayDay !== null
+                            ) {
+                              onUpdateContact(contact.id, {
+                                birthdayMonth: null,
+                                birthdayDay: null,
+                              })
+                            }
+
+                            return
+                          }
+
+                          if (birthdayValue === currentBirthday) {
+                            return
+                          }
+
+                          const parsedBirthday =
+                            parseBirthdayInput(birthdayValue)
+
+                          if (!parsedBirthday) {
+                            event.currentTarget.value =
+                              currentBirthday
+                            return
+                          }
+
+                          event.currentTarget.value =
+                            formatBirthday(
+                              parsedBirthday.month,
+                              parsedBirthday.day,
+                            )
+
+                          onUpdateContact(contact.id, {
+                            birthdayMonth: parsedBirthday.month,
+                            birthdayDay: parsedBirthday.day,
+                          })
+                        }}
+                      />
+                    </td>
+
+                    <td>
+                      <textarea
+                        key={contact.dissertationInterest}
+                        className="contact-cell-textarea"
+                        rows={1}
+                        defaultValue={contact.dissertationInterest}
+                        aria-label={`${contact.name} dissertation interest`}
+                        ref={(textarea) => {
+                          if (textarea !== null) {
+                            resizeContactTextarea(textarea)
+                          }
+                        }}
+                        onInput={(event) => {
+                          resizeContactTextarea(event.currentTarget)
+                        }}
+                        onBlur={(event) => {
+                          const nextInterest =
+                            event.currentTarget.value.trim()
+
+                          event.currentTarget.value = nextInterest
+                          resizeContactTextarea(event.currentTarget)
+
+                          if (
+                            nextInterest !==
+                            contact.dissertationInterest
+                          ) {
+                            onUpdateContact(contact.id, {
+                              dissertationInterest: nextInterest,
+                            })
+                          }
+                        }}
+                      />
+                    </td>
+
+                    <td className="contact-status-cell">
+                      {contact.isMentor ? (
+                        <span className="contact-status-mentor">
+                          —
+                        </span>
+                      ) : (
+                        <select
+                          className="contact-status-select"
+                          value={contactStatus}
+                          aria-label={`${contact.name} status`}
+                          onChange={(event) => {
+                            const nextStatus =
+                              event.target.value
+
+                            if (
+                              nextStatus !== 'Active' &&
+                              nextStatus !== 'Inactive'
+                            ) {
+                              return
+                            }
+
+                            onUpdateStatus(
+                              contact.id,
+                              nextStatus,
+                            )
+                          }}
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      )}
+                    </td>
                   </tr>
-                ),
-              )}
+                )
+              })}
             </tbody>
           </table>
-        )}
-      </section>
+        </div>
+
+        <section
+          className="contacts-inactive-section"
+          aria-labelledby="inactive-contacts-title"
+        >
+          <div className="contacts-inactive-heading">
+            <h2 id="inactive-contacts-title">
+              Inactive = {inactiveContactRows.length}
+            </h2>
+          </div>
+
+          {inactiveContactRows.length === 0 ? (
+            <p className="contacts-inactive-empty">
+              No inactive cohort members.
+            </p>
+          ) : (
+            <table
+              className="contacts-inactive-table"
+              onKeyDown={handleContactTableKeyDown}
+            >
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>As of</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {inactiveContactRows.map(
+                  (inactiveContact) => (
+                    <tr
+                      key={
+                        `${inactiveContact.source}-${inactiveContact.contact.id}`
+                      }
+                    >
+                      <td>
+                        <input
+                          key={
+                            inactiveContact.contact.name
+                          }
+                          type="text"
+                          className={
+                            'contacts-inactive-input ' +
+                            'contacts-inactive-name-input'
+                          }
+                          defaultValue={
+                            inactiveContact.contact.name
+                          }
+                          aria-label={
+                            `${inactiveContact.contact.name} name`
+                          }
+                          onBlur={(event) => {
+                            const nextName =
+                              event.currentTarget.value.trim()
+
+                            if (!nextName) {
+                              event.currentTarget.value =
+                                inactiveContact.contact.name
+                              return
+                            }
+
+                            event.currentTarget.value =
+                              nextName
+
+                            if (
+                              nextName ===
+                              inactiveContact.contact.name
+                            ) {
+                              return
+                            }
+
+                            if (
+                              inactiveContact.source ===
+                              'former'
+                            ) {
+                              onUpdateInactiveFormerContact(
+                                inactiveContact.contact.id,
+                                {
+                                  name: nextName,
+                                },
+                              )
+                              return
+                            }
+
+                            onUpdateContact(
+                              inactiveContact.contact.id,
+                              {
+                                name: nextName,
+                              },
+                            )
+                          }}
+                        />
+                      </td>
+
+                      <td>
+                        <input
+                          type="date"
+                          className="contacts-inactive-input"
+                          value={
+                            inactiveContact.inactiveDate
+                          }
+                          aria-label={
+                            `${inactiveContact.contact.name} inactive date, ` +
+                            formatInactiveContactDate(
+                              inactiveContact.inactiveDate,
+                            )
+                          }
+                          onChange={(event) => {
+                            const nextDate =
+                              event.currentTarget.value
+
+                            if (
+                              inactiveContact.source ===
+                              'former'
+                            ) {
+                              onUpdateInactiveFormerContact(
+                                inactiveContact.contact.id,
+                                {
+                                  inactiveDate: nextDate,
+                                },
+                              )
+                              return
+                            }
+
+                            onUpdateInactiveDate(
+                              inactiveContact.contact.id,
+                              nextDate,
+                            )
+                          }}
+                        />
+                      </td>
+
+                      <td>
+                        <select
+                          className={
+                            'contacts-inactive-status-select'
+                          }
+                          value="Inactive"
+                          aria-label={
+                            `${inactiveContact.contact.name} status`
+                          }
+                          onChange={(event) => {
+                            if (
+                              event.currentTarget.value !==
+                              'Active'
+                            ) {
+                              return
+                            }
+
+                            if (
+                              inactiveContact.source ===
+                              'former'
+                            ) {
+                              onReactivateInactiveFormerContact(
+                                inactiveContact.contact.id,
+                              )
+                              return
+                            }
+
+                            onUpdateStatus(
+                              inactiveContact.contact.id,
+                              'Active',
+                            )
+                          }}
+                        >
+                          <option value="Inactive">
+                            Inactive
+                          </option>
+
+                          <option value="Active">
+                            Active
+                          </option>
+                        </select>
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          )}
+        </section>
+      </fieldset>
 
       {isAddContactOpen && (
         <div className="contact-modal-backdrop">

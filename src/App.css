@@ -2898,6 +2898,48 @@
   margin-bottom: 12px;
 }
 
+.contacts-access-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.contacts-access-fieldset:disabled input,
+.contacts-access-fieldset:disabled textarea,
+.contacts-access-fieldset:disabled select {
+  opacity: 1;
+  cursor: default;
+}
+
+.contacts-access-fieldset:disabled
+  .contact-cell-input,
+.contacts-access-fieldset:disabled
+  .contact-cell-textarea,
+.contacts-access-fieldset:disabled
+  .contact-cell-select,
+.contacts-access-fieldset:disabled
+  .contact-status-select,
+.contacts-access-fieldset:disabled
+  .contacts-inactive-input,
+.contacts-access-fieldset:disabled
+  .contacts-inactive-status-select {
+  color: #111827;
+  background: #ffffff;
+  -webkit-text-fill-color: #111827;
+}
+
+.contacts-access-fieldset:disabled
+  .contact-email-input {
+  color: #005EB8;
+  -webkit-text-fill-color: #005EB8;
+}
+
+.contacts-access-fieldset:disabled select {
+  appearance: none;
+  background-image: none;
+}
+
 .add-contact-button {
   min-height: 36px;
   padding: 7px 14px;
