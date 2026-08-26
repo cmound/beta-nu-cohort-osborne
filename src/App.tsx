@@ -26845,6 +26845,10 @@ function CohortAcademicPlanPage() {
   ] =
     useState(false)
 
+  const isAcademicPlanOwner =
+    db.cloud.currentUserId ===
+    BETA_NU_OWNER_USER_ID
+
   useEffect(() => {
     let isCancelled = false
 
@@ -27088,6 +27092,7 @@ function CohortAcademicPlanPage() {
     if (
       db.cloud.currentUserId ===
       'unauthorized' ||
+      !isAcademicPlanOwner ||
       !isAcademicPlanCloudReady
     ) {
       console.error(
@@ -27449,6 +27454,7 @@ function CohortAcademicPlanPage() {
                                   ]
                               }
                               readOnly={
+                                !isAcademicPlanOwner ||
                                 !(
                                   focusedAcademicPlanCell
                                     ?.recordId ===
@@ -27458,7 +27464,13 @@ function CohortAcademicPlanPage() {
                                   column.field
                                 )
                               }
-                              onClick={() =>
+                              onClick={() => {
+                                if (
+                                  !isAcademicPlanOwner
+                                ) {
+                                  return
+                                }
+
                                 setFocusedAcademicPlanCell(
                                   {
                                     recordId:
@@ -27467,7 +27479,7 @@ function CohortAcademicPlanPage() {
                                       column.field,
                                   },
                                 )
-                              }
+                              }}
                               onBlur={() =>
                                 setFocusedAcademicPlanCell(
                                   null,
@@ -30300,6 +30312,25 @@ function CoursePage({
   }, [courseTableLayouts])
 
   useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'auto',
+    })
+
+    const progressTableFrame =
+      courseProgressTableFrameRef.current
+
+    if (
+      progressTableFrame !== null
+    ) {
+      progressTableFrame.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'auto',
+      })
+    }
+
     setIsAssignmentModalOpen(
       false,
     )
@@ -30360,6 +30391,28 @@ function CoursePage({
 
     professorNameBeforeEditRef.current =
       ''
+
+    return () => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'auto',
+      })
+
+      const currentProgressTableFrame =
+        courseProgressTableFrameRef.current
+
+      if (
+        currentProgressTableFrame !==
+        null
+      ) {
+        currentProgressTableFrame.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: 'auto',
+        })
+      }
+    }
   }, [courseCode])
 
   const course =
@@ -38660,24 +38713,38 @@ function App() {
     useLocation()
 
   useEffect(() => {
-    if (!import.meta.env.DEV) {
-      return
+    let isCancelled = false
+
+    async function initializeCloudAccess():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      if (isCancelled) {
+        return
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
     }
 
-    void db.cloud
-      .login()
-      .then(() =>
-        db.cloud.sync({
-          purpose: 'pull',
-          wait: true,
-        }),
-      )
+    void initializeCloudAccess()
       .catch((error: unknown) => {
         console.error(
           'Unable to authenticate or synchronize Dexie Cloud.',
           error,
         )
       })
+
+    return () => {
+      isCancelled = true
+    }
   }, [])
 
   const [coursesOpen, setCoursesOpen] = useState(true)
