@@ -201,6 +201,33 @@ export interface CloudCohortPurposeResearchWorkspaceRecord {
   readonly CloudCohortPurposeResearchRecord[]
 }
 
+export type CloudFacilitatorAgendaStatus =
+  | 'Draft'
+  | 'Final'
+
+export interface CloudFacilitatorAgendaItemRecord {
+  readonly id: string
+  readonly agendaItem: string
+  readonly name: string
+  readonly durationMinutes: number
+  readonly details: string
+  readonly isDefault: boolean
+}
+
+export interface CloudFacilitatorAgendaRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly meetingId: string
+  readonly isSaved: boolean
+  readonly status:
+  CloudFacilitatorAgendaStatus
+  readonly savedAt: string
+  readonly housekeepingNotes: string
+  readonly agendaItems:
+  readonly CloudFacilitatorAgendaItemRecord[]
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -231,6 +258,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly cohortPurposeResearch:
     Table<CloudCohortPurposeResearchWorkspaceRecord, string>
+
+  readonly facilitatorAgendas:
+    Table<CloudFacilitatorAgendaRecord, string>
 
   constructor() {
     super(
@@ -301,6 +331,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, owner',
     })
 
+    this.version(11).stores({
+      facilitatorAgendas:
+        'id, realmId, owner, meetingId, isSaved',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -349,6 +384,11 @@ class BetaNuDatabase extends Dexie {
     this.cohortPurposeResearch =
       this.table(
         'cohortPurposeResearch',
+      )
+
+    this.facilitatorAgendas =
+      this.table(
+        'facilitatorAgendas',
       )
 
     this.cloud.configure({

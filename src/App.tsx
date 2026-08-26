@@ -49,6 +49,7 @@ import {
   type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
   type CloudCourseWorkspaceRecord,
+  type CloudFacilitatorAgendaRecord,
 } from './db'
 import './App.css'
 
@@ -13032,6 +13033,137 @@ function clearFacilitatorAgendaRecovery(
   )
 }
 
+function getFacilitatorAgendaCloudId(
+  meetingId: string,
+): string {
+  return `facilitator-agenda-${meetingId}`
+}
+
+function getFacilitatorAgendaOwner(
+  meeting: CohortMeetingRecord,
+  contacts:
+    readonly CohortContactRecord[],
+): string {
+  const facilitatorLabel =
+    getFacilitatorAgendaPersonLabel(
+      meeting.facilitator,
+    ).toLocaleLowerCase()
+
+  const facilitatorContact =
+    contacts.find(
+      (contact) =>
+        getFacilitatorAgendaPersonLabel(
+          contact.name,
+        ).toLocaleLowerCase() ===
+        facilitatorLabel,
+    )
+
+  const facilitatorEmail =
+    facilitatorContact?.email
+      .trim()
+      .toLowerCase() ?? ''
+
+  return facilitatorEmail.length > 0
+    ? facilitatorEmail
+    : BETA_NU_OWNER_USER_ID
+      .toLowerCase()
+}
+
+function createCloudFacilitatorAgendaRecord(
+  agenda: FacilitatorAgendaRecord,
+  owner: string,
+  isSaved = true,
+): CloudFacilitatorAgendaRecord {
+  return {
+    id:
+      getFacilitatorAgendaCloudId(
+        agenda.meetingId,
+      ),
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner,
+    meetingId:
+      agenda.meetingId,
+    isSaved,
+    status:
+      agenda.status,
+    savedAt:
+      agenda.savedAt,
+    housekeepingNotes:
+      agenda.housekeepingNotes,
+    agendaItems:
+      agenda.agendaItems.map(
+        (agendaItem) => ({
+          id: agendaItem.id,
+          agendaItem:
+            agendaItem.agendaItem,
+          name:
+            agendaItem.name,
+          durationMinutes:
+            agendaItem.durationMinutes,
+          details:
+            agendaItem.details,
+          isDefault:
+            agendaItem.isDefault,
+        }),
+      ),
+  }
+}
+
+function createCloudFacilitatorAgendaPlaceholder(
+  meeting: CohortMeetingRecord,
+  owner: string,
+): CloudFacilitatorAgendaRecord {
+  return {
+    id:
+      getFacilitatorAgendaCloudId(
+        meeting.id,
+      ),
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner,
+    meetingId:
+      meeting.id,
+    isSaved: false,
+    status: 'Draft',
+    savedAt: '',
+    housekeepingNotes: '',
+    agendaItems: [],
+  }
+}
+
+function createLocalFacilitatorAgendaRecord(
+  record: CloudFacilitatorAgendaRecord,
+): FacilitatorAgendaRecord {
+  return {
+    id: record.id,
+    meetingId:
+      record.meetingId,
+    status:
+      record.status,
+    savedAt:
+      record.savedAt,
+    housekeepingNotes:
+      record.housekeepingNotes,
+    agendaItems:
+      record.agendaItems.map(
+        (agendaItem) => ({
+          id: agendaItem.id,
+          agendaItem:
+            agendaItem.agendaItem,
+          name:
+            agendaItem.name,
+          durationMinutes:
+            agendaItem.durationMinutes,
+          details:
+            agendaItem.details,
+          isDefault:
+            agendaItem.isDefault,
+        }),
+      ),
+  }
+}
+
 function getDefaultFacilitatorMeetingId(
   meetings: readonly CohortMeetingRecord[],
 ): string {
@@ -14385,11 +14517,35 @@ function FacilitatorPlannerPage({
 }: FacilitatorPlannerPageProps) {
   const navigate = useNavigate()
 
-  const [savedAgendas, setSavedAgendas] =
+  const [
+    initialSavedAgendas,
+  ] =
     useState<
       readonly FacilitatorAgendaRecord[]
     >(
       readStoredFacilitatorAgendas,
+    )
+
+  const [
+    savedAgendas,
+    setSavedAgendas,
+  ] =
+    useState<
+      readonly FacilitatorAgendaRecord[]
+    >(
+      initialSavedAgendas,
+    )
+
+  const cloudFacilitatorAgendas =
+    useLiveQuery(
+      () =>
+        db.facilitatorAgendas
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
     )
 
   const initialMeetingId =
@@ -14517,6 +14673,36 @@ function FacilitatorPlannerPage({
         selectedMeetingId,
     )
 
+  const currentFacilitatorUserId =
+    db.cloud.currentUserId
+      .trim()
+      .toLowerCase()
+
+  const isFacilitatorPlannerAdmin =
+    currentFacilitatorUserId ===
+    BETA_NU_OWNER_USER_ID
+      .toLowerCase()
+
+  const selectedCloudFacilitatorAgenda =
+    selectedMeeting === undefined
+      ? undefined
+      : cloudFacilitatorAgendas?.find(
+        (agenda) =>
+          agenda.meetingId ===
+          selectedMeeting.id,
+      )
+
+  const canEditSelectedMeetingAgenda =
+    isFacilitatorPlannerAdmin ||
+    (
+      selectedCloudFacilitatorAgenda !==
+      undefined &&
+      selectedCloudFacilitatorAgenda.owner
+        .trim()
+        .toLowerCase() ===
+      currentFacilitatorUserId
+    )
+
   const isSelectedMeetingInPast =
     selectedMeeting !== undefined &&
     selectedMeeting.date <
@@ -14638,6 +14824,151 @@ function FacilitatorPlannerPage({
               firstRecord.meeting.date,
             ),
       )
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeFacilitatorAgendasCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (
+        isCancelled ||
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() !==
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+      ) {
+        return
+      }
+
+      const initialCloudRecords =
+        meetings.map(
+          (meeting) => {
+            const owner =
+              getFacilitatorAgendaOwner(
+                meeting,
+                contacts,
+              )
+
+            const savedAgenda =
+              initialSavedAgendas.find(
+                (agenda) =>
+                  agenda.meetingId ===
+                  meeting.id,
+              )
+
+            return savedAgenda ===
+              undefined
+              ? createCloudFacilitatorAgendaPlaceholder(
+                meeting,
+                owner,
+              )
+              : createCloudFacilitatorAgendaRecord(
+                savedAgenda,
+                owner,
+              )
+          },
+        )
+
+      const existingCloudRecords =
+        await db.facilitatorAgendas
+          .bulkGet(
+            initialCloudRecords.map(
+              (record) =>
+                record.id,
+            ),
+          )
+
+      const missingCloudRecords =
+        initialCloudRecords.filter(
+          (
+            _record,
+            index,
+          ) =>
+            existingCloudRecords[
+            index
+            ] === undefined,
+        )
+
+      if (
+        missingCloudRecords.length >
+        0
+      ) {
+        await db.facilitatorAgendas
+          .bulkPut(
+            missingCloudRecords,
+          )
+
+        await db.cloud.sync()
+      }
+    }
+
+    void initializeFacilitatorAgendasCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Facilitator Planner agendas in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    contacts,
+    initialSavedAgendas,
+    meetings,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudFacilitatorAgendas ===
+      undefined
+    ) {
+      return
+    }
+
+    const cloudSavedAgendas =
+      cloudFacilitatorAgendas
+        .filter(
+          (agenda) =>
+            agenda.isSaved,
+        )
+        .map(
+          createLocalFacilitatorAgendaRecord,
+        )
+
+    setSavedAgendas(
+      cloudSavedAgendas,
+    )
+
+    try {
+      window.localStorage.setItem(
+        FACILITATOR_AGENDAS_STORAGE_KEY,
+        JSON.stringify(
+          cloudSavedAgendas,
+        ),
+      )
+    } catch {
+      console.error(
+        'Unable to update the local Facilitator Planner agenda fallback.',
+      )
+    }
+  }, [
+    cloudFacilitatorAgendas,
+  ])
 
   useEffect(() => {
     const previewElement =
@@ -15984,18 +16315,54 @@ function FacilitatorPlannerPage({
       agendaStatus,
   ): boolean {
     if (
-      selectedMeeting === undefined
+      selectedMeeting === undefined ||
+      !canEditSelectedMeetingAgenda
     ) {
+      setActionMessage(
+        'You do not have permission to save this meeting agenda.',
+      )
+
+      return false
+    }
+
+    const cloudAgendaId =
+      getFacilitatorAgendaCloudId(
+        selectedMeeting.id,
+      )
+
+    const existingCloudAgenda =
+      cloudFacilitatorAgendas?.find(
+        (agenda) =>
+          agenda.id ===
+          cloudAgendaId,
+      )
+
+    if (
+      !isFacilitatorPlannerAdmin &&
+      (
+        existingCloudAgenda ===
+        undefined ||
+        existingCloudAgenda.owner
+          .trim()
+          .toLowerCase() !==
+        currentFacilitatorUserId
+      )
+    ) {
+      setActionMessage(
+        'You do not have permission to save this meeting agenda.',
+      )
+
       return false
     }
 
     const savedAgenda:
       FacilitatorAgendaRecord = {
       id:
-        `facilitator-agenda-${selectedMeeting.id}`,
+        cloudAgendaId,
       meetingId:
         selectedMeeting.id,
-      status: statusToSave,
+      status:
+        statusToSave,
       savedAt:
         new Date().toISOString(),
       housekeepingNotes,
@@ -16042,9 +16409,82 @@ function FacilitatorPlannerPage({
         nextSavedAgendas,
       )
 
-      setAgendaStatus(statusToSave)
+      setAgendaStatus(
+        statusToSave,
+      )
+
       setIsBuildingAgenda(false)
       setLastProtectedAt('')
+
+      void (async (): Promise<void> => {
+        if (
+          existingCloudAgenda ===
+          undefined
+        ) {
+          if (
+            !isFacilitatorPlannerAdmin
+          ) {
+            throw new Error(
+              'Facilitator Planner cloud record was not initialized.',
+            )
+          }
+
+          await db.facilitatorAgendas
+            .put(
+              createCloudFacilitatorAgendaRecord(
+                savedAgenda,
+                getFacilitatorAgendaOwner(
+                  selectedMeeting,
+                  contacts,
+                ),
+              ),
+            )
+        } else {
+          const cloudRecord =
+            createCloudFacilitatorAgendaRecord(
+              savedAgenda,
+              existingCloudAgenda.owner,
+            )
+
+          const updatedRecordCount =
+            await db.facilitatorAgendas
+              .update(
+                cloudAgendaId,
+                {
+                  isSaved:
+                    cloudRecord.isSaved,
+                  status:
+                    cloudRecord.status,
+                  savedAt:
+                    cloudRecord.savedAt,
+                  housekeepingNotes:
+                    cloudRecord
+                      .housekeepingNotes,
+                  agendaItems:
+                    cloudRecord.agendaItems,
+                },
+              )
+
+          if (
+            updatedRecordCount === 0
+          ) {
+            throw new Error(
+              'Facilitator Planner cloud record was not found.',
+            )
+          }
+        }
+
+        await db.cloud.sync()
+      })().catch((error: unknown) => {
+        console.error(
+          'Unable to save Facilitator Planner agenda to Dexie Cloud.',
+          error,
+        )
+
+        setActionMessage(
+          'Agenda saved locally, but cloud synchronization failed.',
+        )
+      })
 
       setActionMessage(
         `${statusToSave} agenda saved.`,
@@ -16270,6 +16710,9 @@ function FacilitatorPlannerPage({
                   : 'facilitator-planner-status-select'
               }
               value={agendaStatus}
+              disabled={
+                !canEditSelectedMeetingAgenda
+              }
               onChange={(event) =>
                 setAgendaStatus(
                   event.target.value ===
@@ -16297,7 +16740,10 @@ function FacilitatorPlannerPage({
                   ? 'facilitator-planner-start-button facilitator-planner-start-button-active'
                   : 'facilitator-planner-start-button'
               }
-              disabled={isBuildingAgenda}
+              disabled={
+                !canEditSelectedMeetingAgenda ||
+                isBuildingAgenda
+              }
               onClick={() => {
                 setIsBuildingAgenda(true)
                 setActionMessage(
@@ -17012,6 +17458,9 @@ function FacilitatorPlannerPage({
           <div className="facilitator-planner-table-toolbar">
             <button
               type="button"
+              disabled={
+                !canEditSelectedMeetingAgenda
+              }
               onClick={
                 addAgendaItem
               }
@@ -17026,6 +17475,7 @@ function FacilitatorPlannerPage({
               type="button"
               className="facilitator-planner-delete-button"
               disabled={
+                !canEditSelectedMeetingAgenda ||
                 selectedAgendaItem ===
                 undefined ||
                 selectedAgendaItem
@@ -17180,9 +17630,11 @@ function FacilitatorPlannerPage({
                                   : 'Drag to reorder'
                               }
                               draggable={
+                                canEditSelectedMeetingAgenda &&
                                 !isBlankRow
                               }
                               disabled={
+                                !canEditSelectedMeetingAgenda ||
                                 isBlankRow
                               }
                               onDragStart={(
@@ -17204,6 +17656,9 @@ function FacilitatorPlannerPage({
                               }
                               value={
                                 agendaItem.agendaItem
+                              }
+                              disabled={
+                                !canEditSelectedMeetingAgenda
                               }
                               aria-label="Agenda item"
                               onFocus={() =>
@@ -17283,6 +17738,9 @@ function FacilitatorPlannerPage({
                             }
                             value={
                               agendaItem.name
+                            }
+                            disabled={
+                              !canEditSelectedMeetingAgenda
                             }
                             aria-label="Agenda item name"
                             aria-autocomplete="list"
@@ -17379,6 +17837,9 @@ function FacilitatorPlannerPage({
                                   ? ''
                                   : agendaItem.durationMinutes
                               }
+                              disabled={
+                                !canEditSelectedMeetingAgenda
+                              }
                               aria-label="Duration in minutes"
                               onFocus={() =>
                                 setSelectedAgendaItemId(
@@ -17435,6 +17896,9 @@ function FacilitatorPlannerPage({
             <button
               type="button"
               className="facilitator-planner-save-button"
+              disabled={
+                !canEditSelectedMeetingAgenda
+              }
               onClick={() => {
                 saveAgenda()
               }}
