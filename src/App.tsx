@@ -46,6 +46,7 @@ import {
   type CloudCohortGroupAssignmentsRecord,
   type CloudCohortMeetingRecord,
   type CloudCohortPurposeResearchWorkspaceRecord,
+  type CloudCohortSharedUrlRecord,
   type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
   type CloudCourseWorkspaceRecord,
@@ -4096,6 +4097,46 @@ function writeStoredCohortSharedUrls(
     COHORT_SHARED_URLS_STORAGE_KEY,
     JSON.stringify(urls),
   )
+}
+
+function createCloudCohortSharedUrlRecord(
+  sharedUrl: CohortSharedUrlRecord,
+): CloudCohortSharedUrlRecord {
+  return {
+    id: sharedUrl.id,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner:
+      BETA_NU_OWNER_USER_ID,
+    websiteName:
+      sharedUrl.websiteName,
+    url:
+      sharedUrl.url,
+    source:
+      sharedUrl.source,
+    notes:
+      sharedUrl.notes,
+    addedAt:
+      sharedUrl.addedAt,
+  }
+}
+
+function createLocalCohortSharedUrlRecord(
+  record: CloudCohortSharedUrlRecord,
+): CohortSharedUrlRecord {
+  return {
+    id: record.id,
+    websiteName:
+      record.websiteName,
+    url:
+      record.url,
+    source:
+      record.source,
+    notes:
+      record.notes,
+    addedAt:
+      record.addedAt,
+  }
 }
 
 function writeCohortSharedFileMetadata(
@@ -23642,12 +23683,38 @@ function CohortSharedFilesPage() {
     useState<File | null>(null)
 
   const [
+    initialSharedUrls,
+  ] =
+    useState<
+      readonly CohortSharedUrlRecord[]
+    >(readStoredCohortSharedUrls)
+
+  const [
     sharedUrls,
     setSharedUrls,
   ] =
     useState<
       readonly CohortSharedUrlRecord[]
-    >(readStoredCohortSharedUrls)
+    >(initialSharedUrls)
+
+  const cloudSharedUrls =
+    useLiveQuery(
+      () =>
+        db.sharedUrls
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
+  const isSharedUrlOwner =
+    db.cloud.currentUserId
+      .trim()
+      .toLowerCase() ===
+    BETA_NU_OWNER_USER_ID
+      .toLowerCase()
 
   const [
     isAddUrlOpen,
@@ -24249,6 +24316,109 @@ function CohortSharedFilesPage() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializeSharedUrlsCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (isCancelled) {
+        return
+      }
+
+      const currentUserIsOwner =
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() ===
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+
+      if (currentUserIsOwner) {
+        const localCloudRecords =
+          initialSharedUrls.map(
+            createCloudCohortSharedUrlRecord,
+          )
+
+        if (
+          localCloudRecords.length >
+          0
+        ) {
+          const existingRecords =
+            await db.sharedUrls.bulkGet(
+              localCloudRecords.map(
+                (record) =>
+                  record.id,
+              ),
+            )
+
+          const missingRecords =
+            localCloudRecords.filter(
+              (
+                _record,
+                index,
+              ) =>
+                existingRecords[
+                index
+                ] === undefined,
+            )
+
+          if (
+            missingRecords.length >
+            0
+          ) {
+            await db.sharedUrls.bulkPut(
+              missingRecords,
+            )
+
+            await db.cloud.sync()
+          }
+        }
+      }
+    }
+
+    void initializeSharedUrlsCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Shared URL Links in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    initialSharedUrls,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudSharedUrls ===
+      undefined
+    ) {
+      return
+    }
+
+    setSharedUrls(
+      cloudSharedUrls.map(
+        createLocalCohortSharedUrlRecord,
+      ),
+    )
+  }, [
+    cloudSharedUrls,
+  ])
 
   useEffect(() => {
     writeStoredCohortSharedUrls(
@@ -25254,6 +25424,13 @@ function CohortSharedFilesPage() {
   }
 
   function saveSingleUrl(): void {
+    if (!isSharedUrlOwner) {
+      window.alert(
+        'Only the site owner can add shared URL links.',
+      )
+      return
+    }
+
     const websiteName =
       addUrlWebsiteName.trim()
 
@@ -25307,6 +25484,25 @@ function CohortSharedFilesPage() {
       ],
     )
 
+    void (async (): Promise<void> => {
+      await db.sharedUrls.put(
+        createCloudCohortSharedUrlRecord(
+          nextSharedUrl,
+        ),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to save Shared URL Link to Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The URL was saved locally, but cloud synchronization failed.',
+      )
+    })
+
     setSelectedUrlIds([])
 
     setSearchTerm('')
@@ -25316,6 +25512,13 @@ function CohortSharedFilesPage() {
   }
 
   function saveMultipleUrls(): void {
+    if (!isSharedUrlOwner) {
+      window.alert(
+        'Only the site owner can add shared URL links.',
+      )
+      return
+    }
+
     const populatedDrafts =
       multipleUrlDrafts.filter(
         (draft) =>
@@ -25423,6 +25626,25 @@ function CohortSharedFilesPage() {
       ],
     )
 
+    void (async (): Promise<void> => {
+      await db.sharedUrls.bulkPut(
+        nextUrls.map(
+          createCloudCohortSharedUrlRecord,
+        ),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to save Shared URL Links to Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The URLs were saved locally, but cloud synchronization failed.',
+      )
+    })
+
     setSelectedUrlIds([])
 
     setSearchTerm('')
@@ -25470,6 +25692,10 @@ function CohortSharedFilesPage() {
       >
     >,
   ): void {
+    if (!isSharedUrlOwner) {
+      return
+    }
+
     setSharedUrls(
       (currentUrls) =>
         currentUrls.map(
@@ -25482,6 +25708,33 @@ function CohortSharedFilesPage() {
               : sharedUrl,
         ),
     )
+
+    void (async (): Promise<void> => {
+      const updatedRecordCount =
+        await db.sharedUrls.update(
+          urlId,
+          updates,
+        )
+
+      if (
+        updatedRecordCount === 0
+      ) {
+        throw new Error(
+          'Shared URL Link cloud record was not found.',
+        )
+      }
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to update Shared URL Link in Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The URL change could not be synchronized to the cloud.',
+      )
+    })
   }
 
   function openDocumentEdit(
@@ -25741,6 +25994,13 @@ function CohortSharedFilesPage() {
   function deleteUrlIds(
     urlIds: readonly string[],
   ): void {
+    if (!isSharedUrlOwner) {
+      window.alert(
+        'Only the site owner can delete shared URL links.',
+      )
+      return
+    }
+
     const deletableUrls =
       sharedUrls.filter(
         (sharedUrl) =>
@@ -25791,6 +26051,23 @@ function CohortSharedFilesPage() {
             !deletedIds.has(id),
         ),
     )
+
+    void (async (): Promise<void> => {
+      await db.sharedUrls.bulkDelete(
+        [...deletedIds],
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to delete Shared URL Link from Dexie Cloud.',
+        error,
+      )
+
+      window.alert(
+        'The URL was removed locally, but cloud deletion failed.',
+      )
+    })
 
     setUrlMenuId(null)
     setNotesPopover(null)
@@ -26774,6 +27051,7 @@ function CohortSharedFilesPage() {
                 <button
                   type="button"
                   className="shared-files-panel-action-button"
+                  disabled={!isSharedUrlOwner}
                   onClick={openAddUrl}
                 >
                   <svg
@@ -26829,6 +27107,7 @@ function CohortSharedFilesPage() {
                       type="button"
                       className="shared-files-panel-action-button shared-files-panel-action-button-danger"
                       disabled={
+                        !isSharedUrlOwner ||
                         selectedUrlIds.length ===
                         0
                       }
@@ -26876,6 +27155,9 @@ function CohortSharedFilesPage() {
                         selectedUrlIds.includes(
                           sharedUrl.id,
                         )
+
+                      const canEditThisUrl =
+                        isSharedUrlOwner
 
                       return (
                         <tr
@@ -26929,9 +27211,19 @@ function CohortSharedFilesPage() {
                             <button
                               type="button"
                               className="shared-files-notes-button"
+                              disabled={
+                                !canEditThisUrl
+                              }
                               title={
-                                sharedUrl.notes ||
-                                'Click to add notes'
+                                canEditThisUrl
+                                  ? (
+                                    sharedUrl.notes ||
+                                    'Click to add notes'
+                                  )
+                                  : (
+                                    sharedUrl.notes ||
+                                    'No notes'
+                                  )
                               }
                               onClick={(event) =>
                                 openNotesEditor(
@@ -26968,6 +27260,9 @@ function CohortSharedFilesPage() {
                               <div className="shared-files-row-menu">
                                 <button
                                   type="button"
+                                  disabled={
+                                    !canEditThisUrl
+                                  }
                                   onClick={() =>
                                     openUrlEdit(
                                       sharedUrl,
@@ -27004,6 +27299,9 @@ function CohortSharedFilesPage() {
                                 <button
                                   type="button"
                                   className="shared-files-row-menu-delete"
+                                  disabled={
+                                    !canEditThisUrl
+                                  }
                                   onClick={() =>
                                     deleteUrlIds([
                                       sharedUrl.id,

@@ -228,6 +228,17 @@ export interface CloudFacilitatorAgendaRecord {
   readonly CloudFacilitatorAgendaItemRecord[]
 }
 
+export interface CloudCohortSharedUrlRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly websiteName: string
+  readonly url: string
+  readonly source: string
+  readonly notes: string
+  readonly addedAt: string
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -261,6 +272,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly facilitatorAgendas:
     Table<CloudFacilitatorAgendaRecord, string>
+
+  readonly sharedUrls:
+    Table<CloudCohortSharedUrlRecord, string>
 
   constructor() {
     super(
@@ -336,6 +350,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, owner, meetingId, isSaved',
     })
 
+    this.version(12).stores({
+      sharedUrls:
+        'id, realmId, owner, url, addedAt',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -389,6 +408,11 @@ class BetaNuDatabase extends Dexie {
     this.facilitatorAgendas =
       this.table(
         'facilitatorAgendas',
+      )
+
+    this.sharedUrls =
+      this.table(
+        'sharedUrls',
       )
 
     this.cloud.configure({
