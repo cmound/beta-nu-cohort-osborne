@@ -45,6 +45,7 @@ import {
   type CloudCohortContactRecord,
   type CloudCohortGroupAssignmentsRecord,
   type CloudCohortMeetingRecord,
+  type CloudCohortPurposeResearchWorkspaceRecord,
   type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
   type CloudCourseWorkspaceRecord,
@@ -711,6 +712,7 @@ interface PurposeResearchColumnDefinition {
 interface CohortPurposeResearchPageProps {
   readonly contacts: readonly CohortContactRecord[]
   readonly records: readonly CohortPurposeResearchRecord[]
+  readonly isEditable: boolean
   readonly onAddRecord: () => void
   readonly onInsertRecordAfter: (recordId: string) => void
   readonly onDeleteRecord: (recordId: string) => void
@@ -5114,6 +5116,9 @@ type PurposeResearchRowHeightState = Partial<
 const PURPOSE_RESEARCH_RECORDS_STORAGE_KEY =
   'beta-nu-purpose-research-records-v1'
 
+const PURPOSE_RESEARCH_CLOUD_ID =
+  'cohort-purpose-research-workspace'
+
 const PURPOSE_RESEARCH_CELL_FORMATS_STORAGE_KEY =
   'beta-nu-purpose-research-cell-formats-v1'
 
@@ -5189,6 +5194,77 @@ function readStoredPurposeResearchRecords():
   } catch {
     return purposeResearchSeed
   }
+}
+
+function createCloudPurposeResearchWorkspace(
+  records:
+    readonly CohortPurposeResearchRecord[],
+): CloudCohortPurposeResearchWorkspaceRecord {
+  return {
+    id:
+      PURPOSE_RESEARCH_CLOUD_ID,
+    realmId:
+      BETA_NU_SHARED_REALM_ID,
+    owner:
+      BETA_NU_OWNER_USER_ID,
+    records:
+      records.map(
+        (record) => ({
+          id: record.id,
+          developmentNote:
+            record.developmentNote,
+          memberName:
+            record.memberName,
+          purposeStatement:
+            record.purposeStatement,
+          researchQuestion1:
+            record.researchQuestion1,
+          researchQuestion2:
+            record.researchQuestion2,
+          researchQuestion3:
+            record.researchQuestion3,
+          researchQuestion4:
+            record.researchQuestion4,
+          researchQuestion5:
+            record.researchQuestion5,
+          cmoThoughts:
+            record.cmoThoughts,
+          additionalResearchNotes:
+            record.additionalResearchNotes,
+        }),
+      ),
+  }
+}
+
+function createLocalPurposeResearchRecords(
+  workspace:
+    CloudCohortPurposeResearchWorkspaceRecord,
+): readonly CohortPurposeResearchRecord[] {
+  return workspace.records.map(
+    (record) => ({
+      id: record.id,
+      developmentNote:
+        record.developmentNote,
+      memberName:
+        record.memberName,
+      purposeStatement:
+        record.purposeStatement,
+      researchQuestion1:
+        record.researchQuestion1,
+      researchQuestion2:
+        record.researchQuestion2,
+      researchQuestion3:
+        record.researchQuestion3,
+      researchQuestion4:
+        record.researchQuestion4,
+      researchQuestion5:
+        record.researchQuestion5,
+      cmoThoughts:
+        record.cmoThoughts,
+      additionalResearchNotes:
+        record.additionalResearchNotes,
+    }),
+  )
 }
 
 function isStoredPurposeResearchCellFormat(
@@ -18871,6 +18947,7 @@ function CohortValuesVisionPage() {
 function CohortPurposeResearchPage({
   contacts,
   records,
+  isEditable,
   onAddRecord,
   onInsertRecordAfter,
   onDeleteRecord,
@@ -20571,6 +20648,7 @@ function CohortPurposeResearchPage({
                 backgroundColor: 'transparent',
               }}
               value={record.memberName}
+              disabled={!isEditable}
               aria-label="Cohort member name"
               onFocus={() =>
                 setSelectedCell({
@@ -20647,6 +20725,7 @@ function CohortPurposeResearchPage({
             height: `${rowHeight}px`,
           }}
           value={record[field]}
+          readOnly={!isEditable}
           aria-label={`${record.memberName || 'Unassigned record'} ${column.label}`}
           onFocus={() =>
             setSelectedCell({
@@ -20777,6 +20856,7 @@ function CohortPurposeResearchPage({
         <button
           type="button"
           className="purpose-research-add-button"
+          disabled={!isEditable}
           onClick={() => {
             setNameSearch('')
             onAddRecord()
@@ -21980,7 +22060,10 @@ function CohortPurposeResearchPage({
         >
           <button
             type="button"
-            disabled={!contextHasCell}
+            disabled={
+              !isEditable ||
+              !contextHasCell
+            }
             onClick={cutContextCell}
           >
             Cut
@@ -21996,7 +22079,10 @@ function CohortPurposeResearchPage({
 
           <button
             type="button"
-            disabled={!contextHasCell}
+            disabled={
+              !isEditable ||
+              !contextHasCell
+            }
             onClick={() => {
               void pasteContextCell()
             }}
@@ -22008,7 +22094,10 @@ function CohortPurposeResearchPage({
 
           <button
             type="button"
-            disabled={!contextHasRow}
+            disabled={
+              !isEditable ||
+              !contextHasRow
+            }
             onClick={insertContextRow}
           >
             Insert
@@ -22016,7 +22105,10 @@ function CohortPurposeResearchPage({
 
           <button
             type="button"
-            disabled={!contextHasRow}
+            disabled={
+              !isEditable ||
+              !contextHasRow
+            }
             onClick={deleteContextRow}
           >
             Delete
@@ -22024,7 +22116,10 @@ function CohortPurposeResearchPage({
 
           <button
             type="button"
-            disabled={!contextHasCell}
+            disabled={
+              !isEditable ||
+              !contextHasCell
+            }
             onClick={clearContextCell}
           >
             Clear Contents
@@ -42844,8 +42939,7 @@ function App() {
     )
 
   const [
-    purposeResearchRecords,
-    setPurposeResearchRecords,
+    initialPurposeResearchRecords,
   ] =
     useState<
       readonly CohortPurposeResearchRecord[]
@@ -42853,6 +42947,21 @@ function App() {
       () =>
         readStoredPurposeResearchRecords(),
     )
+
+  const [
+    purposeResearchRecords,
+    setPurposeResearchRecords,
+  ] =
+    useState<
+      readonly CohortPurposeResearchRecord[]
+    >(
+      initialPurposeResearchRecords,
+    )
+
+  const [
+    isPurposeResearchCloudReady,
+    setIsPurposeResearchCloudReady,
+  ] = useState(false)
 
   const cloudCohortContacts =
     useLiveQuery(
@@ -42899,6 +43008,15 @@ function App() {
             BETA_NU_SHARED_REALM_ID,
           )
           .toArray(),
+      [],
+    )
+
+  const cloudPurposeResearchWorkspace =
+    useLiveQuery(
+      () =>
+        db.cohortPurposeResearch.get(
+          PURPOSE_RESEARCH_CLOUD_ID,
+        ),
       [],
     )
 
@@ -43515,6 +43633,132 @@ function App() {
     )
   }, [
     cloudCohortAvailability,
+  ])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function initializePurposeResearchCloud():
+      Promise<void> {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      if (isCancelled) {
+        return
+      }
+
+      const existingWorkspace =
+        await db.cohortPurposeResearch.get(
+          PURPOSE_RESEARCH_CLOUD_ID,
+        )
+
+      const currentUserIsOwner =
+        db.cloud.currentUserId
+          .trim()
+          .toLowerCase() ===
+        BETA_NU_OWNER_USER_ID
+          .toLowerCase()
+
+      if (
+        existingWorkspace ===
+        undefined &&
+        currentUserIsOwner
+      ) {
+        await db.cohortPurposeResearch.put(
+          createCloudPurposeResearchWorkspace(
+            initialPurposeResearchRecords,
+          ),
+        )
+
+        await db.cloud.sync()
+      } else if (
+        existingWorkspace !==
+        undefined
+      ) {
+        setPurposeResearchRecords(
+          createLocalPurposeResearchRecords(
+            existingWorkspace,
+          ),
+        )
+      }
+
+      if (!isCancelled) {
+        setIsPurposeResearchCloudReady(
+          true,
+        )
+      }
+    }
+
+    void initializePurposeResearchCloud()
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to initialize Dissertation Purpose in Dexie Cloud.',
+          error,
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    initialPurposeResearchRecords,
+  ])
+
+  useEffect(() => {
+    if (
+      cloudPurposeResearchWorkspace ===
+      undefined
+    ) {
+      return
+    }
+
+    setPurposeResearchRecords(
+      createLocalPurposeResearchRecords(
+        cloudPurposeResearchWorkspace,
+      ),
+    )
+  }, [
+    cloudPurposeResearchWorkspace,
+  ])
+
+  useEffect(() => {
+    if (
+      !isPurposeResearchCloudReady ||
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase() !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
+
+    void (async (): Promise<void> => {
+      await db.cohortPurposeResearch.put(
+        createCloudPurposeResearchWorkspace(
+          purposeResearchRecords,
+        ),
+      )
+
+      await db.cloud.sync()
+    })().catch((error: unknown) => {
+      console.error(
+        'Unable to save Dissertation Purpose to Dexie Cloud.',
+        error,
+      )
+    })
+  }, [
+    isPurposeResearchCloudReady,
+    purposeResearchRecords,
   ])
 
   useEffect(() => {
@@ -44588,6 +44832,16 @@ function App() {
   }
 
   function addPurposeResearchRecord(): void {
+    if (
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase() !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
+
     setPurposeResearchRecords((currentRecords) => [
       ...currentRecords,
       createEmptyPurposeResearchRecord(),
@@ -44597,6 +44851,16 @@ function App() {
   function insertPurposeResearchRecordAfter(
     recordId: string,
   ): void {
+    if (
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase() !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
+
     setPurposeResearchRecords((currentRecords) => {
       const recordIndex =
         currentRecords.findIndex(
@@ -44629,6 +44893,16 @@ function App() {
   function deletePurposeResearchRecord(
     recordId: string,
   ): void {
+    if (
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase() !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
+
     setPurposeResearchRecords((currentRecords) =>
       currentRecords.filter(
         (record) => record.id !== recordId,
@@ -44641,6 +44915,16 @@ function App() {
     field: CohortPurposeResearchField,
     value: string,
   ): void {
+    if (
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase() !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
+
     setPurposeResearchRecords((currentRecords) =>
       currentRecords.map((record) =>
         record.id === recordId
@@ -46705,6 +46989,13 @@ function App() {
                 <CohortPurposeResearchPage
                   contacts={contacts}
                   records={purposeResearchRecords}
+                  isEditable={
+                    db.cloud.currentUserId
+                      .trim()
+                      .toLowerCase() ===
+                    BETA_NU_OWNER_USER_ID
+                      .toLowerCase()
+                  }
                   onAddRecord={addPurposeResearchRecord}
                   onInsertRecordAfter={
                     insertPurposeResearchRecordAfter

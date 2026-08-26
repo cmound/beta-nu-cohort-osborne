@@ -179,6 +179,28 @@ export interface CloudCohortGroupAssignmentsRecord {
   readonly CloudCohortGroupRecord[]
 }
 
+export interface CloudCohortPurposeResearchRecord {
+  readonly id: string
+  readonly developmentNote: string
+  readonly memberName: string
+  readonly purposeStatement: string
+  readonly researchQuestion1: string
+  readonly researchQuestion2: string
+  readonly researchQuestion3: string
+  readonly researchQuestion4: string
+  readonly researchQuestion5: string
+  readonly cmoThoughts: string
+  readonly additionalResearchNotes: string
+}
+
+export interface CloudCohortPurposeResearchWorkspaceRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly records:
+  readonly CloudCohortPurposeResearchRecord[]
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -206,6 +228,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly cohortGroupAssignments:
     Table<CloudCohortGroupAssignmentsRecord, string>
+
+  readonly cohortPurposeResearch:
+    Table<CloudCohortPurposeResearchWorkspaceRecord, string>
 
   constructor() {
     super(
@@ -271,6 +296,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, owner',
     })
 
+    this.version(10).stores({
+      cohortPurposeResearch:
+        'id, realmId, owner',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -314,6 +344,11 @@ class BetaNuDatabase extends Dexie {
     this.cohortGroupAssignments =
       this.table(
         'cohortGroupAssignments',
+      )
+
+    this.cohortPurposeResearch =
+      this.table(
+        'cohortPurposeResearch',
       )
 
     this.cloud.configure({
