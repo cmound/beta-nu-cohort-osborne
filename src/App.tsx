@@ -1603,10 +1603,16 @@ const cohortZoomWallpapers:
   ]
 
 const BETA_NU_SHARED_REALM_ID =
-  '1ecd3705-9ef7-4e93-86aa-cf597fab8f50'
+  'rlm1ecd3705-9ef7-4e93-86aa-cf597fab8f50'
 
 const BETA_NU_OWNER_MEMBER_ID =
-  '65d72ad3-319e-4bea-91cf-d3b88ad937bd'
+  'mmb65d72ad3-319e-4bea-91cf-d3b88ad937bd'
+
+const BETA_NU_OWNER_USER_ID =
+  'cmound@mail.umassglobal.edu'
+
+const BETA_NU_TEST_MEMBER_EMAIL =
+  'christopher.mound@gmail.com'
 
 const COHORT_ACADEMIC_PLAN_STORAGE_KEY =
   'beta-nu-academic-plan-v1'
@@ -1743,8 +1749,8 @@ const cohortAcademicPlanSeed:
       calendarYear: '2026',
       code: 'EDDP 709',
       className: 'Assessment, Evaluation and Accountability',
-      startDate: '2026-08-24',
-      endDate: '2026-10-18',
+      startDate: '2026-08-31',
+      endDate: '2026-10-25',
       termYear: 'Fall I 2026',
       length: '8-weeks',
     },
@@ -1754,8 +1760,8 @@ const cohortAcademicPlanSeed:
       calendarYear: '2026',
       code: 'EDDP 783',
       className: 'Developing Dissertation Chapter III',
-      startDate: '2026-08-24',
-      endDate: '2026-12-13',
+      startDate: '2026-08-31',
+      endDate: '2026-12-20',
       termYear: 'Fall I & II 2026',
       length: '16-weeks',
     },
@@ -1765,8 +1771,8 @@ const cohortAcademicPlanSeed:
       calendarYear: '2026',
       code: 'EDDP 721',
       className: 'The Ethics and Politics of Decision Making',
-      startDate: '2026-10-19',
-      endDate: '2026-12-13',
+      startDate: '2026-10-26',
+      endDate: '2026-12-20',
       termYear: 'Fall II 2026',
       length: '8-weeks',
     },
@@ -26826,11 +26832,12 @@ function CohortAcademicPlanPage() {
   const cloudAcademicPlan =
     useLiveQuery(
       async () => {
-        if (!import.meta.env.DEV) {
-          return []
-        }
-
-        return db.academicPlan.toArray()
+        return db.academicPlan
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
       },
       [],
     )
@@ -26839,20 +26846,19 @@ function CohortAcademicPlanPage() {
     isAcademicPlanCloudReady,
     setIsAcademicPlanCloudReady,
   ] =
-    useState(
-      !import.meta.env.DEV,
-    )
+    useState(false)
 
   useEffect(() => {
-    if (!import.meta.env.DEV) {
-      return
-    }
-
     let isCancelled = false
 
     async function initializeAcademicPlanCloud():
       Promise<void> {
-      await db.cloud.sync()
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
 
       const currentUserId =
         db.cloud.currentUserId
@@ -26866,19 +26872,59 @@ function CohortAcademicPlanPage() {
         )
       }
 
-      const existingCloudPlan =
-        await db.academicPlan.toArray()
-
-      const existingSharedRealm =
-        await db.realms.get(
-          BETA_NU_SHARED_REALM_ID,
-        )
-
       if (
-        existingSharedRealm ===
-          undefined &&
-        existingCloudPlan.length > 0
+        currentUserId ===
+        BETA_NU_OWNER_USER_ID
       ) {
+        const existingSharedRealm =
+          await db.realms.get(
+            BETA_NU_SHARED_REALM_ID,
+          )
+
+        const existingSharedPlan =
+          await db.academicPlan
+            .where('realmId')
+            .equals(
+              BETA_NU_SHARED_REALM_ID,
+            )
+            .toArray()
+
+        const sharedRecordById =
+          new Map(
+            existingSharedPlan.map(
+              (record) => [
+                record.id,
+                record,
+              ],
+            ),
+          )
+
+        const completeSharedPlan =
+          readStoredCohortAcademicPlan()
+            .map(
+              (record) => ({
+                ...(
+                  sharedRecordById.get(
+                    record.id,
+                  ) ??
+                  record
+                ),
+                realmId:
+                  BETA_NU_SHARED_REALM_ID,
+              }),
+            )
+
+        const existingTestMember =
+          await db.members
+            .where(
+              '[email+realmId]',
+            )
+            .equals([
+              BETA_NU_TEST_MEMBER_EMAIL,
+              BETA_NU_SHARED_REALM_ID,
+            ])
+            .first()
+
         await db.transaction(
           'rw',
           [
@@ -26887,14 +26933,19 @@ function CohortAcademicPlanPage() {
             db.academicPlan,
           ],
           async () => {
-            await db.realms.put({
-              realmId:
-                BETA_NU_SHARED_REALM_ID,
-              name:
-                'Beta Nu Fall Cohort',
-              represents:
-                'the shared Beta Nu Fall Cohort Hub',
-            })
+            if (
+              existingSharedRealm ===
+              undefined
+            ) {
+              await db.realms.put({
+                realmId:
+                  BETA_NU_SHARED_REALM_ID,
+                name:
+                  'Beta Nu Fall Cohort',
+                represents:
+                  'the shared Beta Nu Fall Cohort Hub',
+              })
+            }
 
             await db.members.put({
               id:
@@ -26903,6 +26954,8 @@ function CohortAcademicPlanPage() {
                 BETA_NU_SHARED_REALM_ID,
               userId:
                 currentUserId,
+              email:
+                BETA_NU_OWNER_USER_ID,
               name:
                 'Beta Nu Hub Owner',
               permissions: {
@@ -26911,23 +26964,49 @@ function CohortAcademicPlanPage() {
             })
 
             await db.academicPlan.bulkPut(
-              existingCloudPlan.map(
-                (record) => ({
-                  ...record,
-                  realmId:
-                    BETA_NU_SHARED_REALM_ID,
-                }),
-              ),
+              completeSharedPlan,
             )
+
+            if (
+              existingTestMember ===
+              undefined
+            ) {
+              await db.members.add({
+                realmId:
+                  BETA_NU_SHARED_REALM_ID,
+                email:
+                  BETA_NU_TEST_MEMBER_EMAIL,
+                name:
+                  'Chris Mound',
+                invite: true,
+                permissions: {
+                  manage: '*',
+                },
+              })
+            }
           },
         )
 
         await db.cloud.sync()
       }
 
+      await db.cloud.sync({
+        purpose: 'pull',
+        wait: true,
+      })
+
+      const sharedCloudPlan =
+        await db.academicPlan
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
       if (!isCancelled) {
         setIsAcademicPlanCloudReady(
-          true,
+          sharedCloudPlan.length ===
+          cohortAcademicPlanSeed.length,
         )
       }
     }
@@ -26947,11 +27026,11 @@ function CohortAcademicPlanPage() {
 
   useEffect(() => {
     if (
-      !import.meta.env.DEV ||
       !isAcademicPlanCloudReady ||
       cloudAcademicPlan ===
       undefined ||
-      cloudAcademicPlan.length === 0
+      cloudAcademicPlan.length !==
+      cohortAcademicPlanSeed.length
     ) {
       return
     }
@@ -27038,6 +27117,18 @@ function CohortAcademicPlanPage() {
       [field]: value,
     }
 
+    if (
+      db.cloud.currentUserId ===
+      'unauthorized' ||
+      !isAcademicPlanCloudReady
+    ) {
+      console.error(
+        'Academic Plan update blocked because the shared Dexie Cloud plan is not fully synchronized.',
+      )
+
+      return
+    }
+
     setAcademicPlan(
       (currentPlan) =>
         currentPlan.map(
@@ -27048,22 +27139,18 @@ function CohortAcademicPlanPage() {
         ),
     )
 
-    if (!import.meta.env.DEV) {
-      return
-    }
-
-    if (
-      db.cloud.currentUserId ===
-      'unauthorized'
-    ) {
-      return
-    }
-
-    void db.academicPlan.put({
-      ...updatedRecord,
-      realmId:
-        BETA_NU_SHARED_REALM_ID,
-    })
+    void db.academicPlan
+      .put({
+        ...updatedRecord,
+        realmId:
+          BETA_NU_SHARED_REALM_ID,
+      })
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to save Academic Plan update to Dexie Cloud.',
+          error,
+        )
+      })
   }
 
   function focusAcademicPlanCell(
@@ -27122,6 +27209,24 @@ function CohortAcademicPlanPage() {
       columnIndex
 
     switch (event.key) {
+      case 'Tab':
+        if (
+          columnIndex <
+          cohortAcademicPlanFields.length
+        ) {
+          nextColumnIndex += 1
+        } else if (
+          rowIndex <
+          academicPlan.length - 1
+        ) {
+          nextRowIndex += 1
+          nextColumnIndex = 0
+        } else {
+          return
+        }
+
+        break
+
       case 'ArrowUp':
         nextRowIndex -= 1
         break
@@ -38352,7 +38457,20 @@ function App() {
       return
     }
 
-    void db.cloud.login()
+    void db.cloud
+      .login()
+      .then(() =>
+        db.cloud.sync({
+          purpose: 'pull',
+          wait: true,
+        }),
+      )
+      .catch((error: unknown) => {
+        console.error(
+          'Unable to authenticate or synchronize Dexie Cloud.',
+          error,
+        )
+      })
   }, [])
 
   const [coursesOpen, setCoursesOpen] = useState(true)

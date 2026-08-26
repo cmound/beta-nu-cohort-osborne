@@ -54,7 +54,7 @@ class BetaNuDatabase extends Dexie {
       databaseUrl:
         'https://zaw13gypb.dexie.cloud',
 
-      requireAuth: false,
+      requireAuth: true,
     })
   }
 }
