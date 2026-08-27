@@ -21916,7 +21916,7 @@ tbody td {
   > span {
   display: block;
   min-height: 27px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   line-height: 1.25;
 }
@@ -22217,7 +22217,10 @@ tbody td {
   .admin-cohort-access-card-icon {
   width: 28px;
   height: 28px;
-  transform: translateX(2px);
+  display: block;
+  flex: 0 0 28px;
+  margin: 0 auto;
+  transform: translateX(1px);
 }
 
 /* Owner crown */
