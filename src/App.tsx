@@ -1382,77 +1382,7 @@ const pacificCalendarDateFormatter = new Intl.DateTimeFormat(
 
 const DASHBOARD_DATE_WRAP_CHARACTER_THRESHOLD = 24
 
-const DASHBOARD_BREAK_IMAGE_COUNT = 7
-
-interface DashboardBreakSignLayout {
-  readonly top: string
-  readonly left: string
-  readonly width: string
-  readonly height: string
-  readonly topFontSize: string
-  readonly bottomFontSize: string
-}
-
-const DASHBOARD_BREAK_SIGN_LAYOUTS: Readonly<
-  Record<number, DashboardBreakSignLayout>
-> = {
-  1: {
-    top: '39%',
-    left: '50%',
-    width: '29%',
-    height: '28%',
-    topFontSize: '31px',
-    bottomFontSize: '24px',
-  },
-  2: {
-    top: '35%',
-    left: '50%',
-    width: '33%',
-    height: '28%',
-    topFontSize: '31px',
-    bottomFontSize: '24px',
-  },
-  3: {
-    top: '32%',
-    left: '50%',
-    width: '29%',
-    height: '28%',
-    topFontSize: '30px',
-    bottomFontSize: '24px',
-  },
-  4: {
-    top: '28%',
-    left: '50%',
-    width: '35%',
-    height: '29%',
-    topFontSize: '31px',
-    bottomFontSize: '25px',
-  },
-  5: {
-    top: '31%',
-    left: '50%',
-    width: '34%',
-    height: '28%',
-    topFontSize: '30px',
-    bottomFontSize: '24px',
-  },
-  6: {
-    top: '31%',
-    left: '50%',
-    width: '30%',
-    height: '27%',
-    topFontSize: '30px',
-    bottomFontSize: '24px',
-  },
-  7: {
-    top: '29%',
-    left: '50%',
-    width: '31%',
-    height: '28%',
-    topFontSize: '30px',
-    bottomFontSize: '24px',
-  },
-}
+const DASHBOARD_BREAK_IMAGE_COUNT = 30
 
 const DASHBOARD_MILLISECONDS_PER_DAY =
   24 * 60 * 60 * 1000
@@ -9026,22 +8956,14 @@ function DashboardPage({
     dashboardNextCourse !== undefined &&
     dashboardDaysUntilNextCourse > 0
 
-  const dashboardBreakDayNumber =
-    Math.floor(
-      currentPacificDateTime /
-      DASHBOARD_MILLISECONDS_PER_DAY,
-    )
-
   const dashboardBreakImageNumber =
-    (
-      (
-        dashboardBreakDayNumber %
-        DASHBOARD_BREAK_IMAGE_COUNT
-      ) +
-      DASHBOARD_BREAK_IMAGE_COUNT
-    ) %
-    DASHBOARD_BREAK_IMAGE_COUNT +
-    1
+    Math.min(
+      DASHBOARD_BREAK_IMAGE_COUNT,
+      Math.max(
+        1,
+        dashboardDaysUntilNextCourse,
+      ),
+    )
 
   const dashboardBreakImageSource =
     `${import.meta.env.BASE_URL}` +
@@ -9051,37 +8973,6 @@ function DashboardPage({
       2,
       '0',
     )}.png`
-
-  const dashboardBreakTopMessage =
-    dashboardDaysUntilNextCourse === 1
-      ? '1 Day'
-      : `${dashboardDaysUntilNextCourse} Days`
-
-  const dashboardBreakSignLayout =
-    DASHBOARD_BREAK_SIGN_LAYOUTS[
-    dashboardBreakImageNumber
-    ] ??
-    DASHBOARD_BREAK_SIGN_LAYOUTS[1]
-
-  const dashboardBreakTopFontSize =
-    dashboardDaysUntilNextCourse >= 10
-      ? '27px'
-      : dashboardBreakSignLayout.topFontSize
-
-  const dashboardBreakSignStyle = {
-    '--dashboard-break-zone-top':
-      dashboardBreakSignLayout.top,
-    '--dashboard-break-zone-left':
-      dashboardBreakSignLayout.left,
-    '--dashboard-break-zone-width':
-      dashboardBreakSignLayout.width,
-    '--dashboard-break-zone-height':
-      dashboardBreakSignLayout.height,
-    '--dashboard-break-top-font-size':
-      dashboardBreakTopFontSize,
-    '--dashboard-break-bottom-font-size':
-      dashboardBreakSignLayout.bottomFontSize,
-  } as CSSProperties
 
   const dashboardDaysUntilNextMeeting =
     dashboardUpcomingMeeting === undefined
@@ -9608,24 +9499,17 @@ function DashboardPage({
                 className="dashboard-break-image"
                 src={dashboardBreakImageSource}
                 alt={
-                  `${dashboardBreakTopMessage} left until ` +
-                  `${dashboardNextCourse.code} begins`
+                  dashboardDaysUntilNextCourse === 1
+                    ? (
+                      `1 day left until ` +
+                      `${dashboardNextCourse.code} begins`
+                    )
+                    : (
+                      `${dashboardDaysUntilNextCourse} days left until ` +
+                      `${dashboardNextCourse.code} begins`
+                    )
                 }
               />
-
-              <div
-                className="dashboard-break-sign-message"
-                style={dashboardBreakSignStyle}
-                aria-hidden="true"
-              >
-                <strong className="dashboard-break-sign-top">
-                  {dashboardBreakTopMessage}
-                </strong>
-
-                <strong className="dashboard-break-sign-bottom">
-                  Left
-                </strong>
-              </div>
             </div>
           ) : (
             <div className="active-course-list">
