@@ -769,6 +769,7 @@ interface AdminPageProps {
 type AdminCohortAccessRole =
   | 'Student'
   | 'Mentor'
+  | 'Viewer'
 
 interface AdminCohortAccessManualMember {
   readonly id: string
@@ -40641,7 +40642,8 @@ function isAdminCohortAccessRole(
 ): value is AdminCohortAccessRole {
   return (
     value === 'Student' ||
-    value === 'Mentor'
+    value === 'Mentor' ||
+    value === 'Viewer'
   )
 }
 
@@ -42613,6 +42615,30 @@ function AdminPage({
       ...manualCohortAccessContacts,
     ]
 
+  const manualCohortAccessRoleById =
+    new Map(
+      manualCohortAccessMembers.map(
+        (member) => [
+          member.id,
+          member.role,
+        ],
+      ),
+    )
+
+  const cohortCountContacts =
+    accessManagerContacts.filter(
+      (contact) =>
+        manualCohortAccessRoleById.get(
+          contact.id,
+        ) !== 'Viewer',
+    )
+
+  const totalViewerCount =
+    manualCohortAccessMembers.filter(
+      (member) =>
+        member.role === 'Viewer',
+    ).length
+
   const uniqueCohortPeople =
     new Map<
       string,
@@ -42621,7 +42647,7 @@ function AdminPage({
 
   for (
     const contact
-    of accessManagerContacts
+    of cohortCountContacts
   ) {
     const personKey =
       contact.name
@@ -42709,6 +42735,17 @@ function AdminPage({
                 contact.id,
             )
 
+          const accessRole:
+            AdminCohortAccessRole =
+            manualCohortAccessRoleById.get(
+              contact.id,
+            ) ??
+            (
+              contact.isMentor
+                ? 'Mentor'
+                : 'Student'
+            )
+
           const matchingMember =
             sharedRealmMembers.find(
               (member) => {
@@ -42764,6 +42801,7 @@ function AdminPage({
 
           return {
             contact,
+            accessRole,
             accessStatus,
             isTestAccount,
             isManualMember,
@@ -42794,9 +42832,17 @@ function AdminPage({
                 }
 
                 if (
-                  row.contact.isMentor
+                  row.accessRole ===
+                  'Mentor'
                 ) {
                   return 2
+                }
+
+                if (
+                  row.accessRole ===
+                  'Viewer'
+                ) {
+                  return 4
                 }
 
                 return 3
@@ -42872,6 +42918,12 @@ function AdminPage({
   const trackedAccessEmails =
     new Set(
       accessManagerContacts
+        .filter(
+          (contact) =>
+            manualCohortAccessRoleById.get(
+              contact.id,
+            ) !== 'Viewer',
+        )
         .map(
           (contact) =>
             contact.email
@@ -43211,8 +43263,8 @@ function AdminPage({
     const roleInput =
       window.prompt(
         (
-          'Cohort role: enter ' +
-          'Student or Mentor.'
+          'Access role: enter Student, ' +
+          'Mentor, or Viewer.'
         ),
         'Student',
       )
@@ -43234,13 +43286,16 @@ function AdminPage({
         : normalizedRole ===
           'mentor'
           ? 'Mentor'
-          : null
+          : normalizedRole ===
+            'viewer'
+            ? 'Viewer'
+            : null
 
     if (role === null) {
       window.alert(
         (
-          'Cohort Role must be ' +
-          'Student or Mentor.'
+          'Access Role must be Student, ' +
+          'Mentor, or Viewer.'
         ),
       )
       return
@@ -44457,7 +44512,7 @@ function AdminPage({
                     </th>
 
                     <th>
-                      Cohort Role
+                      Access Role
                     </th>
 
                     <th>
@@ -44486,6 +44541,7 @@ function AdminPage({
                     cohortAccessRows.map(
                       ({
                         contact,
+                        accessRole,
                         accessStatus,
                         isTestAccount,
                       }) => (
@@ -44499,9 +44555,13 @@ function AdminPage({
                               ? 'admin-cohort-access-owner-row'
                               : isTestAccount
                                 ? 'admin-cohort-access-test-row'
-                                : contact.isMentor
+                                : accessRole ===
+                                  'Mentor'
                                   ? 'admin-cohort-access-mentor-row'
-                                  : undefined
+                                  : accessRole ===
+                                    'Viewer'
+                                    ? 'admin-cohort-access-viewer-row'
+                                    : undefined
                           }
                         >
                           <td className="admin-cohort-access-select-cell">
@@ -44585,9 +44645,7 @@ function AdminPage({
 
                           <td>
                             {
-                              contact.isMentor
-                                ? 'Mentor'
-                                : 'Student'
+                              accessRole
                             }
                           </td>
 
@@ -44724,6 +44782,30 @@ function AdminPage({
                     <strong>
                       {
                         totalCohortCount
+                      }
+                    </strong>
+                  </div>
+                </article>
+
+                <article className="admin-cohort-access-summary-card admin-cohort-access-summary-viewers">
+                  <span
+                    className="admin-cohort-access-summary-icon"
+                    aria-hidden="true"
+                  >
+                    {renderAdminCohortAccessIcon(
+                      'users',
+                      'admin-cohort-access-card-icon',
+                    )}
+                  </span>
+
+                  <div>
+                    <span>
+                      TOTAL VIEWERS
+                    </span>
+
+                    <strong>
+                      {
+                        totalViewerCount
                       }
                     </strong>
                   </div>

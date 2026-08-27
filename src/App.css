@@ -21751,6 +21751,29 @@ tbody td {
   font-weight: 900;
 }
 
+.admin-cohort-access-viewer-row
+  td {
+  border-top:
+    4px solid #000000 !important;
+}
+
+.admin-cohort-access-viewer-row
+  + .admin-cohort-access-viewer-row
+  td {
+  border-top:
+    1px solid #a6b5c3 !important;
+}
+
+.admin-cohort-access-viewer-row
+  td:nth-child(2),
+.admin-cohort-access-viewer-row
+  td:nth-child(3),
+.admin-cohort-access-viewer-row
+  td:nth-child(4) {
+  color: #0b1f3b;
+  font-weight: 700;
+}
+
 .admin-cohort-access-statistics-panel {
   min-width: 0;
   box-sizing: border-box;
