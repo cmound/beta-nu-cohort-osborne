@@ -21731,7 +21731,7 @@ tbody td {
   td:nth-child(3),
 .admin-cohort-access-test-row
   td:nth-child(4) {
-  color: #FFFF00;
+  color: #0000FF;
   font-style: italic;
   font-weight: 900;
 }
@@ -21913,10 +21913,10 @@ tbody td {
 }
 
 .admin-cohort-access-invitation-stat
-  span {
+  > span {
   display: block;
   min-height: 27px;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 900;
   line-height: 1.25;
 }
@@ -22020,7 +22020,7 @@ tbody td {
   p {
   margin: 0;
   color: #0b1f3b;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -22215,8 +22215,9 @@ tbody td {
   .admin-cohort-access-card-icon,
 .admin-cohort-access-summary-total
   .admin-cohort-access-card-icon {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
+  transform: translateX(2px);
 }
 
 /* Owner crown */
