@@ -42390,6 +42390,12 @@ function AdminPage({
     useState(false)
 
   const [
+    isRemovingCohortAccess,
+    setIsRemovingCohortAccess,
+  ] =
+    useState(false)
+
+  const [
     cohortInviteMessage,
     setCohortInviteMessage,
   ] =
@@ -42702,6 +42708,8 @@ function AdminPage({
             accessStatus,
             isTestAccount,
             isManualMember,
+            matchingMemberId:
+              matchingMember?.id,
           }
         },
       )
@@ -42798,14 +42806,18 @@ function AdminPage({
         ),
     )
 
-  const deletableManualCohortAccessIds =
+  const deletableCohortAccessIds =
     cohortAccessRows
       .filter(
         (row) =>
-          row.isManualMember &&
+          row.accessStatus !==
+          'Owner' &&
           !row.isTestAccount &&
-          row.accessStatus ===
-          'Ready to Invite',
+          (
+            row.isManualMember ||
+            row.matchingMemberId !==
+            undefined
+          ),
       )
       .map(
         (row) =>
@@ -42978,10 +42990,11 @@ function AdminPage({
   ): void {
     if (
       !isCohortAccessDeleteMode ||
-      !deletableManualCohortAccessIds.includes(
+      !deletableCohortAccessIds.includes(
         contactId,
       ) ||
-      isSendingCohortInvitations
+      isSendingCohortInvitations ||
+      isRemovingCohortAccess
     ) {
       return
     }
@@ -43003,10 +43016,13 @@ function AdminPage({
     )
   }
 
-  function handleCohortAccessDeleteButton():
-    void {
+  async function handleCohortAccessDeleteButton():
+    Promise<void> {
     if (
-      isSendingCohortInvitations
+      db.cloud.currentUserId !==
+      BETA_NU_OWNER_USER_ID ||
+      isSendingCohortInvitations ||
+      isRemovingCohortAccess
     ) {
       return
     }
@@ -43027,7 +43043,7 @@ function AdminPage({
       )
 
       setCohortInviteMessage(
-        'Delete mode is active. Select manually added Ready to Invite rows, then click the trash button again to remove them.',
+        'Remove mode is active. Select the access rows to remove or revoke, then click the trash button again.',
       )
 
       return
@@ -43048,19 +43064,19 @@ function AdminPage({
       return
     }
 
-    const selectedMembers =
-      manualCohortAccessMembers.filter(
-        (member) =>
+    const selectedRows =
+      cohortAccessRows.filter(
+        (row) =>
           selectedCohortAccessDeleteIds.includes(
-            member.id,
+            row.contact.id,
           ) &&
-          deletableManualCohortAccessIds.includes(
-            member.id,
+          deletableCohortAccessIds.includes(
+            row.contact.id,
           ),
       )
 
     if (
-      selectedMembers.length ===
+      selectedRows.length ===
       0
     ) {
       setSelectedCohortAccessDeleteIds(
@@ -43074,18 +43090,70 @@ function AdminPage({
       return
     }
 
+    const cloudMemberIds = [
+      ...new Set(
+        selectedRows.flatMap(
+          (row) =>
+            row.matchingMemberId ===
+              undefined
+              ? []
+              : [
+                row.matchingMemberId,
+              ],
+        ),
+      ),
+    ]
+
+    const manualContactIds =
+      new Set(
+        selectedRows
+          .filter(
+            (row) =>
+              row.isManualMember,
+          )
+          .map(
+            (row) =>
+              row.contact.id,
+          ),
+      )
+
     const confirmed =
       window.confirm(
         (
-          `Remove ${selectedMembers.length} ` +
-          `manually added access row` +
-          `${selectedMembers.length === 1
+          `Remove or revoke access for ` +
+          `${selectedRows.length} selected ` +
+          `member${selectedRows.length === 1
             ? ''
             : 's'
           }?\n\n` +
-          `This removes the row from the ` +
-          `Cohort Access Manager only. ` +
-          `It does not revoke Dexie Cloud access.`
+          (
+            cloudMemberIds.length > 0
+              ? (
+                `Dexie Cloud access will be ` +
+                `revoked for ` +
+                `${cloudMemberIds.length} ` +
+                `membership record` +
+                `${cloudMemberIds.length === 1
+                  ? ''
+                  : 's'
+                }.`
+              )
+              : (
+                `No active Dexie Cloud ` +
+                `membership needs to be revoked.`
+              )
+          ) +
+          (
+            manualContactIds.size > 0
+              ? (
+                `\nManually added Access Manager ` +
+                `rows will also be removed.`
+              )
+              : ''
+          ) +
+          `\n\nCohort contact records are not ` +
+          `deleted. A revoked cohort member can ` +
+          `be invited again later.`
         ),
       )
 
@@ -43093,41 +43161,89 @@ function AdminPage({
       return
     }
 
-    const selectedIds =
-      new Set(
-        selectedMembers.map(
-          (member) =>
-            member.id,
-        ),
-      )
-
-    setManualCohortAccessMembers(
-      (currentMembers) =>
-        currentMembers.filter(
-          (member) =>
-            !selectedIds.has(
-              member.id,
-            ),
-        ),
-    )
-
-    setSelectedCohortAccessDeleteIds(
-      [],
-    )
-
-    setIsCohortAccessDeleteMode(
-      false,
+    setIsRemovingCohortAccess(
+      true,
     )
 
     setCohortInviteMessage(
-      (
-        `${selectedMembers.length} manually added ` +
-        `access row${selectedMembers.length === 1
-          ? ' was'
-          : 's were'
-        } removed.`
-      ),
+      'Removing selected access...',
     )
+
+    try {
+      if (
+        cloudMemberIds.length > 0
+      ) {
+        await db.transaction(
+          'rw',
+          [
+            db.members,
+          ],
+          async () => {
+            for (
+              const memberId
+              of cloudMemberIds
+            ) {
+              await db.members.delete(
+                memberId,
+              )
+            }
+          },
+        )
+
+        await db.cloud.sync()
+      }
+
+      if (
+        manualContactIds.size > 0
+      ) {
+        setManualCohortAccessMembers(
+          (currentMembers) =>
+            currentMembers.filter(
+              (member) =>
+                !manualContactIds.has(
+                  member.id,
+                ),
+            ),
+        )
+      }
+
+      setSelectedCohortAccessDeleteIds(
+        [],
+      )
+
+      setIsCohortAccessDeleteMode(
+        false,
+      )
+
+      setCohortInviteMessage(
+        (
+          `Access removal completed for ` +
+          `${selectedRows.length} selected ` +
+          `member${selectedRows.length === 1
+            ? ''
+            : 's'
+          }.`
+        ),
+      )
+    } catch (error: unknown) {
+      console.error(
+        'Unable to remove Cohort Access membership.',
+        error,
+      )
+
+      setCohortInviteMessage(
+        (
+          `Access removal was started, but ` +
+          `Dexie Cloud synchronization did not ` +
+          `complete. Check the membership status ` +
+          `before re-inviting the account.`
+        ),
+      )
+    } finally {
+      setIsRemovingCohortAccess(
+        false,
+      )
+    }
   }
 
   function updateCohortAccessRow(
@@ -44522,7 +44638,7 @@ function AdminPage({
                             {
                               isCohortAccessDeleteMode
                                 ? (
-                                  deletableManualCohortAccessIds.includes(
+                                  deletableCohortAccessIds.includes(
                                     contact.id,
                                   )
                                     ? (
@@ -44535,10 +44651,11 @@ function AdminPage({
                                           )
                                         }
                                         disabled={
-                                          isSendingCohortInvitations
+                                          isSendingCohortInvitations ||
+                                          isRemovingCohortAccess
                                         }
                                         aria-label={
-                                          `Select ${contact.name} for removal`
+                                          `Select ${contact.name} for access removal`
                                         }
                                         onChange={() =>
                                           toggleCohortAccessDeleteSelection(
