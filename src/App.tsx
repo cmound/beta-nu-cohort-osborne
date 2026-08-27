@@ -778,6 +778,183 @@ type AdminCohortAccessChartStyle =
     '--admin-acceptance-angle': string
   }
 
+type AdminCohortAccessIconName =
+  | 'users-round'
+  | 'send'
+  | 'crown'
+  | 'graduation-cap'
+  | 'users'
+  | 'circle-check'
+  | 'trash'
+
+function renderAdminCohortAccessIcon(
+  iconName: AdminCohortAccessIconName,
+  className: string,
+): ReactNode {
+  switch (iconName) {
+    case 'users-round':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+
+          <circle
+            cx="9"
+            cy="7"
+            r="4"
+          />
+
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      )
+
+    case 'send':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="m22 2-7 20-4-9-9-4Z" />
+
+          <path d="M22 2 11 13" />
+        </svg>
+      )
+
+    case 'crown':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="m2 5 3 12h14l3-12-6 7-4-7-4 7Z" />
+
+          <path d="M5 21h14" />
+        </svg>
+      )
+
+    case 'graduation-cap':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="m2 10 10-5 10 5-10 5Z" />
+
+          <path d="M6 12.5V17c3.5 2.5 8.5 2.5 12 0v-4.5" />
+
+          <path d="M22 10v6" />
+        </svg>
+      )
+
+    case 'users':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+
+          <circle
+            cx="8.5"
+            cy="7"
+            r="4"
+          />
+
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+
+          <path d="M15.5 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      )
+
+    case 'circle-check':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+          />
+
+          <path d="m8 12 2.7 2.7L16.5 9" />
+        </svg>
+      )
+
+    case 'trash':
+      return (
+        <svg
+          className={className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.15"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="M3 6h18" />
+
+          <path d="M8 6V4h8v2" />
+
+          <path d="m19 6-1 14H6L5 6" />
+
+          <path d="M10 11v5" />
+
+          <path d="M14 11v5" />
+        </svg>
+      )
+  }
+}
+
 type AppBackgroundStyle = CSSProperties & {
   '--bnf-background-image': string
 }
@@ -41583,6 +41760,20 @@ function AdminPage({
     >([])
 
   const [
+    isCohortAccessDeleteMode,
+    setIsCohortAccessDeleteMode,
+  ] =
+    useState(false)
+
+  const [
+    selectedCohortAccessDeleteIds,
+    setSelectedCohortAccessDeleteIds,
+  ] =
+    useState<
+      readonly string[]
+    >([])
+
+  const [
     isSendingCohortInvitations,
     setIsSendingCohortInvitations,
   ] =
@@ -41787,6 +41978,13 @@ function AdminPage({
             normalizedEmail ===
             ADMIN_COHORT_ACCESS_TEST_EMAIL
 
+          const isManualMember =
+            manualCohortAccessMembers.some(
+              (member) =>
+                member.id ===
+                contact.id,
+            )
+
           const matchingMember =
             sharedRealmMembers.find(
               (member) => {
@@ -41844,6 +42042,7 @@ function AdminPage({
             contact,
             accessStatus,
             isTestAccount,
+            isManualMember,
           }
         },
       )
@@ -41931,6 +42130,20 @@ function AdminPage({
           contactId,
         ),
     )
+
+  const deletableManualCohortAccessIds =
+    cohortAccessRows
+      .filter(
+        (row) =>
+          row.isManualMember &&
+          !row.isTestAccount &&
+          row.accessStatus ===
+          'Ready to Invite',
+      )
+      .map(
+        (row) =>
+          row.contact.id,
+      )
 
   const trackedAccessEmails =
     new Set(
@@ -42082,6 +42295,163 @@ function AdminPage({
     )
 
     setCohortInviteMessage('')
+  }
+
+  function toggleCohortAccessDeleteSelection(
+    contactId: string,
+  ): void {
+    if (
+      !isCohortAccessDeleteMode ||
+      !deletableManualCohortAccessIds.includes(
+        contactId,
+      ) ||
+      isSendingCohortInvitations
+    ) {
+      return
+    }
+
+    setSelectedCohortAccessDeleteIds(
+      (currentIds) =>
+        currentIds.includes(
+          contactId,
+        )
+          ? currentIds.filter(
+            (currentId) =>
+              currentId !==
+              contactId,
+          )
+          : [
+            ...currentIds,
+            contactId,
+          ],
+    )
+  }
+
+  function handleCohortAccessDeleteButton():
+    void {
+    if (
+      isSendingCohortInvitations
+    ) {
+      return
+    }
+
+    if (
+      !isCohortAccessDeleteMode
+    ) {
+      setSelectedInviteContactIds(
+        [],
+      )
+
+      setSelectedCohortAccessDeleteIds(
+        [],
+      )
+
+      setIsCohortAccessDeleteMode(
+        true,
+      )
+
+      setCohortInviteMessage(
+        'Delete mode is active. Select manually added Ready to Invite rows, then click the trash button again to remove them.',
+      )
+
+      return
+    }
+
+    if (
+      selectedCohortAccessDeleteIds.length ===
+      0
+    ) {
+      setIsCohortAccessDeleteMode(
+        false,
+      )
+
+      setCohortInviteMessage(
+        '',
+      )
+
+      return
+    }
+
+    const selectedMembers =
+      manualCohortAccessMembers.filter(
+        (member) =>
+          selectedCohortAccessDeleteIds.includes(
+            member.id,
+          ) &&
+          deletableManualCohortAccessIds.includes(
+            member.id,
+          ),
+      )
+
+    if (
+      selectedMembers.length ===
+      0
+    ) {
+      setSelectedCohortAccessDeleteIds(
+        [],
+      )
+
+      setIsCohortAccessDeleteMode(
+        false,
+      )
+
+      return
+    }
+
+    const confirmed =
+      window.confirm(
+        (
+          `Remove ${selectedMembers.length} ` +
+          `manually added access row` +
+          `${selectedMembers.length === 1
+            ? ''
+            : 's'
+          }?\n\n` +
+          `This removes the row from the ` +
+          `Cohort Access Manager only. ` +
+          `It does not revoke Dexie Cloud access.`
+        ),
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    const selectedIds =
+      new Set(
+        selectedMembers.map(
+          (member) =>
+            member.id,
+        ),
+      )
+
+    setManualCohortAccessMembers(
+      (currentMembers) =>
+        currentMembers.filter(
+          (member) =>
+            !selectedIds.has(
+              member.id,
+            ),
+        ),
+    )
+
+    setSelectedCohortAccessDeleteIds(
+      [],
+    )
+
+    setIsCohortAccessDeleteMode(
+      false,
+    )
+
+    setCohortInviteMessage(
+      (
+        `${selectedMembers.length} manually added ` +
+        `access row${selectedMembers.length === 1
+          ? ' was'
+          : 's were'
+        } removed.`
+      ),
+    )
   }
 
   function addManualCohortAccessMember():
@@ -43173,91 +43543,136 @@ function AdminPage({
                 confirmation.
               </p>
             </div>
+          </div>
+
+          <div className="admin-cohort-access-toolbar-row">
+            <div className="admin-cohort-access-controls">
+              <button
+                type="button"
+                className="admin-cohort-access-member-button"
+                disabled={
+                  isSendingCohortInvitations ||
+                  isCohortAccessDeleteMode
+                }
+                onClick={
+                  addManualCohortAccessMember
+                }
+              >
+                <span aria-hidden="true">
+                  +
+                </span>
+
+                Member
+              </button>
+
+              <button
+                type="button"
+                className={
+                  isCohortAccessDeleteMode
+                    ? 'admin-cohort-access-delete-button admin-cohort-access-delete-button-active'
+                    : 'admin-cohort-access-delete-button'
+                }
+                disabled={
+                  isSendingCohortInvitations
+                }
+                aria-label={
+                  isCohortAccessDeleteMode
+                    ? 'Finish deleting selected access rows'
+                    : 'Delete manually added access rows'
+                }
+                title={
+                  isCohortAccessDeleteMode
+                    ? 'Click again to remove selected rows'
+                    : 'Delete manually added rows'
+                }
+                onClick={
+                  handleCohortAccessDeleteButton
+                }
+              >
+                {renderAdminCohortAccessIcon(
+                  'trash',
+                  'admin-cohort-access-button-icon',
+                )}
+              </button>
+
+              <div
+                className="admin-cohort-access-selection-count"
+                role="status"
+                aria-label={
+                  (
+                    `${selectedReadyToInviteCount} ` +
+                    `members selected`
+                  )
+                }
+              >
+                {renderAdminCohortAccessIcon(
+                  'users-round',
+                  'admin-cohort-access-button-icon',
+                )}
+
+                <span>
+                  Selected
+                </span>
+
+                <strong>
+                  {
+                    selectedReadyToInviteCount
+                  }
+                </strong>
+              </div>
+
+              <button
+                type="button"
+                className="admin-cohort-access-select-button"
+                disabled={
+                  readyToInviteCount ===
+                  0 ||
+                  isSendingCohortInvitations ||
+                  isCohortAccessDeleteMode
+                }
+                onClick={
+                  toggleAllReadyCohortInvites
+                }
+              >
+                {
+                  areAllReadyContactsSelected
+                    ? 'Clear Selection'
+                    : 'Select All Ready to Invite'
+                }
+              </button>
+
+              <button
+                type="button"
+                className="admin-cohort-access-send-button"
+                disabled={
+                  selectedReadyToInviteCount ===
+                  0 ||
+                  isSendingCohortInvitations ||
+                  isCohortAccessDeleteMode
+                }
+                onClick={() =>
+                  void sendSelectedCohortInvitations()
+                }
+              >
+                {renderAdminCohortAccessIcon(
+                  'send',
+                  'admin-cohort-access-button-icon',
+                )}
+
+                {
+                  isSendingCohortInvitations
+                    ? 'Sending...'
+                    : (
+                      `Send Selected Invitations ` +
+                      `(${selectedReadyToInviteCount})`
+                    )
+                }
+              </button>
+            </div>
 
             <span className="admin-cohort-access-preview-badge">
               OWNER CONTROL
             </span>
-          </div>
-
-          <div className="admin-cohort-access-controls">
-            <button
-              type="button"
-              className="admin-cohort-access-member-button"
-              disabled={
-                isSendingCohortInvitations
-              }
-              onClick={
-                addManualCohortAccessMember
-              }
-            >
-              <span aria-hidden="true">
-                +
-              </span>
-
-              Member
-            </button>
-
-            <div
-              className="admin-cohort-access-selection-count"
-              role="status"
-              aria-label={
-                (
-                  `${selectedReadyToInviteCount} ` +
-                  `members selected`
-                )
-              }
-            >
-              <span>
-                Selected
-              </span>
-
-              <strong>
-                {
-                  selectedReadyToInviteCount
-                }
-              </strong>
-            </div>
-
-            <button
-              type="button"
-              className="admin-cohort-access-select-button"
-              disabled={
-                readyToInviteCount ===
-                0 ||
-                isSendingCohortInvitations
-              }
-              onClick={
-                toggleAllReadyCohortInvites
-              }
-            >
-              {
-                areAllReadyContactsSelected
-                  ? 'Clear Selection'
-                  : 'Select All Ready to Invite'
-              }
-            </button>
-
-            <button
-              type="button"
-              className="admin-cohort-access-send-button"
-              disabled={
-                selectedReadyToInviteCount ===
-                0 ||
-                isSendingCohortInvitations
-              }
-              onClick={() =>
-                void sendSelectedCohortInvitations()
-              }
-            >
-              {
-                isSendingCohortInvitations
-                  ? 'Sending...'
-                  : (
-                    `Send Selected Invitations ` +
-                    `(${selectedReadyToInviteCount})`
-                  )
-              }
-            </button>
           </div>
 
           {cohortInviteMessage.length >
@@ -43333,36 +43748,73 @@ function AdminPage({
                         >
                           <td className="admin-cohort-access-select-cell">
                             {
-                              accessStatus ===
-                                'Ready to Invite'
+                              isCohortAccessDeleteMode
                                 ? (
-                                  <input
-                                    type="checkbox"
-                                    className="admin-cohort-access-checkbox"
-                                    checked={
-                                      selectedInviteContactIds.includes(
-                                        contact.id,
-                                      )
-                                    }
-                                    disabled={
-                                      isSendingCohortInvitations
-                                    }
-                                    aria-label={
-                                      `Select ${contact.name} for Dexie Cloud invitation`
-                                    }
-                                    onChange={() =>
-                                      toggleCohortInviteSelection(
-                                        contact.id,
-                                      )
-                                    }
-                                  />
+                                  deletableManualCohortAccessIds.includes(
+                                    contact.id,
+                                  )
+                                    ? (
+                                      <input
+                                        type="checkbox"
+                                        className="admin-cohort-access-checkbox"
+                                        checked={
+                                          selectedCohortAccessDeleteIds.includes(
+                                            contact.id,
+                                          )
+                                        }
+                                        disabled={
+                                          isSendingCohortInvitations
+                                        }
+                                        aria-label={
+                                          `Select ${contact.name} for removal`
+                                        }
+                                        onChange={() =>
+                                          toggleCohortAccessDeleteSelection(
+                                            contact.id,
+                                          )
+                                        }
+                                      />
+                                    )
+                                    : (
+                                      <span
+                                        aria-hidden="true"
+                                      >
+                                        —
+                                      </span>
+                                    )
                                 )
                                 : (
-                                  <span
-                                    aria-hidden="true"
-                                  >
-                                    —
-                                  </span>
+                                  accessStatus ===
+                                    'Ready to Invite'
+                                    ? (
+                                      <input
+                                        type="checkbox"
+                                        className="admin-cohort-access-checkbox"
+                                        checked={
+                                          selectedInviteContactIds.includes(
+                                            contact.id,
+                                          )
+                                        }
+                                        disabled={
+                                          isSendingCohortInvitations
+                                        }
+                                        aria-label={
+                                          `Select ${contact.name} for Dexie Cloud invitation`
+                                        }
+                                        onChange={() =>
+                                          toggleCohortInviteSelection(
+                                            contact.id,
+                                          )
+                                        }
+                                      />
+                                    )
+                                    : (
+                                      <span
+                                        aria-hidden="true"
+                                      >
+                                        —
+                                      </span>
+                                    )
                                 )
                             }
                           </td>
@@ -43428,7 +43880,10 @@ function AdminPage({
                     className="admin-cohort-access-summary-icon"
                     aria-hidden="true"
                   >
-                    ★
+                    {renderAdminCohortAccessIcon(
+                      'crown',
+                      'admin-cohort-access-card-icon',
+                    )}
                   </span>
 
                   <div>
@@ -43449,7 +43904,10 @@ function AdminPage({
                     className="admin-cohort-access-summary-icon"
                     aria-hidden="true"
                   >
-                    ◆
+                    {renderAdminCohortAccessIcon(
+                      'graduation-cap',
+                      'admin-cohort-access-card-icon',
+                    )}
                   </span>
 
                   <div>
@@ -43470,7 +43928,10 @@ function AdminPage({
                     className="admin-cohort-access-summary-icon"
                     aria-hidden="true"
                   >
-                    ●
+                    {renderAdminCohortAccessIcon(
+                      'users-round',
+                      'admin-cohort-access-card-icon',
+                    )}
                   </span>
 
                   <div>
@@ -43491,7 +43952,10 @@ function AdminPage({
                     className="admin-cohort-access-summary-icon"
                     aria-hidden="true"
                   >
-                    ●●
+                    {renderAdminCohortAccessIcon(
+                      'users',
+                      'admin-cohort-access-card-icon',
+                    )}
                   </span>
 
                   <div>
@@ -43519,11 +43983,23 @@ function AdminPage({
                     Number of Invitations Sent
                   </span>
 
-                  <strong>
-                    {
-                      invitationSentCount
-                    }
-                  </strong>
+                  <div className="admin-cohort-access-invitation-value-row">
+                    <strong>
+                      {
+                        invitationSentCount
+                      }
+                    </strong>
+
+                    <span
+                      className="admin-cohort-access-invitation-icon-badge admin-cohort-access-invitation-icon-sent"
+                      aria-hidden="true"
+                    >
+                      {renderAdminCohortAccessIcon(
+                        'send',
+                        'admin-cohort-access-invitation-card-icon',
+                      )}
+                    </span>
+                  </div>
                 </article>
 
                 <article className="admin-cohort-access-invitation-stat admin-cohort-access-invitation-stat-accepted">
@@ -43531,11 +44007,23 @@ function AdminPage({
                     Number of Invitations Accepted
                   </span>
 
-                  <strong>
-                    {
-                      invitationAcceptedCount
-                    }
-                  </strong>
+                  <div className="admin-cohort-access-invitation-value-row">
+                    <strong>
+                      {
+                        invitationAcceptedCount
+                      }
+                    </strong>
+
+                    <span
+                      className="admin-cohort-access-invitation-icon-badge admin-cohort-access-invitation-icon-accepted"
+                      aria-hidden="true"
+                    >
+                      {renderAdminCohortAccessIcon(
+                        'circle-check',
+                        'admin-cohort-access-invitation-card-icon',
+                      )}
+                    </span>
+                  </div>
                 </article>
 
                 <article className="admin-cohort-access-invitation-stat admin-cohort-access-invitation-stat-rate">
