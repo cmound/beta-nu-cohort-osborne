@@ -42609,9 +42609,22 @@ function AdminPage({
       }),
     )
 
+  const manualCohortAccessIds =
+    new Set(
+      manualCohortAccessMembers.map(
+        (member) =>
+          member.id,
+      ),
+    )
+
   const accessManagerContacts:
     readonly CohortContactRecord[] = [
-      ...activeCohortContacts,
+      ...activeCohortContacts.filter(
+        (contact) =>
+          !manualCohortAccessIds.has(
+            contact.id,
+          ),
+      ),
       ...manualCohortAccessContacts,
     ]
 
@@ -43230,6 +43243,63 @@ function AdminPage({
           : 's were'
         } removed.`
       ),
+    )
+  }
+
+  function updateCohortAccessRow(
+    contact: CohortContactRecord,
+    currentRole: AdminCohortAccessRole,
+    updates: Partial<
+      Pick<
+        AdminCohortAccessManualMember,
+        'name' | 'role' | 'email'
+      >
+    >,
+  ): void {
+    setManualCohortAccessMembers(
+      (currentMembers) => {
+        const existingMember =
+          currentMembers.find(
+            (member) =>
+              member.id ===
+              contact.id,
+          )
+
+        const nextMember:
+          AdminCohortAccessManualMember = {
+          id:
+            contact.id,
+          name:
+            updates.name ??
+            existingMember?.name ??
+            contact.name,
+          role:
+            updates.role ??
+            existingMember?.role ??
+            currentRole,
+          email:
+            updates.email ??
+            existingMember?.email ??
+            contact.email,
+        }
+
+        if (
+          existingMember === undefined
+        ) {
+          return [
+            ...currentMembers,
+            nextMember,
+          ]
+        }
+
+        return currentMembers.map(
+          (member) =>
+            member.id ===
+              contact.id
+              ? nextMember
+              : member,
+        )
+      },
     )
   }
 
@@ -44639,19 +44709,172 @@ function AdminPage({
 
                           <td>
                             {
-                              contact.name
+                              accessStatus ===
+                                'Owner'
+                                ? contact.name
+                                : (
+                                  <input
+                                    type="text"
+                                    className="admin-cohort-access-edit-input"
+                                    defaultValue={
+                                      contact.name
+                                    }
+                                    disabled={
+                                      isSendingCohortInvitations ||
+                                      isCohortAccessDeleteMode
+                                    }
+                                    aria-label={
+                                      `Edit ${contact.name} name`
+                                    }
+                                    onBlur={(event) => {
+                                      const nextName =
+                                        event.currentTarget
+                                          .value
+                                          .trim()
+
+                                      if (
+                                        nextName.length ===
+                                        0
+                                      ) {
+                                        event.currentTarget.value =
+                                          contact.name
+                                        return
+                                      }
+
+                                      updateCohortAccessRow(
+                                        contact,
+                                        accessRole,
+                                        {
+                                          name:
+                                            nextName,
+                                        },
+                                      )
+                                    }}
+                                  />
+                                )
                             }
                           </td>
 
                           <td>
                             {
-                              accessRole
+                              accessStatus ===
+                                'Owner'
+                                ? accessRole
+                                : (
+                                  <select
+                                    className="admin-cohort-access-edit-select"
+                                    value={
+                                      accessRole
+                                    }
+                                    disabled={
+                                      isSendingCohortInvitations ||
+                                      isCohortAccessDeleteMode
+                                    }
+                                    aria-label={
+                                      `Edit ${contact.name} access role`
+                                    }
+                                    onChange={(event) => {
+                                      const nextRole =
+                                        event.currentTarget
+                                          .value
+
+                                      if (
+                                        !isAdminCohortAccessRole(
+                                          nextRole,
+                                        )
+                                      ) {
+                                        return
+                                      }
+
+                                      updateCohortAccessRow(
+                                        contact,
+                                        accessRole,
+                                        {
+                                          role:
+                                            nextRole,
+                                        },
+                                      )
+                                    }}
+                                  >
+                                    <option value="Student">
+                                      Student
+                                    </option>
+
+                                    <option value="Mentor">
+                                      Mentor
+                                    </option>
+
+                                    <option value="Viewer">
+                                      Viewer
+                                    </option>
+                                  </select>
+                                )
                             }
                           </td>
 
                           <td>
                             {
-                              contact.email
+                              accessStatus ===
+                                'Owner'
+                                ? contact.email
+                                : (
+                                  <input
+                                    type="email"
+                                    className="admin-cohort-access-edit-input"
+                                    defaultValue={
+                                      contact.email
+                                    }
+                                    disabled={
+                                      isSendingCohortInvitations ||
+                                      isCohortAccessDeleteMode
+                                    }
+                                    aria-label={
+                                      `Edit ${contact.name} email`
+                                    }
+                                    onBlur={(event) => {
+                                      const nextEmail =
+                                        event.currentTarget
+                                          .value
+                                          .trim()
+
+                                      const isValidEmail =
+                                        /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                                          .test(
+                                            nextEmail,
+                                          )
+
+                                      const duplicateEmail =
+                                        accessManagerContacts.some(
+                                          (otherContact) =>
+                                            otherContact.id !==
+                                            contact.id &&
+                                            otherContact.email
+                                              .trim()
+                                              .toLowerCase() ===
+                                            nextEmail
+                                              .toLowerCase(),
+                                        )
+
+                                      if (
+                                        !isValidEmail ||
+                                        duplicateEmail
+                                      ) {
+                                        event.currentTarget.value =
+                                          contact.email
+                                        return
+                                      }
+
+                                      updateCohortAccessRow(
+                                        contact,
+                                        accessRole,
+                                        {
+                                          email:
+                                            nextEmail,
+                                        },
+                                      )
+                                    }}
+                                  />
+                                )
                             }
                           </td>
 

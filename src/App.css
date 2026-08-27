@@ -21676,6 +21676,36 @@ tbody td {
   white-space: nowrap;
 }
 
+.admin-cohort-access-edit-input,
+.admin-cohort-access-edit-select {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: inherit;
+}
+
+.admin-cohort-access-edit-input:hover,
+.admin-cohort-access-edit-select:hover {
+  border-color: #9aa9b7;
+  background: #ffffff;
+}
+
+.admin-cohort-access-edit-input:focus,
+.admin-cohort-access-edit-select:focus {
+  outline: 2px solid #005eb8;
+  outline-offset: -1px;
+  border-color: #005eb8;
+  background: #ffffff;
+}
+
 .admin-cohort-access-table
   th:nth-child(1) {
   width: 58px;
@@ -22245,6 +22275,24 @@ tbody td {
   flex: 0 0 28px;
   margin: 0 auto;
   transform: translateX(1px);
+}
+
+.admin-cohort-access-summary-viewers
+  .admin-cohort-access-summary-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+}
+
+.admin-cohort-access-summary-viewers
+  .admin-cohort-access-card-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex: 0 0 24px;
+  margin: 0 auto;
+  transform: none;
 }
 
 /* Owner crown */
