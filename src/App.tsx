@@ -762,6 +762,22 @@ interface AdminPageProps {
   Readonly<CohortContactStatusState>
 }
 
+type AdminCohortAccessRole =
+  | 'Student'
+  | 'Mentor'
+
+interface AdminCohortAccessManualMember {
+  readonly id: string
+  readonly name: string
+  readonly role: AdminCohortAccessRole
+  readonly email: string
+}
+
+type AdminCohortAccessChartStyle =
+  CSSProperties & {
+    '--admin-acceptance-angle': string
+  }
+
 type AppBackgroundStyle = CSSProperties & {
   '--bnf-background-image': string
 }
@@ -40315,6 +40331,24 @@ const ADMIN_ARCHIVE_UPDATED_EVENT =
 const ADMIN_AUTO_ARCHIVE_INTERVAL_MS =
   60 * 60 * 1000
 
+const ADMIN_COHORT_ACCESS_MANUAL_MEMBERS_STORAGE_KEY =
+  'beta-nu-cohort-access-manual-members-v1'
+
+const ADMIN_COHORT_ACCESS_TEST_EMAIL =
+  'christopher.mound@gmail.com'
+
+const ADMIN_COHORT_ACCESS_TEST_MEMBER:
+  AdminCohortAccessManualMember = {
+  id:
+    'cohort-access-chris-mound-gmail',
+  name:
+    'Chris Mound',
+  role:
+    'Student',
+  email:
+    ADMIN_COHORT_ACCESS_TEST_EMAIL,
+}
+
 const ADMIN_ARCHIVE_MONTH_LABELS =
   [
     'January',
@@ -40348,6 +40382,105 @@ function isAdminObjectRecord(
     typeof value === 'object' &&
     value !== null &&
     !Array.isArray(value)
+  )
+}
+
+function isAdminCohortAccessRole(
+  value: unknown,
+): value is AdminCohortAccessRole {
+  return (
+    value === 'Student' ||
+    value === 'Mentor'
+  )
+}
+
+function isStoredAdminCohortAccessManualMember(
+  value: unknown,
+): value is AdminCohortAccessManualMember {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    isAdminCohortAccessRole(
+      value.role,
+    ) &&
+    typeof value.email === 'string'
+  )
+}
+
+function readStoredAdminCohortAccessManualMembers():
+  readonly AdminCohortAccessManualMember[] {
+  const storedValue =
+    window.localStorage.getItem(
+      ADMIN_COHORT_ACCESS_MANUAL_MEMBERS_STORAGE_KEY,
+    )
+
+  if (storedValue === null) {
+    return [
+      ADMIN_COHORT_ACCESS_TEST_MEMBER,
+    ]
+  }
+
+  try {
+    const parsedValue: unknown =
+      JSON.parse(storedValue)
+
+    if (!Array.isArray(parsedValue)) {
+      return [
+        ADMIN_COHORT_ACCESS_TEST_MEMBER,
+      ]
+    }
+
+    const parsedMembers:
+      AdminCohortAccessManualMember[] = []
+
+    for (
+      const value
+      of parsedValue
+    ) {
+      if (
+        !isStoredAdminCohortAccessManualMember(
+          value,
+        )
+      ) {
+        return [
+          ADMIN_COHORT_ACCESS_TEST_MEMBER,
+        ]
+      }
+
+      parsedMembers.push(value)
+    }
+
+    const membersWithoutTestAccount =
+      parsedMembers.filter(
+        (member) =>
+          member.email
+            .trim()
+            .toLowerCase() !==
+          ADMIN_COHORT_ACCESS_TEST_EMAIL,
+      )
+
+    return [
+      ADMIN_COHORT_ACCESS_TEST_MEMBER,
+      ...membersWithoutTestAccount,
+    ]
+  } catch {
+    return [
+      ADMIN_COHORT_ACCESS_TEST_MEMBER,
+    ]
+  }
+}
+
+function writeStoredAdminCohortAccessManualMembers(
+  members:
+    readonly AdminCohortAccessManualMember[],
+): void {
+  window.localStorage.setItem(
+    ADMIN_COHORT_ACCESS_MANUAL_MEMBERS_STORAGE_KEY,
+    JSON.stringify(members),
   )
 }
 
@@ -41461,6 +41594,24 @@ function AdminPage({
   ] =
     useState('')
 
+  const [
+    manualCohortAccessMembers,
+    setManualCohortAccessMembers,
+  ] =
+    useState<
+      readonly AdminCohortAccessManualMember[]
+    >(
+      readStoredAdminCohortAccessManualMembers,
+    )
+
+  useEffect(() => {
+    writeStoredAdminCohortAccessManualMembers(
+      manualCohortAccessMembers,
+    )
+  }, [
+    manualCohortAccessMembers,
+  ])
+
   const importInputRef =
     useRef<HTMLInputElement>(
       null,
@@ -41513,31 +41664,114 @@ function AdminPage({
           ),
       )
 
-  const ownerCohortContacts =
-    activeCohortContacts.filter(
+  const manualCohortAccessContacts:
+    readonly CohortContactRecord[] =
+    manualCohortAccessMembers.map(
+      (member) => ({
+        id:
+          member.id,
+        name:
+          member.name,
+        timeZone:
+          'Pacific',
+        phoneDigits:
+          '',
+        email:
+          member.email,
+        industry:
+          '',
+        birthdayMonth:
+          null,
+        birthdayDay:
+          null,
+        dissertationInterest:
+          '',
+        isMentor:
+          member.role ===
+          'Mentor',
+      }),
+    )
+
+  const accessManagerContacts:
+    readonly CohortContactRecord[] = [
+      ...activeCohortContacts,
+      ...manualCohortAccessContacts,
+    ]
+
+  const uniqueCohortPeople =
+    new Map<
+      string,
+      CohortContactRecord
+    >()
+
+  for (
+    const contact
+    of accessManagerContacts
+  ) {
+    const personKey =
+      contact.name
+        .trim()
+        .toLowerCase()
+        .replace(
+          /\s+/g,
+          ' ',
+        )
+
+    if (
+      personKey.length > 0 &&
+      !uniqueCohortPeople.has(
+        personKey,
+      )
+    ) {
+      uniqueCohortPeople.set(
+        personKey,
+        contact,
+      )
+    }
+  }
+
+  const uniqueCohortContacts =
+    [
+      ...uniqueCohortPeople.values(),
+    ]
+
+  const ownerCohortCount =
+    uniqueCohortContacts.filter(
       (contact) =>
         contact.email
           .trim()
           .toLowerCase() ===
         BETA_NU_OWNER_USER_ID
           .toLowerCase(),
-    )
+    ).length
 
-  const nonOwnerCohortContacts =
-    activeCohortContacts.filter(
+  const mentorCohortCount =
+    uniqueCohortContacts.filter(
       (contact) =>
         contact.email
           .trim()
           .toLowerCase() !==
         BETA_NU_OWNER_USER_ID
-          .toLowerCase(),
+          .toLowerCase() &&
+        contact.isMentor,
+    ).length
+
+  const totalCohortCount =
+    uniqueCohortContacts.length
+
+  const studentCohortCount =
+    Math.max(
+      0,
+      totalCohortCount -
+      ownerCohortCount -
+      mentorCohortCount,
     )
 
   const cohortAccessRows =
     sharedRealmMembers ===
       undefined
       ? []
-      : activeCohortContacts.map(
+      : accessManagerContacts.map(
         (contact) => {
           const normalizedEmail =
             contact.email
@@ -41548,6 +41782,10 @@ function AdminPage({
             normalizedEmail ===
             BETA_NU_OWNER_USER_ID
               .toLowerCase()
+
+          const isTestAccount =
+            normalizedEmail ===
+            ADMIN_COHORT_ACCESS_TEST_EMAIL
 
           const matchingMember =
             sharedRealmMembers.find(
@@ -41605,6 +41843,7 @@ function AdminPage({
           return {
             contact,
             accessStatus,
+            isTestAccount,
           }
         },
       )
@@ -41613,26 +41852,45 @@ function AdminPage({
             firstRow,
             secondRow,
           ) => {
-            const firstIsOwner =
-              firstRow.accessStatus ===
-              'Owner'
+            const getRowPriority =
+              (
+                row:
+                  typeof firstRow,
+              ): number => {
+                if (
+                  row.accessStatus ===
+                  'Owner'
+                ) {
+                  return 0
+                }
 
-            const secondIsOwner =
-              secondRow.accessStatus ===
-              'Owner'
+                if (
+                  row.isTestAccount
+                ) {
+                  return 1
+                }
+
+                if (
+                  row.contact.isMentor
+                ) {
+                  return 2
+                }
+
+                return 3
+              }
+
+            const priorityDifference =
+              getRowPriority(
+                firstRow,
+              ) -
+              getRowPriority(
+                secondRow,
+              )
 
             if (
-              firstIsOwner &&
-              !secondIsOwner
+              priorityDifference !== 0
             ) {
-              return -1
-            }
-
-            if (
-              !firstIsOwner &&
-              secondIsOwner
-            ) {
-              return 1
+              return priorityDifference
             }
 
             return firstRow.contact.name.localeCompare(
@@ -41673,6 +41931,110 @@ function AdminPage({
           contactId,
         ),
     )
+
+  const trackedAccessEmails =
+    new Set(
+      accessManagerContacts
+        .map(
+          (contact) =>
+            contact.email
+              .trim()
+              .toLowerCase(),
+        )
+        .filter(
+          (email) =>
+            email.length > 0 &&
+            email !==
+            BETA_NU_OWNER_USER_ID
+              .toLowerCase(),
+        ),
+    )
+
+  const trackedRealmMembers =
+    sharedRealmMembers ===
+      undefined
+      ? []
+      : sharedRealmMembers.filter(
+        (member) => {
+          const memberEmail =
+            member.email
+              ?.trim()
+              .toLowerCase()
+
+          const memberUserId =
+            member.userId
+              ?.trim()
+              .toLowerCase()
+
+          return (
+            (
+              memberEmail !==
+              undefined &&
+              trackedAccessEmails.has(
+                memberEmail,
+              )
+            ) ||
+            (
+              memberUserId !==
+              undefined &&
+              trackedAccessEmails.has(
+                memberUserId,
+              )
+            )
+          )
+        },
+      )
+
+  const invitationSentCount =
+    trackedRealmMembers.filter(
+      (member) =>
+        member.accepted !==
+        undefined ||
+        member.rejected !==
+        undefined ||
+        member.invitedDate !==
+        undefined ||
+        member.invite === true,
+    ).length
+
+  const invitationAcceptedCount =
+    trackedRealmMembers.filter(
+      (member) =>
+        member.accepted !==
+        undefined,
+    ).length
+
+  const invitationAcceptanceRate =
+    invitationSentCount === 0
+      ? 0
+      : Math.round(
+        (
+          invitationAcceptedCount /
+          invitationSentCount
+        ) * 100,
+      )
+
+  const invitationChartStyle:
+    AdminCohortAccessChartStyle = {
+    '--admin-acceptance-angle':
+      (
+        `${(
+          invitationAcceptanceRate *
+          3.6
+        ) - 90}deg`
+      ),
+    background:
+      invitationSentCount === 0
+        ? '#dbe4ec'
+        : (
+          `conic-gradient(` +
+          `#168455 0 ` +
+          `${invitationAcceptanceRate}%, ` +
+          `#1976d2 ` +
+          `${invitationAcceptanceRate}% ` +
+          `100%)`
+        ),
+  }
 
   function toggleCohortInviteSelection(
     contactId: string,
@@ -41720,6 +42082,141 @@ function AdminPage({
     )
 
     setCohortInviteMessage('')
+  }
+
+  function addManualCohortAccessMember():
+    void {
+    if (
+      isSendingCohortInvitations
+    ) {
+      return
+    }
+
+    const nameInput =
+      window.prompt(
+        'Member name:',
+      )
+
+    if (nameInput === null) {
+      return
+    }
+
+    const name =
+      nameInput.trim()
+
+    if (name.length === 0) {
+      window.alert(
+        'Member name cannot be blank.',
+      )
+      return
+    }
+
+    const roleInput =
+      window.prompt(
+        (
+          'Cohort role: enter ' +
+          'Student or Mentor.'
+        ),
+        'Student',
+      )
+
+    if (roleInput === null) {
+      return
+    }
+
+    const normalizedRole =
+      roleInput
+        .trim()
+        .toLowerCase()
+
+    const role:
+      AdminCohortAccessRole | null =
+      normalizedRole ===
+        'student'
+        ? 'Student'
+        : normalizedRole ===
+          'mentor'
+          ? 'Mentor'
+          : null
+
+    if (role === null) {
+      window.alert(
+        (
+          'Cohort Role must be ' +
+          'Student or Mentor.'
+        ),
+      )
+      return
+    }
+
+    const emailInput =
+      window.prompt(
+        'Email address:',
+      )
+
+    if (emailInput === null) {
+      return
+    }
+
+    const email =
+      emailInput.trim()
+
+    const isValidEmail =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email,
+      )
+
+    if (!isValidEmail) {
+      window.alert(
+        'Enter a valid email address.',
+      )
+      return
+    }
+
+    const normalizedEmail =
+      email.toLowerCase()
+
+    const emailAlreadyExists =
+      accessManagerContacts.some(
+        (contact) =>
+          contact.email
+            .trim()
+            .toLowerCase() ===
+          normalizedEmail,
+      )
+
+    if (emailAlreadyExists) {
+      window.alert(
+        (
+          'That email address is already ' +
+          'listed in the Cohort Access Manager.'
+        ),
+      )
+      return
+    }
+
+    setManualCohortAccessMembers(
+      (currentMembers) => [
+        ...currentMembers,
+        {
+          id:
+            (
+              'cohort-access-manual-' +
+              crypto.randomUUID()
+            ),
+          name,
+          role,
+          email,
+        },
+      ],
+    )
+
+    setCohortInviteMessage(
+      (
+        `${name} was added to the ` +
+        `Cohort Access Manager.`
+      ),
+    )
   }
 
   async function sendSelectedCohortInvitations():
@@ -42682,61 +43179,34 @@ function AdminPage({
             </span>
           </div>
 
-          <div className="admin-cohort-access-summary">
-            <article>
-              <span>
-                Active Cohort
-              </span>
-
-              <strong>
-                {
-                  activeCohortContacts.length
-                }
-              </strong>
-            </article>
-
-            <article>
-              <span>
-                Owner
-              </span>
-
-              <strong>
-                {
-                  ownerCohortContacts.length
-                }
-              </strong>
-            </article>
-
-            <article>
-              <span>
-                Cohort Members
-              </span>
-
-              <strong>
-                {
-                  nonOwnerCohortContacts.length
-                }
-              </strong>
-            </article>
-
-            <article>
-              <span>
-                Ready to Invite
-              </span>
-
-              <strong>
-                {
-                  sharedRealmMembers ===
-                    undefined
-                    ? '...'
-                    : readyToInviteCount
-                }
-              </strong>
-            </article>
-          </div>
-
           <div className="admin-cohort-access-controls">
-            <div className="admin-cohort-access-selection-count">
+            <button
+              type="button"
+              className="admin-cohort-access-member-button"
+              disabled={
+                isSendingCohortInvitations
+              }
+              onClick={
+                addManualCohortAccessMember
+              }
+            >
+              <span aria-hidden="true">
+                +
+              </span>
+
+              Member
+            </button>
+
+            <div
+              className="admin-cohort-access-selection-count"
+              role="status"
+              aria-label={
+                (
+                  `${selectedReadyToInviteCount} ` +
+                  `members selected`
+                )
+              }
+            >
               <span>
                 Selected
               </span>
@@ -42800,156 +43270,356 @@ function AdminPage({
               </p>
             )}
 
-          <div className="admin-cohort-access-table-frame">
-            <table className="admin-cohort-access-table">
-              <thead>
-                <tr>
-                  <th>
-                    Select
-                  </th>
-
-                  <th>
-                    Name
-                  </th>
-
-                  <th>
-                    Cohort Role
-                  </th>
-
-                  <th>
-                    Email
-                  </th>
-
-                  <th>
-                    Access Status
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {sharedRealmMembers ===
-                  undefined ? (
+          <div className="admin-cohort-access-main-grid">
+            <div className="admin-cohort-access-table-frame">
+              <table className="admin-cohort-access-table">
+                <thead>
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="admin-cohort-access-loading"
-                    >
-                      Loading Dexie Cloud
-                      access records...
-                    </td>
+                    <th className="admin-cohort-access-select-heading">
+                      Select
+                    </th>
+
+                    <th>
+                      Name
+                    </th>
+
+                    <th>
+                      Cohort Role
+                    </th>
+
+                    <th>
+                      Email
+                    </th>
+
+                    <th>
+                      Access Status
+                    </th>
                   </tr>
-                ) : (
-                  cohortAccessRows.map(
-                    ({
-                      contact,
-                      accessStatus,
-                    }) => (
-                      <tr
-                        key={
-                          contact.id
-                        }
-                        className={
-                          accessStatus ===
-                            'Owner'
-                            ? 'admin-cohort-access-owner-row'
-                            : undefined
-                        }
+                </thead>
+
+                <tbody>
+                  {sharedRealmMembers ===
+                    undefined ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="admin-cohort-access-loading"
                       >
-                        <td className="admin-cohort-access-select-cell">
-                          {
+                        Loading Dexie Cloud
+                        access records...
+                      </td>
+                    </tr>
+                  ) : (
+                    cohortAccessRows.map(
+                      ({
+                        contact,
+                        accessStatus,
+                        isTestAccount,
+                      }) => (
+                        <tr
+                          key={
+                            contact.id
+                          }
+                          className={
                             accessStatus ===
-                              'Ready to Invite'
-                              ? (
-                                <input
-                                  type="checkbox"
-                                  className="admin-cohort-access-checkbox"
-                                  checked={
-                                    selectedInviteContactIds.includes(
-                                      contact.id,
-                                    )
-                                  }
-                                  disabled={
-                                    isSendingCohortInvitations
-                                  }
-                                  aria-label={
-                                    `Select ${contact.name} for Dexie Cloud invitation`
-                                  }
-                                  onChange={() =>
-                                    toggleCohortInviteSelection(
-                                      contact.id,
-                                    )
-                                  }
-                                />
-                              )
-                              : (
-                                <span
-                                  aria-hidden="true"
-                                >
-                                  —
-                                </span>
-                              )
+                              'Owner'
+                              ? 'admin-cohort-access-owner-row'
+                              : isTestAccount
+                                ? 'admin-cohort-access-test-row'
+                                : contact.isMentor
+                                  ? 'admin-cohort-access-mentor-row'
+                                  : undefined
                           }
-                        </td>
-
-                        <td>
-                          {
-                            contact.name
-                          }
-                        </td>
-
-                        <td>
-                          {
-                            contact.isMentor
-                              ? 'Mentor'
-                              : 'Student'
-                          }
-                        </td>
-
-                        <td>
-                          {
-                            contact.email
-                          }
-                        </td>
-
-                        <td>
-                          <span
-                            className={
-                              accessStatus ===
-                                'Owner'
-                                ? 'admin-cohort-access-status admin-cohort-access-status-owner'
-                                : accessStatus ===
-                                  'Access Active'
-                                  ? 'admin-cohort-access-status admin-cohort-access-status-active'
-                                  : accessStatus ===
-                                    'Invitation Pending'
-                                    ? 'admin-cohort-access-status admin-cohort-access-status-pending'
-                                    : accessStatus ===
-                                      'Invitation Rejected'
-                                      ? 'admin-cohort-access-status admin-cohort-access-status-rejected'
-                                      : 'admin-cohort-access-status admin-cohort-access-status-ready'
-                            }
-                          >
+                        >
+                          <td className="admin-cohort-access-select-cell">
                             {
-                              accessStatus
+                              accessStatus ===
+                                'Ready to Invite'
+                                ? (
+                                  <input
+                                    type="checkbox"
+                                    className="admin-cohort-access-checkbox"
+                                    checked={
+                                      selectedInviteContactIds.includes(
+                                        contact.id,
+                                      )
+                                    }
+                                    disabled={
+                                      isSendingCohortInvitations
+                                    }
+                                    aria-label={
+                                      `Select ${contact.name} for Dexie Cloud invitation`
+                                    }
+                                    onChange={() =>
+                                      toggleCohortInviteSelection(
+                                        contact.id,
+                                      )
+                                    }
+                                  />
+                                )
+                                : (
+                                  <span
+                                    aria-hidden="true"
+                                  >
+                                    —
+                                  </span>
+                                )
                             }
-                          </span>
-                        </td>
-                      </tr>
-                    ),
-                  )
-                )}
-              </tbody>
-            </table>
+                          </td>
+
+                          <td>
+                            {
+                              contact.name
+                            }
+                          </td>
+
+                          <td>
+                            {
+                              contact.isMentor
+                                ? 'Mentor'
+                                : 'Student'
+                            }
+                          </td>
+
+                          <td>
+                            {
+                              contact.email
+                            }
+                          </td>
+
+                          <td>
+                            <span
+                              className={
+                                accessStatus ===
+                                  'Owner'
+                                  ? 'admin-cohort-access-status admin-cohort-access-status-owner'
+                                  : accessStatus ===
+                                    'Access Active'
+                                    ? 'admin-cohort-access-status admin-cohort-access-status-active'
+                                    : accessStatus ===
+                                      'Invitation Pending'
+                                      ? 'admin-cohort-access-status admin-cohort-access-status-pending'
+                                      : accessStatus ===
+                                        'Invitation Rejected'
+                                        ? 'admin-cohort-access-status admin-cohort-access-status-rejected'
+                                        : 'admin-cohort-access-status admin-cohort-access-status-ready'
+                              }
+                            >
+                              {
+                                accessStatus
+                              }
+                            </span>
+                          </td>
+                        </tr>
+                      ),
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <aside
+              className="admin-cohort-access-statistics-panel"
+              aria-label="Cohort invitation statistics"
+            >
+              <div className="admin-cohort-access-summary">
+                <article className="admin-cohort-access-summary-card admin-cohort-access-summary-owner">
+                  <span
+                    className="admin-cohort-access-summary-icon"
+                    aria-hidden="true"
+                  >
+                    ★
+                  </span>
+
+                  <div>
+                    <span>
+                      Owner
+                    </span>
+
+                    <strong>
+                      {
+                        ownerCohortCount
+                      }
+                    </strong>
+                  </div>
+                </article>
+
+                <article className="admin-cohort-access-summary-card admin-cohort-access-summary-mentor">
+                  <span
+                    className="admin-cohort-access-summary-icon"
+                    aria-hidden="true"
+                  >
+                    ◆
+                  </span>
+
+                  <div>
+                    <span>
+                      Mentor
+                    </span>
+
+                    <strong>
+                      {
+                        mentorCohortCount
+                      }
+                    </strong>
+                  </div>
+                </article>
+
+                <article className="admin-cohort-access-summary-card admin-cohort-access-summary-students">
+                  <span
+                    className="admin-cohort-access-summary-icon"
+                    aria-hidden="true"
+                  >
+                    ●
+                  </span>
+
+                  <div>
+                    <span>
+                      Students
+                    </span>
+
+                    <strong>
+                      {
+                        studentCohortCount
+                      }
+                    </strong>
+                  </div>
+                </article>
+
+                <article className="admin-cohort-access-summary-card admin-cohort-access-summary-total">
+                  <span
+                    className="admin-cohort-access-summary-icon"
+                    aria-hidden="true"
+                  >
+                    ●●
+                  </span>
+
+                  <div>
+                    <span>
+                      TOTAL COHORT
+                    </span>
+
+                    <strong>
+                      {
+                        totalCohortCount
+                      }
+                    </strong>
+                  </div>
+                </article>
+              </div>
+
+              <div
+                className="admin-cohort-access-stat-divider"
+                aria-hidden="true"
+              />
+
+              <div className="admin-cohort-access-invitation-stats">
+                <article className="admin-cohort-access-invitation-stat admin-cohort-access-invitation-stat-sent">
+                  <span>
+                    Number of Invitations Sent
+                  </span>
+
+                  <strong>
+                    {
+                      invitationSentCount
+                    }
+                  </strong>
+                </article>
+
+                <article className="admin-cohort-access-invitation-stat admin-cohort-access-invitation-stat-accepted">
+                  <span>
+                    Number of Invitations Accepted
+                  </span>
+
+                  <strong>
+                    {
+                      invitationAcceptedCount
+                    }
+                  </strong>
+                </article>
+
+                <article className="admin-cohort-access-invitation-stat admin-cohort-access-invitation-stat-rate">
+                  <span>
+                    Acceptance Rate
+                  </span>
+
+                  <strong>
+                    {
+                      invitationAcceptanceRate
+                    }%
+                  </strong>
+                </article>
+              </div>
+
+              <div className="admin-cohort-access-chart-section">
+                <div
+                  className={
+                    invitationSentCount === 0
+                      ? 'admin-cohort-access-pie-chart admin-cohort-access-pie-chart-empty'
+                      : 'admin-cohort-access-pie-chart'
+                  }
+                  style={
+                    invitationChartStyle
+                  }
+                  role="img"
+                  aria-label={
+                    (
+                      `${invitationAcceptedCount} of ` +
+                      `${invitationSentCount} invitations ` +
+                      `accepted. Acceptance rate ` +
+                      `${invitationAcceptanceRate} percent.`
+                    )
+                  }
+                />
+
+                <div className="admin-cohort-access-chart-legend">
+                  <div>
+                    <span
+                      className="admin-cohort-access-legend-color admin-cohort-access-legend-sent"
+                      aria-hidden="true"
+                    />
+
+                    <p>
+                      Invitations Sent{' '}
+                      <strong>
+                        {
+                          invitationSentCount
+                        }
+                      </strong>
+                    </p>
+                  </div>
+
+                  <div>
+                    <span
+                      className="admin-cohort-access-legend-color admin-cohort-access-legend-accepted"
+                      aria-hidden="true"
+                    />
+
+                    <p>
+                      Invitations Accepted
+                      <br />
+
+                      <strong>
+                        {
+                          invitationAcceptedCount
+                        } ({invitationAcceptanceRate}%)
+                      </strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
           </div>
 
           <p className="admin-cohort-access-note">
-            Only active Cohort Contacts
-            marked Ready to Invite can be
-            selected. The owner, inactive
-            members, existing Dexie Cloud
-            members, and non-cohort test
-            accounts are automatically
-            excluded.
+            Only access rows marked Ready
+            to Invite can be selected. The
+            owner, inactive cohort contacts,
+            and existing Dexie Cloud members
+            remain protected from duplicate
+            invitations. Multiple access
+            emails for the same person count
+            only once in cohort totals.
           </p>
         </section>
       )}
