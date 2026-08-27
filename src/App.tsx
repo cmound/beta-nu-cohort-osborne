@@ -46225,6 +46225,19 @@ function App() {
     void {
     setIsAdminAccessTrayOpen(false)
 
+    const currentUserId =
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase()
+
+    if (
+      currentUserId !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      return
+    }
+
     if (isAdminUnlocked) {
       navigate('/admin')
       return
@@ -46246,6 +46259,22 @@ function App() {
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault()
+
+    const currentUserId =
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase()
+
+    if (
+      currentUserId !==
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase()
+    ) {
+      setAdminLoginError(
+        'Admin access is available only to the owner.',
+      )
+      return
+    }
 
     if (
       !/^\d{4}$/.test(
@@ -50564,7 +50593,12 @@ function App() {
             <Route
               path="/admin"
               element={
-                isAdminUnlocked ? (
+                isAdminUnlocked &&
+                  db.cloud.currentUserId
+                    .trim()
+                    .toLowerCase() ===
+                  BETA_NU_OWNER_USER_ID
+                    .toLowerCase() ? (
                   <AdminPage
                     contacts={
                       contacts
