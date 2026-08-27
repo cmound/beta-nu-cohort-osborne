@@ -21683,13 +21683,20 @@ tbody td {
   height: 28px;
   box-sizing: border-box;
   margin: 0;
-  padding: 3px 5px;
+  padding: 3px 0;
   border: 1px solid transparent;
   border-radius: 3px;
   color: inherit;
   background: transparent;
   font: inherit;
   font-weight: inherit;
+  text-align: left;
+  text-indent: 0;
+}
+
+.admin-cohort-access-edit-select {
+  padding-right: 18px;
+  text-align-last: left;
 }
 
 .admin-cohort-access-edit-input:hover,
