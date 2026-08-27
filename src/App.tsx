@@ -37,9 +37,13 @@ import {
   WidthType,
 } from 'docx'
 import * as XLSX from 'xlsx'
+import type {
+  Table as DexieTable,
+} from 'dexie'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   db,
+  type CloudAcademicPlanRecord,
   type CloudCohortAttendanceRecord,
   type CloudCohortAvailabilityRecord,
   type CloudCohortContactRecord,
@@ -40455,7 +40459,54 @@ interface BetaNuRuntimeState {
   CohortAttendanceState
 }
 
-interface BetaNuBackupDocument {
+interface BetaNuBackupCloudData {
+  readonly realmId: string
+
+  readonly snapshotSource:
+  | 'synced'
+  | 'local-cache'
+
+  readonly academicPlan:
+  readonly CloudAcademicPlanRecord[]
+
+  readonly cohortContacts:
+  readonly CloudCohortContactRecord[]
+
+  readonly cohortMeetings:
+  readonly CloudCohortMeetingRecord[]
+
+  readonly courseWorkspaces:
+  readonly CloudCourseWorkspaceRecord[]
+
+  readonly courseWaivers:
+  readonly CloudCourseWaiverRecord[]
+
+  readonly courseProgress:
+  readonly CloudCourseProgressRecord[]
+
+  readonly cohortAttendance:
+  readonly CloudCohortAttendanceRecord[]
+
+  readonly cohortAvailability:
+  readonly CloudCohortAvailabilityRecord[]
+
+  readonly cohortGroupAssignments:
+  readonly CloudCohortGroupAssignmentsRecord[]
+
+  readonly cohortPurposeResearch:
+  readonly CloudCohortPurposeResearchWorkspaceRecord[]
+
+  readonly facilitatorAgendas:
+  readonly CloudFacilitatorAgendaRecord[]
+
+  readonly sharedUrls:
+  readonly CloudCohortSharedUrlRecord[]
+
+  readonly sharedDocumentIds:
+  readonly string[]
+}
+
+interface BetaNuBackupDocumentV1 {
   readonly appName:
   'Beta Nu Fall Cohort Hub'
 
@@ -40466,6 +40517,29 @@ interface BetaNuBackupDocument {
   readonly storage:
   Readonly<Record<string, string>>
 }
+
+interface BetaNuBackupDocumentV2 {
+  readonly appName:
+  'Beta Nu Fall Cohort Hub'
+
+  readonly schemaVersion: 2
+
+  readonly exportedAt: string
+
+  readonly storage:
+  Readonly<Record<string, string>>
+
+  readonly cloud:
+  BetaNuBackupCloudData
+}
+
+type BetaNuBackupDocument =
+  | BetaNuBackupDocumentV1
+  | BetaNuBackupDocumentV2
+
+type BetaNuBackupRestoreResult =
+  | 'legacy-v1-local-only'
+  | 'v2-cloud-and-local'
 
 interface AdminBackupArchiveRecord {
   readonly id: string
@@ -41209,8 +41283,282 @@ function getAdminArchiveSourceLabel(
   }
 }
 
-function createBetaNuBackupDocument():
-  BetaNuBackupDocument {
+function isBetaNuBackupStorage(
+  value: unknown,
+): value is Readonly<
+  Record<string, string>
+> {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  return Object.entries(
+    value,
+  ).every(
+    ([storageKey, storageValue]) =>
+      storageKey.startsWith(
+        'beta-nu-',
+      ) &&
+      typeof storageValue ===
+      'string',
+  )
+}
+
+function isBetaNuCloudBackupRecordArray(
+  value: unknown,
+): boolean {
+  if (!Array.isArray(value)) {
+    return false
+  }
+
+  const recordIds =
+    new Set<string>()
+
+  for (const record of value) {
+    if (
+      !isAdminObjectRecord(
+        record,
+      ) ||
+      typeof record.id !==
+      'string' ||
+      record.realmId !==
+      BETA_NU_SHARED_REALM_ID ||
+      recordIds.has(
+        record.id,
+      )
+    ) {
+      return false
+    }
+
+    recordIds.add(
+      record.id,
+    )
+  }
+
+  return true
+}
+
+function isBetaNuBackupCloudData(
+  value: unknown,
+): value is BetaNuBackupCloudData {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  if (
+    value.realmId !==
+    BETA_NU_SHARED_REALM_ID ||
+    (
+      value.snapshotSource !==
+        'synced' &&
+      value.snapshotSource !==
+        'local-cache'
+    )
+  ) {
+    return false
+  }
+
+  const cloudRecordCollections:
+    readonly unknown[] = [
+      value.academicPlan,
+      value.cohortContacts,
+      value.cohortMeetings,
+      value.courseWorkspaces,
+      value.courseWaivers,
+      value.courseProgress,
+      value.cohortAttendance,
+      value.cohortAvailability,
+      value.cohortGroupAssignments,
+      value.cohortPurposeResearch,
+      value.facilitatorAgendas,
+      value.sharedUrls,
+    ]
+
+  if (
+    !cloudRecordCollections.every(
+      isBetaNuCloudBackupRecordArray,
+    )
+  ) {
+    return false
+  }
+
+  const sharedDocumentIds =
+    value.sharedDocumentIds
+
+  if (
+    !Array.isArray(
+      sharedDocumentIds,
+    ) ||
+    !sharedDocumentIds.every(
+      (
+        documentId: unknown,
+      ) =>
+        typeof documentId ===
+        'string',
+    )
+  ) {
+    return false
+  }
+
+  return (
+    new Set(
+      sharedDocumentIds,
+    ).size ===
+    sharedDocumentIds.length
+  )
+}
+
+async function createBetaNuBackupDocument():
+  Promise<BetaNuBackupDocumentV2> {
+  if (
+    db.cloud.currentUserId !==
+    BETA_NU_OWNER_USER_ID
+  ) {
+    throw new Error(
+      'The Beta Nu owner must be signed in before creating a v2 backup.',
+    )
+  }
+
+  let snapshotSource:
+    BetaNuBackupCloudData[
+      'snapshotSource'
+    ] =
+    'synced'
+
+  try {
+    await db.cloud.sync({
+      purpose: 'pull',
+      wait: true,
+    })
+  } catch (
+    error: unknown
+  ) {
+    snapshotSource =
+      'local-cache'
+
+    console.warn(
+      'Dexie Cloud could not be refreshed before backup. The v2 backup is using the current local Dexie cache.',
+      error,
+    )
+  }
+
+  const [
+    academicPlan,
+    cohortContacts,
+    cohortMeetings,
+    courseWorkspaces,
+    courseWaivers,
+    courseProgress,
+    cohortAttendance,
+    cohortAvailability,
+    cohortGroupAssignments,
+    cohortPurposeResearch,
+    facilitatorAgendas,
+    sharedUrls,
+    sharedDocumentPrimaryKeys,
+  ] =
+    await Promise.all([
+      db.academicPlan
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortContacts
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortMeetings
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.courseWorkspaces
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.courseWaivers
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.courseProgress
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortAttendance
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortAvailability
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortGroupAssignments
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortPurposeResearch
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.facilitatorAgendas
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.sharedUrls
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.sharedDocuments
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .primaryKeys(),
+    ])
+
+  const sharedDocumentIds =
+    sharedDocumentPrimaryKeys.filter(
+      (
+        primaryKey,
+      ): primaryKey is string =>
+        typeof primaryKey ===
+        'string',
+    )
+
   const storage:
     Record<string, string> = {}
 
@@ -41252,10 +41600,46 @@ function createBetaNuBackupDocument():
   return {
     appName:
       'Beta Nu Fall Cohort Hub',
-    schemaVersion: 1,
+
+    schemaVersion: 2,
+
     exportedAt:
       new Date().toISOString(),
+
     storage,
+
+    cloud: {
+      realmId:
+        BETA_NU_SHARED_REALM_ID,
+
+      snapshotSource,
+
+      academicPlan,
+
+      cohortContacts,
+
+      cohortMeetings,
+
+      courseWorkspaces,
+
+      courseWaivers,
+
+      courseProgress,
+
+      cohortAttendance,
+
+      cohortAvailability,
+
+      cohortGroupAssignments,
+
+      cohortPurposeResearch,
+
+      facilitatorAgendas,
+
+      sharedUrls,
+
+      sharedDocumentIds,
+    },
   }
 }
 
@@ -41269,30 +41653,147 @@ function isBetaNuBackupDocument(
   if (
     value.appName !==
     'Beta Nu Fall Cohort Hub' ||
-    value.schemaVersion !== 1 ||
     typeof value.exportedAt !==
     'string' ||
-    !isAdminObjectRecord(
+    !isBetaNuBackupStorage(
       value.storage,
     )
   ) {
     return false
   }
 
-  return Object.entries(
-    value.storage,
-  ).every(
-    ([storageKey, storageValue]) =>
-      storageKey.startsWith(
-        'beta-nu-',
-      ) &&
-      typeof storageValue ===
-      'string',
+  if (
+    value.schemaVersion === 1
+  ) {
+    return true
+  }
+
+  if (
+    value.schemaVersion === 2
+  ) {
+    return isBetaNuBackupCloudData(
+      value.cloud,
+    )
+  }
+
+  return false
+}
+
+async function replaceBetaNuRealmTableRecords<
+  T extends {
+    readonly id: string
+    readonly realmId: string
+  },
+>(
+  table:
+    DexieTable<T, string>,
+  backupRecords:
+    readonly T[],
+): Promise<void> {
+  const existingRecords =
+    await table
+      .where('realmId')
+      .equals(
+        BETA_NU_SHARED_REALM_ID,
+      )
+      .toArray()
+
+  const backupIds =
+    new Set(
+      backupRecords.map(
+        (record) =>
+          record.id,
+      ),
+    )
+
+  const staleRecordIds =
+    existingRecords
+      .filter(
+        (record) =>
+          !backupIds.has(
+            record.id,
+          ),
+      )
+      .map(
+        (record) =>
+          record.id,
+      )
+
+  if (
+    staleRecordIds.length >
+    0
+  ) {
+    await table.bulkDelete(
+      staleRecordIds,
+    )
+  }
+
+  if (
+    backupRecords.length >
+    0
+  ) {
+    await table.bulkPut(
+      [
+        ...backupRecords,
+      ],
+    )
+  }
+}
+
+async function betaNuRealmTableMatchesBackup<
+  T extends {
+    readonly id: string
+    readonly realmId: string
+  },
+>(
+  table:
+    DexieTable<T, string>,
+  backupRecords:
+    readonly T[],
+): Promise<boolean> {
+  const currentRecords =
+    await table
+      .where('realmId')
+      .equals(
+        BETA_NU_SHARED_REALM_ID,
+      )
+      .toArray()
+
+  const currentIds =
+    currentRecords
+      .map(
+        (record) =>
+          record.id,
+      )
+      .sort()
+
+  const backupIds =
+    backupRecords
+      .map(
+        (record) =>
+          record.id,
+      )
+      .sort()
+
+  if (
+    currentIds.length !==
+    backupIds.length
+  ) {
+    return false
+  }
+
+  return currentIds.every(
+    (recordId, index) =>
+      recordId ===
+      backupIds[index],
   )
 }
 
-function restoreBetaNuBackupDocument(
-  backup: BetaNuBackupDocument,
+function restoreBetaNuLocalStorage(
+  storage:
+    Readonly<
+      Record<string, string>
+    >,
 ): void {
   const keysToRemove:
     string[] = []
@@ -41337,7 +41838,7 @@ function restoreBetaNuBackupDocument(
       storageValue,
     ]
     of Object.entries(
-      backup.storage,
+      storage,
     )
   ) {
     window.localStorage.setItem(
@@ -41345,6 +41846,229 @@ function restoreBetaNuBackupDocument(
       storageValue,
     )
   }
+}
+
+async function restoreBetaNuBackupDocument(
+  backup:
+    BetaNuBackupDocument,
+): Promise<
+  BetaNuBackupRestoreResult
+> {
+  if (
+    backup.schemaVersion === 1
+  ) {
+    restoreBetaNuLocalStorage(
+      backup.storage,
+    )
+
+    return (
+      'legacy-v1-local-only'
+    )
+  }
+
+  if (
+    db.cloud.currentUserId !==
+    BETA_NU_OWNER_USER_ID
+  ) {
+    throw new Error(
+      'Only the Beta Nu owner can restore Dexie Cloud data.',
+    )
+  }
+
+  await db.cloud.sync({
+    purpose: 'pull',
+    wait: true,
+  })
+
+  await db.transaction(
+    'rw',
+    [
+      db.academicPlan,
+      db.cohortContacts,
+      db.cohortMeetings,
+      db.courseWorkspaces,
+      db.courseWaivers,
+      db.courseProgress,
+      db.cohortAttendance,
+      db.cohortAvailability,
+      db.cohortGroupAssignments,
+      db.cohortPurposeResearch,
+      db.facilitatorAgendas,
+      db.sharedUrls,
+    ],
+    async () => {
+      await replaceBetaNuRealmTableRecords(
+        db.academicPlan,
+        backup.cloud
+          .academicPlan,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.cohortContacts,
+        backup.cloud
+          .cohortContacts,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.cohortMeetings,
+        backup.cloud
+          .cohortMeetings,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.courseWorkspaces,
+        backup.cloud
+          .courseWorkspaces,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.courseWaivers,
+        backup.cloud
+          .courseWaivers,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.courseProgress,
+        backup.cloud
+          .courseProgress,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.cohortAttendance,
+        backup.cloud
+          .cohortAttendance,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.cohortAvailability,
+        backup.cloud
+          .cohortAvailability,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.cohortGroupAssignments,
+        backup.cloud
+          .cohortGroupAssignments,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.cohortPurposeResearch,
+        backup.cloud
+          .cohortPurposeResearch,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.facilitatorAgendas,
+        backup.cloud
+          .facilitatorAgendas,
+      )
+
+      await replaceBetaNuRealmTableRecords(
+        db.sharedUrls,
+        backup.cloud
+          .sharedUrls,
+      )
+    },
+  )
+
+  await db.cloud.sync()
+
+  await db.cloud.sync({
+    purpose: 'pull',
+    wait: true,
+  })
+
+  const verificationResults =
+    await Promise.all([
+      betaNuRealmTableMatchesBackup(
+        db.academicPlan,
+        backup.cloud
+          .academicPlan,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.cohortContacts,
+        backup.cloud
+          .cohortContacts,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.cohortMeetings,
+        backup.cloud
+          .cohortMeetings,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.courseWorkspaces,
+        backup.cloud
+          .courseWorkspaces,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.courseWaivers,
+        backup.cloud
+          .courseWaivers,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.courseProgress,
+        backup.cloud
+          .courseProgress,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.cohortAttendance,
+        backup.cloud
+          .cohortAttendance,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.cohortAvailability,
+        backup.cloud
+          .cohortAvailability,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.cohortGroupAssignments,
+        backup.cloud
+          .cohortGroupAssignments,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.cohortPurposeResearch,
+        backup.cloud
+          .cohortPurposeResearch,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.facilitatorAgendas,
+        backup.cloud
+          .facilitatorAgendas,
+      ),
+
+      betaNuRealmTableMatchesBackup(
+        db.sharedUrls,
+        backup.cloud
+          .sharedUrls,
+      ),
+    ])
+
+  if (
+    !verificationResults.every(
+      (isVerified) =>
+        isVerified,
+    )
+  ) {
+    throw new Error(
+      'The Dexie Cloud restore did not pass post-restore verification.',
+    )
+  }
+
+  restoreBetaNuLocalStorage(
+    backup.storage,
+  )
+
+  return 'v2-cloud-and-local'
 }
 
 function isAdminBackupArchiveRecord(
@@ -41564,7 +42288,7 @@ async function createAdminArchive(
   AdminBackupArchiveRecord
 > {
   const backup =
-    createBetaNuBackupDocument()
+    await createBetaNuBackupDocument()
 
   const backupJson =
     JSON.stringify(
@@ -43102,9 +43826,19 @@ function AdminPage({
         return
       }
 
+      const confirmationMessage =
+        parsedValue.schemaVersion ===
+          1
+          ? (
+            'This is a legacy schemaVersion 1 backup. It can restore only browser-local Beta Nu data because Dexie Cloud data was not included in v1 backups. Current Dexie Cloud data and Shared Documents will remain unchanged. A v2 safety snapshot will be created first. Continue?'
+          )
+          : (
+            'IMPORT JSON will restore the structured Dexie Cloud cohort data and browser-local Beta Nu data from this v2 backup. Dexie Cloud membership, permissions, and Shared Document files will remain unchanged. A v2 safety snapshot will be created first. Continue?'
+          )
+
       const confirmed =
         window.confirm(
-          'IMPORT JSON will replace the current Beta Nu Hub data with this backup. A safety snapshot of the current data will be created first. Continue?',
+          confirmationMessage,
         )
 
       if (!confirmed) {
@@ -43115,23 +43849,38 @@ function AdminPage({
         'pre-import',
       )
 
-      restoreBetaNuBackupDocument(
-        parsedValue,
-      )
+      const restoreResult =
+        await restoreBetaNuBackupDocument(
+          parsedValue,
+        )
 
       setActionMessage(
-        'Backup restored. Reloading the Hub...',
+        restoreResult ===
+          'legacy-v1-local-only'
+          ? (
+            'Legacy v1 browser-local data restored. Dexie Cloud data was left unchanged. Reloading the Hub...'
+          )
+          : (
+            'Backup v2 restored and Dexie Cloud verification passed. Reloading the Hub...'
+          ),
       )
 
       window.setTimeout(
         () => {
           window.location.reload()
         },
-        250,
+        500,
       )
-    } catch {
+    } catch (
+      error: unknown
+    ) {
+      console.error(
+        'Unable to import the Beta Nu backup.',
+        error,
+      )
+
       setActionMessage(
-        'The selected JSON file could not be imported.',
+        'The selected JSON backup could not be fully restored. Current data was not intentionally cleared outside the restore transaction.',
       )
     } finally {
       input.value = ''
@@ -43216,6 +43965,12 @@ function AdminPage({
               Automatic archive:
               at the top of every hour
               while the Hub is open.
+              Backup v2 includes the
+              structured Dexie Cloud
+              cohort data and local Hub
+              settings. Shared Document
+              file Blobs remain protected
+              separately in Dexie Cloud.
             </p>
           </div>
         </div>
