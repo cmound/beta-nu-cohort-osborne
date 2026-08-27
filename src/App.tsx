@@ -41350,9 +41350,9 @@ function isBetaNuBackupCloudData(
     BETA_NU_SHARED_REALM_ID ||
     (
       value.snapshotSource !==
-        'synced' &&
+      'synced' &&
       value.snapshotSource !==
-        'local-cache'
+      'local-cache'
     )
   ) {
     return false
@@ -41421,7 +41421,7 @@ async function createBetaNuBackupDocument():
 
   let snapshotSource:
     BetaNuBackupCloudData[
-      'snapshotSource'
+    'snapshotSource'
     ] =
     'synced'
 
@@ -41431,7 +41431,7 @@ async function createBetaNuBackupDocument():
       wait: true,
     })
   } catch (
-    error: unknown
+  error: unknown
   ) {
     snapshotSource =
       'local-cache'
@@ -42883,6 +42883,9 @@ function AdminPage({
             email.length > 0 &&
             email !==
             BETA_NU_OWNER_USER_ID
+              .toLowerCase() &&
+            email !==
+            ADMIN_COHORT_ACCESS_TEST_EMAIL
               .toLowerCase(),
         ),
     )
@@ -43872,7 +43875,7 @@ function AdminPage({
         500,
       )
     } catch (
-      error: unknown
+    error: unknown
     ) {
       console.error(
         'Unable to import the Beta Nu backup.',
@@ -44839,9 +44842,7 @@ function AdminPage({
                     />
 
                     <p>
-                      Invitations Accepted
-                      <br />
-
+                      Invitations Accepted{' '}
                       <strong>
                         {
                           invitationAcceptedCount
