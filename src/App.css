@@ -21322,10 +21322,10 @@ tbody td {
   background: #ffffff;
 }
 
-.admin-cohort-access-selection-count span {
-  color: #27476b;
-  font-size: 10px;
-  font-weight: 800;
+.admin-cohort-access-selection-count > span {
+  color: #0b1f3b;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .admin-cohort-access-selection-count strong {
@@ -21731,7 +21731,7 @@ tbody td {
   td:nth-child(3),
 .admin-cohort-access-test-row
   td:nth-child(4) {
-  color: #0b1f3b;
+  color: #FFFF00;
   font-style: italic;
   font-weight: 900;
 }
@@ -22052,6 +22052,304 @@ tbody td {
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid #c5ced7;
+}
+
+/* =========================================================
+   Cohort Access Manager - Alignment and Icon Refinement
+   ========================================================= */
+
+.admin-cohort-access-toolbar-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.admin-cohort-access-toolbar-row
+  .admin-cohort-access-controls {
+  margin-top: 0;
+}
+
+.admin-cohort-access-controls {
+  gap: 8px;
+  margin-top: 0;
+}
+
+.admin-cohort-access-preview-badge {
+  align-self: center;
+  margin-left: auto;
+}
+
+.admin-cohort-access-main-grid {
+  margin-top: 6px;
+}
+
+.admin-cohort-access-main-grid
+  .admin-cohort-access-table-frame {
+  margin-top: 0;
+}
+
+/* Trash mode button */
+.admin-cohort-access-delete-button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #9aa9b7;
+  border-radius: 6px;
+  color: #8b1e2d;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #eef3f7 58%,
+      #d9e2e9 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.95),
+    inset 0 -2px 2px
+      rgba(73, 94, 113, 0.16),
+    0 3px 5px
+      rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.admin-cohort-access-delete-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.admin-cohort-access-delete-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.admin-cohort-access-delete-button-active {
+  border-color: #9b1c1c;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #e45a5a 0%,
+      #c62828 52%,
+      #921818 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.34),
+    inset 0 -3px 3px
+      rgba(90, 0, 0, 0.36),
+    0 3px 5px
+      rgba(0, 0, 0, 0.25);
+}
+
+.admin-cohort-access-delete-button:focus-visible {
+  outline: 2px solid #005eb8;
+  outline-offset: 2px;
+}
+
+.admin-cohort-access-delete-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Button SVG icons */
+.admin-cohort-access-button-icon {
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  flex: 0 0 20px;
+  display: block;
+  overflow: visible;
+}
+
+.admin-cohort-access-delete-button
+  > .admin-cohort-access-button-icon {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  flex: 0 0 18px;
+}
+
+.admin-cohort-access-selection-count
+  .admin-cohort-access-button-icon,
+.admin-cohort-access-send-button
+  .admin-cohort-access-button-icon {
+  color: #0b1f3b;
+}
+
+.admin-cohort-access-send-button
+  > .admin-cohort-access-button-icon {
+  width: 19px;
+  height: 19px;
+  max-width: 19px;
+  max-height: 19px;
+  flex: 0 0 19px;
+}
+
+/* Raised circular icon treatment */
+.admin-cohort-access-summary-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow:
+    inset 1px 1px 0
+      rgba(255, 255, 255, 0.96),
+    inset -2px -2px 2px
+      rgba(11, 31, 59, 0.08),
+    0 2px 4px
+      rgba(11, 31, 59, 0.16);
+}
+
+.admin-cohort-access-summary-students
+  .admin-cohort-access-card-icon,
+.admin-cohort-access-summary-total
+  .admin-cohort-access-card-icon {
+  width: 26px;
+  height: 26px;
+}
+
+/* Owner crown */
+.admin-cohort-access-summary-owner
+  .admin-cohort-access-summary-icon {
+  border: 1px solid #d5ad3a;
+  color: #e5b000;
+  background:
+    linear-gradient(
+      145deg,
+      #fffdf2 0%,
+      #fff7d6 64%,
+      #f7e7a5 100%
+    );
+}
+
+.admin-cohort-access-summary-owner
+  .admin-cohort-access-card-icon {
+  filter:
+    drop-shadow(
+      0 1px 0 #b98700
+    );
+}
+
+/* Mentor graduation cap */
+.admin-cohort-access-summary-mentor
+  .admin-cohort-access-summary-icon {
+  border: 1px solid #9ebfe5;
+  color: #086adb;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #eaf3ff 64%,
+      #d9eaff 100%
+    );
+}
+
+/* Students */
+.admin-cohort-access-summary-students
+  .admin-cohort-access-summary-icon {
+  border: 1px solid #9ebfe5;
+  color: #086adb;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #eaf3ff 64%,
+      #d9eaff 100%
+    );
+}
+
+/* Total cohort */
+.admin-cohort-access-summary-total
+  .admin-cohort-access-summary-icon {
+  border: 1px solid #7d9dbb;
+  color: #086adb;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #e8f1fa 64%,
+      #d7e5f1 100%
+    );
+}
+
+/* Invitation statistic number + icon */
+.admin-cohort-access-invitation-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.admin-cohort-access-invitation-value-row
+  strong {
+  margin-top: 0;
+}
+
+.admin-cohort-access-invitation-stat
+  .admin-cohort-access-invitation-icon-badge {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow:
+    inset 1px 1px 0
+      rgba(255, 255, 255, 0.96),
+    inset -2px -2px 2px
+      rgba(11, 31, 59, 0.08),
+    0 2px 4px
+      rgba(11, 31, 59, 0.16);
+  font-size: 0;
+}
+
+.admin-cohort-access-invitation-card-icon {
+  width: 23px;
+  height: 23px;
+  max-width: 23px;
+  max-height: 23px;
+  display: block;
+  overflow: hidden;
+}
+
+/* Invitations Sent */
+.admin-cohort-access-invitation-icon-sent {
+  border: 1px solid #9ebfe5;
+  color: #086adb;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #eaf3ff 64%,
+      #d9eaff 100%
+    );
+}
+
+/* Invitations Accepted */
+.admin-cohort-access-invitation-icon-accepted {
+  border: 1px solid #89bda1;
+  color: #138a56;
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff 0%,
+      #e7f6ee 64%,
+      #d5eddf 100%
+    );
 }
 
 /* =========================================================
