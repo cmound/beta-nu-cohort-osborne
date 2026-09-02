@@ -2724,7 +2724,9 @@
   text-align: center;
 }
 
-.cohort-role-summary-former-member-name {
+.cohort-role-summary-table
+  td.cohort-role-summary-inactive-member-name {
+  background: #F4CCCC;
   font-style: italic;
 }
 
@@ -4961,6 +4963,14 @@
 
 .attendance-mentor-name {
   font-weight: 900;
+}
+
+.attendance-table
+  tbody
+  .attendance-inactive-name {
+  color: #111827;
+  background: #F4CCCC;
+  font-style: italic;
 }
 
 .attendance-meeting-column {

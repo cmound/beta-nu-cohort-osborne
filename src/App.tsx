@@ -488,6 +488,10 @@ type CohortAttendanceState = Record<string, CohortAttendanceMark>
 
 interface CohortAttendancePageProps {
   readonly contacts: readonly CohortContactRecord[]
+
+  readonly contactStatuses:
+  Readonly<CohortContactStatusState>
+
   readonly meetings: readonly CohortMeetingRecord[]
   readonly attendance: CohortAttendanceState
   readonly isEditable: boolean
@@ -12127,6 +12131,33 @@ function CohortDatesRolesPage({
       contactInactiveDates,
     )
 
+  function isInactiveRoleSummaryMember(
+    memberName: string,
+  ): boolean {
+    const matchingContact =
+      contacts.find(
+        (contact) =>
+          contact.name ===
+          memberName,
+      )
+
+    if (
+      matchingContact !==
+      undefined
+    ) {
+      return (
+        contactStatuses[
+        matchingContact.id
+        ] === 'Inactive'
+      )
+    }
+
+    return formerCohortMembers.some(
+      (member) =>
+        member.name === memberName,
+    )
+  }
+
   const roleSummaryTotals = roleSummary.reduce(
     (totals, summary) => ({
       facilitator: totals.facilitator + summary.facilitator,
@@ -12651,8 +12682,10 @@ function CohortDatesRolesPage({
                   >
                     <td
                       className={
-                        summary.name === 'Patrick J. Harris'
-                          ? 'cohort-role-summary-former-member-name'
+                        isInactiveRoleSummaryMember(
+                          summary.name,
+                        )
+                          ? 'cohort-role-summary-inactive-member-name'
                           : undefined
                       }
                     >
@@ -18724,6 +18757,7 @@ function FacilitatorPlannerPage({
 
 function CohortAttendancePage({
   contacts,
+  contactStatuses,
   meetings,
   attendance,
   isEditable,
@@ -18806,6 +18840,11 @@ function CohortAttendancePage({
                   className={`attendance-name-column${contact.isMentor
                     ? ' attendance-mentor-name'
                     : ''
+                    }${contactStatuses[
+                      contact.id
+                    ] === 'Inactive'
+                      ? ' attendance-inactive-name'
+                      : ''
                     }`}
                 >
                   {contact.name}
@@ -50771,6 +50810,9 @@ function App() {
               element={
                 <CohortAttendancePage
                   contacts={contacts}
+                  contactStatuses={
+                    contactStatuses
+                  }
                   meetings={cohortMeetings}
                   attendance={cohortAttendance}
                   isEditable={
