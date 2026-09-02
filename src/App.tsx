@@ -1769,6 +1769,74 @@ const BETA_NU_OWNER_MEMBER_ID =
 const BETA_NU_OWNER_USER_ID =
   'cmound@mail.umassglobal.edu'
 
+const COHORT_MEETING_ROLE_EDIT_FIELDS = [
+  'facilitator',
+  'communityBuilder',
+  'recorder',
+  'timeKeeper',
+  'processObserver',
+] as const
+
+function createCohortMeetingRoleEditPermissions(): {
+  update: {
+    cohortMeetings: string[]
+  }
+} {
+  return {
+    update: {
+      cohortMeetings: [
+        ...COHORT_MEETING_ROLE_EDIT_FIELDS,
+      ],
+    },
+  }
+}
+
+function isActiveCohortContactForRoleEditing(
+  contact: CohortContactRecord,
+  contactStatuses:
+    Readonly<CohortContactStatusState>,
+): boolean {
+  return (
+    contact.isMentor ||
+    contactStatuses[
+    contact.id
+    ] !== 'Inactive'
+  )
+}
+
+function canUserEditCohortMeetingRoles(
+  currentUserId: string,
+  contacts:
+    readonly CohortContactRecord[],
+  contactStatuses:
+    Readonly<CohortContactStatusState>,
+): boolean {
+  const normalizedCurrentUserId =
+    currentUserId
+      .trim()
+      .toLowerCase()
+
+  if (
+    normalizedCurrentUserId ===
+    BETA_NU_OWNER_USER_ID
+      .toLowerCase()
+  ) {
+    return true
+  }
+
+  return contacts.some(
+    (contact) =>
+      contact.email
+        .trim()
+        .toLowerCase() ===
+      normalizedCurrentUserId &&
+      isActiveCohortContactForRoleEditing(
+        contact,
+        contactStatuses,
+      ),
+  )
+}
+
 const COHORT_ACADEMIC_PLAN_STORAGE_KEY =
   'beta-nu-academic-plan-v1'
 
@@ -12004,6 +12072,13 @@ function CohortDatesRolesPage({
     db.cloud.currentUserId ===
     BETA_NU_OWNER_USER_ID
 
+  const canEditCohortMeetingRoles =
+    canUserEditCohortMeetingRoles(
+      db.cloud.currentUserId,
+      contacts,
+      contactStatuses,
+    )
+
   useEffect(() => {
     const timerId = window.setInterval(() => {
       setCurrentDate(new Date())
@@ -12197,7 +12272,7 @@ function CohortDatesRolesPage({
           value={value}
           title={title}
           readOnly={
-            !isCohortMeetingsOwner
+            !canEditCohortMeetingRoles
           }
           onChange={(event) =>
             onUpdateRole(
@@ -43608,6 +43683,13 @@ function AdminPage({
             const contact
             of contactsStillEligible
           ) {
+            const canEditMeetingRoles =
+              canUserEditCohortMeetingRoles(
+                contact.email,
+                contacts,
+                contactStatuses,
+              )
+
             await db.members.add({
               realmId:
                 BETA_NU_SHARED_REALM_ID,
@@ -43616,7 +43698,10 @@ function AdminPage({
               name:
                 contact.name,
               invite: true,
-              permissions: {},
+              permissions:
+                canEditMeetingRoles
+                  ? createCohortMeetingRoleEditPermissions()
+                  : {},
             })
 
             createdInviteCount += 1
@@ -45230,6 +45315,38 @@ function App() {
           )
           .toArray()
 
+      const sharedCohortContacts =
+        await db.cohortContacts
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray()
+
+      const activeCohortEmails =
+        new Set(
+          sharedCohortContacts
+            .filter(
+              (contact) =>
+                !contact.isFormer &&
+                (
+                  contact.isMentor ||
+                  contact.status ===
+                  'Active'
+                ),
+            )
+            .map(
+              (contact) =>
+                contact.email
+                  .trim()
+                  .toLowerCase(),
+            )
+            .filter(
+              (email) =>
+                email.length > 0,
+            ),
+        )
+
       const broadAccessMembers =
         sharedMembers.filter(
           (member) =>
@@ -45241,11 +45358,92 @@ function App() {
               ?.manage === '*',
         )
 
+      const cohortMembersNeedingRoleEditPermission =
+        sharedMembers.filter(
+          (member) => {
+            if (
+              member.id ===
+              BETA_NU_OWNER_MEMBER_ID ||
+              member.userId ===
+              BETA_NU_OWNER_USER_ID
+            ) {
+              return false
+            }
+
+            const memberEmail =
+              member.email
+                ?.trim()
+                .toLowerCase()
+
+            const memberUserId =
+              member.userId
+                ?.trim()
+                .toLowerCase()
+
+            const isActiveCohortMember =
+              (
+                memberEmail !==
+                undefined &&
+                activeCohortEmails.has(
+                  memberEmail,
+                )
+              ) ||
+              (
+                memberUserId !==
+                undefined &&
+                activeCohortEmails.has(
+                  memberUserId,
+                )
+              )
+
+            if (
+              !isActiveCohortMember
+            ) {
+              return false
+            }
+
+            const updatePermissions =
+              member.permissions
+                ?.update
+
+            if (
+              updatePermissions ===
+              undefined ||
+              updatePermissions === '*'
+            ) {
+              return true
+            }
+
+            const currentPermissions =
+              updatePermissions[
+              'cohortMeetings'
+              ]
+
+            return (
+              !Array.isArray(
+                currentPermissions,
+              ) ||
+              currentPermissions.length !==
+              COHORT_MEETING_ROLE_EDIT_FIELDS
+                .length ||
+              !COHORT_MEETING_ROLE_EDIT_FIELDS
+                .every(
+                  (field) =>
+                    currentPermissions.includes(
+                      field,
+                    ),
+                )
+            )
+          },
+        )
+
       if (
         cohortMemberRole ===
         undefined ||
         broadAccessMembers.length >
-        0
+        0 ||
+        cohortMembersNeedingRoleEditPermission
+          .length > 0
       ) {
         await db.transaction(
           'rw',
@@ -45278,6 +45476,19 @@ function App() {
                     'cohort-member',
                   ],
                   permissions: {},
+                },
+              )
+            }
+
+            for (
+              const member
+              of cohortMembersNeedingRoleEditPermission
+            ) {
+              await db.members.update(
+                member.id,
+                {
+                  permissions:
+                    createCohortMeetingRoleEditPermissions(),
                 },
               )
             }
@@ -48601,8 +48812,11 @@ function App() {
     value: string,
   ): void {
     if (
-      db.cloud.currentUserId !==
-      BETA_NU_OWNER_USER_ID
+      !canUserEditCohortMeetingRoles(
+        db.cloud.currentUserId,
+        contacts,
+        contactStatuses,
+      )
     ) {
       return
     }
