@@ -2503,11 +2503,31 @@
 /* Next upcoming cohort meeting */
 .cohort-meeting-row-upcoming > td {
   color: #111827;
+  background: #FFD200;
+  border-top: 4px solid #000000;
+  border-bottom: 4px solid #000000;
   font-weight: 900;
 }
 
-.cohort-meeting-row-upcoming .cohort-meeting-role-input {
+.cohort-meeting-row-upcoming
+  .cohort-meeting-role-input {
   color: #111827;
+  background: #FFD200;
+  font-weight: 900;
+}
+
+/* Keep blank role cells dark on the upcoming meeting */
+.cohort-meeting-row-upcoming
+  .cohort-meeting-role-input-empty {
+  color: #ffffff;
+  background: #37474F;
+}
+
+/* Inactive member assigned to the upcoming meeting */
+.cohort-meeting-row-upcoming
+  .cohort-meeting-role-input-inactive {
+  color: #ffffff;
+  background: #C00000;
   font-weight: 900;
 }
 
