@@ -2503,7 +2503,7 @@
 /* Next upcoming cohort meeting */
 .cohort-meeting-row-upcoming > td {
   color: #111827;
-  background: #FFD200;
+  background: #FFFF00;
   border-top: 4px solid #000000;
   border-bottom: 4px solid #000000;
   font-weight: 900;
@@ -2512,7 +2512,7 @@
 .cohort-meeting-row-upcoming
   .cohort-meeting-role-input {
   color: #111827;
-  background: #FFD200;
+  background: #FFFF00;
   font-weight: 900;
 }
 
