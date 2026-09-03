@@ -15060,6 +15060,11 @@ function FacilitatorPlannerPage({
     useState('')
 
   const [
+    isResetConfirmationOpen,
+    setIsResetConfirmationOpen,
+  ] = useState(false)
+
+  const [
     showFacilitatorChangeNotice,
     setShowFacilitatorChangeNotice,
   ] = useState(false)
@@ -16807,6 +16812,40 @@ function FacilitatorPlannerPage({
     )
   }
 
+  function resetAgendaToDefaults(): void {
+    if (
+      selectedMeeting === undefined
+    ) {
+      return
+    }
+
+    const defaultAgendaItems =
+      ensureFacilitatorAgendaBlankRow(
+        createDefaultFacilitatorAgendaItems(
+          selectedMeeting,
+        ),
+      )
+
+    setAgendaItems(
+      defaultAgendaItems,
+    )
+
+    setSelectedAgendaItemId(
+      defaultAgendaItems[0]?.id ??
+      null,
+    )
+
+    setIsBuildingAgenda(true)
+
+    setActionMessage(
+      'Agenda reset to default items.',
+    )
+
+    setIsResetConfirmationOpen(
+      false,
+    )
+  }
+
   function saveAgenda(
     statusToSave:
       FacilitatorAgendaStatus =
@@ -17963,6 +18002,74 @@ function FacilitatorPlannerPage({
                 aria-hidden="true"
               />
             </button>
+
+            <div className="facilitator-planner-reset-control">
+              <button
+                type="button"
+                className="agenda-image-button"
+                disabled={
+                  !canEditSelectedMeetingAgenda
+                }
+                aria-label="Reset Agenda"
+                title="Reset Agenda"
+                onClick={() =>
+                  setIsResetConfirmationOpen(
+                    true,
+                  )
+                }
+              >
+                <img
+                  className="agenda-action-image"
+                  src={
+                    `${import.meta.env.BASE_URL}` +
+                    'reset.png'
+                  }
+                  alt=""
+                  aria-hidden="true"
+                />
+              </button>
+
+              {isResetConfirmationOpen ? (
+                <div
+                  className="facilitator-planner-reset-confirmation"
+                  role="dialog"
+                  aria-label="Confirm agenda reset"
+                >
+                  <strong>
+                    Reset this agenda?
+                  </strong>
+
+                  <span>
+                    Return the Agenda Item table
+                    to the default items?
+                  </span>
+
+                  <div>
+                    <button
+                      type="button"
+                      className="facilitator-planner-reset-confirm-yes"
+                      onClick={
+                        resetAgendaToDefaults
+                      }
+                    >
+                      Yes
+                    </button>
+
+                    <button
+                      type="button"
+                      className="facilitator-planner-reset-confirm-no"
+                      onClick={() =>
+                        setIsResetConfirmationOpen(
+                          false,
+                        )
+                      }
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
 
             <button
               type="button"

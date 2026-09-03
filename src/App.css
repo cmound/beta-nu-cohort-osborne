@@ -24051,3 +24051,80 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   appearance: none;
   background-image: none;
 }
+
+/* Facilitator Planner Reset confirmation */
+
+.facilitator-planner-reset-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.facilitator-planner-reset-confirmation {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 225px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #C69214;
+  border-radius: 6px;
+  color: #0B1F3B;
+  background: #FFF8D8;
+  box-shadow:
+    0 5px 12px
+      rgba(0, 0, 0, 0.3);
+  line-height: 1.25;
+}
+
+.facilitator-planner-reset-confirmation strong,
+.facilitator-planner-reset-confirmation span {
+  display: block;
+}
+
+.facilitator-planner-reset-confirmation strong {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.facilitator-planner-reset-confirmation span {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.facilitator-planner-reset-confirmation > div {
+  display: flex;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.facilitator-planner-reset-confirmation
+  .facilitator-planner-reset-confirm-yes,
+.facilitator-planner-reset-confirmation
+  .facilitator-planner-reset-confirm-no {
+  min-width: 60px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  transform: none;
+}
+
+.facilitator-planner-reset-confirmation
+  .facilitator-planner-reset-confirm-yes {
+  border: 1px solid #8F6810;
+  color: #0B1F3B;
+  background: #FFD200;
+}
+
+.facilitator-planner-reset-confirmation
+  .facilitator-planner-reset-confirm-no {
+  border: 1px solid #94A3B8;
+  color: #0B1F3B;
+  background: #FFFFFF;
+}
