@@ -24034,3 +24034,20 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   line-height: 1.2;
   white-space: nowrap;
 }
+
+/* Cohort Contacts owner-only controls */
+.contact-status-select:disabled,
+.contacts-inactive-input:disabled,
+.contacts-inactive-status-select:disabled {
+  opacity: 1;
+  color: #111827;
+  background: #f1f5f9;
+  -webkit-text-fill-color: #111827;
+  cursor: default;
+}
+
+.contact-status-select:disabled,
+.contacts-inactive-status-select:disabled {
+  appearance: none;
+  background-image: none;
+}

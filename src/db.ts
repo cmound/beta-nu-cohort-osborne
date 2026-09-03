@@ -261,6 +261,22 @@ export interface CloudCohortSharedDocumentStateRecord {
   readonly migrationComplete: boolean
 }
 
+export interface CloudCohortBookRecord {
+  readonly id: string
+  readonly realmId: string
+  readonly owner: string
+  readonly course: string
+  readonly school: string
+  readonly courseTitle: string
+  readonly studentNotes: string
+  readonly isbn: string
+  readonly author: string
+  readonly productTitle: string
+  readonly edition: string
+  readonly publisher: string
+  readonly year: string
+}
+
 class BetaNuDatabase extends Dexie {
   readonly academicPlan:
     Table<CloudAcademicPlanRecord, string>
@@ -303,6 +319,9 @@ class BetaNuDatabase extends Dexie {
 
   readonly sharedDocumentState:
     Table<CloudCohortSharedDocumentStateRecord, string>
+
+  readonly cohortBooks:
+    Table<CloudCohortBookRecord, string>
 
   constructor() {
     super(
@@ -391,6 +410,11 @@ class BetaNuDatabase extends Dexie {
         'id, realmId, owner',
     })
 
+        this.version(14).stores({
+      cohortBooks:
+        'id, realmId, owner, course, school, productTitle',
+    })
+
     this.academicPlan =
       this.table(
         'academicPlan',
@@ -459,6 +483,11 @@ class BetaNuDatabase extends Dexie {
     this.sharedDocumentState =
       this.table(
         'sharedDocumentState',
+      )
+
+    this.cohortBooks =
+      this.table(
+        'cohortBooks',
       )
 
     this.cloud.configure({

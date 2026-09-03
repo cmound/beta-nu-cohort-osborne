@@ -1773,6 +1773,17 @@ const BETA_NU_OWNER_MEMBER_ID =
 const BETA_NU_OWNER_USER_ID =
   'cmound@mail.umassglobal.edu'
 
+const COHORT_CONTACT_EDIT_FIELDS = [
+  'name',
+  'timeZone',
+  'phoneDigits',
+  'email',
+  'industry',
+  'birthdayMonth',
+  'birthdayDay',
+  'dissertationInterest',
+] as const
+
 const COHORT_MEETING_ROLE_EDIT_FIELDS = [
   'facilitator',
   'communityBuilder',
@@ -1781,17 +1792,57 @@ const COHORT_MEETING_ROLE_EDIT_FIELDS = [
   'processObserver',
 ] as const
 
-function createCohortMeetingRoleEditPermissions(): {
-  update: {
-    cohortMeetings: string[]
-  }
-} {
+function createCohortMemberPermissions() {
   return {
+    add: [
+      'cohortAttendance',
+      'cohortAvailability',
+      'cohortGroupAssignments',
+      'cohortPurposeResearch',
+      'facilitatorAgendas',
+      'courseWaivers',
+      'sharedUrls',
+      'sharedDocuments',
+      'cohortBooks',
+    ],
     update: {
+      cohortContacts: [
+        ...COHORT_CONTACT_EDIT_FIELDS,
+      ],
       cohortMeetings: [
         ...COHORT_MEETING_ROLE_EDIT_FIELDS,
       ],
+      cohortAttendance: [
+        'mark',
+      ],
+      cohortAvailability: [
+        'mark',
+      ],
+      cohortGroupAssignments: [
+        'activityDate',
+        'excludedStudentIds',
+        'groups',
+      ],
+      cohortPurposeResearch: [
+        'records',
+      ],
+      facilitatorAgendas: [
+        'isSaved',
+        'status',
+        'savedAt',
+        'housekeepingNotes',
+        'agendaItems',
+      ],
+      sharedUrls: '*' as const,
+      sharedDocuments: '*' as const,
+      cohortBooks: '*' as const,
     },
+    manage: [
+      'courseWaivers',
+      'sharedUrls',
+      'sharedDocuments',
+      'cohortBooks',
+    ],
   }
 }
 
@@ -4234,7 +4285,7 @@ function createCloudCohortSharedDocumentRecord(
     realmId:
       BETA_NU_SHARED_REALM_ID,
     owner:
-      BETA_NU_OWNER_USER_ID,
+      db.cloud.currentUserId,
     title:
       storedFile.title,
     fileName:
@@ -11374,7 +11425,6 @@ function CohortContactPage({
 
       <fieldset
         className="contacts-access-fieldset"
-        disabled={!isCohortContactsOwner}
       >
         <div className="contacts-table-frame">
           <table
@@ -11658,6 +11708,7 @@ function CohortContactPage({
                         <select
                           className="contact-status-select"
                           value={contactStatus}
+                          disabled={!isCohortContactsOwner}
                           aria-label={`${contact.name} status`}
                           onChange={(event) => {
                             const nextStatus =
@@ -30491,12 +30542,6 @@ function CohortCourseWaiversPage({
     courseCode: CohortCourseWaiverCode,
     rawValue: string,
   ): void {
-    if (
-      db.cloud.currentUserId !==
-      BETA_NU_OWNER_USER_ID
-    ) {
-      return
-    }
 
     const normalizedValue =
       rawValue.trim().toUpperCase()
@@ -30831,9 +30876,7 @@ function CohortCourseWaiversPage({
                                   waiverKey
                                   ] ?? ''
                                 }
-                                readOnly={
-                                  !isCourseWaiversOwner
-                                }
+                                readOnly={false}
                                 maxLength={1}
                                 autoComplete="off"
                                 aria-label={
@@ -43770,10 +43813,13 @@ function AdminPage({
               name:
                 contact.name,
               invite: true,
-              permissions:
+              roles:
                 canEditMeetingRoles
-                  ? createCohortMeetingRoleEditPermissions()
-                  : {},
+                  ? [
+                    'cohort-member',
+                  ]
+                  : [],
+              permissions: {},
             })
 
             createdInviteCount += 1
@@ -45533,7 +45579,8 @@ function App() {
                   BETA_NU_SHARED_REALM_ID,
                 name:
                   'cohort-member',
-                permissions: {},
+                permissions:
+                  createCohortMemberPermissions(),
               })
             }
 
@@ -45559,8 +45606,10 @@ function App() {
               await db.members.update(
                 member.id,
                 {
-                  permissions:
-                    createCohortMeetingRoleEditPermissions(),
+                  roles: [
+                    'cohort-member',
+                  ],
+                  permissions: {},
                 },
               )
             }
@@ -47613,22 +47662,32 @@ function App() {
 
   useEffect(() => {
     if (
-      !isPurposeResearchCloudReady ||
-      db.cloud.currentUserId
-        .trim()
-        .toLowerCase() !==
-      BETA_NU_OWNER_USER_ID
-        .toLowerCase()
+      !isPurposeResearchCloudReady
     ) {
       return
     }
 
-    void (async (): Promise<void> => {
-      await db.cohortPurposeResearch.put(
-        createCloudPurposeResearchWorkspace(
-          purposeResearchRecords,
-        ),
+    const cloudWorkspace =
+      createCloudPurposeResearchWorkspace(
+        purposeResearchRecords,
       )
+
+    void (async (): Promise<void> => {
+      const updatedRecordCount =
+        await db.cohortPurposeResearch
+          .update(
+            PURPOSE_RESEARCH_CLOUD_ID,
+            {
+              records:
+                cloudWorkspace.records,
+            },
+          )
+
+      if (
+        updatedRecordCount === 0
+      ) {
+        return
+      }
 
       await db.cloud.sync()
     })().catch((error: unknown) => {
@@ -48199,12 +48258,6 @@ function App() {
   function addCohortContact(
     contact: CohortContactRecord,
   ): void {
-    if (
-      db.cloud.currentUserId !==
-      BETA_NU_OWNER_USER_ID
-    ) {
-      return
-    }
 
     const nextSortOrder =
       (
@@ -48490,15 +48543,6 @@ function App() {
     meetingId: string,
     mark: CohortAttendanceMark,
   ): void {
-    if (
-      db.cloud.currentUserId
-        .trim()
-        .toLowerCase() !==
-      BETA_NU_OWNER_USER_ID
-        .toLowerCase()
-    ) {
-      return
-    }
 
     const attendanceKey =
       getAttendanceKey(
@@ -48537,7 +48581,7 @@ function App() {
 
   function canEditCohortDataSurveyCell(
     participantId: string,
-    dateId: string,
+    _dateId: string,
   ): boolean {
     const currentUserId =
       db.cloud.currentUserId
@@ -48558,31 +48602,9 @@ function App() {
         contacts,
       )
 
-    if (
-      contact === null ||
-      contact.email
-        .trim()
-        .toLowerCase() !==
-      currentUserId
-    ) {
-      return false
-    }
-
-    const surveyKey =
-      getCohortDataSurveyKey(
-        participantId,
-        dateId,
-      )
-
-    const cloudRecord =
-      cloudCohortAvailability?.find(
-        (record) =>
-          record.id === surveyKey,
-      )
-
     return (
-      cloudRecord !== undefined &&
-      cloudRecord.owner
+      contact !== null &&
+      contact.email
         .trim()
         .toLowerCase() ===
       currentUserId
@@ -48619,12 +48641,9 @@ function App() {
         .trim()
         .toLowerCase()
 
-    const isOwnAvailability =
-      recordOwner === currentUserId
-
     if (
       !isAdmin &&
-      !isOwnAvailability
+      recordOwner !== currentUserId
     ) {
       return
     }
@@ -48645,29 +48664,11 @@ function App() {
           record.id === surveyKey,
       )
 
-    if (
-      !isAdmin &&
-      (
-        existingCloudRecord ===
-        undefined ||
-        existingCloudRecord.owner
-          .trim()
-          .toLowerCase() !==
-        currentUserId
-      )
-    ) {
-      return
-    }
-
     void (async (): Promise<void> => {
       if (
         existingCloudRecord ===
         undefined
       ) {
-        if (!isAdmin) {
-          return
-        }
-
         await db.cohortAvailability
           .put(
             createCloudCohortAvailabilityRecord(
@@ -48713,16 +48714,6 @@ function App() {
   }
 
   function addPurposeResearchRecord(): void {
-    if (
-      db.cloud.currentUserId
-        .trim()
-        .toLowerCase() !==
-      BETA_NU_OWNER_USER_ID
-        .toLowerCase()
-    ) {
-      return
-    }
-
     setPurposeResearchRecords((currentRecords) => [
       ...currentRecords,
       createEmptyPurposeResearchRecord(),
@@ -48732,16 +48723,6 @@ function App() {
   function insertPurposeResearchRecordAfter(
     recordId: string,
   ): void {
-    if (
-      db.cloud.currentUserId
-        .trim()
-        .toLowerCase() !==
-      BETA_NU_OWNER_USER_ID
-        .toLowerCase()
-    ) {
-      return
-    }
-
     setPurposeResearchRecords((currentRecords) => {
       const recordIndex =
         currentRecords.findIndex(
@@ -48774,16 +48755,6 @@ function App() {
   function deletePurposeResearchRecord(
     recordId: string,
   ): void {
-    if (
-      db.cloud.currentUserId
-        .trim()
-        .toLowerCase() !==
-      BETA_NU_OWNER_USER_ID
-        .toLowerCase()
-    ) {
-      return
-    }
-
     setPurposeResearchRecords((currentRecords) =>
       currentRecords.filter(
         (record) => record.id !== recordId,
@@ -48796,16 +48767,6 @@ function App() {
     field: CohortPurposeResearchField,
     value: string,
   ): void {
-    if (
-      db.cloud.currentUserId
-        .trim()
-        .toLowerCase() !==
-      BETA_NU_OWNER_USER_ID
-        .toLowerCase()
-    ) {
-      return
-    }
-
     setPurposeResearchRecords((currentRecords) =>
       currentRecords.map((record) =>
         record.id === recordId
@@ -50848,13 +50809,7 @@ function App() {
                   }
                   meetings={cohortMeetings}
                   attendance={cohortAttendance}
-                  isEditable={
-                    db.cloud.currentUserId
-                      .trim()
-                      .toLowerCase() ===
-                    BETA_NU_OWNER_USER_ID
-                      .toLowerCase()
-                  }
+                  isEditable={true}
                   onUpdateAttendance={updateCohortAttendance}
                 />
               }
@@ -50876,13 +50831,7 @@ function App() {
                 <CohortPurposeResearchPage
                   contacts={contacts}
                   records={purposeResearchRecords}
-                  isEditable={
-                    db.cloud.currentUserId
-                      .trim()
-                      .toLowerCase() ===
-                    BETA_NU_OWNER_USER_ID
-                      .toLowerCase()
-                  }
+                  isEditable={true}
                   onAddRecord={addPurposeResearchRecord}
                   onInsertRecordAfter={
                     insertPurposeResearchRecordAfter
