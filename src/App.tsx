@@ -41400,12 +41400,20 @@ function getAdminPacificHourKey(
 
 function formatAdminBackupFileName(
   date: Date,
+  source: AdminArchiveSource,
 ): string {
   const parts =
     getAdminPacificDateParts(date)
 
+  const fileNamePrefix =
+    source === 'auto'
+      ? 'beta-nu-fall-cohort-automatic-backup-'
+      : source === 'manual'
+        ? 'beta-nu-fall-cohort-manual-backup-'
+        : 'beta-nu-fall-cohort-backup-'
+
   return (
-    'beta-nu-fall-cohort-backup-' +
+    fileNamePrefix +
     `${parts.year}-` +
     `${parts.month}-` +
     `${parts.day}_` +
@@ -42594,6 +42602,7 @@ async function createAdminArchive(
     fileName:
       formatAdminBackupFileName(
         createdDate,
+        source,
       ),
     source,
     sizeBytes:
