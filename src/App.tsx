@@ -46,12 +46,14 @@ import {
   type CloudAcademicPlanRecord,
   type CloudCohortAttendanceRecord,
   type CloudCohortAvailabilityRecord,
+  type CloudCohortBookRecord,
   type CloudCohortContactRecord,
   type CloudCohortGroupAssignmentsRecord,
   type CloudCohortMeetingRecord,
   type CloudCohortPresenceRecord,
   type CloudCohortPurposeResearchWorkspaceRecord,
   type CloudCohortSharedDocumentRecord,
+  type CloudCohortSharedDocumentStateRecord,
   type CloudCohortSharedUrlRecord,
   type CloudCourseProgressRecord,
   type CloudCourseWaiverRecord,
@@ -40777,6 +40779,23 @@ interface BetaNuBackupCloudData {
   readonly string[]
 }
 
+interface BetaNuBackupCloudDataV3
+  extends Omit<
+    BetaNuBackupCloudData,
+    'snapshotSource'
+  > {
+  readonly snapshotSource:
+  | 'synced'
+  | 'local-cache'
+  | 'server'
+
+  readonly sharedDocumentState:
+  readonly CloudCohortSharedDocumentStateRecord[]
+
+  readonly cohortBooks:
+  readonly CloudCohortBookRecord[]
+}
+
 interface BetaNuBackupDocumentV1 {
   readonly appName:
   'Beta Nu Fall Cohort Hub'
@@ -40804,13 +40823,31 @@ interface BetaNuBackupDocumentV2 {
   BetaNuBackupCloudData
 }
 
+interface BetaNuBackupDocumentV3 {
+  readonly appName:
+  'Beta Nu Fall Cohort Hub'
+
+  readonly schemaVersion: 3
+
+  readonly exportedAt: string
+
+  readonly storage:
+  Readonly<Record<string, string>> | null
+
+  readonly cloud:
+  BetaNuBackupCloudDataV3
+}
+
 type BetaNuBackupDocument =
   | BetaNuBackupDocumentV1
   | BetaNuBackupDocumentV2
+  | BetaNuBackupDocumentV3
 
 type BetaNuBackupRestoreResult =
   | 'legacy-v1-local-only'
   | 'v2-cloud-and-local'
+  | 'v3-cloud-only'
+  | 'v3-cloud-and-local'
 
 interface AdminBackupArchiveRecord {
   readonly id: string
@@ -41688,19 +41725,93 @@ function isBetaNuBackupCloudData(
   )
 }
 
+function isBetaNuBackupCloudDataV3(
+  value: unknown,
+): value is BetaNuBackupCloudDataV3 {
+  if (!isAdminObjectRecord(value)) {
+    return false
+  }
+
+  if (
+    value.realmId !==
+    BETA_NU_SHARED_REALM_ID ||
+    (
+      value.snapshotSource !==
+      'synced' &&
+      value.snapshotSource !==
+      'local-cache' &&
+      value.snapshotSource !==
+      'server'
+    )
+  ) {
+    return false
+  }
+
+  const cloudRecordCollections:
+    readonly unknown[] = [
+      value.academicPlan,
+      value.cohortContacts,
+      value.cohortMeetings,
+      value.courseWorkspaces,
+      value.courseWaivers,
+      value.courseProgress,
+      value.cohortAttendance,
+      value.cohortAvailability,
+      value.cohortGroupAssignments,
+      value.cohortPurposeResearch,
+      value.facilitatorAgendas,
+      value.sharedUrls,
+      value.sharedDocumentState,
+      value.cohortBooks,
+    ]
+
+  if (
+    !cloudRecordCollections.every(
+      isBetaNuCloudBackupRecordArray,
+    )
+  ) {
+    return false
+  }
+
+  const sharedDocumentIds =
+    value.sharedDocumentIds
+
+  if (
+    !Array.isArray(
+      sharedDocumentIds,
+    ) ||
+    !sharedDocumentIds.every(
+      (
+        documentId: unknown,
+      ) =>
+        typeof documentId ===
+        'string',
+    )
+  ) {
+    return false
+  }
+
+  return (
+    new Set(
+      sharedDocumentIds,
+    ).size ===
+    sharedDocumentIds.length
+  )
+}
+
 async function createBetaNuBackupDocument():
-  Promise<BetaNuBackupDocumentV2> {
+  Promise<BetaNuBackupDocumentV3> {
   if (
     db.cloud.currentUserId !==
     BETA_NU_OWNER_USER_ID
   ) {
     throw new Error(
-      'The Beta Nu owner must be signed in before creating a v2 backup.',
+      'The Beta Nu owner must be signed in before creating a v3 backup.',
     )
   }
 
   let snapshotSource:
-    BetaNuBackupCloudData[
+    BetaNuBackupCloudDataV3[
     'snapshotSource'
     ] =
     'synced'
@@ -41717,7 +41828,7 @@ async function createBetaNuBackupDocument():
       'local-cache'
 
     console.warn(
-      'Dexie Cloud could not be refreshed before backup. The v2 backup is using the current local Dexie cache.',
+      'Dexie Cloud could not be refreshed before backup. The v3 backup is using the current local Dexie cache.',
       error,
     )
   }
@@ -41735,6 +41846,8 @@ async function createBetaNuBackupDocument():
     cohortPurposeResearch,
     facilitatorAgendas,
     sharedUrls,
+    sharedDocumentState,
+    cohortBooks,
     sharedDocumentPrimaryKeys,
   ] =
     await Promise.all([
@@ -41822,6 +41935,20 @@ async function createBetaNuBackupDocument():
         )
         .toArray(),
 
+      db.sharedDocumentState
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
+      db.cohortBooks
+        .where('realmId')
+        .equals(
+          BETA_NU_SHARED_REALM_ID,
+        )
+        .toArray(),
+
       db.sharedDocuments
         .where('realmId')
         .equals(
@@ -41881,7 +42008,7 @@ async function createBetaNuBackupDocument():
     appName:
       'Beta Nu Fall Cohort Hub',
 
-    schemaVersion: 2,
+    schemaVersion: 3,
 
     exportedAt:
       new Date().toISOString(),
@@ -41918,6 +42045,10 @@ async function createBetaNuBackupDocument():
 
       sharedUrls,
 
+      sharedDocumentState,
+
+      cohortBooks,
+
       sharedDocumentIds,
     },
   }
@@ -41934,10 +42065,7 @@ function isBetaNuBackupDocument(
     value.appName !==
     'Beta Nu Fall Cohort Hub' ||
     typeof value.exportedAt !==
-    'string' ||
-    !isBetaNuBackupStorage(
-      value.storage,
-    )
+    'string'
   ) {
     return false
   }
@@ -41945,14 +42073,37 @@ function isBetaNuBackupDocument(
   if (
     value.schemaVersion === 1
   ) {
-    return true
+    return isBetaNuBackupStorage(
+      value.storage,
+    )
   }
 
   if (
     value.schemaVersion === 2
   ) {
-    return isBetaNuBackupCloudData(
-      value.cloud,
+    return (
+      isBetaNuBackupStorage(
+        value.storage,
+      ) &&
+      isBetaNuBackupCloudData(
+        value.cloud,
+      )
+    )
+  }
+
+  if (
+    value.schemaVersion === 3
+  ) {
+    return (
+      (
+        value.storage === null ||
+        isBetaNuBackupStorage(
+          value.storage,
+        )
+      ) &&
+      isBetaNuBackupCloudDataV3(
+        value.cloud,
+      )
     )
   }
 
@@ -42155,6 +42306,11 @@ async function restoreBetaNuBackupDocument(
     )
   }
 
+  const version3CloudBackup =
+    backup.schemaVersion === 3
+      ? backup.cloud
+      : null
+
   await db.cloud.sync({
     purpose: 'pull',
     wait: true,
@@ -42175,6 +42331,8 @@ async function restoreBetaNuBackupDocument(
       db.cohortPurposeResearch,
       db.facilitatorAgendas,
       db.sharedUrls,
+      db.sharedDocumentState,
+      db.cohortBooks,
     ],
     async () => {
       await replaceBetaNuRealmTableRecords(
@@ -42248,6 +42406,23 @@ async function restoreBetaNuBackupDocument(
         backup.cloud
           .sharedUrls,
       )
+
+      if (
+        version3CloudBackup !==
+        null
+      ) {
+        await replaceBetaNuRealmTableRecords(
+          db.sharedDocumentState,
+          version3CloudBackup
+            .sharedDocumentState,
+        )
+
+        await replaceBetaNuRealmTableRecords(
+          db.cohortBooks,
+          version3CloudBackup
+            .cohortBooks,
+        )
+      }
     },
   )
 
@@ -42344,11 +42519,58 @@ async function restoreBetaNuBackupDocument(
     )
   }
 
-  restoreBetaNuLocalStorage(
-    backup.storage,
-  )
+  if (
+    version3CloudBackup !==
+    null
+  ) {
+    const version3VerificationResults =
+      await Promise.all([
+        betaNuRealmTableMatchesBackup(
+          db.sharedDocumentState,
+          version3CloudBackup
+            .sharedDocumentState,
+        ),
 
-  return 'v2-cloud-and-local'
+        betaNuRealmTableMatchesBackup(
+          db.cohortBooks,
+          version3CloudBackup
+            .cohortBooks,
+        ),
+      ])
+
+    if (
+      !version3VerificationResults.every(
+        (isVerified) =>
+          isVerified,
+      )
+    ) {
+      throw new Error(
+        'The Dexie Cloud v3 restore did not pass post-restore verification.',
+      )
+    }
+  }
+
+  if (
+    backup.schemaVersion === 2
+  ) {
+    restoreBetaNuLocalStorage(
+      backup.storage,
+    )
+
+    return 'v2-cloud-and-local'
+  }
+
+  if (
+    backup.storage !== null
+  ) {
+    restoreBetaNuLocalStorage(
+      backup.storage,
+    )
+
+    return 'v3-cloud-and-local'
+  }
+
+  return 'v3-cloud-only'
 }
 
 function isAdminBackupArchiveRecord(
@@ -44366,11 +44588,21 @@ function AdminPage({
         parsedValue.schemaVersion ===
           1
           ? (
-            'This is a legacy schemaVersion 1 backup. It can restore only browser-local Beta Nu data because Dexie Cloud data was not included in v1 backups. Current Dexie Cloud data and Shared Documents will remain unchanged. A v2 safety snapshot will be created first. Continue?'
+            'This is a legacy schemaVersion 1 backup. It can restore only browser-local Beta Nu data because Dexie Cloud data was not included in v1 backups. Current Dexie Cloud data and Shared Documents will remain unchanged. A v3 safety snapshot will be created first. Continue?'
           )
-          : (
-            'IMPORT JSON will restore the structured Dexie Cloud cohort data and browser-local Beta Nu data from this v2 backup. Dexie Cloud membership, permissions, and Shared Document files will remain unchanged. A v2 safety snapshot will be created first. Continue?'
-          )
+          : parsedValue.schemaVersion ===
+            2
+            ? (
+              'IMPORT JSON will restore the structured Dexie Cloud cohort data and browser-local Beta Nu data from this v2 backup. Dexie Cloud membership, permissions, Shared Document files, Book List data, and Shared Document state will remain unchanged. A v3 safety snapshot will be created first. Continue?'
+            )
+            : parsedValue.storage ===
+              null
+              ? (
+                'IMPORT JSON will restore the structured Dexie Cloud cohort data from this automatic v3 backup. Current browser-local Beta Nu settings and Shared Document files will remain unchanged. A v3 safety snapshot will be created first. Continue?'
+              )
+              : (
+                'IMPORT JSON will restore the structured Dexie Cloud cohort data and browser-local Beta Nu data from this v3 backup. Dexie Cloud membership, permissions, and Shared Document files will remain unchanged. A v3 safety snapshot will be created first. Continue?'
+              )
 
       const confirmed =
         window.confirm(
@@ -44390,15 +44622,28 @@ function AdminPage({
           parsedValue,
         )
 
-      setActionMessage(
+      const restoreMessage =
         restoreResult ===
           'legacy-v1-local-only'
           ? (
             'Legacy v1 browser-local data restored. Dexie Cloud data was left unchanged. Reloading the Hub...'
           )
-          : (
-            'Backup v2 restored and Dexie Cloud verification passed. Reloading the Hub...'
-          ),
+          : restoreResult ===
+            'v2-cloud-and-local'
+            ? (
+              'Backup v2 restored and Dexie Cloud verification passed. Reloading the Hub...'
+            )
+            : restoreResult ===
+              'v3-cloud-only'
+              ? (
+                'Automatic backup v3 restored and Dexie Cloud verification passed. Browser-local Beta Nu settings were preserved. Reloading the Hub...'
+              )
+              : (
+                'Backup v3 restored and Dexie Cloud verification passed. Reloading the Hub...'
+              )
+
+      setActionMessage(
+        restoreMessage,
       )
 
       window.setTimeout(
