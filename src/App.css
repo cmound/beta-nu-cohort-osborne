@@ -24128,3 +24128,59 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   color: #0B1F3B;
   background: #FFFFFF;
 }
+
+/* === Create Group PNG button === */
+
+.create-group-image-button {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 145px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.create-group-image-button img {
+  display: block;
+  width: 145px;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  transition:
+    transform 120ms ease,
+    filter 140ms ease;
+}
+
+.create-group-image-button:hover img {
+  transform: translateY(-1px) scale(1.025);
+  filter: brightness(1.06);
+}
+
+.create-group-image-button:active img {
+  transform: translateY(1px) scale(0.98);
+  filter: brightness(0.96);
+}
+
+.create-group-image-button:focus-visible {
+  outline: 3px solid #2f75b5;
+  outline-offset: 3px;
+  border-radius: 7px;
+}
+
+.create-group-image-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 700px) {
+  .create-group-image-button,
+  .create-group-image-button img {
+    width: 132px;
+  }
+}

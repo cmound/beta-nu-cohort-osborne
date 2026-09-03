@@ -32758,12 +32758,13 @@ function CohortGroupAssignmentsPage({
 
           <button
             type="button"
-            className="cohort-groups-create-button"
+            className="create-group-image-button"
             disabled={
               !isGroupAssignmentsOwner ||
               !groupCountIsValid ||
               groupsCreated
             }
+            aria-label="Create Group"
             title={
               groupsCreated
                 ? 'Select Clear before creating a new set of groups.'
@@ -32771,7 +32772,14 @@ function CohortGroupAssignmentsPage({
             }
             onClick={createGroups}
           >
-            + Create Group
+            <img
+              src={
+                `${import.meta.env.BASE_URL}` +
+                'create-group.png'
+              }
+              alt=""
+              aria-hidden="true"
+            />
           </button>
 
           <button
