@@ -15009,6 +15009,11 @@ function FacilitatorPlannerPage({
     useState('')
 
   const [
+    showFacilitatorChangeNotice,
+    setShowFacilitatorChangeNotice,
+  ] = useState(false)
+
+  const [
     isBuildingAgenda,
     setIsBuildingAgenda,
   ] = useState(false)
@@ -15038,12 +15043,63 @@ function FacilitatorPlannerPage({
       null,
     )
 
+  const facilitatorChangeNoticeTimeoutRef =
+    useRef<number | null>(
+      null,
+    )
+
   const selectedMeeting =
     meetings.find(
       (meeting) =>
         meeting.id ===
         selectedMeetingId,
     )
+
+  function showFacilitatorChangeMessage():
+    void {
+    if (
+      facilitatorChangeNoticeTimeoutRef
+        .current !== null
+    ) {
+      window.clearTimeout(
+        facilitatorChangeNoticeTimeoutRef
+          .current,
+      )
+    }
+
+    setShowFacilitatorChangeNotice(
+      true,
+    )
+
+    facilitatorChangeNoticeTimeoutRef
+      .current =
+      window.setTimeout(
+        () => {
+          setShowFacilitatorChangeNotice(
+            false,
+          )
+
+          facilitatorChangeNoticeTimeoutRef
+            .current = null
+        },
+        5_000,
+      )
+  }
+
+  useEffect(() => {
+    return () => {
+      if (
+        facilitatorChangeNoticeTimeoutRef
+          .current !== null
+      ) {
+        window.clearTimeout(
+          facilitatorChangeNoticeTimeoutRef
+            .current,
+        )
+      }
+    }
+  }, [])
+
 
   const currentFacilitatorUserId =
     db.cloud.currentUserId
@@ -17096,10 +17152,28 @@ function FacilitatorPlannerPage({
               COHORT FACILITATOR
             </span>
 
-            <div className="facilitator-planner-cohort-facilitator-box">
+            <button
+              type="button"
+              className="facilitator-planner-cohort-facilitator-box"
+              aria-label={
+                'Cohort facilitator. Click for change instructions.'
+              }
+              onClick={
+                showFacilitatorChangeMessage
+              }
+            >
               {selectedMeeting.facilitator ||
                 'TBD'}
-            </div>
+            </button>
+
+            {showFacilitatorChangeNotice ? (
+              <div
+                className="facilitator-planner-facilitator-change-notice"
+                role="status"
+              >
+                Go to Cohort Dates &amp; Roles for Changes
+              </div>
+            ) : null}
           </div>
 
           <div className="facilitator-planner-planning-status-field">

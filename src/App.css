@@ -23991,3 +23991,46 @@ tbody td {
   opacity: 0.42;
   filter: grayscale(65%);
 }
+
+/* Facilitator assignment guidance */
+
+.facilitator-planner-cohort-facilitator-field {
+  position: relative;
+}
+
+button.facilitator-planner-cohort-facilitator-box {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.facilitator-planner-cohort-facilitator-box:hover {
+  border-color: #C69214;
+  filter: brightness(1.02);
+}
+
+button.facilitator-planner-cohort-facilitator-box:focus-visible {
+  outline: 2px solid #F2B632;
+  outline-offset: 2px;
+}
+
+.facilitator-planner-facilitator-change-notice {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 0;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid #D7A91F;
+  border-radius: 5px;
+  color: #0B1F3B;
+  background: #FFF8D8;
+  box-shadow:
+    0 3px 8px
+      rgba(0, 0, 0, 0.24);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
