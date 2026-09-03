@@ -15075,6 +15075,17 @@ function FacilitatorPlannerPage({
       currentFacilitatorUserId
     )
 
+  const isFacilitatorPlanningInProgress =
+    isBuildingAgenda ||
+    (
+      selectedMeeting !== undefined &&
+      savedAgendas.some(
+        (agenda) =>
+          agenda.meetingId ===
+          selectedMeeting.id,
+      )
+    )
+
   const isSelectedMeetingInPast =
     selectedMeeting !== undefined &&
     selectedMeeting.date <
@@ -15191,9 +15202,9 @@ function FacilitatorPlannerPage({
           firstRecord,
           secondRecord,
         ) =>
-          secondRecord.meeting.date
+          secondRecord.agenda.savedAt
             .localeCompare(
-              firstRecord.meeting.date,
+              firstRecord.agenda.savedAt,
             ),
       )
 
@@ -15468,7 +15479,7 @@ function FacilitatorPlannerPage({
       }
     } catch {
       setActionMessage(
-        'Automatic draft recovery is unavailable in this browser.',
+        'Automatic agenda recovery is unavailable in this browser.',
       )
     }
   }, [
@@ -15710,6 +15721,8 @@ function FacilitatorPlannerPage({
       | 'details',
     value: string,
   ): void {
+    setIsBuildingAgenda(true)
+
     const normalizedAgendaItemValue =
       field === 'agendaItem'
         ? value
@@ -15963,6 +15976,8 @@ function FacilitatorPlannerPage({
     agendaItemId: string,
     value: string,
   ): void {
+    setIsBuildingAgenda(true)
+
     const parsedValue =
       Number(value)
 
@@ -16491,6 +16506,8 @@ function FacilitatorPlannerPage({
       return
     }
 
+    setIsBuildingAgenda(true)
+
     setAgendaItems(
       (currentItems) => {
         const sourceIndex =
@@ -16650,6 +16667,8 @@ function FacilitatorPlannerPage({
     ) {
       return
     }
+
+    setIsBuildingAgenda(true)
 
     const selectedIndex =
       agendaItems.findIndex(
@@ -16859,7 +16878,7 @@ function FacilitatorPlannerPage({
       })
 
       setActionMessage(
-        `${statusToSave} agenda saved.`,
+        'Agenda saved.',
       )
 
       return true
@@ -17018,7 +17037,7 @@ function FacilitatorPlannerPage({
       <section className="facilitator-planner-meeting-panel">
         <div className="facilitator-planner-meeting-select">
           <label className="facilitator-planner-meeting-field">
-            <span>Meeting</span>
+            <span>Upcoming Cohort Meeting</span>
 
             <select
               className={
@@ -17072,92 +17091,34 @@ function FacilitatorPlannerPage({
             </select>
           </label>
 
-          <label className="facilitator-planner-status-field">
-            <span>Status</span>
+          <div className="facilitator-planner-cohort-facilitator-field">
+            <span>
+              COHORT FACILITATOR
+            </span>
 
-            <select
+            <div className="facilitator-planner-cohort-facilitator-box">
+              {selectedMeeting.facilitator ||
+                'TBD'}
+            </div>
+          </div>
+
+          <div className="facilitator-planner-planning-status-field">
+            <span>
+              STATUS
+            </span>
+
+            <div
               className={
-                agendaStatus === 'Final'
-                  ? 'facilitator-planner-status-select facilitator-planner-status-select-final'
-                  : 'facilitator-planner-status-select'
+                isFacilitatorPlanningInProgress
+                  ? 'facilitator-planner-planning-status facilitator-planner-planning-status-active'
+                  : 'facilitator-planner-planning-status'
               }
-              value={agendaStatus}
-              disabled={
-                !canEditSelectedMeetingAgenda
-              }
-              onChange={(event) =>
-                setAgendaStatus(
-                  event.target.value ===
-                    'Final'
-                    ? 'Final'
-                    : 'Draft',
-                )
-              }
+              role="status"
             >
-              <option value="Draft">
-                Draft
-              </option>
-
-              <option value="Final">
-                Final
-              </option>
-            </select>
-          </label>
-
-          <div className="facilitator-planner-build-actions">
-            <button
-              type="button"
-              className={
-                isBuildingAgenda
-                  ? 'facilitator-planner-start-button facilitator-planner-start-button-active'
-                  : 'facilitator-planner-start-button'
-              }
-              disabled={
-                !canEditSelectedMeetingAgenda ||
-                isBuildingAgenda
-              }
-              onClick={() => {
-                setIsBuildingAgenda(true)
-                setActionMessage(
-                  'Agenda-building session started.',
-                )
-              }}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
-                <path d="m13 7 4 4" />
-                <path d="M4 16l4 4" />
-              </svg>
-
-              {isBuildingAgenda
-                ? 'Building Agenda'
-                : 'Start Building Agenda'}
-            </button>
-
-            {isBuildingAgenda ? (
-              <button
-                type="button"
-                className="facilitator-planner-cancel-build-button"
-                onClick={() => {
-                  setIsBuildingAgenda(false)
-                  setLastProtectedAt('')
-
-                  setActionMessage(
-                    'Agenda-building session cancelled. Latest changes remain protected.',
-                  )
-                }}
-              >
-                Cancel Build
-              </button>
-            ) : null}
+              {isFacilitatorPlanningInProgress
+                ? 'Planning in Progress'
+                : 'Pending'}
+            </div>
           </div>
         </div>
 
@@ -17830,22 +17791,30 @@ function FacilitatorPlannerPage({
           <div className="facilitator-planner-table-toolbar">
             <button
               type="button"
+              className="agenda-image-button"
               disabled={
                 !canEditSelectedMeetingAgenda
               }
+              aria-label="Add Agenda Item"
+              title="Add Agenda Item"
               onClick={
                 addAgendaItem
               }
             >
-              <span aria-hidden="true">
-                +
-              </span>
-              Add Agenda Item
+              <img
+                className="agenda-action-image"
+                src={
+                  `${import.meta.env.BASE_URL}` +
+                  'add-agenda-item.png'
+                }
+                alt=""
+                aria-hidden="true"
+              />
             </button>
 
             <button
               type="button"
-              className="facilitator-planner-delete-button"
+              className="agenda-image-button"
               disabled={
                 !canEditSelectedMeetingAgenda ||
                 selectedAgendaItem ===
@@ -17853,11 +17822,21 @@ function FacilitatorPlannerPage({
                 selectedAgendaItem
                   .isDefault
               }
+              aria-label="Delete Selected"
+              title="Delete Selected"
               onClick={
                 deleteSelectedAgendaItem
               }
             >
-              Delete Selected
+              <img
+                className="agenda-action-image"
+                src={
+                  `${import.meta.env.BASE_URL}` +
+                  'delete-selected.png'
+                }
+                alt=""
+                aria-hidden="true"
+              />
             </button>
 
             <button
@@ -18267,64 +18246,45 @@ function FacilitatorPlannerPage({
           <div className="facilitator-planner-primary-actions">
             <button
               type="button"
-              className="facilitator-planner-save-button"
+              className="agenda-image-button"
               disabled={
                 !canEditSelectedMeetingAgenda
               }
+              aria-label="Save Agenda"
+              title="Save Agenda"
               onClick={() => {
                 saveAgenda()
               }}
             >
-              <svg
-                className="facilitator-planner-action-icon"
-                viewBox="0 0 24 24"
+              <img
+                className="agenda-action-image"
+                src={
+                  `${import.meta.env.BASE_URL}` +
+                  'save-agenda.png'
+                }
+                alt=""
                 aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 3h12l2 2v16H5V3Z" />
-                <path d="M8 3v6h8V3" />
-                <rect
-                  x="8"
-                  y="13"
-                  width="8"
-                  height="6"
-                />
-              </svg>
-
-              {agendaStatus === 'Final'
-                ? 'Save Final Agenda'
-                : 'Save as Draft'}
+              />
             </button>
 
             <button
               type="button"
-              className="facilitator-planner-generate-button"
+              className="agenda-image-button"
+              aria-label="Generate Word"
+              title="Generate Word"
               onClick={() =>
                 void generateCurrentAgenda()
               }
             >
-              <svg
-                className="facilitator-planner-action-icon"
-                viewBox="0 0 24 24"
+              <img
+                className="agenda-action-image"
+                src={
+                  `${import.meta.env.BASE_URL}` +
+                  'generate-word.png'
+                }
+                alt=""
                 aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M6 2h8l4 4v16H6V2Z" />
-                <path d="M14 2v5h5" />
-                <path d="M9 12h6" />
-                <path d="M9 15h6" />
-                <path d="M9 18h4" />
-              </svg>
-
-              Generate Word
+              />
             </button>
 
             <span
@@ -18436,7 +18396,7 @@ function FacilitatorPlannerPage({
 
                       <td>
                         <strong>
-                          {agenda.status}
+                          Saved
                         </strong>
                       </td>
 
@@ -18701,20 +18661,19 @@ function FacilitatorPlannerPage({
             aria-labelledby="facilitator-planner-navigation-title"
           >
             <h2 id="facilitator-planner-navigation-title">
-              Save Draft Before Leaving?
+              Save Agenda Before Leaving?
             </h2>
 
             <p>
-              You are currently building an
+              You are currently planning an
               agenda. Would you like to save
-              it as a draft before opening
-              another page?
+              it before opening another page?
             </p>
 
             <small>
               Your automatic recovery copy
               remains protected if you leave
-              without creating a saved draft.
+              without saving the agenda.
             </small>
 
             <div className="facilitator-planner-navigation-actions">
@@ -18725,7 +18684,7 @@ function FacilitatorPlannerPage({
                   finishPendingNavigation(true)
                 }
               >
-                Save Draft &amp; Leave
+                Save Agenda &amp; Leave
               </button>
 
               <button
@@ -18735,7 +18694,7 @@ function FacilitatorPlannerPage({
                   setPendingNavigationPath(null)
                 }
               >
-                Continue Building
+                Continue Planning
               </button>
 
               <button
@@ -18745,7 +18704,7 @@ function FacilitatorPlannerPage({
                   finishPendingNavigation(false)
                 }
               >
-                Leave Without Draft Save
+                Leave Without Saving
               </button>
             </div>
           </section>
