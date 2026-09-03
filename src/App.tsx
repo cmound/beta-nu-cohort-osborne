@@ -49,6 +49,7 @@ import {
   type CloudCohortContactRecord,
   type CloudCohortGroupAssignmentsRecord,
   type CloudCohortMeetingRecord,
+  type CloudCohortPresenceRecord,
   type CloudCohortPurposeResearchWorkspaceRecord,
   type CloudCohortSharedDocumentRecord,
   type CloudCohortSharedUrlRecord,
@@ -1773,6 +1774,79 @@ const BETA_NU_OWNER_MEMBER_ID =
 const BETA_NU_OWNER_USER_ID =
   'cmound@mail.umassglobal.edu'
 
+const COHORT_PRESENCE_HEARTBEAT_MS =
+  15_000
+
+const COHORT_PRESENCE_TIMEOUT_MS =
+  45_000
+
+function getCohortPresenceRecordId(
+  userId: string,
+): string {
+  return (
+    'cohort-presence-' +
+    userId
+      .trim()
+      .toLowerCase()
+  )
+}
+
+function getCohortPresenceInitials(
+  value: string,
+): string {
+  const normalizedValue =
+    value
+      .replace(
+        /^(?:dr|doctor)\.?\s+/i,
+        '',
+      )
+      .replace(
+        /@.*$/,
+        '',
+      )
+      .trim()
+
+  const nameParts =
+    normalizedValue
+      .split(/[\s._-]+/)
+      .filter(
+        (part) =>
+          part.length > 0,
+      )
+
+  if (nameParts.length === 0) {
+    return '?'
+  }
+
+  return nameParts
+    .slice(0, 3)
+    .map(
+      (part) =>
+        part.charAt(0).toUpperCase(),
+    )
+    .join('')
+}
+
+function isCohortPresenceActive(
+  record: CloudCohortPresenceRecord,
+  currentTime: number,
+): boolean {
+  const lastSeenTime =
+    Date.parse(
+      record.lastSeenAt,
+    )
+
+  return (
+    record.isOnline &&
+    Number.isFinite(
+      lastSeenTime,
+    ) &&
+    currentTime -
+    lastSeenTime <=
+    COHORT_PRESENCE_TIMEOUT_MS
+  )
+}
+
 const COHORT_CONTACT_EDIT_FIELDS = [
   'name',
   'timeZone',
@@ -1804,6 +1878,7 @@ function createCohortMemberPermissions() {
       'sharedUrls',
       'sharedDocuments',
       'cohortBooks',
+      'cohortPresence',
     ],
     update: {
       cohortContacts: [
@@ -1832,6 +1907,12 @@ function createCohortMemberPermissions() {
         'savedAt',
         'housekeepingNotes',
         'agendaItems',
+      ],
+      cohortPresence: [
+        'initials',
+        'pagePath',
+        'lastSeenAt',
+        'isOnline',
       ],
       sharedUrls: '*' as const,
       sharedDocuments: '*' as const,
@@ -45502,6 +45583,11 @@ function App() {
   const location =
     useLocation()
 
+  const [
+    isCloudAccessReady,
+    setIsCloudAccessReady,
+  ] = useState(false)
+
   useEffect(() => {
     let isCancelled = false
 
@@ -45523,13 +45609,18 @@ function App() {
         wait: true,
       })
 
+      if (isCancelled) {
+        return
+      }
+
       const currentUserId =
         db.cloud.currentUserId
 
+      setIsCloudAccessReady(true)
+
       if (
         currentUserId !==
-        BETA_NU_OWNER_USER_ID ||
-        isCancelled
+        BETA_NU_OWNER_USER_ID
       ) {
         return
       }
@@ -45539,6 +45630,22 @@ function App() {
           BETA_NU_SHARED_REALM_ID,
           'cohort-member',
         ])
+
+      if (
+        cohortMemberRole !==
+        undefined
+      ) {
+        await db.roles.put({
+          realmId:
+            BETA_NU_SHARED_REALM_ID,
+          name:
+            'cohort-member',
+          permissions:
+            createCohortMemberPermissions(),
+        })
+
+        await db.cloud.sync()
+      }
 
       const sharedMembers =
         await db.members
@@ -47064,6 +47171,234 @@ function App() {
         ),
       [],
     )
+
+  const cloudCohortPresence =
+    useLiveQuery(
+      () =>
+        db.cohortPresence
+          .where('realmId')
+          .equals(
+            BETA_NU_SHARED_REALM_ID,
+          )
+          .toArray(),
+      [],
+    )
+
+  const [
+    cohortPresenceNow,
+    setCohortPresenceNow,
+  ] = useState(
+    () => Date.now(),
+  )
+
+  useEffect(() => {
+    const presenceClockInterval =
+      window.setInterval(
+        () => {
+          setCohortPresenceNow(
+            Date.now(),
+          )
+        },
+        5_000,
+      )
+
+    return () => {
+      window.clearInterval(
+        presenceClockInterval,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isCloudAccessReady) {
+      return
+    }
+
+    const authenticatedUserId =
+      db.cloud.currentUserId
+
+    const normalizedCurrentUserId =
+      authenticatedUserId
+        .trim()
+        .toLowerCase()
+
+    if (
+      normalizedCurrentUserId.length ===
+      0 ||
+      normalizedCurrentUserId ===
+      'unauthorized'
+    ) {
+      return
+    }
+
+    const currentContact =
+      contacts.find(
+        (contact) =>
+          contact.email
+            .trim()
+            .toLowerCase() ===
+          normalizedCurrentUserId,
+      )
+
+    const initials =
+      getCohortPresenceInitials(
+        currentContact?.name ??
+        normalizedCurrentUserId,
+      )
+
+    const presenceId =
+      getCohortPresenceRecordId(
+        normalizedCurrentUserId,
+      )
+
+    let isCancelled = false
+
+    function reportPresenceError(
+      error: unknown,
+    ): void {
+      console.error(
+        'Unable to update cohort presence.',
+        error,
+      )
+    }
+
+    async function publishPresence():
+      Promise<void> {
+      if (isCancelled) {
+        return
+      }
+
+      const lastSeenAt =
+        new Date().toISOString()
+
+      const existingRecord =
+        await db.cohortPresence.get(
+          presenceId,
+        )
+
+      if (isCancelled) {
+        return
+      }
+
+      if (
+        existingRecord === undefined
+      ) {
+        await db.cohortPresence.add({
+          id: presenceId,
+          realmId:
+            BETA_NU_SHARED_REALM_ID,
+          owner:
+            authenticatedUserId,
+          userId:
+            normalizedCurrentUserId,
+          initials,
+          pagePath:
+            location.pathname,
+          lastSeenAt,
+          isOnline: true,
+        })
+      } else {
+        await db.cohortPresence.update(
+          presenceId,
+          {
+            initials,
+            pagePath:
+              location.pathname,
+            lastSeenAt,
+            isOnline: true,
+          },
+        )
+      }
+
+      if (!isCancelled) {
+        await db.cloud.sync()
+      }
+    }
+
+    function handlePageHide(): void {
+      void (async (): Promise<void> => {
+        await db.cohortPresence.update(
+          presenceId,
+          {
+            lastSeenAt:
+              new Date()
+                .toISOString(),
+            isOnline: false,
+          },
+        )
+
+        await db.cloud.sync()
+      })().catch(
+        reportPresenceError,
+      )
+    }
+
+    void publishPresence().catch(
+      reportPresenceError,
+    )
+
+    const presenceHeartbeatInterval =
+      window.setInterval(
+        () => {
+          void publishPresence().catch(
+            reportPresenceError,
+          )
+        },
+        COHORT_PRESENCE_HEARTBEAT_MS,
+      )
+
+    window.addEventListener(
+      'pagehide',
+      handlePageHide,
+    )
+
+    return () => {
+      isCancelled = true
+
+      window.clearInterval(
+        presenceHeartbeatInterval,
+      )
+
+      window.removeEventListener(
+        'pagehide',
+        handlePageHide,
+      )
+    }
+  }, [
+    contacts,
+    isCloudAccessReady,
+    location.pathname,
+  ])
+
+  const activeCohortPresenceRecords =
+    (
+      cloudCohortPresence ??
+      []
+    ).filter(
+      (record) =>
+        isCohortPresenceActive(
+          record,
+          cohortPresenceNow,
+        ),
+    )
+
+  const currentPageCohortPresenceRecords =
+    activeCohortPresenceRecords
+      .filter(
+        (record) =>
+          record.pagePath ===
+          location.pathname,
+      )
+      .sort(
+        (
+          firstRecord,
+          secondRecord,
+        ) =>
+          firstRecord.initials
+            .localeCompare(
+              secondRecord.initials,
+            ),
+      )
 
   const minimumCloudContactCount =
     initialRuntimeState
@@ -50836,6 +51171,40 @@ function App() {
 
       <div className="app-main">
         <main className="page-content">
+          <div
+            className="cohort-presence-bar"
+            aria-label="Cohort online presence"
+          >
+            <span className="cohort-presence-count">
+              {activeCohortPresenceRecords.length}{' '}
+              {activeCohortPresenceRecords.length === 1
+                ? 'user'
+                : 'users'}{' '}
+              online
+            </span>
+
+            {currentPageCohortPresenceRecords.length > 0 ? (
+              <div
+                className="cohort-presence-page-users"
+                aria-label="Users on this page"
+              >
+                {currentPageCohortPresenceRecords.map(
+                  (record) => (
+                    <span
+                      key={record.id}
+                      className="cohort-presence-avatar"
+                      title={
+                        `${record.initials} is on this page`
+                      }
+                    >
+                      {record.initials}
+                    </span>
+                  ),
+                )}
+              </div>
+            ) : null}
+          </div>
+
           <Routes>
             <Route
               path="/"
