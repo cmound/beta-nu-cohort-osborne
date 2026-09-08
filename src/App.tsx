@@ -57,6 +57,7 @@ import {
   type CloudCohortSharedDocumentStateRecord,
   type CloudCohortSharedUrlRecord,
   type CloudCourseProgressRecord,
+  type CloudCourseResourceRecord,
   type CloudCourseWaiverRecord,
   type CloudCourseWorkspaceRecord,
   type CloudFacilitatorAgendaRecord,
@@ -3645,6 +3646,27 @@ function isProfessionalDispositionsAssignment(
     normalizedAsn === 'SOE' ||
     normalizedName ===
     'professional dispositions student acknowledgement'
+  )
+}
+
+function isCourseResourceAssignmentEligible(
+  assignment: CourseAssignmentRecord,
+): boolean {
+  if (
+    isProfessionalDispositionsAssignment(
+      assignment,
+    )
+  ) {
+    return false
+  }
+
+  const normalizedAssignmentText =
+    `${assignment.asn} ${assignment.name}`
+      .trim()
+      .toLowerCase()
+
+  return !normalizedAssignmentText.includes(
+    'discussion',
   )
 }
 
@@ -33460,6 +33482,32 @@ function CoursePage({
       [],
     )
 
+  const cloudCourseResources =
+    useLiveQuery(
+      () => {
+        const currentCourseSlug =
+          courseCode?.trim() ?? ''
+
+        if (
+          currentCourseSlug.length === 0
+        ) {
+          return Promise.resolve<
+            CloudCourseResourceRecord[]
+          >([])
+        }
+
+        return db.courseResources
+          .where('courseSlug')
+          .equals(
+            currentCourseSlug,
+          )
+          .toArray()
+      },
+      [
+        courseCode,
+      ],
+    )
+
   const [
     courseProgress,
     setCourseProgress,
@@ -33506,6 +33554,39 @@ function CoursePage({
     useRef<HTMLInputElement | null>(
       null,
     )
+
+  const courseResourceUploadInputRef =
+    useRef<HTMLInputElement | null>(
+      null,
+    )
+
+  const [
+    isCourseResourcesOpen,
+    setIsCourseResourcesOpen,
+  ] = useState(false)
+
+  const [
+    courseResourceSearch,
+    setCourseResourceSearch,
+  ] = useState('')
+
+  const [
+    openCourseResourceFolderId,
+    setOpenCourseResourceFolderId,
+  ] =
+    useState<string | null>(
+      null,
+    )
+
+  const [
+    courseResourceUploadDestination,
+    setCourseResourceUploadDestination,
+  ] = useState('')
+
+  const [
+    isCourseResourceUploading,
+    setIsCourseResourceUploading,
+  ] = useState(false)
 
   const webinarRequirementRefs =
     useRef<
@@ -34082,6 +34163,22 @@ function CoursePage({
       null,
     )
 
+    setIsCourseResourcesOpen(
+      false,
+    )
+
+    setCourseResourceSearch(
+      '',
+    )
+
+    setOpenCourseResourceFolderId(
+      null,
+    )
+
+    setCourseResourceUploadDestination(
+      '',
+    )
+
     webinarRequirementRefs.current =
       {}
 
@@ -34194,6 +34291,780 @@ function CoursePage({
         ),
     ),
   ]
+
+  const courseResourceAssignments =
+    courseDisplayAssignments.filter(
+      isCourseResourceAssignmentEligible,
+    )
+
+  const courseResourceAssignmentMap =
+    new Map<
+      string,
+      CourseAssignmentRecord
+    >()
+
+  for (
+    const assignment
+    of courseResourceAssignments
+  ) {
+    courseResourceAssignmentMap.set(
+      assignment.id,
+      assignment,
+    )
+  }
+
+  const courseResources = [
+    ...(
+      cloudCourseResources ??
+      []
+    ),
+  ].sort(
+    (
+      firstResource,
+      secondResource,
+    ) =>
+      firstResource.fileName.localeCompare(
+        secondResource.fileName,
+        undefined,
+        {
+          sensitivity: 'base',
+        },
+      ),
+  )
+
+  const generalCourseResources =
+    courseResources.filter(
+      (resource) =>
+        resource.assignmentId.length ===
+        0 ||
+        !courseResourceAssignmentMap.has(
+          resource.assignmentId,
+        ),
+    )
+
+  function getCourseResourceFolderLabel(
+    assignment: CourseAssignmentRecord,
+  ): string {
+    return (
+      `ASN ${formatCourseAssignmentNumber(
+        assignment.asn,
+      )} ${assignment.name}`
+    )
+  }
+
+  function getCourseResourceFilesForAssignment(
+    assignmentId: string,
+  ): readonly CloudCourseResourceRecord[] {
+    return courseResources.filter(
+      (resource) =>
+        resource.assignmentId ===
+        assignmentId,
+    )
+  }
+
+  function getCourseResourceLocationLabel(
+    resource: CloudCourseResourceRecord,
+  ): string {
+    const assignment =
+      courseResourceAssignmentMap.get(
+        resource.assignmentId,
+      )
+
+    if (assignment === undefined) {
+      return 'General Course Files'
+    }
+
+    return getCourseResourceFolderLabel(
+      assignment,
+    )
+  }
+
+  const normalizedCourseResourceSearch =
+    courseResourceSearch
+      .trim()
+      .toLowerCase()
+
+  const courseResourceSearchResults =
+    normalizedCourseResourceSearch
+      .length === 0
+      ? []
+      : courseResources.filter(
+        (resource) => {
+          const fileName =
+            resource.fileName
+              .toLowerCase()
+
+          const locationLabel =
+            getCourseResourceLocationLabel(
+              resource,
+            )
+              .toLowerCase()
+
+          return (
+            fileName.includes(
+              normalizedCourseResourceSearch,
+            ) ||
+            locationLabel.includes(
+              normalizedCourseResourceSearch,
+            )
+          )
+        },
+      )
+
+  function openCourseResourceFolder(
+    folderId: string,
+  ): void {
+    setOpenCourseResourceFolderId(
+      (currentFolderId) =>
+        currentFolderId === folderId
+          ? null
+          : folderId,
+    )
+
+    setCourseResourceUploadDestination(
+      folderId,
+    )
+  }
+
+  async function handleCourseResourceUpload(
+    event: ChangeEvent<HTMLInputElement>,
+  ): Promise<void> {
+    const selectedFiles =
+      Array.from(
+        event.currentTarget.files ??
+        [],
+      )
+
+    event.currentTarget.value = ''
+
+    if (
+      selectedFiles.length === 0
+    ) {
+      return
+    }
+
+    setIsCourseResourceUploading(
+      true,
+    )
+
+    try {
+      if (
+        db.cloud.currentUserId ===
+        'unauthorized'
+      ) {
+        await db.cloud.login()
+      }
+
+      const currentUserId =
+        db.cloud.currentUserId
+          .trim()
+
+      if (
+        currentUserId.length === 0 ||
+        currentUserId ===
+        'unauthorized'
+      ) {
+        window.alert(
+          'You must be signed in before uploading Course Resources.',
+        )
+
+        return
+      }
+
+      const destinationAssignmentId =
+        courseResourceUploadDestination
+          .length === 0 ||
+          courseResourceAssignmentMap.has(
+            courseResourceUploadDestination,
+          )
+          ? courseResourceUploadDestination
+          : ''
+
+      const existingFileKeys =
+        new Set(
+          courseResources.map(
+            (resource) =>
+            (
+              `${resource.assignmentId}::` +
+              resource.fileName
+                .trim()
+                .toLowerCase()
+            ),
+          ),
+        )
+
+      const acceptedFiles:
+        File[] = []
+
+      let duplicateCount = 0
+
+      for (
+        const file
+        of selectedFiles
+      ) {
+        const fileKey =
+          (
+            `${destinationAssignmentId}::` +
+            file.name
+              .trim()
+              .toLowerCase()
+          )
+
+        if (
+          existingFileKeys.has(
+            fileKey,
+          )
+        ) {
+          duplicateCount += 1
+          continue
+        }
+
+        existingFileKeys.add(
+          fileKey,
+        )
+
+        acceptedFiles.push(
+          file,
+        )
+      }
+
+      if (
+        acceptedFiles.length === 0
+      ) {
+        window.alert(
+          'The selected file or files already exist in that Resource folder.',
+        )
+
+        return
+      }
+
+      const uploadBaseTime =
+        Date.now()
+
+      const resourceRecords:
+        CloudCourseResourceRecord[] =
+        acceptedFiles.map(
+          (
+            file,
+            fileIndex,
+          ) => ({
+            id:
+              `course-resource-${crypto.randomUUID()}`,
+            realmId:
+              BETA_NU_SHARED_REALM_ID,
+            owner:
+              currentUserId,
+            courseSlug,
+            assignmentId:
+              destinationAssignmentId,
+            fileName:
+              file.name,
+            mimeType:
+              file.type.trim() ||
+              'application/octet-stream',
+            sizeBytes:
+              file.size,
+            uploadedAt:
+              new Date(
+                uploadBaseTime +
+                fileIndex,
+              ).toISOString(),
+            originalBlob:
+              file,
+          }),
+        )
+
+      try {
+        await db.courseResources.bulkPut(
+          resourceRecords,
+        )
+      } catch (
+      error: unknown
+      ) {
+        console.error(
+          'Unable to save Course Resources.',
+          error,
+        )
+
+        window.alert(
+          'The selected Course Resource file or files could not be saved.',
+        )
+
+        return
+      }
+
+      try {
+        await db.cloud.sync()
+      } catch (
+      error: unknown
+      ) {
+        console.error(
+          'Course Resource cloud synchronization did not complete.',
+          error,
+        )
+
+        window.alert(
+          'The file was saved on this device, but cloud synchronization did not complete. Please remain online and try again.',
+        )
+      }
+
+      if (
+        duplicateCount > 0
+      ) {
+        window.alert(
+          `${duplicateCount} duplicate file${duplicateCount === 1 ? ' was' : 's were'} skipped.`,
+        )
+      }
+    } catch (
+    error: unknown
+    ) {
+      console.error(
+        'Course Resource upload failed.',
+        error,
+      )
+
+      window.alert(
+        'The Course Resource upload could not be completed.',
+      )
+    } finally {
+      setIsCourseResourceUploading(
+        false,
+      )
+    }
+  }
+
+  function handleDownloadCourseResource(
+    resource: CloudCourseResourceRecord,
+  ): void {
+    const downloadUrl =
+      URL.createObjectURL(
+        resource.originalBlob,
+      )
+
+    const downloadAnchor =
+      document.createElement(
+        'a',
+      )
+
+    downloadAnchor.href =
+      downloadUrl
+
+    downloadAnchor.download =
+      resource.fileName
+
+    downloadAnchor.style.display =
+      'none'
+
+    document.body.appendChild(
+      downloadAnchor,
+    )
+
+    downloadAnchor.click()
+
+    downloadAnchor.remove()
+
+    window.setTimeout(
+      () => {
+        URL.revokeObjectURL(
+          downloadUrl,
+        )
+      },
+      1000,
+    )
+  }
+
+  function renderCourseResourceFileRow(
+    resource: CloudCourseResourceRecord,
+  ): ReactNode {
+    return (
+      <div
+        key={resource.id}
+        className="course-resource-file-row"
+      >
+        <span
+          className="course-resource-file-icon"
+          aria-hidden="true"
+        >
+          ▤
+        </span>
+
+        <div className="course-resource-file-copy">
+          <strong>
+            {resource.fileName}
+          </strong>
+
+          <small>
+            {formatCohortSharedFileSize(
+              resource.sizeBytes,
+            )}
+          </small>
+        </div>
+
+        <button
+          type="button"
+          className="course-resource-file-download-button"
+          onClick={() => {
+            handleDownloadCourseResource(
+              resource,
+            )
+          }}
+        >
+          ↓ Download
+        </button>
+      </div>
+    )
+  }
+
+  function renderCourseResourcePanel():
+    ReactNode {
+    const resourceCourseRecord =
+      courseRecord
+
+    if (
+      resourceCourseRecord ===
+      undefined
+    ) {
+      return null
+    }
+
+    return (
+      <aside
+        className="course-resource-panel"
+        aria-label={`${resourceCourseRecord.code} Course Resources`}
+      >
+        <header className="course-resource-panel-header">
+          <div>
+            <span>
+              {resourceCourseRecord.code}
+            </span>
+
+            <h2>
+              Course Resources
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            className="course-resource-panel-close"
+            aria-label="Close Course Resources"
+            title="Close"
+            onClick={() => {
+              setIsCourseResourcesOpen(
+                false,
+              )
+            }}
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="course-resource-panel-toolbar">
+          <label className="course-resource-search-field">
+            <span>
+              Search Resources
+            </span>
+
+            <input
+              type="search"
+              placeholder="Search file or assignment name..."
+              value={
+                courseResourceSearch
+              }
+              onChange={(
+                event,
+              ) => {
+                setCourseResourceSearch(
+                  event.target.value,
+                )
+              }}
+            />
+          </label>
+
+          <label className="course-resource-upload-destination">
+            <span>
+              Upload To
+            </span>
+
+            <select
+              value={
+                courseResourceUploadDestination
+              }
+              onChange={(
+                event,
+              ) => {
+                setCourseResourceUploadDestination(
+                  event.target.value,
+                )
+              }}
+            >
+              <option value="">
+                General Course Files
+              </option>
+
+              {courseResourceAssignments.map(
+                (assignment) => (
+                  <option
+                    key={assignment.id}
+                    value={assignment.id}
+                  >
+                    {getCourseResourceFolderLabel(
+                      assignment,
+                    )}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            className="course-resource-upload-button"
+            title="Upload Course Resource"
+            disabled={
+              isCourseResourceUploading
+            }
+            onClick={() => {
+              courseResourceUploadInputRef
+                .current
+                ?.click()
+            }}
+          >
+            {isCourseResourceUploading
+              ? 'Uploading...'
+              : '+'}
+          </button>
+
+          <input
+            ref={
+              courseResourceUploadInputRef
+            }
+            type="file"
+            className="course-resource-hidden-input"
+            multiple
+            onChange={(
+              event,
+            ) => {
+              void handleCourseResourceUpload(
+                event,
+              )
+            }}
+          />
+        </div>
+
+        <div className="course-resource-panel-body">
+          {normalizedCourseResourceSearch
+            .length > 0 ? (
+            <section className="course-resource-search-results">
+              <h3>
+                Search Results
+              </h3>
+
+              {courseResourceSearchResults
+                .length === 0 ? (
+                <p className="course-resource-empty-message">
+                  No matching Course Resources were found.
+                </p>
+              ) : (
+                courseResourceSearchResults.map(
+                  (resource) => {
+                    const assignment =
+                      courseResourceAssignmentMap.get(
+                        resource.assignmentId,
+                      )
+
+                    const destinationId =
+                      assignment ===
+                        undefined
+                        ? ''
+                        : assignment.id
+
+                    return (
+                      <div
+                        key={resource.id}
+                        className="course-resource-search-result"
+                      >
+                        <div>
+                          <strong>
+                            {resource.fileName}
+                          </strong>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCourseResourceSearch(
+                                '',
+                              )
+
+                              setOpenCourseResourceFolderId(
+                                destinationId,
+                              )
+
+                              setCourseResourceUploadDestination(
+                                destinationId,
+                              )
+                            }}
+                          >
+                            {getCourseResourceLocationLabel(
+                              resource,
+                            )}
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="course-resource-file-download-button"
+                          onClick={() => {
+                            handleDownloadCourseResource(
+                              resource,
+                            )
+                          }}
+                        >
+                          ↓ Download
+                        </button>
+                      </div>
+                    )
+                  },
+                )
+              )}
+            </section>
+          ) : (
+            <>
+              <section className="course-resource-folder-section">
+                <h3>
+                  Assignment Folders
+                </h3>
+
+                {courseResourceAssignments
+                  .length === 0 ? (
+                  <p className="course-resource-empty-message">
+                    No assignment folders are available for this course.
+                  </p>
+                ) : (
+                  courseResourceAssignments.map(
+                    (assignment) => {
+                      const folderFiles =
+                        getCourseResourceFilesForAssignment(
+                          assignment.id,
+                        )
+
+                      const isFolderOpen =
+                        openCourseResourceFolderId ===
+                        assignment.id
+
+                      return (
+                        <div
+                          key={assignment.id}
+                          className="course-resource-folder"
+                        >
+                          <button
+                            type="button"
+                            className="course-resource-folder-button"
+                            onClick={() => {
+                              openCourseResourceFolder(
+                                assignment.id,
+                              )
+                            }}
+                          >
+                            <span aria-hidden="true">
+                              📁
+                            </span>
+
+                            <span>
+                              {getCourseResourceFolderLabel(
+                                assignment,
+                              )}
+                            </span>
+
+                            <strong>
+                              ({folderFiles.length})
+                            </strong>
+
+                            <span
+                              className="course-resource-folder-toggle"
+                              aria-hidden="true"
+                            >
+                              {isFolderOpen
+                                ? '−'
+                                : '+'}
+                            </span>
+                          </button>
+
+                          {isFolderOpen ? (
+                            <div className="course-resource-folder-files">
+                              {folderFiles.length ===
+                                0 ? (
+                                <p className="course-resource-empty-message">
+                                  No files have been uploaded to this assignment folder.
+                                </p>
+                              ) : (
+                                folderFiles.map(
+                                  renderCourseResourceFileRow,
+                                )
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      )
+                    },
+                  )
+                )}
+              </section>
+
+              <section className="course-resource-general-section">
+                <button
+                  type="button"
+                  className="course-resource-folder-button course-resource-general-folder-button"
+                  onClick={() => {
+                    openCourseResourceFolder(
+                      '',
+                    )
+                  }}
+                >
+                  <span aria-hidden="true">
+                    📂
+                  </span>
+
+                  <span>
+                    General Course Files
+                  </span>
+
+                  <strong>
+                    ({generalCourseResources.length})
+                  </strong>
+
+                  <span
+                    className="course-resource-folder-toggle"
+                    aria-hidden="true"
+                  >
+                    {openCourseResourceFolderId ===
+                      ''
+                      ? '−'
+                      : '+'}
+                  </span>
+                </button>
+
+                {openCourseResourceFolderId ===
+                  '' ? (
+                  <div className="course-resource-folder-files">
+                    {generalCourseResources
+                      .length === 0 ? (
+                      <p className="course-resource-empty-message">
+                        No general course files have been uploaded.
+                      </p>
+                    ) : (
+                      generalCourseResources.map(
+                        renderCourseResourceFileRow,
+                      )
+                    )}
+                  </div>
+                ) : null}
+              </section>
+            </>
+          )}
+        </div>
+      </aside>
+    )
+  }
 
   async function handleDownloadCourseTracker():
     Promise<void> {
@@ -38084,6 +38955,10 @@ function CoursePage({
         </div>
       </header>
 
+      {isCourseResourcesOpen
+        ? renderCourseResourcePanel()
+        : null}
+
       <div
         className={
           isSixteenWeekCourse
@@ -38474,6 +39349,83 @@ function CoursePage({
               </label>
             </div>
           </section>
+
+          {!isSixteenWeekCourse ? (
+            <section className="course-workspace-info-card course-workspace-resources-card">
+              <header>
+                <div>
+                  <span className="course-workspace-card-eyebrow">
+                    Course Resource
+                  </span>
+
+                  <h2>
+                    Resources
+                  </h2>
+                </div>
+
+                <span className="course-resource-card-file-count">
+                  {courseResources.length}
+                </span>
+              </header>
+
+              <button
+                type="button"
+                className="course-resource-card-open-button"
+                onClick={() => {
+                  setIsCourseResourcesOpen(
+                    true,
+                  )
+                }}
+              >
+                <div className="course-resource-card-folder-preview">
+                  {courseResourceAssignments
+                    .slice(
+                      0,
+                      3,
+                    )
+                    .map(
+                      (assignment) => (
+                        <div
+                          key={assignment.id}
+                        >
+                          <span aria-hidden="true">
+                            📁
+                          </span>
+
+                          <span>
+                            {getCourseResourceFolderLabel(
+                              assignment,
+                            )}
+                          </span>
+
+                          <strong>
+                            (
+                            {getCourseResourceFilesForAssignment(
+                              assignment.id,
+                            ).length}
+                            )
+                          </strong>
+                        </div>
+                      ),
+                    )}
+
+                  {courseResourceAssignments
+                    .length > 3 ? (
+                    <small>
+                      +
+                      {courseResourceAssignments.length -
+                        3}{' '}
+                      more assignment folders
+                    </small>
+                  ) : null}
+                </div>
+
+                <span className="course-resource-card-open-label">
+                  Open Resources
+                </span>
+              </button>
+            </section>
+          ) : null}
         </div>
 
         <div className="course-workspace-operations-grid">
@@ -38498,6 +39450,29 @@ function CoursePage({
               </div>
 
               <div className="course-workspace-section-actions">
+                {isSixteenWeekCourse ? (
+                  <button
+                    type="button"
+                    className="course-resource-header-button"
+                    title="Open Course Resources"
+                    onClick={() => {
+                      setIsCourseResourcesOpen(
+                        true,
+                      )
+                    }}
+                  >
+                    <span aria-hidden="true">
+                      📁
+                    </span>
+
+                    Resources
+
+                    <strong>
+                      ({courseResources.length})
+                    </strong>
+                  </button>
+                ) : null}
+
                 {workspace.assignments.length >
                   0 ? (
                   <button
