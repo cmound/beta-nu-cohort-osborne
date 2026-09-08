@@ -34726,6 +34726,124 @@ function CoursePage({
       return
     }
 
+    const destinationAssignmentId =
+      courseResourceUploadDestination
+        .length === 0 ||
+        courseResourceAssignmentMap.has(
+          courseResourceUploadDestination,
+        )
+        ? courseResourceUploadDestination
+        : ''
+
+    const destinationAssignment =
+      courseResourceAssignmentMap.get(
+        destinationAssignmentId,
+      )
+
+    if (
+      destinationAssignment !==
+      undefined
+    ) {
+      const expectedAssignmentNumber =
+        formatCourseAssignmentNumber(
+          destinationAssignment.asn,
+        )
+
+      const mismatchedFiles:
+        {
+          readonly fileName: string
+          readonly detectedAssignmentNumber: string
+        }[] = []
+
+      for (
+        const file
+        of selectedFiles
+      ) {
+        const labeledAssignmentMatch =
+          file.name.match(
+            /\b(?:asn|assign(?:ment)?)\s*#?\s*(\d{1,2}\.\d{1,2})\b/i,
+          )
+
+        const standaloneAssignmentMatch =
+          file.name.match(
+            /\b(\d{1,2}\.\d{1,2})\b/,
+          )
+
+        const detectedAssignmentNumber =
+          labeledAssignmentMatch?.[1] ??
+          standaloneAssignmentMatch?.[1] ??
+          null
+
+        if (
+          detectedAssignmentNumber !==
+            null &&
+          detectedAssignmentNumber !==
+            expectedAssignmentNumber
+        ) {
+          mismatchedFiles.push({
+            fileName:
+              file.name,
+            detectedAssignmentNumber,
+          })
+        }
+      }
+
+      if (
+        mismatchedFiles.length > 0
+      ) {
+        const destinationLabel =
+          getCourseResourceFolderLabel(
+            destinationAssignment,
+          )
+
+        const mismatchDetails =
+          mismatchedFiles
+            .slice(
+              0,
+              5,
+            )
+            .map(
+              (
+                mismatch,
+              ) =>
+                (
+                  `• ${mismatch.fileName}\n` +
+                  `  Detected ASN ${mismatch.detectedAssignmentNumber}`
+                ),
+            )
+            .join(
+              '\n\n',
+            )
+
+        const additionalFilesMessage =
+          mismatchedFiles.length > 5
+            ? (
+              `\n\n+${mismatchedFiles.length - 5}` +
+              ' additional mismatched file(s)'
+            )
+            : ''
+
+        const shouldContinue =
+          window.confirm(
+            (
+              'QC CHECK\n\n' +
+              'One or more selected file names appear to reference a different assignment number than the selected destination.\n\n' +
+              mismatchDetails +
+              additionalFilesMessage +
+              '\n\nSelected destination:\n' +
+              destinationLabel +
+              '\n\nAre you sure you want to upload the file(s) to this folder?'
+            ),
+          )
+
+        if (
+          !shouldContinue
+        ) {
+          return
+        }
+      }
+    }
+
     setIsCourseResourceUploading(
       true,
     )
@@ -34753,15 +34871,6 @@ function CoursePage({
 
         return
       }
-
-      const destinationAssignmentId =
-        courseResourceUploadDestination
-          .length === 0 ||
-          courseResourceAssignmentMap.has(
-            courseResourceUploadDestination,
-          )
-          ? courseResourceUploadDestination
-          : ''
 
       const existingFileKeys =
         new Set(
@@ -35204,7 +35313,7 @@ function CoursePage({
                 }}
               >
                 <option value="">
-                  General Course Files
+                  General Course Files ({generalCourseResources.length})
                 </option>
 
                 {courseResourceAssignments.map(
@@ -35215,7 +35324,12 @@ function CoursePage({
                     >
                       {getCourseResourceFolderLabel(
                         assignment,
-                      )}
+                      )}{' '}
+                      (
+                      {getCourseResourceFilesForAssignment(
+                        assignment.id,
+                      ).length}
+                      )
                     </option>
                   ),
                 )}
