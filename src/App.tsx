@@ -34876,20 +34876,21 @@ function CoursePage({
         return
       }
 
-      try {
-        await db.cloud.sync()
-      } catch (
-      error: unknown
-      ) {
-        console.error(
-          'Course Resource cloud synchronization did not complete.',
-          error,
-        )
+      void db.cloud.sync()
+        .catch(
+          (
+            error: unknown,
+          ) => {
+            console.error(
+              'Course Resource cloud synchronization did not complete.',
+              error,
+            )
 
-        window.alert(
-          'The file was saved on this device, but cloud synchronization did not complete. Please remain online and try again.',
+            window.alert(
+              'The file was saved on this device, but cloud synchronization did not complete. Please remain online and try again.',
+            )
+          },
         )
-      }
 
       if (
         duplicateCount > 0
@@ -39943,7 +39944,7 @@ function CoursePage({
                   {courseResourceAssignments
                     .slice(
                       0,
-                      3,
+                      5,
                     )
                     .map(
                       (assignment) => (
@@ -39972,11 +39973,11 @@ function CoursePage({
                     )}
 
                   {courseResourceAssignments
-                    .length > 3 ? (
+                    .length > 5 ? (
                     <small>
                       +
                       {courseResourceAssignments.length -
-                        3}{' '}
+                        5}{' '}
                       more assignment folders
                     </small>
                   ) : null}
