@@ -1880,6 +1880,7 @@ function createCohortMemberPermissions() {
       'courseWaivers',
       'sharedUrls',
       'sharedDocuments',
+      'courseResources',
       'cohortBooks',
       'cohortPresence',
     ],
