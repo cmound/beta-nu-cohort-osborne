@@ -15,6 +15,7 @@
     "dexie-react-hooks": "^4.4.0",
     "docx": "^9.7.1",
     "docx-preview": "^0.3.7",
+    "exceljs": "^4.4.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.3.0",

@@ -37,6 +37,7 @@ import {
   WidthType,
 } from 'docx'
 import * as XLSX from 'xlsx'
+import { Workbook } from 'exceljs'
 import type {
   Table as DexieTable,
 } from 'dexie'
@@ -34193,6 +34194,662 @@ function CoursePage({
     ),
   ]
 
+  async function handleDownloadCourseTracker():
+    Promise<void> {
+    if (
+      courseDisplayAssignments.length ===
+      0
+    ) {
+      return
+    }
+
+    const trackerCourseRecord =
+      courseRecord
+
+    if (
+      trackerCourseRecord ===
+      undefined
+    ) {
+      return
+    }
+
+    try {
+      const workbook =
+        new Workbook()
+
+      workbook.creator =
+        'Beta Nu Fall Cohort Hub'
+
+      workbook.created =
+        new Date()
+
+      workbook.modified =
+        new Date()
+
+      workbook.calcProperties.fullCalcOnLoad =
+        true
+
+      const worksheet =
+        workbook.addWorksheet(
+          'Course Tracker',
+          {
+            views: [
+              {
+                state: 'frozen',
+                ySplit: 2,
+                showGridLines: true,
+              },
+            ],
+          },
+        )
+
+      worksheet.properties.defaultRowHeight =
+        18
+
+      worksheet.columns = [
+        { width: 8 },
+        { width: 52 },
+        { width: 12 },
+        { width: 17 },
+        { width: 13 },
+        { width: 18 },
+        { width: 12 },
+        { width: 16 },
+        { width: 12 },
+        { width: 22 },
+      ]
+
+      worksheet.mergeCells(
+        'A1:B1',
+      )
+
+      worksheet.mergeCells(
+        'C1:D1',
+      )
+
+      worksheet.mergeCells(
+        'E1:F1',
+      )
+
+      worksheet.mergeCells(
+        'G1:J1',
+      )
+
+      worksheet.getCell(
+        'A1',
+      ).value =
+        `${trackerCourseRecord.code} - ${trackerCourseRecord.className}`
+
+      worksheet.getCell(
+        'C1',
+      ).value =
+        workspace.professorName
+
+      worksheet.getCell(
+        'E1',
+      ).value =
+        formatCourseProfessorPhone(
+          workspace.professorPhoneDigits,
+        )
+
+      worksheet.getCell(
+        'G1',
+      ).value =
+        workspace.professorEmail
+
+      worksheet.getRow(
+        1,
+      ).height = 24
+
+      for (
+        let columnNumber = 1;
+        columnNumber <= 10;
+        columnNumber += 1
+      ) {
+        const cell =
+          worksheet.getCell(
+            1,
+            columnNumber,
+          )
+
+        cell.alignment = {
+          vertical: 'middle',
+          horizontal: 'left',
+        }
+      }
+
+      worksheet.getCell(
+        'A1',
+      ).font = {
+        name: 'Arial',
+        size: 11,
+        bold: true,
+        color: {
+          argb: 'FF0000FF',
+        },
+      }
+
+      for (
+        const address of [
+          'C1',
+          'E1',
+          'G1',
+        ]
+      ) {
+        worksheet.getCell(
+          address,
+        ).font = {
+          name: 'Arial',
+          size: 11,
+          bold: true,
+          color: {
+            argb: 'FF000000',
+          },
+        }
+      }
+
+      const headerLabels = [
+        'ASN #',
+        'ASSIGNMENT NAME',
+        'WEEK',
+        'DUE DATE',
+        'MAX POINTS',
+        'SUBMITTED DATE',
+        'UPLOAD #',
+        'POINTS EARNED',
+        'GRADE %',
+        'STATUS',
+      ] as const
+
+      headerLabels.forEach(
+        (
+          label,
+          index,
+        ) => {
+          const cell =
+            worksheet.getCell(
+              2,
+              index + 1,
+            )
+
+          cell.value =
+            label
+
+          cell.font = {
+            name: 'Arial',
+            size: 10,
+            bold: true,
+            color: {
+              argb: 'FFFFFFFF',
+            },
+          }
+
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: {
+              argb: 'FF08243A',
+            },
+          }
+
+          cell.alignment = {
+            horizontal: 'left',
+            vertical: 'middle',
+          }
+
+          cell.border = {
+            top: {
+              style: 'thin',
+              color: {
+                argb: 'FF000000',
+              },
+            },
+            left: {
+              style: 'thin',
+              color: {
+                argb: 'FF000000',
+              },
+            },
+            bottom: {
+              style: 'thin',
+              color: {
+                argb: 'FF000000',
+              },
+            },
+            right: {
+              style: 'thin',
+              color: {
+                argb: 'FF000000',
+              },
+            },
+          }
+        },
+      )
+
+      worksheet.getRow(
+        2,
+      ).height = 22
+
+      for (
+        let columnNumber = 1;
+        columnNumber <= 10;
+        columnNumber += 1
+      ) {
+        worksheet.getColumn(
+          columnNumber,
+        ).protection = {
+          locked: false,
+        }
+      }
+
+      courseDisplayAssignments.forEach(
+        (
+          assignment,
+          assignmentIndex,
+        ) => {
+          const rowNumber =
+            assignmentIndex + 3
+
+          const row =
+            worksheet.getRow(
+              rowNumber,
+            )
+
+          const dueDateMatch =
+            /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+              assignment.dueDate,
+            )
+
+          let dueDateValue:
+            Date | string =
+            assignment.dueDate
+
+          if (
+            dueDateMatch !==
+            null
+          ) {
+            const year =
+              Number(
+                dueDateMatch[1],
+              )
+
+            const month =
+              Number(
+                dueDateMatch[2],
+              )
+
+            const day =
+              Number(
+                dueDateMatch[3],
+              )
+
+            dueDateValue =
+              new Date(
+                year,
+                month - 1,
+                day,
+              )
+          }
+
+          const numericPoints =
+            Number(
+              assignment.points,
+            )
+
+          row.getCell(
+            1,
+          ).value =
+            assignment.asn
+
+          row.getCell(
+            2,
+          ).value =
+            assignment.name
+
+          row.getCell(
+            3,
+          ).value =
+            getCourseAssignmentWeekLabel(
+              trackerCourseRecord.startDate,
+              assignment.dueDate,
+            )
+
+          row.getCell(
+            4,
+          ).value =
+            dueDateValue
+
+          row.getCell(
+            5,
+          ).value =
+            Number.isFinite(
+              numericPoints,
+            )
+              ? numericPoints
+              : assignment.points
+
+          row.getCell(
+            6,
+          ).value =
+            null
+
+          row.getCell(
+            7,
+          ).value =
+            null
+
+          row.getCell(
+            8,
+          ).value =
+            null
+
+          row.getCell(
+            9,
+          ).value = {
+            formula:
+              `IF(OR(E${rowNumber}="",H${rowNumber}=""),"",` +
+              `IF(H${rowNumber}>0.01,H${rowNumber}/E${rowNumber},""))`,
+          }
+
+          row.getCell(
+            10,
+          ).value = {
+            formula:
+              `IF(OR(A${rowNumber}="",D${rowNumber}=""),"",` +
+              `IF(F${rowNumber}="",` +
+              `IF(D${rowNumber}=TODAY(),"DUE TODAY",` +
+              `IF(D${rowNumber}<TODAY(),"MISSING",` +
+              `(D${rowNumber}-TODAY())&" day"&` +
+              `IF((D${rowNumber}-TODAY())=1,"","s"))),` +
+              `IF(H${rowNumber}<>"","Done ✓",` +
+              `IF(E${rowNumber}<>"","Done, Grade Pending","Done ✓"))))`,
+          }
+
+          row.height = 20
+
+          for (
+            let columnNumber = 1;
+            columnNumber <= 10;
+            columnNumber += 1
+          ) {
+            const cell =
+              row.getCell(
+                columnNumber,
+              )
+
+            cell.font = {
+              name: 'Arial',
+              size: 10,
+              color: {
+                argb: 'FF000000',
+              },
+            }
+
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: {
+                argb: 'FFD9D9D9',
+              },
+            }
+
+            cell.alignment = {
+              horizontal: 'left',
+              vertical: 'middle',
+            }
+
+            cell.border = {
+              top: {
+                style: 'thin',
+                color: {
+                  argb: 'FF000000',
+                },
+              },
+              left: {
+                style: 'thin',
+                color: {
+                  argb: 'FF000000',
+                },
+              },
+              bottom: {
+                style: 'thin',
+                color: {
+                  argb: 'FF000000',
+                },
+              },
+              right: {
+                style: 'thin',
+                color: {
+                  argb: 'FF000000',
+                },
+              },
+            }
+
+            cell.protection = {
+              locked:
+                columnNumber === 9 ||
+                columnNumber === 10,
+            }
+          }
+
+          row.getCell(
+            4,
+          ).numFmt =
+            'ddd. m/d/yyyy'
+
+          row.getCell(
+            6,
+          ).numFmt =
+            'ddd. m/d/yyyy'
+
+          row.getCell(
+            9,
+          ).numFmt =
+            '0.0%'
+        },
+      )
+
+      const lastAssignmentRow =
+        courseDisplayAssignments.length +
+        2
+
+      worksheet.addConditionalFormatting({
+        ref:
+          `A3:J${lastAssignmentRow}`,
+        rules: [
+          {
+            type: 'expression',
+            priority: 1,
+            formulae: [
+              '$J3="DUE TODAY"',
+            ],
+            style: {
+              font: {
+                bold: true,
+                color: {
+                  argb: 'FFFF0000',
+                },
+              },
+              fill: {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: {
+                  argb: 'FF92D050',
+                },
+                bgColor: {
+                  argb: 'FF92D050',
+                },
+              },
+            },
+          },
+          {
+            type: 'expression',
+            priority: 2,
+            formulae: [
+              '$J3="MISSING"',
+            ],
+            style: {
+              font: {
+                bold: true,
+                color: {
+                  argb: 'FFFFFF00',
+                },
+              },
+              fill: {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: {
+                  argb: 'FFC00000',
+                },
+                bgColor: {
+                  argb: 'FFC00000',
+                },
+              },
+            },
+          },
+          {
+            type: 'expression',
+            priority: 3,
+            formulae: [
+              '$J3="Done ✓"',
+            ],
+            style: {
+              font: {
+                strike: true,
+                color: {
+                  argb: 'FF000000',
+                },
+              },
+              fill: {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: {
+                  argb: 'FFC4BD97',
+                },
+                bgColor: {
+                  argb: 'FFC4BD97',
+                },
+              },
+            },
+          },
+          {
+            type: 'expression',
+            priority: 4,
+            formulae: [
+              '$J3="Done, Grade Pending"',
+            ],
+            style: {
+              font: {
+                bold: true,
+                italic: true,
+                color: {
+                  argb: 'FFFF0000',
+                },
+              },
+              fill: {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: {
+                  argb: 'FFD9D9D9',
+                },
+                bgColor: {
+                  argb: 'FFD9D9D9',
+                },
+              },
+            },
+          },
+        ],
+      })
+
+      await worksheet.protect(
+        '',
+        {
+          selectLockedCells: false,
+          selectUnlockedCells: true,
+          formatCells: false,
+          formatColumns: false,
+          formatRows: false,
+          insertRows: false,
+          insertColumns: false,
+          deleteRows: false,
+          deleteColumns: false,
+          sort: false,
+          autoFilter: false,
+        },
+      )
+
+      const workbookBuffer =
+        await workbook.xlsx.writeBuffer()
+
+      const workbookBytes =
+        new Uint8Array(
+          workbookBuffer,
+        )
+
+      const workbookBlob =
+        new Blob(
+          [
+            workbookBytes,
+          ],
+          {
+            type:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          },
+        )
+
+      const downloadUrl =
+        URL.createObjectURL(
+          workbookBlob,
+        )
+
+      const downloadAnchor =
+        document.createElement(
+          'a',
+        )
+
+      const fileCourseCode =
+        trackerCourseRecord.code.replace(
+          /\s+/g,
+          '',
+        )
+
+      downloadAnchor.href =
+        downloadUrl
+
+      downloadAnchor.download =
+        `${fileCourseCode}_Course_Tracker.xlsx`
+
+      downloadAnchor.style.display =
+        'none'
+
+      document.body.appendChild(
+        downloadAnchor,
+      )
+
+      downloadAnchor.click()
+
+      downloadAnchor.remove()
+
+      window.setTimeout(
+        () => {
+          URL.revokeObjectURL(
+            downloadUrl,
+          )
+        },
+        0,
+      )
+    } catch (error: unknown) {
+      console.error(
+        'Course Tracker export failed.',
+        error,
+      )
+
+      window.alert(
+        'The Course Tracker could not be created. Please try again.',
+      )
+    }
+  }
+
   const courseWaivers =
     cloudCourseWaivers ===
       undefined
@@ -37792,6 +38449,24 @@ function CoursePage({
               </div>
 
               <div className="course-workspace-section-actions">
+                {workspace.assignments.length >
+                  0 ? (
+                  <button
+                    type="button"
+                    className="course-workspace-download-assignments-button"
+                    title="Download personal Course Tracker"
+                    onClick={() => {
+                      void handleDownloadCourseTracker()
+                    }}
+                  >
+                    <span aria-hidden="true">
+                      ↓
+                    </span>
+
+                    Download Assignments
+                  </button>
+                ) : null}
+
                 <button
                   type="button"
                   className="course-workspace-icon-button course-workspace-add-icon-button"

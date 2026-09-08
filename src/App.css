@@ -24253,3 +24253,77 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   font-weight: 900;
   line-height: 1;
 }
+
+/* =========================================================
+   Course Assignment Tracker Download
+   ========================================================= */
+
+.course-workspace-download-assignments-button {
+  height: 24px;
+  min-height: 24px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid #c89214;
+  border-radius: 6px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #17365d 0%,
+      #0b2948 52%,
+      #061b31 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.18),
+    inset 0 -2px 2px
+      rgba(0, 0, 0, 0.3),
+    0 2px 4px
+      rgba(0, 0, 0, 0.32);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    border-color 0.12s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.course-workspace-download-assignments-button
+  > span {
+  color: #ffd76a;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.course-workspace-download-assignments-button:hover {
+  transform: translateY(-1px);
+  border-color: #ffd76a;
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.22),
+    inset 0 -2px 2px
+      rgba(0, 0, 0, 0.28),
+    0 3px 6px
+      rgba(0, 0, 0, 0.38);
+}
+
+.course-workspace-download-assignments-button:active {
+  transform: translateY(1px);
+}
+
+.course-workspace-download-assignments-button:focus-visible {
+  outline: 2px solid #ffd76a;
+  outline-offset: 2px;
+}
