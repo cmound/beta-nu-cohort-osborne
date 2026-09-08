@@ -34246,18 +34246,41 @@ function CoursePage({
       worksheet.properties.defaultRowHeight =
         18
 
-      worksheet.columns = [
-        { width: 8 },
-        { width: 52 },
-        { width: 12 },
-        { width: 17 },
-        { width: 13 },
-        { width: 18 },
-        { width: 12 },
-        { width: 16 },
-        { width: 12 },
-        { width: 22 },
-      ]
+      const trackerColumnCount =
+        isSixteenWeekCourse
+          ? 9
+          : 10
+
+      const trackerLastColumnLetter =
+        isSixteenWeekCourse
+          ? 'I'
+          : 'J'
+
+      worksheet.columns =
+        isSixteenWeekCourse
+          ? [
+            { width: 8 },
+            { width: 52 },
+            { width: 12 },
+            { width: 17 },
+            { width: 13 },
+            { width: 18 },
+            { width: 12 },
+            { width: 16 },
+            { width: 12 },
+          ]
+          : [
+            { width: 8 },
+            { width: 52 },
+            { width: 12 },
+            { width: 17 },
+            { width: 13 },
+            { width: 18 },
+            { width: 12 },
+            { width: 16 },
+            { width: 12 },
+            { width: 22 },
+          ]
 
       worksheet.mergeCells(
         'A1:B1',
@@ -34272,7 +34295,7 @@ function CoursePage({
       )
 
       worksheet.mergeCells(
-        'G1:J1',
+        `G1:${trackerLastColumnLetter}1`,
       )
 
       worksheet.getCell(
@@ -34303,7 +34326,7 @@ function CoursePage({
 
       for (
         let columnNumber = 1;
-        columnNumber <= 10;
+        columnNumber <= trackerColumnCount;
         columnNumber += 1
       ) {
         const cell =
@@ -34348,18 +34371,32 @@ function CoursePage({
         }
       }
 
-      const headerLabels = [
-        'ASN #',
-        'ASSIGNMENT NAME',
-        'WEEK',
-        'DUE DATE',
-        'MAX POINTS',
-        'SUBMITTED DATE',
-        'UPLOAD #',
-        'POINTS EARNED',
-        'GRADE %',
-        'STATUS',
-      ] as const
+      const headerLabels:
+        readonly string[] =
+        isSixteenWeekCourse
+          ? [
+            'ASN #',
+            'ASSIGNMENT NAME',
+            'WEEK',
+            'REC. DUE DATE',
+            'MAX POINTS',
+            'SUBMITTED DATE',
+            'UPLOAD #',
+            'POINTS EARNED',
+            'GRADE %',
+          ]
+          : [
+            'ASN #',
+            'ASSIGNMENT NAME',
+            'WEEK',
+            'DUE DATE',
+            'MAX POINTS',
+            'SUBMITTED DATE',
+            'UPLOAD #',
+            'POINTS EARNED',
+            'GRADE %',
+            'STATUS',
+          ]
 
       headerLabels.forEach(
         (
@@ -34432,7 +34469,7 @@ function CoursePage({
 
       for (
         let columnNumber = 1;
-        columnNumber <= 10;
+        columnNumber <= trackerColumnCount;
         columnNumber += 1
       ) {
         worksheet.getColumn(
@@ -34551,25 +34588,29 @@ function CoursePage({
               `IF(H${rowNumber}>0.01,H${rowNumber}/E${rowNumber},""))`,
           }
 
-          row.getCell(
-            10,
-          ).value = {
-            formula:
-              `IF(OR(A${rowNumber}="",D${rowNumber}=""),"",` +
-              `IF(F${rowNumber}="",` +
-              `IF(INT(D${rowNumber})=TODAY(),"DUE TODAY",` +
-              `IF(INT(D${rowNumber})<TODAY(),"MISSING",` +
-              `(INT(D${rowNumber})-TODAY())&" day"&` +
-              `IF((INT(D${rowNumber})-TODAY())=1,"","s"))),` +
-              `IF(H${rowNumber}<>"","Done ✓",` +
-              `IF(E${rowNumber}<>"","Done, Pending Grade","Done ✓"))))`,
+          if (
+            !isSixteenWeekCourse
+          ) {
+            row.getCell(
+              10,
+            ).value = {
+              formula:
+                `IF(OR(A${rowNumber}="",D${rowNumber}=""),"",` +
+                `IF(F${rowNumber}="",` +
+                `IF(INT(D${rowNumber})=TODAY(),"DUE TODAY",` +
+                `IF(INT(D${rowNumber})<TODAY(),"MISSING",` +
+                `(INT(D${rowNumber})-TODAY())&" day"&` +
+                `IF((INT(D${rowNumber})-TODAY())=1,"","s"))),` +
+                `IF(H${rowNumber}<>"","Done ✓",` +
+                `IF(E${rowNumber}<>"","Done, Pending Grade","Done ✓"))))`,
+            }
           }
 
           row.height = 20
 
           for (
             let columnNumber = 1;
-            columnNumber <= 10;
+            columnNumber <= trackerColumnCount;
             columnNumber += 1
           ) {
             const cell =
@@ -34628,7 +34669,10 @@ function CoursePage({
             cell.protection = {
               locked:
                 columnNumber === 9 ||
-                columnNumber === 10,
+                (
+                  !isSixteenWeekCourse &&
+                  columnNumber === 10
+                ),
             }
           }
 
@@ -34653,113 +34697,117 @@ function CoursePage({
         courseDisplayAssignments.length +
         2
 
-      worksheet.addConditionalFormatting({
-        ref:
-          `A3:J${lastAssignmentRow}`,
-        rules: [
-          {
-            type: 'expression',
-            priority: 1,
-            formulae: [
-              '$J3="DUE TODAY"',
-            ],
-            style: {
-              font: {
-                bold: true,
-                color: {
-                  argb: 'FFFF0000',
+      if (
+        !isSixteenWeekCourse
+      ) {
+        worksheet.addConditionalFormatting({
+          ref:
+            `A3:J${lastAssignmentRow}`,
+          rules: [
+            {
+              type: 'expression',
+              priority: 1,
+              formulae: [
+                '$J3="DUE TODAY"',
+              ],
+              style: {
+                font: {
+                  bold: true,
+                  color: {
+                    argb: 'FFFF0000',
+                  },
                 },
-              },
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: {
-                  argb: 'FF92D050',
-                },
-                bgColor: {
-                  argb: 'FF92D050',
-                },
-              },
-            },
-          },
-          {
-            type: 'expression',
-            priority: 2,
-            formulae: [
-              '$J3="MISSING"',
-            ],
-            style: {
-              font: {
-                bold: true,
-                color: {
-                  argb: 'FFFFFF00',
-                },
-              },
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: {
-                  argb: 'FFC00000',
-                },
-                bgColor: {
-                  argb: 'FFC00000',
+                fill: {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: {
+                    argb: 'FF92D050',
+                  },
+                  bgColor: {
+                    argb: 'FF92D050',
+                  },
                 },
               },
             },
-          },
-          {
-            type: 'expression',
-            priority: 3,
-            formulae: [
-              '$J3="Done ✓"',
-            ],
-            style: {
-              font: {
-                strike: true,
-                color: {
-                  argb: 'FF000000',
+            {
+              type: 'expression',
+              priority: 2,
+              formulae: [
+                '$J3="MISSING"',
+              ],
+              style: {
+                font: {
+                  bold: true,
+                  color: {
+                    argb: 'FFFFFF00',
+                  },
                 },
-              },
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: {
-                  argb: 'FFC4BD97',
-                },
-                bgColor: {
-                  argb: 'FFC4BD97',
-                },
-              },
-            },
-          },
-          {
-            type: 'expression',
-            priority: 4,
-            formulae: [
-              '$J3="Done, Pending Grade"',
-            ],
-            style: {
-              font: {
-                bold: true,
-                italic: true,
-                color: {
-                  argb: 'FFFF0000',
-                },
-              },
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: {
-                  argb: 'FFD9D9D9',
-                },
-                bgColor: {
-                  argb: 'FFD9D9D9',
+                fill: {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: {
+                    argb: 'FFC00000',
+                  },
+                  bgColor: {
+                    argb: 'FFC00000',
+                  },
                 },
               },
             },
-          },
-        ],
-      })
+            {
+              type: 'expression',
+              priority: 3,
+              formulae: [
+                '$J3="Done ✓"',
+              ],
+              style: {
+                font: {
+                  strike: true,
+                  color: {
+                    argb: 'FF000000',
+                  },
+                },
+                fill: {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: {
+                    argb: 'FFC4BD97',
+                  },
+                  bgColor: {
+                    argb: 'FFC4BD97',
+                  },
+                },
+              },
+            },
+            {
+              type: 'expression',
+              priority: 4,
+              formulae: [
+                '$J3="Done, Pending Grade"',
+              ],
+              style: {
+                font: {
+                  bold: true,
+                  italic: true,
+                  color: {
+                    argb: 'FFFF0000',
+                  },
+                },
+                fill: {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: {
+                    argb: 'FFD9D9D9',
+                  },
+                  bgColor: {
+                    argb: 'FFD9D9D9',
+                  },
+                },
+              },
+            },
+          ],
+        })
+      }
 
       await worksheet.protect(
         '',
