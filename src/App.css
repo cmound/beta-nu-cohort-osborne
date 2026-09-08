@@ -25216,3 +25216,14 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   accent-color: #d71920;
   cursor: pointer;
 }
+
+/* =========================================================
+   16-Week Resources Card Full Height
+   ========================================================= */
+
+.course-workspace-layout-16
+  .course-workspace-resources-card {
+  align-self: stretch;
+  height: 100%;
+  box-sizing: border-box;
+}
