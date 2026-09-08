@@ -33588,6 +33588,31 @@ function CoursePage({
     setIsCourseResourceUploading,
   ] = useState(false)
 
+  const [
+    isCourseResourceUploadDestinationOpen,
+    setIsCourseResourceUploadDestinationOpen,
+  ] = useState(false)
+
+  const [
+    isCourseResourceDeleteMode,
+    setIsCourseResourceDeleteMode,
+  ] = useState(false)
+
+  const [
+    courseResourceDeleteScopeId,
+    setCourseResourceDeleteScopeId,
+  ] = useState<string | null>(
+    null,
+  )
+
+  const [
+    selectedCourseResourceIds,
+    setSelectedCourseResourceIds,
+  ] =
+    useState<readonly string[]>(
+      [],
+    )
+
   const webinarRequirementRefs =
     useRef<
       Record<
@@ -34179,6 +34204,22 @@ function CoursePage({
       '',
     )
 
+    setIsCourseResourceUploadDestinationOpen(
+      false,
+    )
+
+    setIsCourseResourceDeleteMode(
+      false,
+    )
+
+    setCourseResourceDeleteScopeId(
+      null,
+    )
+
+    setSelectedCourseResourceIds(
+      [],
+    )
+
     webinarRequirementRefs.current =
       {}
 
@@ -34424,6 +34465,248 @@ function CoursePage({
     setCourseResourceUploadDestination(
       folderId,
     )
+  }
+
+  function openCourseResourceUploadDestination():
+    void {
+    setCourseResourceUploadDestination(
+      '',
+    )
+
+    setIsCourseResourceUploadDestinationOpen(
+      true,
+    )
+  }
+
+  function continueCourseResourceUpload():
+    void {
+    setIsCourseResourceUploadDestinationOpen(
+      false,
+    )
+
+    window.setTimeout(
+      () => {
+        courseResourceUploadInputRef
+          .current
+          ?.click()
+      },
+      0,
+    )
+  }
+
+  function uploadCourseResourceToFolder(
+    folderId: string,
+  ): void {
+    setCourseResourceUploadDestination(
+      folderId,
+    )
+
+    setIsCourseResourceUploadDestinationOpen(
+      false,
+    )
+
+    window.setTimeout(
+      () => {
+        courseResourceUploadInputRef
+          .current
+          ?.click()
+      },
+      0,
+    )
+  }
+
+  function getCourseResourceEffectiveFolderId(
+    resource: CloudCourseResourceRecord,
+  ): string {
+    return courseResourceAssignmentMap.has(
+      resource.assignmentId,
+    )
+      ? resource.assignmentId
+      : ''
+  }
+
+  function canDeleteCourseResource(
+    resource: CloudCourseResourceRecord,
+  ): boolean {
+    const currentUserId =
+      db.cloud.currentUserId
+        .trim()
+        .toLowerCase()
+
+    if (
+      currentUserId.length === 0 ||
+      currentUserId ===
+      'unauthorized'
+    ) {
+      return false
+    }
+
+    return (
+      currentUserId ===
+      BETA_NU_OWNER_USER_ID
+        .toLowerCase() ||
+      resource.owner
+        .trim()
+        .toLowerCase() ===
+      currentUserId
+    )
+  }
+
+  function beginCourseResourceDeleteMode(
+    scopeId: string | null,
+  ): void {
+    setCourseResourceDeleteScopeId(
+      scopeId,
+    )
+
+    setSelectedCourseResourceIds(
+      [],
+    )
+
+    setIsCourseResourceDeleteMode(
+      true,
+    )
+  }
+
+  function cancelCourseResourceDeleteMode():
+    void {
+    setIsCourseResourceDeleteMode(
+      false,
+    )
+
+    setCourseResourceDeleteScopeId(
+      null,
+    )
+
+    setSelectedCourseResourceIds(
+      [],
+    )
+  }
+
+  function shouldShowCourseResourceDeleteCheckbox(
+    resource: CloudCourseResourceRecord,
+  ): boolean {
+    if (
+      !isCourseResourceDeleteMode ||
+      !canDeleteCourseResource(
+        resource,
+      )
+    ) {
+      return false
+    }
+
+    if (
+      courseResourceDeleteScopeId ===
+      null
+    ) {
+      return true
+    }
+
+    return (
+      getCourseResourceEffectiveFolderId(
+        resource,
+      ) ===
+      courseResourceDeleteScopeId
+    )
+  }
+
+  function toggleCourseResourceDeleteSelection(
+    resourceId: string,
+  ): void {
+    setSelectedCourseResourceIds(
+      (currentIds) =>
+        currentIds.includes(
+          resourceId,
+        )
+          ? currentIds.filter(
+            (id) =>
+              id !== resourceId,
+          )
+          : [
+            ...currentIds,
+            resourceId,
+          ],
+    )
+  }
+
+  async function deleteSelectedCourseResources():
+    Promise<void> {
+    const deletableResources =
+      courseResources.filter(
+        (resource) =>
+          selectedCourseResourceIds.includes(
+            resource.id,
+          ) &&
+          canDeleteCourseResource(
+            resource,
+          ) &&
+          (
+            courseResourceDeleteScopeId ===
+            null ||
+            getCourseResourceEffectiveFolderId(
+              resource,
+            ) ===
+            courseResourceDeleteScopeId
+          ),
+      )
+
+    if (
+      deletableResources.length === 0
+    ) {
+      return
+    }
+
+    const confirmationText =
+      deletableResources.length === 1
+        ? `Delete "${deletableResources[0]?.fileName ?? 'this file'}"?`
+        : `Delete ${deletableResources.length} selected files?`
+
+    if (
+      !window.confirm(
+        `${confirmationText}\n\nThis removes the file for all cohort users and cannot be undone.`,
+      )
+    ) {
+      return
+    }
+
+    try {
+      await db.courseResources.bulkDelete(
+        deletableResources.map(
+          (resource) =>
+            resource.id,
+        ),
+      )
+    } catch (
+    error: unknown
+    ) {
+      console.error(
+        'Unable to delete Course Resources.',
+        error,
+      )
+
+      window.alert(
+        'The selected Course Resource file or files could not be deleted.',
+      )
+
+      return
+    }
+
+    cancelCourseResourceDeleteMode()
+
+    try {
+      await db.cloud.sync()
+    } catch (
+    error: unknown
+    ) {
+      console.error(
+        'Course Resource deletion is pending cloud synchronization.',
+        error,
+      )
+
+      window.alert(
+        'The file was removed locally, but cloud synchronization did not complete. Please remain online and try again.',
+      )
+    }
   }
 
   async function handleCourseResourceUpload(
@@ -34676,11 +34959,38 @@ function CoursePage({
   function renderCourseResourceFileRow(
     resource: CloudCourseResourceRecord,
   ): ReactNode {
+    const showDeleteCheckbox =
+      shouldShowCourseResourceDeleteCheckbox(
+        resource,
+      )
+
     return (
       <div
         key={resource.id}
-        className="course-resource-file-row"
+        className={
+          showDeleteCheckbox
+            ? 'course-resource-file-row course-resource-file-row-delete-mode'
+            : 'course-resource-file-row'
+        }
       >
+        {showDeleteCheckbox ? (
+          <input
+            type="checkbox"
+            className="course-resource-delete-checkbox"
+            aria-label={`Select ${resource.fileName} for deletion`}
+            checked={
+              selectedCourseResourceIds.includes(
+                resource.id,
+              )
+            }
+            onChange={() => {
+              toggleCourseResourceDeleteSelection(
+                resource.id,
+              )
+            }}
+          />
+        ) : null}
+
         <span
           className="course-resource-file-icon"
           aria-hidden="true"
@@ -34780,59 +35090,71 @@ function CoursePage({
             />
           </label>
 
-          <label className="course-resource-upload-destination">
-            <span>
-              Upload To
-            </span>
-
-            <select
-              value={
-                courseResourceUploadDestination
+          <div className="course-resource-panel-main-actions">
+            <button
+              type="button"
+              className="course-resource-main-upload-button"
+              disabled={
+                isCourseResourceUploading
               }
-              onChange={(
-                event,
-              ) => {
-                setCourseResourceUploadDestination(
-                  event.target.value,
-                )
-              }}
+              onClick={
+                openCourseResourceUploadDestination
+              }
             >
-              <option value="">
-                General Course Files
-              </option>
+              {isCourseResourceUploading
+                ? 'Uploading...'
+                : 'Upload File(s)'}
+            </button>
 
-              {courseResourceAssignments.map(
-                (assignment) => (
-                  <option
-                    key={assignment.id}
-                    value={assignment.id}
-                  >
-                    {getCourseResourceFolderLabel(
-                      assignment,
-                    )}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
+            {isCourseResourceDeleteMode &&
+              courseResourceDeleteScopeId ===
+              null ? (
+              <>
+                <button
+                  type="button"
+                  className="course-resource-delete-button"
+                  disabled={
+                    selectedCourseResourceIds.length ===
+                    0
+                  }
+                  onClick={() => {
+                    void deleteSelectedCourseResources()
+                  }}
+                >
+                  Delete Selected (
+                  {selectedCourseResourceIds.length}
+                  )
+                </button>
 
-          <button
-            type="button"
-            className="course-resource-upload-button"
-            title="Upload Course Resource"
-            disabled={
-              isCourseResourceUploading
-            }
-            onClick={() => {
-              courseResourceUploadInputRef
-                .current
-                ?.click()
-            }}
-          >
-            {isCourseResourceUploading
-              ? 'Uploading...'
-              : '+'}
-          </button>
+                <button
+                  type="button"
+                  className="course-resource-cancel-button"
+                  onClick={
+                    cancelCourseResourceDeleteMode
+                  }
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="course-resource-delete-button"
+                disabled={
+                  !courseResources.some(
+                    canDeleteCourseResource,
+                  )
+                }
+                onClick={() => {
+                  beginCourseResourceDeleteMode(
+                    null,
+                  )
+                }}
+              >
+                Delete
+              </button>
+            )}
+          </div>
 
           <input
             ref={
@@ -34850,6 +35172,80 @@ function CoursePage({
             }}
           />
         </div>
+
+        {isCourseResourceUploadDestinationOpen ? (
+          <div className="course-resource-upload-destination-dialog">
+            <div className="course-resource-upload-destination-dialog-copy">
+              <strong>
+                Upload File(s)
+              </strong>
+
+              <span>
+                Choose where the file or files should be saved.
+              </span>
+            </div>
+
+            <label>
+              <span>
+                Upload To
+              </span>
+
+              <select
+                value={
+                  courseResourceUploadDestination
+                }
+                onChange={(
+                  event,
+                ) => {
+                  setCourseResourceUploadDestination(
+                    event.target.value,
+                  )
+                }}
+              >
+                <option value="">
+                  General Course Files
+                </option>
+
+                {courseResourceAssignments.map(
+                  (assignment) => (
+                    <option
+                      key={assignment.id}
+                      value={assignment.id}
+                    >
+                      {getCourseResourceFolderLabel(
+                        assignment,
+                      )}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+
+            <div className="course-resource-upload-destination-dialog-actions">
+              <button
+                type="button"
+                className="course-resource-cancel-button"
+                onClick={() => {
+                  setIsCourseResourceUploadDestinationOpen(
+                    false,
+                  )
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="course-resource-main-upload-button"
+                onClick={
+                  continueCourseResourceUpload
+                }
+              >
+                Choose File(s)
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="course-resource-panel-body">
           {normalizedCourseResourceSearch
@@ -34991,6 +35387,72 @@ function CoursePage({
 
                           {isFolderOpen ? (
                             <div className="course-resource-folder-files">
+                              <div className="course-resource-folder-actions">
+                                <button
+                                  type="button"
+                                  className="course-resource-folder-upload-button"
+                                  disabled={
+                                    isCourseResourceUploading
+                                  }
+                                  onClick={() => {
+                                    uploadCourseResourceToFolder(
+                                      assignment.id,
+                                    )
+                                  }}
+                                >
+                                  Upload File(s)
+                                </button>
+
+                                {isCourseResourceDeleteMode &&
+                                  courseResourceDeleteScopeId ===
+                                  assignment.id ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="course-resource-delete-button"
+                                      disabled={
+                                        selectedCourseResourceIds.length ===
+                                        0
+                                      }
+                                      onClick={() => {
+                                        void deleteSelectedCourseResources()
+                                      }}
+                                    >
+                                      Delete Selected (
+                                      {selectedCourseResourceIds.length}
+                                      )
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      className="course-resource-cancel-button"
+                                      onClick={
+                                        cancelCourseResourceDeleteMode
+                                      }
+                                    >
+                                      Cancel
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="course-resource-delete-button"
+                                    disabled={
+                                      !folderFiles.some(
+                                        canDeleteCourseResource,
+                                      )
+                                    }
+                                    onClick={() => {
+                                      beginCourseResourceDeleteMode(
+                                        assignment.id,
+                                      )
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+
                               {folderFiles.length ===
                                 0 ? (
                                 <p className="course-resource-empty-message">
@@ -35046,6 +35508,72 @@ function CoursePage({
                 {openCourseResourceFolderId ===
                   '' ? (
                   <div className="course-resource-folder-files">
+                    <div className="course-resource-folder-actions">
+                      <button
+                        type="button"
+                        className="course-resource-folder-upload-button"
+                        disabled={
+                          isCourseResourceUploading
+                        }
+                        onClick={() => {
+                          uploadCourseResourceToFolder(
+                            '',
+                          )
+                        }}
+                      >
+                        Upload File(s)
+                      </button>
+
+                      {isCourseResourceDeleteMode &&
+                        courseResourceDeleteScopeId ===
+                        '' ? (
+                        <>
+                          <button
+                            type="button"
+                            className="course-resource-delete-button"
+                            disabled={
+                              selectedCourseResourceIds.length ===
+                              0
+                            }
+                            onClick={() => {
+                              void deleteSelectedCourseResources()
+                            }}
+                          >
+                            Delete Selected (
+                            {selectedCourseResourceIds.length}
+                            )
+                          </button>
+
+                          <button
+                            type="button"
+                            className="course-resource-cancel-button"
+                            onClick={
+                              cancelCourseResourceDeleteMode
+                            }
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="course-resource-delete-button"
+                          disabled={
+                            !generalCourseResources.some(
+                              canDeleteCourseResource,
+                            )
+                          }
+                          onClick={() => {
+                            beginCourseResourceDeleteMode(
+                              '',
+                            )
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+
                     {generalCourseResources
                       .length === 0 ? (
                       <p className="course-resource-empty-message">
@@ -39384,7 +39912,7 @@ function CoursePage({
                     ) => {
                       if (
                         event.key ===
-                          'Enter' &&
+                        'Enter' &&
                         courseResourceSearch
                           .trim()
                           .length > 0
