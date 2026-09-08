@@ -34557,12 +34557,12 @@ function CoursePage({
             formula:
               `IF(OR(A${rowNumber}="",D${rowNumber}=""),"",` +
               `IF(F${rowNumber}="",` +
-              `IF(D${rowNumber}=TODAY(),"DUE TODAY",` +
-              `IF(D${rowNumber}<TODAY(),"MISSING",` +
-              `(D${rowNumber}-TODAY())&" day"&` +
-              `IF((D${rowNumber}-TODAY())=1,"","s"))),` +
+              `IF(INT(D${rowNumber})=TODAY(),"DUE TODAY",` +
+              `IF(INT(D${rowNumber})<TODAY(),"MISSING",` +
+              `(INT(D${rowNumber})-TODAY())&" day"&` +
+              `IF((INT(D${rowNumber})-TODAY())=1,"","s"))),` +
               `IF(H${rowNumber}<>"","Done ✓",` +
-              `IF(E${rowNumber}<>"","Done, Grade Pending","Done ✓"))))`,
+              `IF(E${rowNumber}<>"","Done, Pending Grade","Done ✓"))))`,
           }
 
           row.height = 20
@@ -34736,7 +34736,7 @@ function CoursePage({
             type: 'expression',
             priority: 4,
             formulae: [
-              '$J3="Done, Grade Pending"',
+              '$J3="Done, Pending Grade"',
             ],
             style: {
               font: {
