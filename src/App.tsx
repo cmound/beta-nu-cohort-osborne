@@ -34776,9 +34776,9 @@ function CoursePage({
 
         if (
           detectedAssignmentNumber !==
-            null &&
+          null &&
           detectedAssignmentNumber !==
-            expectedAssignmentNumber
+          expectedAssignmentNumber
         ) {
           mismatchedFiles.push({
             fileName:
@@ -34806,10 +34806,10 @@ function CoursePage({
               (
                 mismatch,
               ) =>
-                (
-                  `• ${mismatch.fileName}\n` +
-                  `  Detected ASN ${mismatch.detectedAssignmentNumber}`
-                ),
+              (
+                `• ${mismatch.fileName}\n` +
+                `  Detected ASN ${mismatch.detectedAssignmentNumber}`
+              ),
             )
             .join(
               '\n\n',
@@ -36535,8 +36535,12 @@ function CoursePage({
   const availableWebinarColumns =
     DEFAULT_COURSE_WEBINAR_COLUMN_ORDER.filter(
       (columnKey) =>
-        isSixteenWeekCourse ||
-        columnKey !== 'topic',
+        isSixteenWeekCourse
+          ? (
+            columnKey !== 'session' &&
+            columnKey !== 'required'
+          )
+          : columnKey !== 'topic',
     )
 
   const webinarColumnOrder =
@@ -39097,7 +39101,7 @@ function CoursePage({
   const webinarColumnCount =
     (
       isSixteenWeekCourse
-        ? 7
+        ? 5
         : 6
     ) +
     (
@@ -39993,116 +39997,114 @@ function CoursePage({
             </div>
           </section>
 
-          {!isSixteenWeekCourse ? (
-            <section className="course-workspace-info-card course-workspace-resources-card">
-              <header>
-                <div>
-                  <span className="course-workspace-card-eyebrow">
-                    Course Resource
-                  </span>
-
-                  <h2>
-                    Resources
-                  </h2>
-                </div>
-
-                <div className="course-resource-card-header-actions">
-                  <input
-                    type="search"
-                    className="course-resource-card-search-input"
-                    aria-label="Search Course Resources"
-                    placeholder="Search files..."
-                    value={
-                      courseResourceSearch
-                    }
-                    onChange={(
-                      event,
-                    ) => {
-                      setCourseResourceSearch(
-                        event.target.value,
-                      )
-                    }}
-                    onKeyDown={(
-                      event,
-                    ) => {
-                      if (
-                        event.key ===
-                        'Enter' &&
-                        courseResourceSearch
-                          .trim()
-                          .length > 0
-                      ) {
-                        setIsCourseResourcesOpen(
-                          true,
-                        )
-                      }
-                    }}
-                  />
-
-                  <span className="course-resource-card-file-count">
-                    {courseResources.length}
-                  </span>
-                </div>
-              </header>
-
-              <button
-                type="button"
-                className="course-resource-card-open-button"
-                onClick={() => {
-                  setIsCourseResourcesOpen(
-                    true,
-                  )
-                }}
-              >
-                <div className="course-resource-card-folder-preview">
-                  {courseResourceAssignments
-                    .slice(
-                      0,
-                      5,
-                    )
-                    .map(
-                      (assignment) => (
-                        <div
-                          key={assignment.id}
-                        >
-                          <span aria-hidden="true">
-                            📁
-                          </span>
-
-                          <span>
-                            {getCourseResourceFolderLabel(
-                              assignment,
-                            )}
-                          </span>
-
-                          <strong>
-                            (
-                            {getCourseResourceFilesForAssignment(
-                              assignment.id,
-                            ).length}
-                            )
-                          </strong>
-                        </div>
-                      ),
-                    )}
-
-                  {courseResourceAssignments
-                    .length > 5 ? (
-                    <small>
-                      +
-                      {courseResourceAssignments.length -
-                        5}{' '}
-                      more assignment folders
-                    </small>
-                  ) : null}
-                </div>
-
-                <span className="course-resource-card-open-label">
-                  Open Resources
+          <section className="course-workspace-info-card course-workspace-resources-card">
+            <header>
+              <div>
+                <span className="course-workspace-card-eyebrow">
+                  Course Resource
                 </span>
-              </button>
-            </section>
-          ) : null}
+
+                <h2>
+                  Resources
+                </h2>
+              </div>
+
+              <div className="course-resource-card-header-actions">
+                <input
+                  type="search"
+                  className="course-resource-card-search-input"
+                  aria-label="Search Course Resources"
+                  placeholder="Search files..."
+                  value={
+                    courseResourceSearch
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    setCourseResourceSearch(
+                      event.target.value,
+                    )
+                  }}
+                  onKeyDown={(
+                    event,
+                  ) => {
+                    if (
+                      event.key ===
+                      'Enter' &&
+                      courseResourceSearch
+                        .trim()
+                        .length > 0
+                    ) {
+                      setIsCourseResourcesOpen(
+                        true,
+                      )
+                    }
+                  }}
+                />
+
+                <span className="course-resource-card-file-count">
+                  {courseResources.length}
+                </span>
+              </div>
+            </header>
+
+            <button
+              type="button"
+              className="course-resource-card-open-button"
+              onClick={() => {
+                setIsCourseResourcesOpen(
+                  true,
+                )
+              }}
+            >
+              <div className="course-resource-card-folder-preview">
+                {courseResourceAssignments
+                  .slice(
+                    0,
+                    5,
+                  )
+                  .map(
+                    (assignment) => (
+                      <div
+                        key={assignment.id}
+                      >
+                        <span aria-hidden="true">
+                          📁
+                        </span>
+
+                        <span>
+                          {getCourseResourceFolderLabel(
+                            assignment,
+                          )}
+                        </span>
+
+                        <strong>
+                          (
+                          {getCourseResourceFilesForAssignment(
+                            assignment.id,
+                          ).length}
+                          )
+                        </strong>
+                      </div>
+                    ),
+                  )}
+
+                {courseResourceAssignments
+                  .length > 5 ? (
+                  <small>
+                    +
+                    {courseResourceAssignments.length -
+                      5}{' '}
+                    more assignment folders
+                  </small>
+                ) : null}
+              </div>
+
+              <span className="course-resource-card-open-label">
+                Open Resources
+              </span>
+            </button>
+          </section>
         </div>
 
         <div className="course-workspace-operations-grid">
@@ -40127,29 +40129,6 @@ function CoursePage({
               </div>
 
               <div className="course-workspace-section-actions">
-                {isSixteenWeekCourse ? (
-                  <button
-                    type="button"
-                    className="course-resource-header-button"
-                    title="Open Course Resources"
-                    onClick={() => {
-                      setIsCourseResourcesOpen(
-                        true,
-                      )
-                    }}
-                  >
-                    <span aria-hidden="true">
-                      📁
-                    </span>
-
-                    Resources
-
-                    <strong>
-                      ({courseResources.length})
-                    </strong>
-                  </button>
-                ) : null}
-
                 {workspace.assignments.length >
                   0 ? (
                   <button
@@ -41262,7 +41241,7 @@ function CoursePage({
                   getCourseResizeTableStyle(
                     'webinars',
                     isSixteenWeekCourse
-                      ? 7
+                      ? 5
                       : 6,
                     isWebinarDeleteMode
                       ? 38
@@ -41305,7 +41284,7 @@ function CoursePage({
                           'webinars',
                           0,
                           isSixteenWeekCourse
-                            ? 7
+                            ? 5
                             : 6,
                         )
                       }
@@ -41313,20 +41292,20 @@ function CoursePage({
                       Web #
                     </th>
 
-                    <th
-                      className="course-webinar-session-column"
-                      style={
-                        getCourseResizeColumnStyle(
-                          'webinars',
-                          1,
-                          isSixteenWeekCourse
-                            ? 7
-                            : 6,
-                        )
-                      }
-                    >
-                      Session
-                    </th>
+                    {!isSixteenWeekCourse ? (
+                      <th
+                        className="course-webinar-session-column"
+                        style={
+                          getCourseResizeColumnStyle(
+                            'webinars',
+                            1,
+                            6,
+                          )
+                        }
+                      >
+                        Session
+                      </th>
+                    ) : null}
 
                     {isSixteenWeekCourse ? (
                       <th
@@ -41334,8 +41313,8 @@ function CoursePage({
                         style={
                           getCourseResizeColumnStyle(
                             'webinars',
-                            2,
-                            7,
+                            1,
+                            5,
                           )
                         }
                       >
@@ -41348,11 +41327,9 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'webinars',
+                          2,
                           isSixteenWeekCourse
-                            ? 3
-                            : 2,
-                          isSixteenWeekCourse
-                            ? 7
+                            ? 5
                             : 6,
                         )
                       }
@@ -41365,11 +41342,9 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'webinars',
+                          3,
                           isSixteenWeekCourse
-                            ? 4
-                            : 3,
-                          isSixteenWeekCourse
-                            ? 7
+                            ? 5
                             : 6,
                         )
                       }
@@ -41384,11 +41359,9 @@ function CoursePage({
                       style={
                         getCourseResizeColumnStyle(
                           'webinars',
+                          4,
                           isSixteenWeekCourse
                             ? 5
-                            : 4,
-                          isSixteenWeekCourse
-                            ? 7
                             : 6,
                         )
                       }
@@ -41398,22 +41371,20 @@ function CoursePage({
                       Eastern
                     </th>
 
-                    <th
-                      className="course-webinar-required-column"
-                      style={
-                        getCourseResizeColumnStyle(
-                          'webinars',
-                          isSixteenWeekCourse
-                            ? 6
-                            : 5,
-                          isSixteenWeekCourse
-                            ? 7
-                            : 6,
-                        )
-                      }
-                    >
-                      Required
-                    </th>
+                    {!isSixteenWeekCourse ? (
+                      <th
+                        className="course-webinar-required-column"
+                        style={
+                          getCourseResizeColumnStyle(
+                            'webinars',
+                            5,
+                            6,
+                          )
+                        }
+                      >
+                        Required
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
 
@@ -41515,36 +41486,38 @@ function CoursePage({
                             />
                           </td>
 
-                          <td>
-                            <input
-                              type="text"
-                              className="course-webinar-cell-input"
-                              defaultValue={
-                                webinar.session
-                              }
-                              placeholder="1"
-                              aria-label="Webinar session"
-                              onBlur={(
-                                event,
-                              ) => {
-                                const normalizedValue =
-                                  normalizeCourseWebinarSession(
-                                    event
-                                      .currentTarget
-                                      .value,
+                          {!isSixteenWeekCourse ? (
+                            <td>
+                              <input
+                                type="text"
+                                className="course-webinar-cell-input"
+                                defaultValue={
+                                  webinar.session
+                                }
+                                placeholder="1"
+                                aria-label="Webinar session"
+                                onBlur={(
+                                  event,
+                                ) => {
+                                  const normalizedValue =
+                                    normalizeCourseWebinarSession(
+                                      event
+                                        .currentTarget
+                                        .value,
+                                    )
+
+                                  event.currentTarget.value =
+                                    normalizedValue
+
+                                  updateCourseWebinar(
+                                    webinar.id,
+                                    'session',
+                                    normalizedValue,
                                   )
-
-                                event.currentTarget.value =
-                                  normalizedValue
-
-                                updateCourseWebinar(
-                                  webinar.id,
-                                  'session',
-                                  normalizedValue,
-                                )
-                              }}
-                            />
-                          </td>
+                                }}
+                              />
+                            </td>
+                          ) : null}
 
                           {isSixteenWeekCourse ? (
                             <td>
@@ -41726,124 +41699,126 @@ function CoursePage({
                             </div>
                           </td>
 
-                          <td className="course-webinar-required-cell">
-                            <select
-                              ref={(
-                                selectElement,
-                              ) => {
-                                webinarRequirementRefs.current[
-                                  webinar.id
-                                ] =
-                                  selectElement
-                              }}
-                              className={
-                                openWebinarRequirementId ===
-                                  webinar.id
-                                  ? 'course-webinar-cell-select course-webinar-cell-select-open'
-                                  : 'course-webinar-cell-select'
-                              }
-                              aria-label="Webinar requirement"
-                              value={
-                                webinar.required
-                              }
-                              size={
-                                openWebinarRequirementId ===
-                                  webinar.id
-                                  ? 3
-                                  : undefined
-                              }
-                              onChange={(
-                                event,
-                              ) => {
-                                updateCourseWebinarRequirement(
-                                  webinar.id,
-                                  event.target
-                                    .value,
-                                )
-                              }}
-                              onClick={() => {
-                                if (
+                          {!isSixteenWeekCourse ? (
+                            <td className="course-webinar-required-cell">
+                              <select
+                                ref={(
+                                  selectElement,
+                                ) => {
+                                  webinarRequirementRefs.current[
+                                    webinar.id
+                                  ] =
+                                    selectElement
+                                }}
+                                className={
                                   openWebinarRequirementId ===
-                                  webinar.id
-                                ) {
-                                  setOpenWebinarRequirementId(
-                                    null,
-                                  )
+                                    webinar.id
+                                    ? 'course-webinar-cell-select course-webinar-cell-select-open'
+                                    : 'course-webinar-cell-select'
                                 }
-                              }}
-                              onBlur={() => {
-                                setOpenWebinarRequirementId(
-                                  (currentId) =>
-                                    currentId ===
-                                      webinar.id
-                                      ? null
-                                      : currentId,
-                                )
-                              }}
-                              onKeyDown={(
-                                event,
-                              ) => {
-                                const isOpen =
+                                aria-label="Webinar requirement"
+                                value={
+                                  webinar.required
+                                }
+                                size={
                                   openWebinarRequirementId ===
-                                  webinar.id
-
-                                if (
-                                  !isOpen &&
-                                  event.key ===
-                                  'Enter'
-                                ) {
-                                  event.preventDefault()
-                                  event.stopPropagation()
-
-                                  setOpenWebinarRequirementId(
+                                    webinar.id
+                                    ? 3
+                                    : undefined
+                                }
+                                onChange={(
+                                  event,
+                                ) => {
+                                  updateCourseWebinarRequirement(
                                     webinar.id,
+                                    event.target
+                                      .value,
                                   )
-
-                                  return
-                                }
-
-                                if (isOpen) {
-                                  event.stopPropagation()
-
+                                }}
+                                onClick={() => {
                                   if (
-                                    event.key ===
-                                    'Escape'
+                                    openWebinarRequirementId ===
+                                    webinar.id
                                   ) {
-                                    event.preventDefault()
-
                                     setOpenWebinarRequirementId(
                                       null,
+                                    )
+                                  }
+                                }}
+                                onBlur={() => {
+                                  setOpenWebinarRequirementId(
+                                    (currentId) =>
+                                      currentId ===
+                                        webinar.id
+                                        ? null
+                                        : currentId,
+                                  )
+                                }}
+                                onKeyDown={(
+                                  event,
+                                ) => {
+                                  const isOpen =
+                                    openWebinarRequirementId ===
+                                    webinar.id
+
+                                  if (
+                                    !isOpen &&
+                                    event.key ===
+                                    'Enter'
+                                  ) {
+                                    event.preventDefault()
+                                    event.stopPropagation()
+
+                                    setOpenWebinarRequirementId(
+                                      webinar.id,
                                     )
 
                                     return
                                   }
 
-                                  if (
-                                    event.key ===
-                                    'Enter'
-                                  ) {
-                                    event.preventDefault()
+                                  if (isOpen) {
+                                    event.stopPropagation()
 
-                                    setOpenWebinarRequirementId(
-                                      null,
-                                    )
+                                    if (
+                                      event.key ===
+                                      'Escape'
+                                    ) {
+                                      event.preventDefault()
+
+                                      setOpenWebinarRequirementId(
+                                        null,
+                                      )
+
+                                      return
+                                    }
+
+                                    if (
+                                      event.key ===
+                                      'Enter'
+                                    ) {
+                                      event.preventDefault()
+
+                                      setOpenWebinarRequirementId(
+                                        null,
+                                      )
+                                    }
                                   }
-                                }
-                              }}
-                            >
-                              <option value="">
-                                Select
-                              </option>
+                                }}
+                              >
+                                <option value="">
+                                  Select
+                                </option>
 
-                              <option value="Required">
-                                Required
-                              </option>
+                                <option value="Required">
+                                  Required
+                                </option>
 
-                              <option value="Optional">
-                                Optional
-                              </option>
-                            </select>
-                          </td>
+                                <option value="Optional">
+                                  Optional
+                                </option>
+                              </select>
+                            </td>
+                          ) : null}
                         </tr>
                       ),
                     )

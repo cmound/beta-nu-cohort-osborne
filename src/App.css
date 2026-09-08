@@ -19398,23 +19398,18 @@ tbody td {
   width: 17%;
 }
 
-/* 16-week Webinar table includes the Topic column. */
+/* 16-week Webinar table:
+   Web # | Topic | Date | Pacific | Eastern */
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-number-column {
-  width: 10%;
-}
-
-.course-workspace-operations-grid
-  .course-webinar-table-16
-  .course-webinar-session-column {
-  width: 9%;
+  width: 12%;
 }
 
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-topic-column {
-  width: 26%;
+  width: 38%;
 }
 
 .course-workspace-operations-grid
@@ -19426,13 +19421,7 @@ tbody td {
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-time-column {
-  width: 13%;
-}
-
-.course-workspace-operations-grid
-  .course-webinar-table-16
-  .course-webinar-required-column {
-  width: 9%;
+  width: 15%;
 }
 
 .course-workspace-operations-grid
@@ -19445,9 +19434,6 @@ tbody td {
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-cell-input,
-.course-workspace-operations-grid
-  .course-webinar-table-16
-  .course-webinar-cell-select,
 .course-workspace-operations-grid
   .course-webinar-table-16
   .course-webinar-derived-value {
@@ -19717,12 +19703,13 @@ tbody td {
 .course-workspace-layout-16 {
   display: grid;
   grid-template-columns:
-    minmax(0, 0.84fr)
-    minmax(0, 1.16fr);
+    minmax(0, 1.05fr)
+    minmax(0, 0.95fr)
+    minmax(260px, 0.58fr);
   grid-template-areas:
-    "professor webinars"
-    "links webinars"
-    "assignments meetings";
+    "professor webinars resources"
+    "links webinars resources"
+    "assignments meetings meetings";
   column-gap: 12px;
   row-gap: 0;
   align-items: start;
@@ -19838,6 +19825,13 @@ tbody td {
 .course-workspace-layout-16
   .course-workspace-webinars-section {
   grid-area: webinars;
+  min-width: 0;
+  margin: 0;
+}
+
+.course-workspace-layout-16
+  .course-workspace-resources-card {
+  grid-area: resources;
   min-width: 0;
   margin: 0;
 }
