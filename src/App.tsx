@@ -40057,48 +40057,59 @@ function CoursePage({
                 )
               }}
             >
-              <div className="course-resource-card-folder-preview">
-                {courseResourceAssignments
-                  .slice(
-                    0,
-                    5,
-                  )
-                  .map(
-                    (assignment) => (
-                      <div
-                        key={assignment.id}
-                      >
-                        <span aria-hidden="true">
-                          📁
-                        </span>
+                <div className="course-resource-card-folder-preview">
+                  {courseResourceAssignments
+                    .slice(
+                      0,
+                      isSixteenWeekCourse
+                        ? 8
+                        : 5,
+                    )
+                    .map(
+                      (assignment) => (
+                        <div
+                          key={assignment.id}
+                        >
+                          <span aria-hidden="true">
+                            📁
+                          </span>
 
-                        <span>
-                          {getCourseResourceFolderLabel(
-                            assignment,
-                          )}
-                        </span>
+                          <span>
+                            {getCourseResourceFolderLabel(
+                              assignment,
+                            )}
+                          </span>
 
-                        <strong>
-                          (
-                          {getCourseResourceFilesForAssignment(
-                            assignment.id,
-                          ).length}
-                          )
-                        </strong>
-                      </div>
-                    ),
-                  )}
+                          <strong>
+                            (
+                            {getCourseResourceFilesForAssignment(
+                              assignment.id,
+                            ).length}
+                            )
+                          </strong>
+                        </div>
+                      ),
+                    )}
 
-                {courseResourceAssignments
-                  .length > 5 ? (
-                  <small>
-                    +
-                    {courseResourceAssignments.length -
-                      5}{' '}
-                    more assignment folders
-                  </small>
-                ) : null}
-              </div>
+                  {courseResourceAssignments
+                    .length >
+                    (
+                      isSixteenWeekCourse
+                        ? 8
+                        : 5
+                    ) ? (
+                    <small>
+                      +
+                      {courseResourceAssignments.length -
+                        (
+                          isSixteenWeekCourse
+                            ? 8
+                            : 5
+                        )}{' '}
+                      more assignment folders
+                    </small>
+                  ) : null}
+                </div>
 
               <span className="course-resource-card-open-label">
                 Open Resources
