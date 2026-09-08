@@ -24967,3 +24967,75 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   > .course-workspace-resources-card {
   min-width: 0;
 }
+
+/* =========================================================
+   8-Week Resources Card Readability + Search
+   ========================================================= */
+
+.course-resource-card-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.course-resource-card-search-input {
+  width: 165px;
+  height: 25px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid #a9bbcc;
+  border-radius: 4px;
+  color: #0b1f3b;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 9px;
+  font-style: normal;
+  outline: none;
+}
+
+.course-resource-card-search-input::placeholder {
+  color: #8a98a8;
+  font-style: italic;
+  opacity: 1;
+}
+
+.course-resource-card-search-input:focus {
+  border-color: #005eb8;
+  box-shadow:
+    0 0 0 2px
+    rgba(0, 94, 184, 0.18);
+}
+
+.course-resource-card-folder-preview {
+  gap: 7px;
+}
+
+.course-resource-card-folder-preview > div {
+  grid-template-columns:
+    22px minmax(0, 1fr) auto;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.course-resource-card-folder-preview
+  > div
+  > span:first-child {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.course-resource-card-folder-preview strong {
+  font-size: 10px;
+}
+
+.course-resource-card-folder-preview small {
+  margin-left: 29px;
+  font-size: 9px;
+}
+
+.course-resource-card-open-label {
+  font-size: 10px;
+}

@@ -39363,9 +39363,43 @@ function CoursePage({
                   </h2>
                 </div>
 
-                <span className="course-resource-card-file-count">
-                  {courseResources.length}
-                </span>
+                <div className="course-resource-card-header-actions">
+                  <input
+                    type="search"
+                    className="course-resource-card-search-input"
+                    aria-label="Search Course Resources"
+                    placeholder="Search files..."
+                    value={
+                      courseResourceSearch
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      setCourseResourceSearch(
+                        event.target.value,
+                      )
+                    }}
+                    onKeyDown={(
+                      event,
+                    ) => {
+                      if (
+                        event.key ===
+                          'Enter' &&
+                        courseResourceSearch
+                          .trim()
+                          .length > 0
+                      ) {
+                        setIsCourseResourcesOpen(
+                          true,
+                        )
+                      }
+                    }}
+                  />
+
+                  <span className="course-resource-card-file-count">
+                    {courseResources.length}
+                  </span>
+                </div>
               </header>
 
               <button
