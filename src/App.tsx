@@ -35752,7 +35752,7 @@ function CoursePage({
               {
                 state: 'frozen',
                 ySplit: 2,
-                showGridLines: true,
+                showGridLines: false,
               },
             ],
           },
@@ -35796,6 +35796,42 @@ function CoursePage({
             { width: 12 },
             { width: 22 },
           ]
+
+      const firstTipColumnNumber =
+        isSixteenWeekCourse
+          ? 11
+          : 12
+
+      const firstTipSpacerColumnNumber =
+        isSixteenWeekCourse
+          ? 10
+          : 11
+
+      const secondTipColumnNumber =
+        isSixteenWeekCourse
+          ? 13
+          : 14
+
+      const secondTipSpacerColumnNumber =
+        isSixteenWeekCourse
+          ? 12
+          : 13
+
+      worksheet.getColumn(
+        firstTipSpacerColumnNumber,
+      ).width = 3
+
+      worksheet.getColumn(
+        firstTipColumnNumber,
+      ).width = 38
+
+      worksheet.getColumn(
+        secondTipSpacerColumnNumber,
+      ).width = 3
+
+      worksheet.getColumn(
+        secondTipColumnNumber,
+      ).width = 38
 
       worksheet.mergeCells(
         'A1:B1',
@@ -35851,7 +35887,10 @@ function CoursePage({
           )
 
         cell.alignment = {
-          vertical: 'middle',
+          vertical:
+            isSixteenWeekCourse
+              ? 'middle'
+              : 'bottom',
           horizontal: 'left',
         }
       }
@@ -35945,7 +35984,11 @@ function CoursePage({
           }
 
           cell.alignment = {
-            horizontal: 'left',
+            horizontal:
+              index + 1 === 5 ||
+              index + 1 === 8
+                ? 'center'
+                : 'left',
             vertical: 'middle',
           }
 
@@ -36150,7 +36193,11 @@ function CoursePage({
             }
 
             cell.alignment = {
-              horizontal: 'left',
+              horizontal:
+                columnNumber === 5 ||
+                columnNumber === 8
+                  ? 'center'
+                  : 'left',
               vertical: 'middle',
             }
 
@@ -36211,6 +36258,133 @@ function CoursePage({
       const lastAssignmentRow =
         courseDisplayAssignments.length +
         2
+
+      const tipBoxEndRow =
+        isSixteenWeekCourse
+          ? 8
+          : 9
+
+      const firstTipContent:
+        Readonly<Record<number, string>> =
+        isSixteenWeekCourse
+          ? {
+            2: 'ADDING DATA INSTRUCTIONS',
+            3: '1. Add Date to Column F when submitted',
+            4: '2. Add Brightspace Upload # to Column G',
+            5: '3. Add Points Earned to Column H',
+            7: 'GRADING NOTES',
+            8: '• Column I - Grade will automatically update',
+          }
+          : {
+            2: 'ADDING DATA INSTRUCTIONS',
+            3: '1. Add Date to Column F when submitted',
+            4: '2. Add Brightspace Upload # to Column G',
+            5: '3. Add Points Earned to Column H',
+            7: 'GRADING & STATUS NOTES',
+            8: '• Column I - Grade will automatically update',
+            9: '• Column J - Status will automatically update',
+          }
+
+      const secondTipContent:
+        Readonly<Record<number, string>> = {
+          2: 'STEPS TO REMOVE BLOCKED CELLS',
+          3: '1. Click Review on toolbar',
+          4: '2. Click Protect Sheet',
+          5: '3. Sheet is now unprotected',
+          7: 'UNPROTECTED SHEET NOTES',
+          8: '• You can now edit any of the columns',
+        }
+
+      function applyTrackerTipBox(
+        columnNumber: number,
+        content:
+          Readonly<Record<number, string>>,
+      ): void {
+        for (
+          let rowNumber = 2;
+          rowNumber <= tipBoxEndRow;
+          rowNumber += 1
+        ) {
+          const cell =
+            worksheet.getCell(
+              rowNumber,
+              columnNumber,
+            )
+
+          cell.value =
+            content[rowNumber] ?? ''
+
+          cell.font = {
+            name: 'Arial',
+            size: 10,
+            bold:
+              rowNumber === 2 ||
+              rowNumber === 7,
+            color: {
+              argb: 'FF0B1F3B',
+            },
+          }
+
+          cell.alignment = {
+            horizontal: 'left',
+            vertical: 'middle',
+            wrapText: true,
+          }
+
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: {
+              argb:
+                rowNumber === 2 ||
+                rowNumber === 7
+                  ? 'FFFFE699'
+                  : 'FFFFFFFF',
+            },
+          }
+
+          cell.border = {
+            top: {
+              style: 'thin',
+              color: {
+                argb: 'FFC69214',
+              },
+            },
+            left: {
+              style: 'thin',
+              color: {
+                argb: 'FFC69214',
+              },
+            },
+            bottom: {
+              style: 'thin',
+              color: {
+                argb: 'FFC69214',
+              },
+            },
+            right: {
+              style: 'thin',
+              color: {
+                argb: 'FFC69214',
+              },
+            },
+          }
+
+          cell.protection = {
+            locked: true,
+          }
+        }
+      }
+
+      applyTrackerTipBox(
+        firstTipColumnNumber,
+        firstTipContent,
+      )
+
+      applyTrackerTipBox(
+        secondTipColumnNumber,
+        secondTipContent,
+      )
 
       if (
         !isSixteenWeekCourse
@@ -36316,6 +36490,59 @@ function CoursePage({
                   },
                   bgColor: {
                     argb: 'FFD9D9D9',
+                  },
+                },
+              },
+            },
+          ],
+        })
+      } else {
+        worksheet.addConditionalFormatting({
+          ref:
+            `A3:I${lastAssignmentRow}`,
+          rules: [
+            {
+              type: 'expression',
+              priority: 1,
+              formulae: [
+                'AND($A3<>"",$F3<>"")',
+              ],
+              style: {
+                font: {
+                  color: {
+                    argb: 'FF000000',
+                  },
+                },
+                fill: {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: {
+                    argb: 'FFC4BD97',
+                  },
+                  bgColor: {
+                    argb: 'FFC4BD97',
+                  },
+                },
+              },
+            },
+          ],
+        })
+
+        worksheet.addConditionalFormatting({
+          ref:
+            `A3:E${lastAssignmentRow}`,
+          rules: [
+            {
+              type: 'expression',
+              priority: 1,
+              formulae: [
+                'AND($A3<>"",$F3<>"")',
+              ],
+              style: {
+                font: {
+                  strike: true,
+                  color: {
+                    argb: 'FF000000',
                   },
                 },
               },
