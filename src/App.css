@@ -26679,3 +26679,283 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
     animation: none;
   }
 }
+
+/* =========================================================
+   SIDEBAR ELECTRICAL CURRENT FINAL CONNECTION POLISH
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   1. SELECTED COHORT / RESOURCES PAGE
+   Thicker active branch with NO circular connection node.
+   Branch terminates directly against the selected outline.
+   --------------------------------------------------------- */
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot {
+  left: 58px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+  filter: none;
+  transform: translateY(-50%);
+}
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot::after {
+  content: none;
+}
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: 0;
+  left: auto;
+  width: 33px;
+  height: 4px;
+  border-radius: 2px 0 0 2px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 7px,
+      #006dff 9px,
+      #00d9ff 12px,
+      #ffffff 14px,
+      #55f4ff 16px,
+      #00d9ff 19px,
+      #006dff 22px,
+      #075b91 27px,
+      #075b91 34px
+    );
+  background-size: 34px 100%;
+  box-shadow:
+    0 0 3px rgba(85, 244, 255, 0.95),
+    0 0 6px rgba(0, 217, 255, 0.55);
+  transform: translateY(-50%);
+  animation:
+    sidebar-current-flow-right
+    0.68s
+    linear
+    infinite;
+}
+
+/* Ensure the selected outline begins exactly
+   where the electrical branch terminates. */
+
+.nav-sub-link.nav-link-active::after {
+  left: 58px;
+}
+
+
+/* ---------------------------------------------------------
+   2. SELECTED ACADEMIC PLAN
+   Same direct electrical connection, no circle.
+   --------------------------------------------------------- */
+
+.nav-sub-link-academic-plan.nav-link-active {
+  padding-left: 52px;
+}
+
+.nav-sub-link-academic-plan.nav-link-active::after {
+  left: 39px;
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot {
+  left: 39px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: none;
+  filter: none;
+  transform: translateY(-50%);
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot::after {
+  content: none;
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: 0;
+  left: auto;
+  width: 24px;
+  height: 4px;
+  border-radius: 2px 0 0 2px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 7px,
+      #006dff 9px,
+      #00d9ff 12px,
+      #ffffff 14px,
+      #55f4ff 16px,
+      #00d9ff 19px,
+      #006dff 22px,
+      #075b91 27px,
+      #075b91 34px
+    );
+  background-size: 34px 100%;
+  box-shadow:
+    0 0 3px rgba(85, 244, 255, 0.95),
+    0 0 6px rgba(0, 217, 255, 0.55);
+  transform: translateY(-50%);
+  animation:
+    sidebar-current-flow-right
+    0.68s
+    linear
+    infinite;
+}
+
+
+/* ---------------------------------------------------------
+   3. REMOVE SMALL ELECTRICAL DASH BELOW ACADEMICS ICON
+   Keep Cohort and Resources source feeds unchanged.
+   --------------------------------------------------------- */
+
+.nav-section-header:has(
+    .nav-academic-plan-icon
+  )[aria-expanded='true']::after {
+  content: none;
+  display: none;
+}
+
+
+/* ---------------------------------------------------------
+   4. SELECTED COURSE PAGE
+   Match selected Cohort / Resources visual treatment.
+   Remove old yellow fill and directional arrow.
+   --------------------------------------------------------- */
+
+.course-status-link-active {
+  position: relative;
+  min-height: 24px;
+  padding-left: 39px;
+  color: #fff2a8 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 900;
+  isolation: isolate;
+}
+
+/* Dark futuristic selected course panel */
+
+.course-status-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 1px;
+  right: 3px;
+  bottom: 1px;
+  left: 29px;
+  box-sizing: border-box;
+  border: 2px solid #f4b400;
+  border-radius: 7px;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 76%,
+      rgba(36, 91, 255, 0.2) 77%,
+      rgba(36, 91, 255, 0.2) 79%,
+      transparent 80%,
+      transparent 85%,
+      rgba(0, 168, 255, 0.14) 86%,
+      rgba(0, 168, 255, 0.14) 88%,
+      transparent 89%
+    ),
+    linear-gradient(
+      180deg,
+      #0b2447 0%,
+      #071a33 52%,
+      #041120 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.08),
+    0 0 4px
+      rgba(244, 180, 0, 0.42),
+    0 0 7px
+      rgba(0, 217, 255, 0.2);
+  pointer-events: none;
+  animation:
+    sidebar-active-outline-current
+    1.25s
+    linear
+    infinite;
+}
+
+/* Course code */
+
+.course-status-link-active
+  > span:last-child {
+  position: relative;
+  z-index: 4;
+  color: #fff2a8 !important;
+  text-shadow:
+    0 1px 2px
+    rgba(0, 0, 0, 0.88);
+}
+
+/* Completely remove the old arrow / bullet */
+
+.course-status-link-active
+  .course-status-dot {
+  display: none;
+}
+
+/* Active course electrical branch connects
+   directly to the left border of the panel. */
+
+.course-status-link-active::before {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  left: 7px;
+  top: 50%;
+  width: 22px;
+  height: 4px;
+  border-radius: 2px 0 0 2px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 7px,
+      #006dff 9px,
+      #00d9ff 12px,
+      #ffffff 14px,
+      #55f4ff 16px,
+      #00d9ff 19px,
+      #006dff 22px,
+      #075b91 27px,
+      #075b91 34px
+    );
+  background-size: 34px 100%;
+  box-shadow:
+    0 0 3px rgba(85, 244, 255, 0.95),
+    0 0 6px rgba(0, 217, 255, 0.52);
+  transform: translateY(-50%);
+  animation:
+    sidebar-current-flow-right
+    0.68s
+    linear
+    infinite;
+}
