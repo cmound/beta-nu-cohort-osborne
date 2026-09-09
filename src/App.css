@@ -26185,3 +26185,497 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
 .course-resource-file-download-button {
   font-size: 9px;
 }
+
+/* =========================================================
+   SIDEBAR ELECTRICAL CURRENT V3
+   Continuous conductor flow + connected active panels
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   SECTION POWER FEED
+   Remove the stationary glowing capsule.
+   Replace it with a short live conductor feeding the tree.
+   --------------------------------------------------------- */
+
+.nav-section-header[aria-expanded='true']::after {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  left: 30px;
+  bottom: -9px;
+  width: 2px;
+  height: 14px;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #075b91 0,
+      #075b91 8px,
+      #008cff 10px,
+      #00d9ff 13px,
+      #eaffff 15px,
+      #55f4ff 17px,
+      #00bfff 20px,
+      #075b91 24px,
+      #075b91 34px
+    );
+  background-size:
+    100% 34px;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.75),
+    0 0 5px rgba(0, 168, 255, 0.42);
+  pointer-events: none;
+  animation:
+    sidebar-current-flow-down
+    0.95s
+    linear
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   ALL VERTICAL TREE CONDUCTORS
+   Constant blue line with moving electrical packets.
+   --------------------------------------------------------- */
+
+.nav-sub-link::before,
+.nav-sub-link-academic-plan::before,
+.courses-status-panel::before,
+.course-status-tree::before {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      #075b91 0,
+      #075b91 8px,
+      #008cff 10px,
+      #00d9ff 13px,
+      #eaffff 15px,
+      #55f4ff 17px,
+      #00bfff 20px,
+      #075b91 24px,
+      #075b91 34px
+    );
+  background-size:
+    100% 34px;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.62),
+    0 0 4px rgba(0, 109, 255, 0.26);
+  animation:
+    sidebar-current-flow-down
+    0.95s
+    linear
+    infinite;
+}
+
+/* Keep the established trunk positions. */
+
+.nav-sub-link::before {
+  left: 25px;
+  width: 2px;
+}
+
+.nav-sub-link-academic-plan::before {
+  left: 15px;
+  width: 2px;
+}
+
+.courses-status-panel::before {
+  width: 2px;
+}
+
+.course-status-tree::before {
+  width: 2px;
+}
+
+/* ---------------------------------------------------------
+   ALL HORIZONTAL BRANCH CONDUCTORS
+   Energy moves outward from the trunk toward each node.
+   --------------------------------------------------------- */
+
+.nav-sub-item-dot::before,
+.course-status-link::before {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 8px,
+      #008cff 10px,
+      #00d9ff 13px,
+      #eaffff 15px,
+      #55f4ff 17px,
+      #00bfff 20px,
+      #075b91 24px,
+      #075b91 34px
+    );
+  background-size:
+    34px 100%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.7),
+    0 0 4px rgba(0, 109, 255, 0.28);
+  animation:
+    sidebar-current-flow-right
+    0.82s
+    linear
+    infinite;
+}
+
+/* Slightly strengthen ordinary branch visibility. */
+
+.nav-sub-item-dot::before {
+  height: 2px;
+}
+
+/* ---------------------------------------------------------
+   SELECTED COHORT / RESOURCES PAGE
+   Node is centered directly ON the selected panel border.
+   --------------------------------------------------------- */
+
+.nav-sub-link.nav-link-active {
+  padding-left: 74px;
+  color: #fff2a8;
+  font-weight: 900;
+  isolation: isolate;
+}
+
+/* Selected dark panel.
+   Its left border is exactly where the active node centers. */
+
+.nav-sub-link.nav-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  display: block;
+  top: 2px;
+  right: 6px;
+  bottom: 2px;
+  left: 58px;
+  width: auto;
+  height: auto;
+  box-sizing: border-box;
+  border: 2px solid #f4b400;
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 76%,
+      rgba(36, 91, 255, 0.2) 77%,
+      rgba(36, 91, 255, 0.2) 79%,
+      transparent 80%,
+      transparent 85%,
+      rgba(0, 168, 255, 0.15) 86%,
+      rgba(0, 168, 255, 0.15) 88%,
+      transparent 89%
+    ),
+    linear-gradient(
+      180deg,
+      #0b2447 0%,
+      #071a33 52%,
+      #041120 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.1),
+    0 0 4px
+      rgba(244, 180, 0, 0.45),
+    0 0 7px
+      rgba(0, 217, 255, 0.2);
+  pointer-events: none;
+  animation:
+    sidebar-active-outline-current
+    1.25s
+    linear
+    infinite;
+}
+
+/* Selected text remains above panel. */
+
+.nav-sub-link.nav-link-active
+  > span:not(.nav-sub-item-dot) {
+  position: relative;
+  z-index: 4;
+  color: #fff2a8;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.88);
+}
+
+/* Replace any prior arrow/current selected marker.
+   The node now STRADDLES the selected panel border. */
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot {
+  position: absolute;
+  z-index: 6;
+  left: 52px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 2px solid #f4b400;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      #fffde0 0%,
+      #fff7b2 36%,
+      #ffd54a 66%,
+      #f4b400 100%
+    );
+  box-shadow:
+    0 0 3px #ffffff,
+    0 0 6px #55f4ff,
+    0 0 10px rgba(0, 217, 255, 0.68);
+  clip-path: none;
+  filter: none;
+  transform:
+    translateY(-50%);
+}
+
+/* Remove any old inner arrow surface. */
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot::after {
+  content: none;
+}
+
+/* Selected branch:
+   trunk at 25px
+   branch ends at node at 52px
+   node center sits at 58px
+   selected outline begins at 58px
+
+   This creates one continuous physical connection.
+*/
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: 100%;
+  left: auto;
+  width: 27px;
+  height: 3px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 7px,
+      #006dff 9px,
+      #00d9ff 12px,
+      #ffffff 14px,
+      #55f4ff 16px,
+      #00d9ff 19px,
+      #006dff 22px,
+      #075b91 27px,
+      #075b91 34px
+    );
+  background-size:
+    34px 100%;
+  box-shadow:
+    0 0 3px rgba(85, 244, 255, 0.9),
+    0 0 6px rgba(0, 217, 255, 0.48);
+  transform:
+    translateY(-50%);
+  animation:
+    sidebar-current-flow-right
+    0.68s
+    linear
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   ACADEMIC PLAN SELECTED CONNECTION
+   Same connected-node principle.
+   --------------------------------------------------------- */
+
+.nav-sub-link-academic-plan.nav-link-active {
+  padding-left: 52px;
+}
+
+.nav-sub-link-academic-plan.nav-link-active::after {
+  left: 39px;
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot {
+  left: 33px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #f4b400;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      #fffde0 0%,
+      #fff7b2 36%,
+      #ffd54a 66%,
+      #f4b400 100%
+    );
+  box-shadow:
+    0 0 3px #ffffff,
+    0 0 6px #55f4ff,
+    0 0 10px rgba(0, 217, 255, 0.68);
+  clip-path: none;
+  filter: none;
+}
+
+/* Academic Plan branch reaches the active node. */
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot::before {
+  right: 100%;
+  left: auto;
+  width: 18px;
+  height: 3px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 7px,
+      #006dff 9px,
+      #00d9ff 12px,
+      #ffffff 14px,
+      #55f4ff 16px,
+      #00d9ff 19px,
+      #006dff 22px,
+      #075b91 27px,
+      #075b91 34px
+    );
+  background-size:
+    34px 100%;
+  box-shadow:
+    0 0 3px rgba(85, 244, 255, 0.9),
+    0 0 6px rgba(0, 217, 255, 0.48);
+  animation:
+    sidebar-current-flow-right
+    0.68s
+    linear
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   SELECTED COURSES
+   Keep current course styling, but strengthen live branch.
+   --------------------------------------------------------- */
+
+.course-status-link-active::before {
+  height: 3px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #075b91 0,
+      #075b91 7px,
+      #006dff 9px,
+      #00d9ff 12px,
+      #ffffff 14px,
+      #55f4ff 16px,
+      #00d9ff 19px,
+      #006dff 22px,
+      #075b91 27px,
+      #075b91 34px
+    );
+  background-size:
+    34px 100%;
+  box-shadow:
+    0 0 3px rgba(85, 244, 255, 0.88),
+    0 0 6px rgba(0, 217, 255, 0.44);
+  animation:
+    sidebar-current-flow-right
+    0.68s
+    linear
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   CURRENT ANIMATIONS
+   These move continuously rather than pulsing in place.
+   --------------------------------------------------------- */
+
+@keyframes sidebar-current-flow-down {
+  from {
+    background-position:
+      0 -34px;
+  }
+
+  to {
+    background-position:
+      0 0;
+  }
+}
+
+@keyframes sidebar-current-flow-right {
+  from {
+    background-position:
+      -34px 0;
+  }
+
+  to {
+    background-position:
+      0 0;
+  }
+}
+
+/* Active outline stays energized without flashing harshly. */
+
+@keyframes sidebar-active-outline-current {
+  0% {
+    border-color: #f4b400;
+    box-shadow:
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.1),
+      0 0 4px
+        rgba(244, 180, 0, 0.4),
+      0 0 5px
+        rgba(0, 217, 255, 0.14);
+  }
+
+  35% {
+    border-color: #ffd54a;
+    box-shadow:
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.12),
+      0 0 5px
+        rgba(255, 213, 74, 0.6),
+      0 0 8px
+        rgba(0, 217, 255, 0.3);
+  }
+
+  65% {
+    border-color: #f4b400;
+    box-shadow:
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.1),
+      0 0 4px
+        rgba(244, 180, 0, 0.45),
+      0 0 9px
+        rgba(85, 244, 255, 0.38);
+  }
+
+  100% {
+    border-color: #f4b400;
+    box-shadow:
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.1),
+      0 0 4px
+        rgba(244, 180, 0, 0.4),
+      0 0 5px
+        rgba(0, 217, 255, 0.14);
+  }
+}
+
+/* Keep reduced-motion support. */
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-section-header[aria-expanded='true']::after,
+  .nav-sub-link::before,
+  .nav-sub-item-dot::before,
+  .nav-sub-link.nav-link-active::after,
+  .courses-status-panel::before,
+  .course-status-tree::before,
+  .course-status-link::before,
+  .course-status-link-active::after {
+    animation: none;
+  }
+}
