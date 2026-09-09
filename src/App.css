@@ -25227,3 +25227,122 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   height: 100%;
   box-sizing: border-box;
 }
+
+/* =========================================================
+   Course Resources Visibility Polish
+   ========================================================= */
+
+/* Clickable Resources heading */
+
+.course-resource-card-title-button {
+  display: block;
+  margin: 3px 0 0;
+  padding: 0;
+  border: 0;
+  color: #f2b632;
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+
+.course-resource-card-title-button:hover {
+  color: #ffd76a;
+}
+
+.course-resource-card-title-button:focus-visible {
+  outline: 2px solid #ffd76a;
+  outline-offset: 2px;
+}
+
+/* Main class-page Resources preview */
+
+.course-resource-card-folder-preview-row--has-files {
+  color: #000000;
+  font-weight: 900;
+}
+
+.course-resource-card-folder-preview-row--empty {
+  color: #7a8794;
+  font-weight: 500;
+}
+
+.course-resource-card-folder-preview-row--has-files
+  strong,
+.course-resource-card-folder-preview-row--empty
+  strong {
+  color: #005eb8;
+  font-weight: 900;
+}
+
+/* Slightly larger Course Resources flyout */
+
+.course-resource-folder-section
+  > h3,
+.course-resource-search-results
+  > h3 {
+  font-size: 12px;
+}
+
+.course-resource-search-field
+  > span {
+  font-size: 10px;
+}
+
+.course-resource-search-field input {
+  font-size: 11px;
+}
+
+.course-resource-folder-button {
+  min-height: 36px;
+  font-size: 11px;
+}
+
+.course-resource-folder-button
+  strong {
+  font-size: 11px;
+}
+
+/* Folder containing one or more files */
+
+.course-resource-folder-button--has-files {
+  color: #000000;
+  font-weight: 900;
+}
+
+/* Empty folder */
+
+.course-resource-folder-button--empty {
+  color: #7a8794;
+  font-weight: 500;
+}
+
+.course-resource-folder-button--has-files
+  strong,
+.course-resource-folder-button--empty
+  strong {
+  color: #005eb8;
+  font-weight: 900;
+}
+
+.course-resource-folder-button--empty
+  .course-resource-folder-toggle {
+  color: #7a8794;
+}
+
+/* Files shown after opening a folder */
+
+.course-resource-file-copy strong {
+  font-size: 11px;
+}
+
+.course-resource-file-copy small {
+  font-size: 9px;
+}
+
+.course-resource-file-download-button {
+  font-size: 9px;
+}

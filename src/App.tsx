@@ -35469,7 +35469,11 @@ function CoursePage({
                         >
                           <button
                             type="button"
-                            className="course-resource-folder-button"
+                            className={
+                              folderFiles.length > 0
+                                ? 'course-resource-folder-button course-resource-folder-button--has-files'
+                                : 'course-resource-folder-button course-resource-folder-button--empty'
+                            }
                             onClick={() => {
                               openCourseResourceFolder(
                                 assignment.id,
@@ -35590,7 +35594,11 @@ function CoursePage({
               <section className="course-resource-general-section">
                 <button
                   type="button"
-                  className="course-resource-folder-button course-resource-general-folder-button"
+                  className={
+                    generalCourseResources.length > 0
+                      ? 'course-resource-folder-button course-resource-general-folder-button course-resource-folder-button--has-files'
+                      : 'course-resource-folder-button course-resource-general-folder-button course-resource-folder-button--empty'
+                  }
                   onClick={() => {
                     openCourseResourceFolder(
                       '',
@@ -35986,7 +35994,7 @@ function CoursePage({
           cell.alignment = {
             horizontal:
               index + 1 === 5 ||
-              index + 1 === 8
+                index + 1 === 8
                 ? 'center'
                 : 'left',
             vertical: 'middle',
@@ -36195,7 +36203,7 @@ function CoursePage({
             cell.alignment = {
               horizontal:
                 columnNumber === 5 ||
-                columnNumber === 8
+                  columnNumber === 8
                   ? 'center'
                   : 'left',
               vertical: 'middle',
@@ -36287,13 +36295,13 @@ function CoursePage({
 
       const secondTipContent:
         Readonly<Record<number, string>> = {
-          2: 'STEPS TO REMOVE BLOCKED CELLS',
-          3: '1. Click Review on toolbar',
-          4: '2. Click Protect Sheet',
-          5: '3. Sheet is now unprotected',
-          7: 'UNPROTECTED SHEET NOTES',
-          8: '• You can now edit any of the columns',
-        }
+        2: 'STEPS TO REMOVE BLOCKED CELLS',
+        3: '1. Click Review on toolbar',
+        4: '2. Click Protect Sheet',
+        5: '3. Sheet is now unprotected',
+        7: 'UNPROTECTED SHEET NOTES',
+        8: '• You can now edit any of the columns',
+      }
 
       function applyTrackerTipBox(
         columnNumber: number,
@@ -36337,7 +36345,7 @@ function CoursePage({
             fgColor: {
               argb:
                 rowNumber === 2 ||
-                rowNumber === 7
+                  rowNumber === 7
                   ? 'FFFFE699'
                   : 'FFFFFFFF',
             },
@@ -40231,9 +40239,19 @@ function CoursePage({
                   Course Resource
                 </span>
 
-                <h2>
+                <button
+                  type="button"
+                  className="course-resource-card-title-button"
+                  onClick={() => {
+                    setIsCourseResourcesOpen(
+                      true,
+                    )
+                  }}
+                  aria-label="Open Course Resources"
+                  title="Open Course Resources"
+                >
                   Resources
-                </h2>
+                </button>
               </div>
 
               <div className="course-resource-card-header-actions">
@@ -40284,18 +40302,29 @@ function CoursePage({
                 )
               }}
             >
-                <div className="course-resource-card-folder-preview">
-                  {courseResourceAssignments
-                    .slice(
-                      0,
-                      isSixteenWeekCourse
-                        ? 8
-                        : 5,
-                    )
-                    .map(
-                      (assignment) => (
+              <div className="course-resource-card-folder-preview">
+                {courseResourceAssignments
+                  .slice(
+                    0,
+                    isSixteenWeekCourse
+                      ? 8
+                      : 5,
+                  )
+                  .map(
+                    (assignment) => {
+                      const folderFileCount =
+                        getCourseResourceFilesForAssignment(
+                          assignment.id,
+                        ).length
+
+                      return (
                         <div
                           key={assignment.id}
+                          className={
+                            folderFileCount > 0
+                              ? 'course-resource-card-folder-preview-row course-resource-card-folder-preview-row--has-files'
+                              : 'course-resource-card-folder-preview-row course-resource-card-folder-preview-row--empty'
+                          }
                         >
                           <span aria-hidden="true">
                             📁
@@ -40309,34 +40338,33 @@ function CoursePage({
 
                           <strong>
                             (
-                            {getCourseResourceFilesForAssignment(
-                              assignment.id,
-                            ).length}
+                            {folderFileCount}
                             )
                           </strong>
                         </div>
-                      ),
-                    )}
+                      )
+                    },
+                  )}
 
-                  {courseResourceAssignments
-                    .length >
-                    (
-                      isSixteenWeekCourse
-                        ? 8
-                        : 5
-                    ) ? (
-                    <small>
-                      +
-                      {courseResourceAssignments.length -
-                        (
-                          isSixteenWeekCourse
-                            ? 8
-                            : 5
-                        )}{' '}
-                      more assignment folders
-                    </small>
-                  ) : null}
-                </div>
+                {courseResourceAssignments
+                  .length >
+                  (
+                    isSixteenWeekCourse
+                      ? 8
+                      : 5
+                  ) ? (
+                  <small>
+                    +
+                    {courseResourceAssignments.length -
+                      (
+                        isSixteenWeekCourse
+                          ? 8
+                          : 5
+                      )}{' '}
+                    more assignment folders
+                  </small>
+                ) : null}
+              </div>
 
               <span className="course-resource-card-open-label">
                 Open Resources
