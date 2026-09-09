@@ -54042,39 +54042,45 @@ function App() {
 
       <div className="app-main">
         <main className="page-content">
-          <div
-            className="cohort-presence-bar"
-            aria-label="Cohort online presence"
-          >
-            <span className="cohort-presence-count">
-              {activeCohortPresenceRecords.length}{' '}
-              {activeCohortPresenceRecords.length === 1
-                ? 'user'
-                : 'users'}{' '}
-              online
-            </span>
+          {db.cloud.currentUserId
+            .trim()
+            .toLowerCase() ===
+          BETA_NU_OWNER_USER_ID
+            .toLowerCase() ? (
+            <div
+              className="cohort-presence-bar"
+              aria-label="Cohort online presence"
+            >
+              <span className="cohort-presence-count">
+                {activeCohortPresenceRecords.length}{' '}
+                {activeCohortPresenceRecords.length === 1
+                  ? 'user'
+                  : 'users'}{' '}
+                online
+              </span>
 
-            {currentPageCohortPresenceRecords.length > 0 ? (
-              <div
-                className="cohort-presence-page-users"
-                aria-label="Users on this page"
-              >
-                {currentPageCohortPresenceRecords.map(
-                  (record) => (
-                    <span
-                      key={record.id}
-                      className="cohort-presence-avatar"
-                      title={
-                        `${record.initials} is on this page`
-                      }
-                    >
-                      {record.initials}
-                    </span>
-                  ),
-                )}
-              </div>
-            ) : null}
-          </div>
+              {currentPageCohortPresenceRecords.length > 0 ? (
+                <div
+                  className="cohort-presence-page-users"
+                  aria-label="Users on this page"
+                >
+                  {currentPageCohortPresenceRecords.map(
+                    (record) => (
+                      <span
+                        key={record.id}
+                        className="cohort-presence-avatar"
+                        title={
+                          `${record.initials} is on this page`
+                        }
+                      >
+                        {record.initials}
+                      </span>
+                    ),
+                  )}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <Routes>
             <Route
