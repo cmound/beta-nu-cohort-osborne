@@ -2050,6 +2050,751 @@
   margin-top: -3px;
 }
 
+/* =========================================================
+   FUTURISTIC ELECTRICAL SIDEBAR TREE
+   Cohort, Resources, and Academics
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   SECTION SOURCE LIGHT
+   Starts immediately below each expanded section header.
+   --------------------------------------------------------- */
+
+.nav-section-header[aria-expanded='true']::after {
+  content: '';
+  position: absolute;
+  z-index: 4;
+  left: 24px;
+  bottom: -5px;
+  width: 5px;
+  height: 10px;
+  border-radius: 999px;
+  background: #55f4ff;
+  box-shadow:
+    0 0 4px #55f4ff,
+    0 0 8px #00d9ff,
+    0 0 12px rgba(0, 109, 255, 0.72);
+  pointer-events: none;
+  animation:
+    sidebar-section-source-pulse
+    1.35s
+    ease-in-out
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   COHORT + RESOURCES VERTICAL ELECTRICAL TRUNKS
+   --------------------------------------------------------- */
+
+.nav-sub-link::before {
+  background:
+    linear-gradient(
+      180deg,
+      #31577a 0%,
+      #31577a 32%,
+      #006dff 41%,
+      #00d9ff 47%,
+      #55f4ff 50%,
+      #00d9ff 53%,
+      #006dff 59%,
+      #31577a 68%,
+      #31577a 100%
+    );
+  background-size: 100% 280%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.32);
+  animation:
+    sidebar-electric-trunk
+    2.8s
+    linear
+    infinite;
+}
+
+/* COHORT flow */
+
+.nav-sub-link-cohort::before {
+  animation-duration: 2.8s;
+}
+
+/* RESOURCES gets its own independent flow timing */
+
+.nav-sub-link:not(
+    .nav-sub-link-cohort
+  ):not(
+    .nav-sub-link-academic-plan
+  )::before {
+  animation-duration: 3.15s;
+  animation-delay: -0.7s;
+}
+
+/* ---------------------------------------------------------
+   NORMAL SUB-NAV BRANCHES
+   The pulse travels outward and retracts.
+   --------------------------------------------------------- */
+
+.nav-sub-item-dot::before {
+  background:
+    linear-gradient(
+      90deg,
+      #31577a 0%,
+      #31577a 28%,
+      #006dff 39%,
+      #00d9ff 48%,
+      #55f4ff 52%,
+      #00d9ff 57%,
+      #006dff 66%,
+      #31577a 78%,
+      #31577a 100%
+    );
+  background-size: 260% 100%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.28);
+  animation:
+    sidebar-electric-branch
+    2.15s
+    ease-in-out
+    infinite;
+}
+
+/* Slightly offset Resources branches */
+
+.nav-sub-link:not(
+    .nav-sub-link-cohort
+  ):not(
+    .nav-sub-link-academic-plan
+  )
+  .nav-sub-item-dot::before {
+  animation-delay: -0.6s;
+}
+
+/* ---------------------------------------------------------
+   SELECTED COHORT / RESOURCES SUB-PAGE
+   Dark futuristic panel with gold + cyan connection.
+   --------------------------------------------------------- */
+
+.nav-sub-link.nav-link-active {
+  padding-left: 72px;
+  color: #fff2a8;
+  background:
+    linear-gradient(
+      180deg,
+      #f4f7fa 0%,
+      #eef3f7 100%
+    );
+  font-weight: 900;
+  isolation: isolate;
+}
+
+/* Selected dark panel */
+
+.nav-sub-link.nav-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  display: block;
+  top: 2px;
+  right: 6px;
+  bottom: 2px;
+  left: 56px;
+  width: auto;
+  height: auto;
+  box-sizing: border-box;
+  border: 2px solid #f4b400;
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 76%,
+      rgba(36, 91, 255, 0.22) 77%,
+      rgba(36, 91, 255, 0.22) 79%,
+      transparent 80%,
+      transparent 84%,
+      rgba(0, 168, 255, 0.16) 85%,
+      rgba(0, 168, 255, 0.16) 87%,
+      transparent 88%
+    ),
+    linear-gradient(
+      180deg,
+      #0b2447 0%,
+      #071a33 52%,
+      #041120 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.09),
+    0 0 4px
+      rgba(244, 180, 0, 0.42),
+    0 0 7px
+      rgba(0, 217, 255, 0.18);
+  pointer-events: none;
+  animation:
+    sidebar-selected-panel-surge
+    1.6s
+    ease-in-out
+    infinite;
+}
+
+/* Keep selected label over the dark panel */
+
+.nav-sub-link.nav-link-active
+  > span:not(.nav-sub-item-dot) {
+  position: relative;
+  z-index: 3;
+  color: #fff2a8;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+/* Remove the old selected gold-arrow treatment */
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot {
+  z-index: 4;
+  left: 45px;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  box-sizing: border-box;
+  border: 2px solid #f4b400;
+  border-radius: 50%;
+  background: #fff7b2;
+  box-shadow:
+    0 0 3px #55f4ff,
+    0 0 6px rgba(0, 217, 255, 0.88),
+    0 0 9px rgba(0, 109, 255, 0.42);
+  clip-path: none;
+  filter: none;
+  transform: translateY(-50%);
+}
+
+/* Remove old arrow inner bevel */
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot::after {
+  content: none;
+}
+
+/* Selected branch connects trunk directly to active node */
+
+.nav-sub-link.nav-link-active
+  .nav-sub-item-dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  left: auto;
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      90deg,
+      #006dff 0%,
+      #00d9ff 38%,
+      #55f4ff 52%,
+      #00d9ff 68%,
+      #006dff 100%
+    );
+  background-size: 240% 100%;
+  box-shadow:
+    0 0 3px rgba(0, 217, 255, 0.9);
+  transform: translateY(-50%);
+  animation:
+    sidebar-electric-branch
+    1.45s
+    ease-in-out
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   ACADEMIC PLAN
+   Restore normal unselected state.
+   Dark treatment appears only when selected.
+   --------------------------------------------------------- */
+
+.nav-sub-link-academic-plan {
+  color: #0b1f3b;
+  font-weight: 700;
+  background:
+    linear-gradient(
+      180deg,
+      #f4f7fa 0%,
+      #eef3f7 100%
+    );
+}
+
+/* Remove the old permanent yellow Academic Plan panel */
+
+.nav-sub-link-academic-plan:not(
+    .nav-link-active
+  )::after {
+  content: none;
+}
+
+/* Restore normal Academic Plan node */
+
+.nav-sub-link-academic-plan
+  .nav-sub-item-dot {
+  left: 29px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 1px solid #9c700c;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #f2b632 55%,
+      #c69214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.7),
+    0 1px 2px
+      rgba(0, 0, 0, 0.28);
+  clip-path: none;
+  filter: none;
+  transform: translateY(-50%);
+}
+
+/* Academic Plan branch */
+
+.nav-sub-link-academic-plan
+  .nav-sub-item-dot::before {
+  top: 50%;
+  right: 100%;
+  left: auto;
+  width: 14px;
+  height: 2px;
+  background:
+    linear-gradient(
+      90deg,
+      #31577a 0%,
+      #006dff 36%,
+      #00d9ff 48%,
+      #55f4ff 53%,
+      #00d9ff 60%,
+      #31577a 100%
+    );
+  background-size: 250% 100%;
+  transform: translateY(-50%);
+  animation:
+    sidebar-electric-branch
+    2.45s
+    ease-in-out
+    infinite;
+}
+
+/* Academic Plan has its own trunk flow */
+
+.nav-sub-link-academic-plan::before {
+  background:
+    linear-gradient(
+      180deg,
+      #31577a 0%,
+      #31577a 31%,
+      #006dff 40%,
+      #00d9ff 47%,
+      #55f4ff 51%,
+      #00d9ff 56%,
+      #006dff 63%,
+      #31577a 72%,
+      #31577a 100%
+    );
+  background-size: 100% 285%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.32);
+  animation:
+    sidebar-electric-trunk
+    3.35s
+    linear
+    infinite;
+  animation-delay: -1.05s;
+}
+
+/* Academic Plan selected alignment */
+
+.nav-sub-link-academic-plan.nav-link-active {
+  padding-left: 50px;
+  color: #fff2a8;
+  font-weight: 900;
+}
+
+/* Academic Plan selected dark panel begins after node */
+
+.nav-sub-link-academic-plan.nav-link-active::after {
+  content: '';
+  display: block;
+  top: 2px;
+  right: 6px;
+  bottom: 2px;
+  left: 39px;
+  height: auto;
+  border: 2px solid #f4b400;
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 76%,
+      rgba(36, 91, 255, 0.22) 77%,
+      rgba(36, 91, 255, 0.22) 79%,
+      transparent 80%,
+      transparent 84%,
+      rgba(0, 168, 255, 0.16) 85%,
+      rgba(0, 168, 255, 0.16) 87%,
+      transparent 88%
+    ),
+    linear-gradient(
+      180deg,
+      #0b2447 0%,
+      #071a33 52%,
+      #041120 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.09),
+    0 0 4px
+      rgba(244, 180, 0, 0.42),
+    0 0 7px
+      rgba(0, 217, 255, 0.18);
+  animation:
+    sidebar-selected-panel-surge
+    1.6s
+    ease-in-out
+    infinite;
+}
+
+/* Academic Plan selected node */
+
+.nav-sub-link-academic-plan.nav-link-active
+  .nav-sub-item-dot {
+  left: 29px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #f4b400;
+  background: #fff7b2;
+  box-shadow:
+    0 0 3px #55f4ff,
+    0 0 6px rgba(0, 217, 255, 0.88),
+    0 0 9px rgba(0, 109, 255, 0.42);
+}
+
+/* ACADEMIC PLAN (click here) */
+
+.nav-sub-link-academic-plan
+  > span:last-child::after {
+  content: ' (click here)';
+  color: #52677b;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: lowercase;
+}
+
+.nav-sub-link-academic-plan.nav-link-active
+  > span:last-child::after {
+  color: #ffd54a;
+}
+
+/* ---------------------------------------------------------
+   ACADEMICS MAIN TRUNK
+   Runs from Academic Plan through course groups.
+   --------------------------------------------------------- */
+
+.courses-status-panel::before {
+  background:
+    linear-gradient(
+      180deg,
+      #31577a 0%,
+      #31577a 31%,
+      #006dff 40%,
+      #00d9ff 47%,
+      #55f4ff 51%,
+      #00d9ff 56%,
+      #006dff 63%,
+      #31577a 72%,
+      #31577a 100%
+    );
+  background-size: 100% 300%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.32);
+  animation:
+    sidebar-electric-trunk
+    3.45s
+    linear
+    infinite;
+  animation-delay: -1.15s;
+}
+
+/* Each course subgroup has its own continuing trunk */
+
+.course-status-tree::before {
+  background:
+    linear-gradient(
+      180deg,
+      #31577a 0%,
+      #31577a 30%,
+      #006dff 40%,
+      #00d9ff 47%,
+      #55f4ff 51%,
+      #00d9ff 56%,
+      #006dff 64%,
+      #31577a 74%,
+      #31577a 100%
+    );
+  background-size: 100% 280%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.3);
+  animation:
+    sidebar-electric-trunk
+    3.45s
+    linear
+    infinite;
+  animation-delay: -1.15s;
+}
+
+/* ---------------------------------------------------------
+   COURSE BRANCHES
+   Status headers remain unchanged.
+   Only course branches receive the electrical movement.
+   --------------------------------------------------------- */
+
+.course-status-link::before {
+  background:
+    linear-gradient(
+      90deg,
+      #31577a 0%,
+      #31577a 28%,
+      #006dff 38%,
+      #00d9ff 48%,
+      #55f4ff 53%,
+      #00d9ff 59%,
+      #006dff 68%,
+      #31577a 80%,
+      #31577a 100%
+    );
+  background-size: 260% 100%;
+  box-shadow:
+    0 0 2px rgba(0, 217, 255, 0.26);
+  animation:
+    sidebar-electric-branch
+    2.35s
+    ease-in-out
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   SELECTED COURSE
+   ACTIVE / PENDING / COMPLETED headers remain untouched.
+   --------------------------------------------------------- */
+
+.course-status-link {
+  isolation: isolate;
+}
+
+.course-status-link-active {
+  color: #fff2a8;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 900;
+}
+
+/* Dark futuristic selected course box */
+
+.course-status-link-active::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 1px;
+  right: 2px;
+  bottom: 1px;
+  left: 23px;
+  border: 2px solid #f4b400;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 0%,
+      transparent 76%,
+      rgba(36, 91, 255, 0.2) 77%,
+      rgba(36, 91, 255, 0.2) 79%,
+      transparent 80%,
+      transparent 85%,
+      rgba(0, 168, 255, 0.14) 86%,
+      rgba(0, 168, 255, 0.14) 88%,
+      transparent 89%
+    ),
+    linear-gradient(
+      180deg,
+      #0b2447 0%,
+      #071a33 52%,
+      #041120 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.08),
+    0 0 4px
+      rgba(244, 180, 0, 0.38),
+    0 0 6px
+      rgba(0, 217, 255, 0.18);
+  pointer-events: none;
+  animation:
+    sidebar-selected-panel-surge
+    1.6s
+    ease-in-out
+    infinite;
+}
+
+/* Keep course code above selected panel */
+
+.course-status-link-active
+  > span {
+  position: relative;
+  z-index: 3;
+}
+
+.course-status-link-active
+  > span:last-child {
+  color: #fff2a8;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.82);
+}
+
+/* Selected course node */
+
+.course-status-link-active
+  .course-status-dot {
+  z-index: 4;
+  border: 2px solid #f4b400;
+  background: #fff7b2;
+  box-shadow:
+    0 0 3px #55f4ff,
+    0 0 6px rgba(0, 217, 255, 0.88),
+    0 0 9px rgba(0, 109, 255, 0.4);
+}
+
+/* Stronger cyan connection for selected course */
+
+.course-status-link-active::before {
+  z-index: 2;
+  background:
+    linear-gradient(
+      90deg,
+      #006dff 0%,
+      #00d9ff 38%,
+      #55f4ff 52%,
+      #00d9ff 68%,
+      #006dff 100%
+    );
+  background-size: 240% 100%;
+  box-shadow:
+    0 0 3px rgba(0, 217, 255, 0.9);
+  animation:
+    sidebar-electric-branch
+    1.45s
+    ease-in-out
+    infinite;
+}
+
+/* ---------------------------------------------------------
+   ANIMATIONS
+   --------------------------------------------------------- */
+
+@keyframes sidebar-electric-trunk {
+  0% {
+    background-position:
+      0 -150%;
+  }
+
+  100% {
+    background-position:
+      0 150%;
+  }
+}
+
+@keyframes sidebar-electric-branch {
+  0% {
+    background-position:
+      120% 0;
+  }
+
+  50% {
+    background-position:
+      -20% 0;
+  }
+
+  100% {
+    background-position:
+      120% 0;
+  }
+}
+
+@keyframes sidebar-section-source-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    box-shadow:
+      0 0 3px #55f4ff,
+      0 0 6px #00d9ff,
+      0 0 9px rgba(0, 109, 255, 0.58);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 5px #ffffff,
+      0 0 9px #55f4ff,
+      0 0 14px #00d9ff,
+      0 0 18px rgba(0, 109, 255, 0.72);
+  }
+}
+
+@keyframes sidebar-selected-panel-surge {
+  0%,
+  100% {
+    border-color: #f4b400;
+    box-shadow:
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.08),
+      0 0 3px
+        rgba(244, 180, 0, 0.34),
+      0 0 5px
+        rgba(0, 217, 255, 0.12);
+  }
+
+  50% {
+    border-color: #ffd54a;
+    box-shadow:
+      inset 0 1px 0
+        rgba(255, 255, 255, 0.12),
+      0 0 5px
+        rgba(255, 213, 74, 0.64),
+      0 0 9px
+        rgba(0, 217, 255, 0.42);
+  }
+}
+
+/* ---------------------------------------------------------
+   ACCESSIBILITY
+   --------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-section-header[aria-expanded='true']::after,
+  .nav-sub-link::before,
+  .nav-sub-item-dot::before,
+  .nav-sub-link.nav-link-active::after,
+  .courses-status-panel::before,
+  .course-status-tree::before,
+  .course-status-link::before,
+  .course-status-link-active::after {
+    animation: none;
+  }
+}
+
 .app-main {
   min-width: 0;
   min-height: 100vh;
