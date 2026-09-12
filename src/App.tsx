@@ -15274,25 +15274,25 @@ function FacilitatorPlannerPage({
     BETA_NU_OWNER_USER_ID
       .toLowerCase()
 
-  const selectedCloudFacilitatorAgenda =
+  const selectedMeetingFacilitatorUserId =
     selectedMeeting === undefined
-      ? undefined
-      : cloudFacilitatorAgendas?.find(
-        (agenda) =>
-          agenda.meetingId ===
-          selectedMeeting.id,
+      ? ''
+      : getFacilitatorAgendaOwner(
+        selectedMeeting,
+        contacts,
       )
+        .trim()
+        .toLowerCase()
+
+  const isSelectedMeetingFacilitator =
+    selectedMeetingFacilitatorUserId.length >
+      0 &&
+    selectedMeetingFacilitatorUserId ===
+      currentFacilitatorUserId
 
   const canEditSelectedMeetingAgenda =
     isFacilitatorPlannerAdmin ||
-    (
-      selectedCloudFacilitatorAgenda !==
-      undefined &&
-      selectedCloudFacilitatorAgenda.owner
-        .trim()
-        .toLowerCase() ===
-      currentFacilitatorUserId
-    )
+    isSelectedMeetingFacilitator
 
   const isFacilitatorPlanningInProgress =
     isBuildingAgenda ||
@@ -16982,15 +16982,7 @@ function FacilitatorPlannerPage({
       )
 
     if (
-      !isFacilitatorPlannerAdmin &&
-      (
-        existingCloudAgenda ===
-        undefined ||
-        existingCloudAgenda.owner
-          .trim()
-          .toLowerCase() !==
-        currentFacilitatorUserId
-      )
+      !canEditSelectedMeetingAgenda
     ) {
       setActionMessage(
         'You do not have permission to save this meeting agenda.',
@@ -17065,22 +17057,11 @@ function FacilitatorPlannerPage({
           existingCloudAgenda ===
           undefined
         ) {
-          if (
-            !isFacilitatorPlannerAdmin
-          ) {
-            throw new Error(
-              'Facilitator Planner cloud record was not initialized.',
-            )
-          }
-
           await db.facilitatorAgendas
             .put(
               createCloudFacilitatorAgendaRecord(
                 savedAgenda,
-                getFacilitatorAgendaOwner(
-                  selectedMeeting,
-                  contacts,
-                ),
+                selectedMeetingFacilitatorUserId,
               ),
             )
         } else {
