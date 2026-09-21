@@ -34290,7 +34290,8 @@ function CoursePage({
           behavior: 'auto',
         })
       }
-    }, [courseCode])
+    }
+  }, [courseCode])
 
   useEffect(() => {
     const assignmentsSection =
@@ -34313,6 +34314,18 @@ function CoursePage({
     ) {
       return undefined
     }
+
+    const measuredAssignmentsSection =
+      assignmentsSection
+
+    const measuredAssignmentsTable =
+      assignmentsTable
+
+    const measuredWebinarsSection =
+      webinarsSection
+
+    const measuredMeetingsSection =
+      meetingsSection
 
     const currentCourse =
       courses.find(
@@ -34338,12 +34351,12 @@ function CoursePage({
     function updateCourseAssignmentsCollapse():
       void {
       const webinarsHeight =
-        webinarsSection
+        measuredWebinarsSection
           .getBoundingClientRect()
           .height
 
       const meetingsHeight =
-        meetingsSection
+        measuredMeetingsSection
           .getBoundingClientRect()
           .height
 
@@ -34368,7 +34381,7 @@ function CoursePage({
       )
 
       setIsCourseAssignmentsOverflowing(
-        assignmentsSection.scrollHeight >
+        measuredAssignmentsSection.scrollHeight >
         roundedTargetHeight + 1,
       )
     }
@@ -34381,15 +34394,15 @@ function CoursePage({
       )
 
     resizeObserver.observe(
-      assignmentsTable,
+      measuredAssignmentsTable,
     )
 
     resizeObserver.observe(
-      webinarsSection,
+      measuredWebinarsSection,
     )
 
     resizeObserver.observe(
-      meetingsSection,
+      measuredMeetingsSection,
     )
 
     window.addEventListener(
