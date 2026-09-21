@@ -41201,7 +41201,7 @@ function CoursePage({
                 style={
                   isCourseAssignmentsExpanded
                     ? {
-                      right: '-12px',
+                      right: '0px',
                     }
                     : undefined
                 }
