@@ -41194,20 +41194,37 @@ function CoursePage({
               </table>
             </div>
 
-            {!isCourseAssignmentsExpanded &&
-              isCourseAssignmentsOverflowing ? (
+            {isCourseAssignmentsOverflowing ? (
               <button
                 type="button"
                 className="course-assignment-expand-button"
-                aria-label="Show all course assignments"
-                title="Show all course assignments"
+                style={
+                  isCourseAssignmentsExpanded
+                    ? {
+                      right: '-12px',
+                    }
+                    : undefined
+                }
+                aria-label={
+                  isCourseAssignmentsExpanded
+                    ? 'Collapse course assignments'
+                    : 'Show all course assignments'
+                }
+                title={
+                  isCourseAssignmentsExpanded
+                    ? 'Collapse course assignments'
+                    : 'Show all course assignments'
+                }
                 onClick={() => {
                   setIsCourseAssignmentsExpanded(
-                    true,
+                    (currentValue) =>
+                      !currentValue,
                   )
                 }}
               >
-                +
+                {isCourseAssignmentsExpanded
+                  ? '−'
+                  : '+'}
               </button>
             ) : null}
           </section>
