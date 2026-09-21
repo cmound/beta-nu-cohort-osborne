@@ -5028,6 +5028,314 @@
   line-height: 1.1;
 }
 
+/* =========================================================
+   Facilitator Planner Meeting Time Redesign
+   ========================================================= */
+
+.facilitator-planner-time-redesign {
+  margin-bottom: 9px;
+}
+
+.facilitator-planner-time-redesign > h2 {
+  margin: 0 0 8px;
+  color: #ffd200;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.facilitator-planner-time-zone-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.facilitator-planner-time-zone-panel {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 9px 11px 10px;
+  border: 1px solid #527a99;
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      #0b3159 0%,
+      #062344 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.08);
+}
+
+.facilitator-planner-time-zone-panel h3 {
+  margin: 0 0 9px;
+  color: #ffd200;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.facilitator-planner-time-input-row,
+.facilitator-planner-meeting-length-row {
+  display: grid;
+  grid-template-columns:
+    108px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.facilitator-planner-time-input-row {
+  margin-bottom: 6px;
+}
+
+.facilitator-planner-time-input-row > span,
+.facilitator-planner-meeting-length-row > strong {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.facilitator-planner-time-input-row select {
+  width: 100%;
+  height: 31px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  border: 1px solid #8fa6bb;
+  border-radius: 5px;
+  color: #061321;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.facilitator-planner-time-input-row select:focus {
+  outline: 2px solid #29a9ef;
+  outline-offset: 1px;
+}
+
+.facilitator-planner-time-input-row select:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.facilitator-planner-meeting-length-row {
+  margin-top: 3px;
+}
+
+.facilitator-planner-meeting-length-row > span {
+  min-height: 31px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid #c89214;
+  border-radius: 5px;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #fff7a8 0%,
+      #ffe866 52%,
+      #ffd84d 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.76),
+    inset 0 -2px 2px
+      rgba(138, 101, 0, 0.16);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.facilitator-planner-agenda-time-progress {
+  box-sizing: border-box;
+  padding: 10px 12px 11px;
+  border: 1px solid #a9b9ca;
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      180deg,
+      #0a3264 0%,
+      #072653 54%,
+      #051c40 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.09);
+}
+
+.facilitator-planner-agenda-time-progress h3 {
+  margin: 0 0 10px;
+  color: #ffd200;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.facilitator-planner-agenda-progress-row {
+  display: grid;
+  grid-template-columns:
+    105px minmax(0, 1fr) 105px;
+  align-items: center;
+  gap: 10px;
+}
+
+.facilitator-planner-agenda-progress-times {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.facilitator-planner-agenda-progress-times strong,
+.facilitator-planner-agenda-progress-times span {
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.facilitator-planner-agenda-progress-times-right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.facilitator-planner-agenda-progress-bar {
+  position: relative;
+  height: 10px;
+  overflow: visible;
+  border: 1px solid #526b86;
+  border-radius: 999px;
+  background: #72849a;
+  box-shadow:
+    inset 0 1px 2px
+      rgba(0, 0, 0, 0.35);
+}
+
+.facilitator-planner-agenda-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      #33efff 0%,
+      #00cde8 54%,
+      #009ab8 100%
+    );
+}
+
+.facilitator-planner-agenda-progress-fill-over {
+  background:
+    linear-gradient(
+      180deg,
+      #ff7774 0%,
+      #c62828 100%
+    );
+}
+
+.facilitator-planner-agenda-progress-marker {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid #64748b;
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #dbe2ea 100%
+    );
+  box-shadow:
+    0 2px 4px
+      rgba(0, 0, 0, 0.4);
+  transform:
+    translate(
+      -50%,
+      -50%
+    );
+}
+
+.facilitator-planner-agenda-progress-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.facilitator-planner-agenda-progress-summary > div {
+  min-width: 112px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 10px;
+  border: 1px solid #1879b9;
+  border-radius: 5px;
+  color: #ffffff;
+  background:
+    linear-gradient(
+      180deg,
+      #0b5a8f 0%,
+      #07446f 100%
+    );
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.facilitator-planner-agenda-progress-summary
+  > div
+  > span {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.facilitator-planner-agenda-progress-summary
+  > div
+  > strong {
+  color: #d6ff00;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.facilitator-planner-agenda-progress-summary
+  .facilitator-planner-agenda-progress-summary-warning {
+  border-color: #ef5350;
+  background: #8b1e1e;
+}
+
+.facilitator-planner-agenda-progress-summary
+  .facilitator-planner-agenda-progress-summary-warning
+  > strong {
+  color: #ffd200;
+}
+
+/* Old Facilitator Planner timing UI remains in App.tsx
+   temporarily for safe rollback, but is no longer displayed. */
+.facilitator-planner-time-cards,
+.facilitator-planner-time-track {
+  display: none;
+}
+
 .facilitator-planner-table-toolbar {
   display: flex;
   align-items: center;

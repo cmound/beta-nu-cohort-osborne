@@ -3833,70 +3833,80 @@ function parseCourseAssignmentDate(
     return null
   }
 
-  let month = 0
-  let day = 0
-  let year = startYear
-
   if (digits.length === 3) {
-    month =
+    const month =
       Number(
         digits.slice(0, 1),
       )
 
-    day =
+    const day =
       Number(
         digits.slice(1, 3),
       )
 
-    year = inferYear(month)
-  } else if (
-    digits.length === 4
-  ) {
-    month =
+    return createCourseAssignmentIsoDate(
+      inferYear(month),
+      month,
+      day,
+    )
+  }
+
+  if (digits.length === 4) {
+    const month =
       Number(
         digits.slice(0, 2),
       )
 
-    day =
+    const day =
       Number(
         digits.slice(2, 4),
       )
 
-    year = inferYear(month)
-  } else if (
-    digits.length === 6
-  ) {
-    month =
+    return createCourseAssignmentIsoDate(
+      inferYear(month),
+      month,
+      day,
+    )
+  }
+
+  if (digits.length === 6) {
+    const month =
       Number(
         digits.slice(0, 2),
       )
 
-    day =
+    const day =
       Number(
         digits.slice(2, 4),
       )
 
-    year =
+    const year =
       2000 +
       Number(
         digits.slice(4, 6),
       )
-  } else {
-    month =
-      Number(
-        digits.slice(0, 2),
-      )
 
-    day =
-      Number(
-        digits.slice(2, 4),
-      )
-
-    year =
-      Number(
-        digits.slice(4, 8),
-      )
+    return createCourseAssignmentIsoDate(
+      year,
+      month,
+      day,
+    )
   }
+
+  const month =
+    Number(
+      digits.slice(0, 2),
+    )
+
+  const day =
+    Number(
+      digits.slice(2, 4),
+    )
+
+  const year =
+    Number(
+      digits.slice(4, 8),
+    )
 
   return createCourseAssignmentIsoDate(
     year,
@@ -13046,10 +13056,18 @@ const FACILITATOR_MEETING_START_MINUTES =
   13 * 60 + 30
 
 const FACILITATOR_MEETING_LENGTH_MINUTES =
-  4 * 60
+  3 * 60
 
 const FACILITATOR_EASTERN_OFFSET_MINUTES =
   3 * 60
+
+const FACILITATOR_TIME_OPTIONS:
+  readonly number[] =
+  Array.from(
+    { length: 96 },
+    (_value, index) =>
+      index * 15,
+  )
 
 const FACILITATOR_ZOOM_URL =
   'https://umassglobal.zoom.us/my/drcmo'
@@ -13816,6 +13834,127 @@ function formatFacilitatorClockTime(
   )
 }
 
+function normalizeFacilitatorClockMinutes(
+  totalMinutes: number,
+): number {
+  return (
+    (
+      totalMinutes %
+      1440
+    ) +
+    1440
+  ) % 1440
+}
+
+function getFacilitatorMeetingLengthMinutes(
+  startMinutes: number,
+  endMinutes: number,
+): number {
+  const normalizedStart =
+    normalizeFacilitatorClockMinutes(
+      startMinutes,
+    )
+
+  const normalizedEnd =
+    normalizeFacilitatorClockMinutes(
+      endMinutes,
+    )
+
+  if (
+    normalizedEnd >=
+    normalizedStart
+  ) {
+    return (
+      normalizedEnd -
+      normalizedStart
+    )
+  }
+
+  return (
+    1440 -
+    normalizedStart +
+    normalizedEnd
+  )
+}
+
+function formatFacilitatorMeetingLength(
+  totalMinutes: number,
+): string {
+  const normalizedMinutes =
+    Math.max(
+      0,
+      Math.round(
+        totalMinutes,
+      ),
+    )
+
+  const hours =
+    Math.floor(
+      normalizedMinutes / 60,
+    )
+
+  const minutes =
+    normalizedMinutes % 60
+
+  const parts: string[] = []
+
+  if (hours > 0) {
+    parts.push(
+      `${hours} ${hours === 1
+        ? 'hour'
+        : 'hours'
+      }`,
+    )
+  }
+
+  if (
+    minutes > 0 ||
+    hours === 0
+  ) {
+    parts.push(
+      `${minutes} ${minutes === 1
+        ? 'minute'
+        : 'minutes'
+      }`,
+    )
+  }
+
+  return parts.join(', ')
+}
+
+function formatFacilitatorCompactDuration(
+  totalMinutes: number,
+): string {
+  const normalizedMinutes =
+    Math.max(
+      0,
+      Math.round(
+        totalMinutes,
+      ),
+    )
+
+  const hours =
+    Math.floor(
+      normalizedMinutes / 60,
+    )
+
+  const minutes =
+    normalizedMinutes % 60
+
+  if (hours === 0) {
+    return `${minutes} min`
+  }
+
+  if (minutes === 0) {
+    return `${hours} hr`
+  }
+
+  return (
+    `${hours} hr ` +
+    `${minutes} min`
+  )
+}
+
 function getFacilitatorTimeZoneAbbreviation(
   meetingDate: string,
   timeZone: 'America/Los_Angeles' |
@@ -13967,6 +14106,8 @@ function createFacilitatorAgendaTableCell(
 function createFacilitatorAgendaTable(
   agendaItems:
     readonly FacilitatorAgendaItemRecord[],
+  meetingStartMinutes: number,
+  meetingEndMinutes: number,
 ): Table {
   const populatedAgendaItems =
     agendaItems.filter(
@@ -13980,7 +14121,7 @@ function createFacilitatorAgendaTable(
     populatedAgendaItems.map(
       (item, itemIndex) => {
         const pacificMinutes =
-          FACILITATOR_MEETING_START_MINUTES +
+          meetingStartMinutes +
           populatedAgendaItems
             .slice(0, itemIndex)
             .reduce(
@@ -14108,8 +14249,7 @@ function createFacilitatorAgendaTable(
     )
 
   const meetingEndPacific =
-    FACILITATOR_MEETING_START_MINUTES +
-    FACILITATOR_MEETING_LENGTH_MINUTES
+    meetingEndMinutes
 
   const meetingEndEastern =
     meetingEndPacific +
@@ -14565,10 +14705,11 @@ function createFacilitatorAgendaDocument(
     readonly FacilitatorAgendaItemRecord[],
   housekeepingNotes: string,
   agendaHeaderImage: ArrayBuffer,
+  meetingStartMinutes: number,
+  meetingEndMinutes: number,
 ): Document {
   const meetingEndPacific =
-    FACILITATOR_MEETING_START_MINUTES +
-    FACILITATOR_MEETING_LENGTH_MINUTES
+    meetingEndMinutes
 
   const meetingEndEastern =
     meetingEndPacific +
@@ -14597,7 +14738,7 @@ function createFacilitatorAgendaDocument(
         }
 
         const pacificMinutes =
-          FACILITATOR_MEETING_START_MINUTES +
+          meetingStartMinutes +
           agendaItems
             .slice(0, itemIndex)
             .reduce(
@@ -14766,7 +14907,7 @@ function createFacilitatorAgendaDocument(
               new TextRun({
                 text:
                   `${formatFacilitatorClockTime(
-                    FACILITATOR_MEETING_START_MINUTES,
+                    meetingStartMinutes,
                     true,
                   )} – ` +
                   `${formatFacilitatorClockTime(
@@ -14774,7 +14915,7 @@ function createFacilitatorAgendaDocument(
                     true,
                   )} (Pacific) / ` +
                   `${formatFacilitatorClockTime(
-                    FACILITATOR_MEETING_START_MINUTES +
+                    meetingStartMinutes +
                     FACILITATOR_EASTERN_OFFSET_MINUTES,
                     true,
                   )} - ` +
@@ -14864,6 +15005,8 @@ function createFacilitatorAgendaDocument(
           }),
           createFacilitatorAgendaTable(
             agendaItems,
+            meetingStartMinutes,
+            meetingEndMinutes,
           ),
           new Paragraph({
             pageBreakBefore: true,
@@ -15002,6 +15145,13 @@ async function createFacilitatorAgendaBlob(
   agendaItems:
     readonly FacilitatorAgendaItemRecord[],
   housekeepingNotes: string,
+  meetingStartMinutes:
+    number =
+    FACILITATOR_MEETING_START_MINUTES,
+  meetingEndMinutes:
+    number =
+    FACILITATOR_MEETING_START_MINUTES +
+    FACILITATOR_MEETING_LENGTH_MINUTES,
 ): Promise<Blob> {
   const agendaHeaderImage =
     await loadFacilitatorAgendaHeaderImage()
@@ -15012,6 +15162,8 @@ async function createFacilitatorAgendaBlob(
       agendaItems,
       housekeepingNotes,
       agendaHeaderImage,
+      meetingStartMinutes,
+      meetingEndMinutes,
     ),
   )
 }
@@ -15131,6 +15283,21 @@ function FacilitatorPlannerPage({
 
   const [selectedMeetingId, setSelectedMeetingId] =
     useState(initialMeetingId)
+
+  const [
+    meetingStartMinutes,
+    setMeetingStartMinutes,
+  ] = useState(
+    FACILITATOR_MEETING_START_MINUTES,
+  )
+
+  const [
+    meetingEndMinutes,
+    setMeetingEndMinutes,
+  ] = useState(
+    FACILITATOR_MEETING_START_MINUTES +
+    FACILITATOR_MEETING_LENGTH_MINUTES,
+  )
 
   const [agendaStatus, setAgendaStatus] =
     useState<FacilitatorAgendaStatus>(
@@ -15372,24 +15539,36 @@ function FacilitatorPlannerPage({
       0,
     )
 
+  const meetingLengthMinutes =
+    getFacilitatorMeetingLengthMinutes(
+      meetingStartMinutes,
+      meetingEndMinutes,
+    )
+
   const remainingMinutes =
-    FACILITATOR_MEETING_LENGTH_MINUTES -
+    meetingLengthMinutes -
     plannedMinutes
 
   const plannedPercent =
-    Math.min(
-      100,
-      Math.max(
-        0,
-        (
-          plannedMinutes /
-          FACILITATOR_MEETING_LENGTH_MINUTES
-        ) * 100,
-      ),
-    )
+    meetingLengthMinutes <= 0
+      ? (
+        plannedMinutes > 0
+          ? 100
+          : 0
+      )
+      : Math.min(
+        100,
+        Math.max(
+          0,
+          (
+            plannedMinutes /
+            meetingLengthMinutes
+          ) * 100,
+        ),
+      )
 
   const plannedFinishMinutes =
-    FACILITATOR_MEETING_START_MINUTES +
+    meetingStartMinutes +
     plannedMinutes
 
   const savedAgendaRows =
@@ -15595,6 +15774,8 @@ function FacilitatorPlannerPage({
           selectedMeeting,
           agendaItems,
           housekeepingNotes,
+          meetingStartMinutes,
+          meetingEndMinutes,
         )
           .then(
             async (blob) => {
@@ -15645,6 +15826,8 @@ function FacilitatorPlannerPage({
   }, [
     agendaItems,
     housekeepingNotes,
+    meetingEndMinutes,
+    meetingStartMinutes,
     selectedMeeting,
   ])
 
@@ -15862,6 +16045,15 @@ function FacilitatorPlannerPage({
 
     setSelectedAgendaItemId(
       nextItems[0]?.id ?? null,
+    )
+
+    setMeetingStartMinutes(
+      FACILITATOR_MEETING_START_MINUTES,
+    )
+
+    setMeetingEndMinutes(
+      FACILITATOR_MEETING_START_MINUTES +
+      FACILITATOR_MEETING_LENGTH_MINUTES,
     )
 
     setActionMessage('')
@@ -17171,6 +17363,8 @@ function FacilitatorPlannerPage({
           selectedMeeting,
           agendaItems,
           housekeepingNotes,
+          meetingStartMinutes,
+          meetingEndMinutes,
         )
 
       downloadFacilitatorAgendaBlob(
@@ -17408,12 +17602,11 @@ function FacilitatorPlannerPage({
 
             <strong>
               {formatFacilitatorClockTime(
-                FACILITATOR_MEETING_START_MINUTES,
+                meetingStartMinutes,
               )}
               {' - '}
               {formatFacilitatorClockTime(
-                FACILITATOR_MEETING_START_MINUTES +
-                FACILITATOR_MEETING_LENGTH_MINUTES,
+                meetingEndMinutes,
               )}
               {' '}
               {pacificZone}
@@ -17425,13 +17618,12 @@ function FacilitatorPlannerPage({
 
             <strong>
               {formatFacilitatorClockTime(
-                FACILITATOR_MEETING_START_MINUTES +
+                meetingStartMinutes +
                 FACILITATOR_EASTERN_OFFSET_MINUTES,
               )}
               {' - '}
               {formatFacilitatorClockTime(
-                FACILITATOR_MEETING_START_MINUTES +
-                FACILITATOR_MEETING_LENGTH_MINUTES +
+                meetingEndMinutes +
                 FACILITATOR_EASTERN_OFFSET_MINUTES,
               )}
               {' '}
@@ -17738,6 +17930,327 @@ function FacilitatorPlannerPage({
               </div>
             </div>
           ) : null}
+
+          <div className="facilitator-planner-time-redesign">
+            <h2>
+              MEETING TIME PLANNER
+            </h2>
+
+            <div className="facilitator-planner-time-zone-grid">
+              <section className="facilitator-planner-time-zone-panel">
+                <h3>
+                  PACIFIC TIME ({pacificZone})
+                </h3>
+
+                <label className="facilitator-planner-time-input-row">
+                  <span>
+                    Start Time:
+                  </span>
+
+                  <select
+                    value={
+                      meetingStartMinutes
+                    }
+                    disabled={
+                      !canEditSelectedMeetingAgenda
+                    }
+                    onChange={(event) => {
+                      setMeetingStartMinutes(
+                        Number(
+                          event.target.value,
+                        ),
+                      )
+                    }}
+                  >
+                    {FACILITATOR_TIME_OPTIONS.map(
+                      (timeMinutes) => (
+                        <option
+                          key={
+                            `pacific-start-${timeMinutes}`
+                          }
+                          value={
+                            timeMinutes
+                          }
+                        >
+                          {formatFacilitatorClockTime(
+                            timeMinutes,
+                          )}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+
+                <label className="facilitator-planner-time-input-row">
+                  <span>
+                    End Time:
+                  </span>
+
+                  <select
+                    value={
+                      meetingEndMinutes
+                    }
+                    disabled={
+                      !canEditSelectedMeetingAgenda
+                    }
+                    onChange={(event) => {
+                      setMeetingEndMinutes(
+                        Number(
+                          event.target.value,
+                        ),
+                      )
+                    }}
+                  >
+                    {FACILITATOR_TIME_OPTIONS.map(
+                      (timeMinutes) => (
+                        <option
+                          key={
+                            `pacific-end-${timeMinutes}`
+                          }
+                          value={
+                            timeMinutes
+                          }
+                        >
+                          {formatFacilitatorClockTime(
+                            timeMinutes,
+                          )}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+
+                <div className="facilitator-planner-meeting-length-row">
+                  <strong>
+                    Meeting Length:
+                  </strong>
+
+                  <span>
+                    {formatFacilitatorMeetingLength(
+                      meetingLengthMinutes,
+                    )}
+                  </span>
+                </div>
+              </section>
+
+              <section className="facilitator-planner-time-zone-panel">
+                <h3>
+                  EASTERN TIME ({easternZone})
+                </h3>
+
+                <label className="facilitator-planner-time-input-row">
+                  <span>
+                    Start Time:
+                  </span>
+
+                  <select
+                    value={
+                      normalizeFacilitatorClockMinutes(
+                        meetingStartMinutes +
+                        FACILITATOR_EASTERN_OFFSET_MINUTES,
+                      )
+                    }
+                    disabled={
+                      !canEditSelectedMeetingAgenda
+                    }
+                    onChange={(event) => {
+                      setMeetingStartMinutes(
+                        normalizeFacilitatorClockMinutes(
+                          Number(
+                            event.target.value,
+                          ) -
+                          FACILITATOR_EASTERN_OFFSET_MINUTES,
+                        ),
+                      )
+                    }}
+                  >
+                    {FACILITATOR_TIME_OPTIONS.map(
+                      (timeMinutes) => (
+                        <option
+                          key={
+                            `eastern-start-${timeMinutes}`
+                          }
+                          value={
+                            timeMinutes
+                          }
+                        >
+                          {formatFacilitatorClockTime(
+                            timeMinutes,
+                          )}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+
+                <label className="facilitator-planner-time-input-row">
+                  <span>
+                    End Time:
+                  </span>
+
+                  <select
+                    value={
+                      normalizeFacilitatorClockMinutes(
+                        meetingEndMinutes +
+                        FACILITATOR_EASTERN_OFFSET_MINUTES,
+                      )
+                    }
+                    disabled={
+                      !canEditSelectedMeetingAgenda
+                    }
+                    onChange={(event) => {
+                      setMeetingEndMinutes(
+                        normalizeFacilitatorClockMinutes(
+                          Number(
+                            event.target.value,
+                          ) -
+                          FACILITATOR_EASTERN_OFFSET_MINUTES,
+                        ),
+                      )
+                    }}
+                  >
+                    {FACILITATOR_TIME_OPTIONS.map(
+                      (timeMinutes) => (
+                        <option
+                          key={
+                            `eastern-end-${timeMinutes}`
+                          }
+                          value={
+                            timeMinutes
+                          }
+                        >
+                          {formatFacilitatorClockTime(
+                            timeMinutes,
+                          )}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+
+                <div className="facilitator-planner-meeting-length-row">
+                  <strong>
+                    Meeting Length:
+                  </strong>
+
+                  <span>
+                    {formatFacilitatorMeetingLength(
+                      meetingLengthMinutes,
+                    )}
+                  </span>
+                </div>
+              </section>
+            </div>
+
+            <section className="facilitator-planner-agenda-time-progress">
+              <h3>
+                AGENDA TIME PROGRESS
+              </h3>
+
+              <div className="facilitator-planner-agenda-progress-row">
+                <div className="facilitator-planner-agenda-progress-times">
+                  <strong>
+                    {formatFacilitatorClockTime(
+                      meetingStartMinutes,
+                    )}{' '}
+                    ({pacificZone})
+                  </strong>
+
+                  <span>
+                    {formatFacilitatorClockTime(
+                      meetingStartMinutes +
+                      FACILITATOR_EASTERN_OFFSET_MINUTES,
+                    )}{' '}
+                    ({easternZone})
+                  </span>
+                </div>
+
+                <div className="facilitator-planner-agenda-progress-bar">
+                  <span
+                    className={
+                      remainingMinutes < 0
+                        ? 'facilitator-planner-agenda-progress-fill facilitator-planner-agenda-progress-fill-over'
+                        : 'facilitator-planner-agenda-progress-fill'
+                    }
+                    style={{
+                      width:
+                        `${plannedPercent}%`,
+                    }}
+                  />
+
+                  <span
+                    className="facilitator-planner-agenda-progress-marker"
+                    style={{
+                      left:
+                        `${plannedPercent}%`,
+                    }}
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <div className="facilitator-planner-agenda-progress-times facilitator-planner-agenda-progress-times-right">
+                  <strong>
+                    {formatFacilitatorClockTime(
+                      meetingEndMinutes,
+                    )}{' '}
+                    ({pacificZone})
+                  </strong>
+
+                  <span>
+                    {formatFacilitatorClockTime(
+                      meetingEndMinutes +
+                      FACILITATOR_EASTERN_OFFSET_MINUTES,
+                    )}{' '}
+                    ({easternZone})
+                  </span>
+                </div>
+              </div>
+
+              <div className="facilitator-planner-agenda-progress-summary">
+                <div>
+                  <span>
+                    Planned:
+                  </span>
+
+                  <strong>
+                    {formatFacilitatorCompactDuration(
+                      plannedMinutes,
+                    )}
+                  </strong>
+                </div>
+
+                <div
+                  className={
+                    remainingMinutes < 0
+                      ? 'facilitator-planner-agenda-progress-summary-warning'
+                      : ''
+                  }
+                >
+                  <span>
+                    {remainingMinutes < 0
+                      ? 'Over:'
+                      : 'Remaining:'}
+                  </span>
+
+                  <strong>
+                    {Math.abs(
+                      remainingMinutes,
+                    )} min
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Agenda Items:
+                  </span>
+
+                  <strong>
+                    {agendaItemCount}
+                  </strong>
+                </div>
+              </div>
+            </section>
+          </div>
 
           <div className="facilitator-planner-time-cards">
             <div>
@@ -18209,7 +18722,7 @@ function FacilitatorPlannerPage({
                     itemIndex,
                   ) => {
                     const pacificMinutes =
-                      FACILITATOR_MEETING_START_MINUTES +
+                      meetingStartMinutes +
                       agendaItems
                         .slice(
                           0,
