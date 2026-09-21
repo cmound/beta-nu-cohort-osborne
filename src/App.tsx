@@ -15286,9 +15286,9 @@ function FacilitatorPlannerPage({
 
   const isSelectedMeetingFacilitator =
     selectedMeetingFacilitatorUserId.length >
-      0 &&
+    0 &&
     selectedMeetingFacilitatorUserId ===
-      currentFacilitatorUserId
+    currentFacilitatorUserId
 
   const canEditSelectedMeetingAgenda =
     isFacilitatorPlannerAdmin ||
@@ -33531,6 +33531,44 @@ function CoursePage({
       null,
     )
 
+  const courseAssignmentsSectionRef =
+    useRef<HTMLElement | null>(
+      null,
+    )
+
+  const courseAssignmentsTableRef =
+    useRef<HTMLTableElement | null>(
+      null,
+    )
+
+  const courseWebinarsSectionRef =
+    useRef<HTMLElement | null>(
+      null,
+    )
+
+  const courseMeetingsSectionRef =
+    useRef<HTMLElement | null>(
+      null,
+    )
+
+  const [
+    isCourseAssignmentsExpanded,
+    setIsCourseAssignmentsExpanded,
+  ] = useState(false)
+
+  const [
+    collapsedCourseAssignmentsHeight,
+    setCollapsedCourseAssignmentsHeight,
+  ] =
+    useState<number | null>(
+      null,
+    )
+
+  const [
+    isCourseAssignmentsOverflowing,
+    setIsCourseAssignmentsOverflowing,
+  ] = useState(false)
+
   const assignmentUploadInputRef =
     useRef<HTMLInputElement | null>(
       null,
@@ -34131,6 +34169,18 @@ function CoursePage({
       false,
     )
 
+    setIsCourseAssignmentsExpanded(
+      false,
+    )
+
+    setCollapsedCourseAssignmentsHeight(
+      null,
+    )
+
+    setIsCourseAssignmentsOverflowing(
+      false,
+    )
+
     setAssignmentForms([
       createEmptyCourseAssignmentFormState(),
     ])
@@ -34240,8 +34290,125 @@ function CoursePage({
           behavior: 'auto',
         })
       }
+    }, [courseCode])
+
+  useEffect(() => {
+    const assignmentsSection =
+      courseAssignmentsSectionRef.current
+
+    const assignmentsTable =
+      courseAssignmentsTableRef.current
+
+    const webinarsSection =
+      courseWebinarsSectionRef.current
+
+    const meetingsSection =
+      courseMeetingsSectionRef.current
+
+    if (
+      assignmentsSection === null ||
+      assignmentsTable === null ||
+      webinarsSection === null ||
+      meetingsSection === null
+    ) {
+      return undefined
     }
-  }, [courseCode])
+
+    const currentCourse =
+      courses.find(
+        (courseItem) =>
+          courseItem.slug ===
+          courseCode,
+      )
+
+    const currentCourseRecord =
+      academicPlan.find(
+        (record) =>
+          record.code ===
+          currentCourse?.code,
+      )
+
+    const currentCourseIsSixteenWeeks =
+      currentCourseRecord
+        ?.length
+        .toLowerCase()
+        .startsWith('16') ??
+      false
+
+    function updateCourseAssignmentsCollapse():
+      void {
+      const webinarsHeight =
+        webinarsSection
+          .getBoundingClientRect()
+          .height
+
+      const meetingsHeight =
+        meetingsSection
+          .getBoundingClientRect()
+          .height
+
+      const targetHeight =
+        currentCourseIsSixteenWeeks
+          ? meetingsHeight
+          : Math.max(
+            webinarsHeight,
+            meetingsHeight,
+          )
+
+      const roundedTargetHeight =
+        Math.max(
+          0,
+          Math.round(
+            targetHeight,
+          ),
+        )
+
+      setCollapsedCourseAssignmentsHeight(
+        roundedTargetHeight,
+      )
+
+      setIsCourseAssignmentsOverflowing(
+        assignmentsSection.scrollHeight >
+        roundedTargetHeight + 1,
+      )
+    }
+
+    updateCourseAssignmentsCollapse()
+
+    const resizeObserver =
+      new ResizeObserver(
+        updateCourseAssignmentsCollapse,
+      )
+
+    resizeObserver.observe(
+      assignmentsTable,
+    )
+
+    resizeObserver.observe(
+      webinarsSection,
+    )
+
+    resizeObserver.observe(
+      meetingsSection,
+    )
+
+    window.addEventListener(
+      'resize',
+      updateCourseAssignmentsCollapse,
+    )
+
+    return () => {
+      resizeObserver.disconnect()
+
+      window.removeEventListener(
+        'resize',
+        updateCourseAssignmentsCollapse,
+      )
+    }
+  }, [
+    academicPlan,
+    courseCode,
+  ])
 
   const course =
     courses.find(
@@ -39197,6 +39364,10 @@ function CoursePage({
       )
     }
 
+    setIsCourseAssignmentsExpanded(
+      true,
+    )
+
     closeAssignmentModal()
   }
 
@@ -40355,7 +40526,26 @@ function CoursePage({
         </div>
 
         <div className="course-workspace-operations-grid">
-          <section className="course-workspace-section course-workspace-assignments-section">
+          <section
+            ref={
+              courseAssignmentsSectionRef
+            }
+            className={
+              isCourseAssignmentsExpanded
+                ? 'course-workspace-section course-workspace-assignments-section course-workspace-assignments-section-expanded'
+                : 'course-workspace-section course-workspace-assignments-section course-workspace-assignments-section-collapsed'
+            }
+            style={
+              !isCourseAssignmentsExpanded &&
+                collapsedCourseAssignmentsHeight !==
+                null
+                ? {
+                  maxHeight:
+                    `${collapsedCourseAssignmentsHeight}px`,
+                }
+                : undefined
+            }
+          >
             <header className="course-workspace-section-header">
               <div>
                 {isSixteenWeekCourse ? (
@@ -40456,6 +40646,9 @@ function CoursePage({
 
             <div className="course-workspace-table-frame">
               <table
+                ref={
+                  courseAssignmentsTableRef
+                }
                 className={
                   getCourseResizeTableClassName(
                     'course-workspace-table course-assignment-table',
@@ -40987,6 +41180,23 @@ function CoursePage({
                 </tbody>
               </table>
             </div>
+
+            {!isCourseAssignmentsExpanded &&
+              isCourseAssignmentsOverflowing ? (
+              <button
+                type="button"
+                className="course-assignment-expand-button"
+                aria-label="Show all course assignments"
+                title="Show all course assignments"
+                onClick={() => {
+                  setIsCourseAssignmentsExpanded(
+                    true,
+                  )
+                }}
+              >
+                +
+              </button>
+            ) : null}
           </section>
 
           {isAssignmentModalOpen ? (
@@ -41387,7 +41597,12 @@ function CoursePage({
             </div>
           ) : null}
 
-          <section className="course-workspace-section course-workspace-webinars-section">
+          <section
+            ref={
+              courseWebinarsSectionRef
+            }
+            className="course-workspace-section course-workspace-webinars-section"
+          >
             <header className="course-workspace-section-header">
               <div>
                 <span className="course-workspace-section-eyebrow">
@@ -42082,7 +42297,12 @@ function CoursePage({
             </div>
           </section>
 
-          <section className="course-workspace-section course-workspace-meetings-section">
+          <section
+            ref={
+              courseMeetingsSectionRef
+            }
+            className="course-workspace-section course-workspace-meetings-section"
+          >
             <header className="course-workspace-section-header">
               <div>
                 {isSixteenWeekCourse ? (
@@ -54026,8 +54246,8 @@ function App() {
           {db.cloud.currentUserId
             .trim()
             .toLowerCase() ===
-          BETA_NU_OWNER_USER_ID
-            .toLowerCase() ? (
+            BETA_NU_OWNER_USER_ID
+              .toLowerCase() ? (
             <div
               className="cohort-presence-bar"
               aria-label="Cohort online presence"

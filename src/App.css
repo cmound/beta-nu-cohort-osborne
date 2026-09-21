@@ -20098,6 +20098,66 @@ tbody td {
   margin-bottom: 12px;
 }
 
+/* Course Assignments collapse / expand behavior */
+.course-workspace-assignments-section {
+  position: relative;
+}
+
+.course-workspace-assignments-section-collapsed {
+  overflow: hidden;
+}
+
+.course-workspace-assignments-section-expanded {
+  max-height: none !important;
+}
+
+/* Local-only button used to reveal hidden assignment rows */
+.course-assignment-expand-button {
+  position: absolute;
+  z-index: 8;
+  right: 3px;
+  bottom: 3px;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #9c700c;
+  border-radius: 4px;
+  color: #061321;
+  background:
+    linear-gradient(
+      180deg,
+      #ffe477 0%,
+      #f2b632 52%,
+      #c89214 100%
+    );
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.72),
+    inset 0 -2px 2px
+      rgba(100, 67, 0, 0.25),
+    0 2px 4px
+      rgba(0, 0, 0, 0.3);
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.course-assignment-expand-button:hover {
+  border-color: #ffd200;
+  filter: brightness(1.06);
+}
+
+.course-assignment-expand-button:focus-visible {
+  outline: 2px solid #005eb8;
+  outline-offset: 2px;
+}
+
 .course-workspace-operations-grid
   .course-workspace-section-header {
   align-items: flex-end;
