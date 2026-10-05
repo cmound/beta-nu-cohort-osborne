@@ -34044,6 +34044,38 @@ function CoursePage({
       null,
     )
 
+  const [
+    studentProgressSelection,
+    setStudentProgressSelection,
+  ] = useState<{
+    readonly courseCode: string
+    readonly contactId: string
+  } | null>(null)
+
+  const studentProgressDialogRef =
+    useRef<HTMLDialogElement | null>(null)
+
+  useEffect(() => {
+    const dialog =
+      studentProgressDialogRef.current
+
+    if (dialog === null) {
+      return
+    }
+
+    if (
+      studentProgressSelection !== null &&
+      studentProgressSelection.courseCode ===
+        (courseCode?.trim() ?? '')
+    ) {
+      if (!dialog.open) {
+        dialog.showModal()
+      }
+    } else if (dialog.open) {
+      dialog.close()
+    }
+  }, [studentProgressSelection, courseCode])
+
   const courseAssignmentsSectionRef =
     useRef<HTMLElement | null>(
       null,
@@ -34677,6 +34709,8 @@ function CoursePage({
         behavior: 'auto',
       })
     }
+
+    setStudentProgressSelection(null)
 
     setIsAssignmentModalOpen(
       false,
@@ -37435,6 +37469,23 @@ function CoursePage({
     )
   }
 
+  const selectedCourseProgressContact =
+    studentProgressSelection?.courseCode ===
+      (courseCode?.trim() ?? '')
+      ? courseProgressContacts.find(
+        (contact) =>
+          contact.id ===
+          studentProgressSelection?.contactId,
+      ) ?? null
+      : null
+
+  const selectedCourseProgressSummary =
+    selectedCourseProgressContact === null
+      ? null
+      : getStudentCourseProgress(
+        selectedCourseProgressContact.id,
+      )
+
   const courseTableLayout =
     courseTableLayouts[
     courseSlug
@@ -37482,7 +37533,7 @@ function CoursePage({
 
   const orderedProgressAssignments =
     orderCourseRecordsById(
-      workspace.assignments,
+      courseDisplayAssignments,
       courseTableLayout
         .progressAssignmentOrder,
     )
@@ -38357,33 +38408,6 @@ function CoursePage({
             100,
           ),
     }
-  }
-
-  function scrollCourseProgressTable(
-    direction: 'left' | 'right',
-  ): void {
-    const tableFrame =
-      courseProgressTableFrameRef.current
-
-    if (tableFrame === null) {
-      return
-    }
-
-    const scrollDistance =
-      Math.max(
-        420,
-        Math.round(
-          tableFrame.clientWidth * 0.55,
-        ),
-      )
-
-    tableFrame.scrollBy({
-      left:
-        direction === 'left'
-          ? -scrollDistance
-          : scrollDistance,
-      behavior: 'smooth',
-    })
   }
 
   function updateCourseWorkspace(
@@ -43039,47 +43063,18 @@ function CoursePage({
         </div>
       </div>
 
-      <section className="course-workspace-section">
+      <section className="course-workspace-section course-progress-compact-section">
         <header className="course-workspace-section-header course-progress-section-header">
           <div>
             <h2>
               Cohort Assignment Progress
             </h2>
+            <span className="course-progress-course-label">
+              {courseRecord.code} · {courseRecord.className}
+            </span>
           </div>
 
           <div className="course-progress-scroll-controls">
-            <button
-              type="button"
-              className="course-progress-scroll-button"
-              onClick={() =>
-                scrollCourseProgressTable(
-                  'left',
-                )
-              }
-            >
-              <span aria-hidden="true">
-                ◀
-              </span>
-
-              Scroll Left
-            </button>
-
-            <button
-              type="button"
-              className="course-progress-scroll-button"
-              onClick={() =>
-                scrollCourseProgressTable(
-                  'right',
-                )
-              }
-            >
-              Scroll Right
-
-              <span aria-hidden="true">
-                ▶
-              </span>
-            </button>
-
             {waivedCourseContacts.length ===
               0 ? (
               <span className="course-progress-no-waivers-note">
@@ -43112,319 +43107,242 @@ function CoursePage({
         </header>
 
         <div
-          ref={
-            courseProgressTableFrameRef
-          }
-          className="course-progress-table-frame"
+          ref={courseProgressTableFrameRef}
+          className="course-progress-compact-frame"
+          tabIndex={0}
+          role="region"
+          aria-label="Cohort assignment progress table"
         >
-          <table
-            className={
-              getCourseResizeTableClassName(
-                'course-progress-table',
-                'progress',
-              )
-            }
-            style={
-              getCourseResizeTableStyle(
-                'progress',
-                workspace.assignments
-                  .length === 0
-                  ? 3
-                  : 2 +
-                  workspace.assignments
-                    .length,
-              )
-            }
-            onPointerDown={(
-              event,
-            ) => {
-              handleCourseResizableTablePointerDown(
-                event,
-                'progress',
-              )
-            }}
-          >
+          <table className="course-progress-compact-table">
+            <colgroup>
+              <col className="course-progress-code-col" />
+              <col className="course-progress-title-col" />
+              <col className="course-progress-date-col" />
+              {orderedProgressContacts.map((contact) => (
+                <col key={contact.id} />
+              ))}
+            </colgroup>
             <thead>
-              <tr
-                data-layout-row-id="header"
-                style={
-                  getCourseResizeRowStyle(
-                    'progress',
-                    'header',
-                  )
-                }
-              >
-                <th
-                  className="course-progress-student-column"
-                  style={
-                    getCourseResizeColumnStyle(
-                      'progress',
-                      0,
-                      workspace.assignments
-                        .length === 0
-                        ? 3
-                        : 2 +
-                        workspace.assignments
-                          .length,
-                    )
-                  }
-                >
-                  Student
-                </th>
-
-                <th
-                  className="course-progress-overall-column"
-                  style={
-                    getCourseResizeColumnStyle(
-                      'progress',
-                      1,
-                      workspace.assignments
-                        .length === 0
-                        ? 3
-                        : 2 +
-                        workspace.assignments
-                          .length,
-                    )
-                  }
-                >
-                  Overall Progress
-                </th>
-
-                {workspace.assignments.length ===
-                  0 ? (
-                  <th
-                    className="course-progress-assignment-column"
-                    style={
-                      getCourseResizeColumnStyle(
-                        'progress',
-                        2,
-                        3,
-                      )
-                    }
-                  >
-                    Assignments
+              <tr>
+                <th scope="col">ASN</th>
+                <th scope="col">Assignment Name</th>
+                <th scope="col">Due By</th>
+                {orderedProgressContacts.map((contact) => (
+                  <th scope="col" key={contact.id}>
+                    <button
+                      type="button"
+                      className="course-progress-student-open"
+                      onClick={() => {
+                        setStudentProgressSelection({
+                          courseCode: courseCode?.trim() ?? '',
+                          contactId: contact.id,
+                        })
+                      }}
+                      aria-haspopup="dialog"
+                      title={`View ${contact.name}'s assignments`}
+                    >
+                      {contact.name}
+                    </button>
                   </th>
-                ) : (
-                  courseDisplayAssignments.map(
-                    (
-                      assignment,
-                      assignmentIndex,
-                    ) => (
-                      <th
-                        className="course-progress-assignment-column"
-                        key={assignment.id}
-                        title={assignment.name}
-                        style={
-                          getCourseResizeColumnStyle(
-                            'progress',
-                            assignmentIndex +
-                            2,
-                            2 +
-                            workspace.assignments
-                              .length,
-                          )
-                        }
-                      >
-                        <strong className="course-progress-assignment-asn">
-                          {assignment.asn}
-                        </strong>
-
-                        <span className="course-progress-assignment-name">
-                          {assignment.name}
-                        </span>
-
-                        <small className="course-progress-assignment-due">
-                          Due:{' '}
-                          {formatCourseAssignmentDate(
-                            assignment.dueDate,
-                          )}
-                        </small>
-                      </th>
-                    ),
-                  )
-                )}
+                ))}
               </tr>
             </thead>
-
             <tbody>
-              {courseProgressContacts.map(
-                (contact) => {
-                  const summary =
-                    getStudentCourseProgress(
+              {orderedProgressAssignments.length === 0 ? (
+                <tr>
+                  <td colSpan={3 + orderedProgressContacts.length}>
+                    Add assignments above to begin tracking progress.
+                  </td>
+                </tr>
+              ) : orderedProgressAssignments.map((assignment) => (
+                <tr key={assignment.id}>
+                  <th scope="row">{assignment.asn}</th>
+                  <td className="course-progress-compact-name" title={assignment.name}>
+                    {assignment.name}
+                  </td>
+                  <td className="course-progress-compact-date">
+                    {formatCourseAssignmentDate(assignment.dueDate)}
+                  </td>
+                  {orderedProgressContacts.map((contact) => {
+                    const progressKey = getCourseProgressKey(
+                      courseSlug,
                       contact.id,
+                      assignment.id,
                     )
+                    const status = courseProgress[progressKey] ?? "Haven't Started"
+                    const canEditProgress = canEditCourseProgress(contact, progressKey)
+
+                    return (
+                      <td className="course-progress-compact-status" key={contact.id}>
+                        <button
+                          type="button"
+                          className={`course-progress-status-button ${getCourseProgressStatusClassName(status)}`}
+                          disabled={!canEditProgress}
+                          onClick={() => {
+                            updateCourseProgress(
+                              contact.id,
+                              assignment.id,
+                              getNextCourseProgressStatus(status),
+                            )
+                          }}
+                          title={canEditProgress
+                            ? 'Click to change progress status'
+                            : 'Read-only. You can only change your own assignment progress.'}
+                          aria-label={`${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. ${canEditProgress ? 'Click to change status.' : 'Read-only.'}`}
+                        >
+                          {status}
+                        </button>
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row" colSpan={3}>Overall Progress</th>
+                {orderedProgressContacts.map((contact) => {
+                  const summary = getStudentCourseProgress(contact.id)
 
                   return (
-                    <tr
-                      key={contact.id}
-                      data-layout-row-id={
-                        contact.id
-                      }
-                      style={
-                        getCourseResizeRowStyle(
-                          'progress',
-                          contact.id,
-                        )
-                      }
-                    >
-                      <td
-                        className="course-progress-student-name"
-                        style={
-                          getCourseResizeColumnStyle(
-                            'progress',
-                            0,
-                            2 +
-                            workspace.assignments
-                              .length,
-                          )
-                        }
-                      >
-                        {contact.name}
-                      </td>
-
-                      <td
-                        className="course-progress-overall-cell"
-                        style={
-                          getCourseResizeColumnStyle(
-                            'progress',
-                            1,
-                            2 +
-                            workspace.assignments
-                              .length,
-                          )
-                        }
-                      >
-                        <div className="course-progress-overall-summary">
-                          <strong>
-                            {summary.completed} /{' '}
-                            {summary.total}
-                          </strong>
-
-                          <span>
-                            {summary.percent}% Done
-                          </span>
-                        </div>
-
-                        <progress
-                          className="course-progress-overall-bar"
-                          value={summary.percent}
-                          max={100}
-                          aria-label={`${contact.name} overall assignment progress`}
-                        />
-                      </td>
-
-                      {workspace.assignments.length ===
-                        0 ? (
-                        <td className="course-progress-no-assignments">
-                          Add assignments above to
-                          begin tracking progress.
-                        </td>
-                      ) : (
-                        courseDisplayAssignments.map(
-                          (
-                            assignment,
-                            assignmentIndex,
-                          ) => {
-                            const progressKey =
-                              getCourseProgressKey(
-                                courseSlug,
-                                contact.id,
-                                assignment.id,
-                              )
-
-                            const status =
-                              courseProgress[
-                              progressKey
-                              ] ??
-                              "Haven't Started"
-
-                            const canEditProgress =
-                              canEditCourseProgress(
-                                contact,
-                                progressKey,
-                              )
-
-                            return (
-                              <td
-                                className="course-progress-status-cell"
-                                key={assignment.id}
-                                style={
-                                  getCourseResizeColumnStyle(
-                                    'progress',
-                                    assignmentIndex +
-                                    2,
-                                    2 +
-                                    workspace.assignments
-                                      .length,
-                                  )
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  className={`course-progress-status-button ${getCourseProgressStatusClassName(
-                                    status,
-                                  )}`}
-                                  disabled={
-                                    !canEditProgress
-                                  }
-                                  onClick={() =>
-                                    updateCourseProgress(
-                                      contact.id,
-                                      assignment.id,
-                                      getNextCourseProgressStatus(
-                                        status,
-                                      ),
-                                    )
-                                  }
-                                  title={
-                                    canEditProgress
-                                      ? 'Click to change progress status'
-                                      : 'Read-only. You can only change your own assignment progress.'
-                                  }
-                                  aria-label={
-                                    canEditProgress
-                                      ? `${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. Click to change status.`
-                                      : `${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. Read-only.`
-                                  }
-                                >
-                                  {status}
-                                </button>
-                              </td>
-                            )
-                          },
-                        )
-                      )}
-                    </tr>
+                    <td key={contact.id}>
+                      <strong>{summary.completed} / {summary.total}</strong>
+                      <span>{summary.percent}% Done</span>
+                      <progress
+                        className="course-progress-overall-bar"
+                        value={summary.percent}
+                        max={100}
+                        aria-label={`${contact.name} overall assignment progress`}
+                      />
+                    </td>
                   )
-                },
-              )}
-            </tbody>
+                })}
+              </tr>
+            </tfoot>
           </table>
         </div>
 
         <p className="course-progress-instruction">
-          {isCourseProgressAdmin ? (
-            <>
-              Click a student assignment cell to
-              cycle through Haven&apos;t Started,
-              In Progress, Done, and Help!.
-              Progress is shared through Dexie
-              Cloud.
-            </>
-          ) : currentCourseProgressContactId !==
-            null ? (
-            <>
-              Click your assignment cells to
-              update your progress. Other cohort
-              members&apos; progress is read-only.
-            </>
-          ) : (
-            <>
-              Assignment progress is read-only
-              for this account.
-            </>
-          )}
+          {isCourseProgressAdmin
+            ? "Click a status cell to cycle through Haven't Started, In Progress, Done, and Help!."
+            : currentCourseProgressContactId !== null
+              ? 'Click your assignment cells to update your progress. Other students are read-only.'
+              : 'Assignment progress is read-only for this account.'}
+          {' '}Click a student name to open their assignment window.
+          Opening a window affects only your browser; saved progress is shared.
         </p>
+
+        <dialog
+          ref={studentProgressDialogRef}
+          className="course-student-progress-dialog"
+          aria-labelledby="course-student-progress-title"
+          onCancel={() => setStudentProgressSelection(null)}
+          onClose={() => setStudentProgressSelection(null)}
+        >
+          {selectedCourseProgressContact !== null &&
+            selectedCourseProgressSummary !== null ? (
+            <>
+              <header className="course-student-progress-header">
+                <div>
+                  <span>{courseRecord.code} · Assignment Progress</span>
+                  <h2 id="course-student-progress-title">
+                    {selectedCourseProgressContact.name}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  className="course-student-progress-close"
+                  onClick={() => setStudentProgressSelection(null)}
+                  autoFocus
+                >
+                  Back to Cohort
+                </button>
+              </header>
+              <div className="course-student-progress-summary">
+                <strong>
+                  {selectedCourseProgressSummary.completed} / {selectedCourseProgressSummary.total} completed
+                </strong>
+                <span>{selectedCourseProgressSummary.percent}% Done</span>
+                <progress
+                  className="course-progress-overall-bar"
+                  value={selectedCourseProgressSummary.percent}
+                  max={100}
+                  aria-label={`${selectedCourseProgressContact.name} overall assignment progress`}
+                />
+              </div>
+              <div className="course-student-progress-list" tabIndex={0} role="region" aria-label="Student assignments">
+                <table>
+                  <colgroup>
+                    <col style={{ width: '7%' }} />
+                    <col style={{ width: '49%' }} />
+                    <col style={{ width: '22%' }} />
+                    <col style={{ width: '22%' }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col">ASN</th>
+                      <th scope="col">Assignment Name</th>
+                      <th scope="col">Due By</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderedProgressAssignments.length === 0 ? (
+                      <tr><td colSpan={4}>No assignments have been added.</td></tr>
+                    ) : orderedProgressAssignments.map((assignment) => {
+                      const progressKey = getCourseProgressKey(
+                        courseSlug,
+                        selectedCourseProgressContact.id,
+                        assignment.id,
+                      )
+                      const status = courseProgress[progressKey] ?? "Haven't Started"
+                      const canEditProgress = canEditCourseProgress(
+                        selectedCourseProgressContact,
+                        progressKey,
+                      )
+
+                      return (
+                        <tr key={assignment.id}>
+                          <th scope="row">{assignment.asn}</th>
+                          <td>{assignment.name}</td>
+                          <td>{formatCourseAssignmentDate(assignment.dueDate)}</td>
+                          <td>
+                            <select
+                              className={`course-student-progress-select ${getCourseProgressStatusClassName(status)}`}
+                              value={status}
+                              disabled={!canEditProgress}
+                              aria-label={`${assignment.asn}, ${assignment.name}: assignment status`}
+                              onChange={(event) => {
+                                const nextStatus = event.currentTarget.value
+                                if (isCourseProgressStatus(nextStatus)) {
+                                  updateCourseProgress(
+                                    selectedCourseProgressContact.id,
+                                    assignment.id,
+                                    nextStatus,
+                                  )
+                                }
+                              }}
+                            >
+                              <option value="Haven't Started">Haven&apos;t Started</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Done">Done</option>
+                              <option value="Help!">Help!</option>
+                            </select>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="course-student-progress-note">
+                {isCourseProgressAdmin || currentCourseProgressContactId === selectedCourseProgressContact.id
+                  ? 'Status changes save automatically and update the cohort grid.'
+                  : 'Read-only. You can only change your own assignment progress.'}
+              </p>
+            </>
+          ) : null}
+        </dialog>
       </section>
 
       {waivedCourseContacts.length > 0 ? (
@@ -43868,13 +43786,13 @@ function CoursePage({
               <div className="course-layout-editor-grid">
                 <section>
                   <h3>
-                    Assignment Columns
+                    Assignment Rows
                   </h3>
 
                   <p className="course-layout-editor-section-note">
-                    Student and Overall
-                    Progress remain fixed on
-                    the left.
+                    ASN, Assignment Name, and Due By
+                    stay on the left. Overall progress
+                    appears below each student.
                   </p>
 
                   <div className="course-layout-editor-list">
@@ -43957,7 +43875,7 @@ function CoursePage({
 
                 <section>
                   <h3>
-                    Student Row Order
+                    Student Column Order
                   </h3>
 
                   <div className="course-layout-editor-list">
