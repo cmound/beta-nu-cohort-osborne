@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -33976,6 +33977,17 @@ function CoursePage({
       [],
     )
 
+  const cloudCourseProgressById =
+    useMemo(
+      () =>
+        new Map(
+          (cloudCourseProgress ?? []).map(
+            (record) => [record.id, record] as const,
+          ),
+        ),
+      [cloudCourseProgress],
+    )
+
   const cloudCourseResources =
     useLiveQuery(
       () => {
@@ -34013,6 +34025,16 @@ function CoursePage({
   const courseProgressBootstrapRef =
     useRef<CourseProgressState>(
       courseProgress,
+    )
+
+  const pendingCourseProgressRef =
+    useRef<Map<string, CourseProgressStatus>>(
+      new Map(),
+    )
+
+  const courseProgressWriteQueueRef =
+    useRef<Map<string, Promise<void>>>(
+      new Map(),
     )
 
   const [
@@ -34654,10 +34676,31 @@ function CoursePage({
       )
 
     setCourseProgress(
-      (currentProgress) => ({
-        ...currentProgress,
-        ...cloudProgressState,
-      }),
+      (currentProgress) => {
+        let nextProgress: CourseProgressState | null = null
+
+        for (
+          const [progressKey, cloudStatus]
+          of Object.entries(cloudProgressState)
+        ) {
+          const nextStatus =
+            pendingCourseProgressRef.current.get(
+              progressKey,
+            ) ?? cloudStatus
+
+          if (currentProgress[progressKey] === nextStatus) {
+            continue
+          }
+
+          if (nextProgress === null) {
+            nextProgress = { ...currentProgress }
+          }
+
+          nextProgress[progressKey] = nextStatus
+        }
+
+        return nextProgress ?? currentProgress
+      },
     )
   }, [
     cloudCourseProgress,
@@ -37455,9 +37498,8 @@ function CoursePage({
     }
 
     const progressRecord =
-      cloudCourseProgress?.find(
-        (record) =>
-          record.id === progressKey,
+      cloudCourseProgressById.get(
+        progressKey,
       )
 
     return (
@@ -38284,9 +38326,8 @@ function CoursePage({
       )
 
     const existingCloudRecord =
-      cloudCourseProgress?.find(
-        (record) =>
-          record.id === progressKey,
+      cloudCourseProgressById.get(
+        progressKey,
       )
 
     if (
@@ -38312,57 +38353,130 @@ function CoursePage({
       return
     }
 
-    void (async (): Promise<void> => {
-      if (
-        existingCloudRecord ===
-        undefined
-      ) {
-        if (!isAdmin) {
-          return
-        }
+    // Update the grid immediately. Keep the newest selection visible
+    // while Dexie notifies useLiveQuery about earlier writes.
+    pendingCourseProgressRef.current.set(
+      progressKey,
+      status,
+    )
 
-        await db.courseProgress.put(
-          createCloudCourseProgressRecord(
-            courseSlug,
-            contactId,
-            assignmentId,
-            status,
-            recordOwner,
-          ),
-        )
-      } else {
+    setCourseProgress(
+      (currentProgress) => ({
+        ...currentProgress,
+        [progressKey]: status,
+      }),
+    )
+
+    // Serialize saves for this cell so rapid clicks cannot finish
+    // out of order and overwrite the user's final selection.
+    const previousWrite =
+      courseProgressWriteQueueRef.current.get(
+        progressKey,
+      ) ?? Promise.resolve()
+
+    const nextWrite = previousWrite
+      .catch(() => undefined)
+      .then(async (): Promise<void> => {
         const updatedRecordCount =
           await db.courseProgress.update(
             progressKey,
-            {
-              status,
-            },
+            { status },
           )
 
-        if (
-          updatedRecordCount === 0
-        ) {
-          throw new Error(
-            'Course progress record was not found.',
+        if (updatedRecordCount === 0) {
+          if (!isAdmin) {
+            throw new Error(
+              'Course progress record was not found.',
+            )
+          }
+
+          await db.courseProgress.put(
+            createCloudCourseProgressRecord(
+              courseSlug,
+              contactId,
+              assignmentId,
+              status,
+              recordOwner,
+            ),
           )
         }
-      }
+      })
 
-      setCourseProgress(
-        (currentProgress) => ({
-          ...currentProgress,
-          [progressKey]:
-            status,
-        }),
-      )
+    courseProgressWriteQueueRef.current.set(
+      progressKey,
+      nextWrite,
+    )
 
-      await db.cloud.sync()
-    })().catch((error: unknown) => {
-      console.error(
-        'Unable to update Course Progress in Dexie Cloud.',
-        error,
-      )
-    })
+    void nextWrite.then(
+      () => {
+        if (
+          courseProgressWriteQueueRef.current.get(
+            progressKey,
+          ) !== nextWrite
+        ) {
+          return
+        }
+
+        courseProgressWriteQueueRef.current.delete(
+          progressKey,
+        )
+        pendingCourseProgressRef.current.delete(
+          progressKey,
+        )
+
+        // Sync after the final queued write, without blocking clicks.
+        void db.cloud.sync().catch((error: unknown) => {
+          console.error(
+            'Course progress was saved locally, but cloud sync failed.',
+            error,
+          )
+          window.alert(
+            'Your progress was saved on this device, but it has not synced to the cohort yet. Please check your connection.',
+          )
+        })
+      },
+      (error: unknown) => {
+        if (
+          courseProgressWriteQueueRef.current.get(
+            progressKey,
+          ) !== nextWrite
+        ) {
+          return
+        }
+
+        courseProgressWriteQueueRef.current.delete(
+          progressKey,
+        )
+        pendingCourseProgressRef.current.delete(
+          progressKey,
+        )
+
+        void db.courseProgress.get(progressKey)
+          .then((savedRecord) => {
+            setCourseProgress(
+              (currentProgress) => ({
+                ...currentProgress,
+                [progressKey]:
+                  savedRecord?.status ?? "Haven't Started",
+              }),
+            )
+          })
+          .catch((readError: unknown) => {
+            console.error(
+              'Unable to reload Course Progress after a failed save.',
+              readError,
+            )
+          })
+
+        console.error(
+          'Unable to save Course Progress.',
+          error,
+        )
+        window.alert(
+          'The assignment status could not be saved. Please try again.',
+        )
+      },
+    )
   }
 
   function getStudentCourseProgress(
@@ -43182,7 +43296,11 @@ function CoursePage({
                             updateCourseProgress(
                               contact.id,
                               assignment.id,
-                              getNextCourseProgressStatus(status),
+                              getNextCourseProgressStatus(
+                                pendingCourseProgressRef.current.get(
+                                  progressKey,
+                                ) ?? status,
+                              ),
                             )
                           }}
                           title={canEditProgress
