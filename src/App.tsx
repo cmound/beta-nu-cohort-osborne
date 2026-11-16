@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -65,6 +66,13 @@ import {
 } from './db'
 import './App.css'
 
+// Defer state hydration triggered by external browser/cloud changes.
+// The returned cleanup cancels stale updates after dependency changes.
+function scheduleStateSynchronization(update: () => void): () => void {
+  const timeoutId = window.setTimeout(update, 0)
+  return () => window.clearTimeout(timeoutId)
+}
+
 type SidebarNavigationGroupId =
   | 'cohort-dates'
   | 'academic-plan'
@@ -97,6 +105,7 @@ interface PlaceholderPageProps {
 }
 
 interface CoursePageProps {
+  readonly isCloudAccessReady: boolean
   readonly academicPlan:
   readonly CohortAcademicPlanRecord[]
   readonly meetings:
@@ -4143,8 +4152,8 @@ function parseCourseWebinarTimeMinutes(
       timeValue,
     )
 
-  let hour = 0
-  let minute = 0
+  let hour: number
+  let minute: number
 
   if (timeValue.includes(':')) {
     const timeParts =
@@ -15732,9 +15741,10 @@ function FacilitatorPlannerPage({
           createLocalFacilitatorAgendaRecord,
         )
 
-    setSavedAgendas(
-      cloudSavedAgendas,
-    )
+    const cancelAgendaStateUpdate =
+      scheduleStateSynchronization(() => {
+        setSavedAgendas(cloudSavedAgendas)
+      })
 
     try {
       window.localStorage.setItem(
@@ -15748,6 +15758,8 @@ function FacilitatorPlannerPage({
         'Unable to update the local Facilitator Planner agenda fallback.',
       )
     }
+
+    return cancelAgendaStateUpdate
   }, [
     cloudFacilitatorAgendas,
   ])
@@ -15870,20 +15882,21 @@ function FacilitatorPlannerPage({
       )
 
       if (isBuildingAgenda) {
-        setLastProtectedAt(
-          new Intl.DateTimeFormat(
-            'en-US',
-            {
-              hour: 'numeric',
-              minute: '2-digit',
-            },
-          ).format(new Date()),
-        )
+        const protectedTime = new Intl.DateTimeFormat(
+          'en-US',
+          { hour: 'numeric', minute: '2-digit' },
+        ).format(new Date())
+
+        return scheduleStateSynchronization(() => {
+          setLastProtectedAt(protectedTime)
+        })
       }
     } catch {
-      setActionMessage(
-        'Automatic agenda recovery is unavailable in this browser.',
-      )
+      return scheduleStateSynchronization(() => {
+        setActionMessage(
+          'Automatic agenda recovery is unavailable in this browser.',
+        )
+      })
     }
   }, [
     agendaItems,
@@ -25371,6 +25384,7 @@ function CohortSharedFilesPage() {
 
   useEffect(() => {
     let isCancelled = false
+    const objectUrlsForCleanup = sharedFileObjectUrlsRef.current
 
     async function loadStoredSharedFiles():
       Promise<void> {
@@ -25466,7 +25480,7 @@ function CohortSharedFilesPage() {
 
       for (
         const objectUrl
-        of sharedFileObjectUrlsRef.current
+        of objectUrlsForCleanup
       ) {
         URL.revokeObjectURL(
           objectUrl,
@@ -25816,11 +25830,13 @@ function CohortSharedFilesPage() {
       return
     }
 
-    setSharedUrls(
-      cloudSharedUrls.map(
-        createLocalCohortSharedUrlRecord,
-      ),
-    )
+    return scheduleStateSynchronization(() => {
+      setSharedUrls(
+        cloudSharedUrls.map(
+          createLocalCohortSharedUrlRecord,
+        ),
+      )
+    })
   }, [
     cloudSharedUrls,
   ])
@@ -25845,38 +25861,30 @@ function CohortSharedFilesPage() {
   ])
 
   useEffect(() => {
-    setDocumentPage(1)
-    setUrlPage(1)
+    return scheduleStateSynchronization(() => {
+      setDocumentPage(1)
+      setUrlPage(1)
+    })
   }, [
     searchTerm,
     categoryFilter,
   ])
 
   useEffect(() => {
-    if (
+    const nextSelectedFileId =
       visibleFiles.length === 0
-    ) {
-      if (
-        selectedFileId !== null
-      ) {
-        setSelectedFileId(null)
-      }
+        ? null
+        : visibleFiles.some((file) => file.id === selectedFileId)
+          ? selectedFileId
+          : visibleFiles[0]?.id ?? null
 
+    if (nextSelectedFileId === selectedFileId) {
       return
     }
 
-    const selectedFileStillVisible =
-      selectedFileId !== null &&
-      visibleFiles.some(
-        (file) =>
-          file.id === selectedFileId,
-      )
-
-    if (!selectedFileStillVisible) {
-      setSelectedFileId(
-        visibleFiles[0]?.id ?? null,
-      )
-    }
+    return scheduleStateSynchronization(() => {
+      setSelectedFileId(nextSelectedFileId)
+    })
   }, [
     selectedFileId,
     visibleFiles,
@@ -25892,17 +25900,31 @@ function CohortSharedFilesPage() {
       currentDocxPreview.replaceChildren()
     }
 
-    setPreviewMessage('')
-    setTextPreview('')
-    setSpreadsheetSheets([])
-    setSelectedSpreadsheetSheetName('')
+    const shouldLoadPreview =
+      selectedFile !== null &&
+      selectedPreviewKind !== null &&
+      selectedPreviewFileName !== null &&
+      selectedPreviewKind !== 'pdf' &&
+      selectedPreviewKind !== 'image' &&
+      selectedPreviewKind !== 'unsupported'
+
+    const resetPreviewTimer = window.setTimeout(() => {
+      setPreviewMessage('')
+      setTextPreview('')
+      setSpreadsheetSheets([])
+      setSelectedSpreadsheetSheetName('')
+
+      if (shouldLoadPreview) {
+        void loadSelectedPreview()
+      }
+    }, 0)
 
     if (
       selectedFile === null ||
       selectedPreviewKind === null ||
       selectedPreviewFileName === null
     ) {
-      return undefined
+      return () => window.clearTimeout(resetPreviewTimer)
     }
 
     if (
@@ -25911,7 +25933,7 @@ function CohortSharedFilesPage() {
       selectedPreviewKind ===
       'unsupported'
     ) {
-      return undefined
+      return () => window.clearTimeout(resetPreviewTimer)
     }
 
     const abortController =
@@ -26110,14 +26132,13 @@ function CohortSharedFilesPage() {
       }
     }
 
-    void loadSelectedPreview()
-
     return () => {
+      window.clearTimeout(resetPreviewTimer)
       isCancelled = true
       abortController.abort()
 
       const previewElement =
-        docxPreviewRef.current
+        currentDocxPreview
 
       if (
         previewElement !== null
@@ -30338,11 +30359,11 @@ function CohortAcademicPlanPage() {
         }),
       )
 
-    setAcademicPlan(
-      normalizeCohortAcademicPlan(
-        nextAcademicPlan,
-      ),
-    )
+    return scheduleStateSynchronization(() => {
+      setAcademicPlan(
+        normalizeCohortAcademicPlan(nextAcademicPlan),
+      )
+    })
   }, [
     cloudAcademicPlan,
     isAcademicPlanCloudReady,
@@ -32073,8 +32094,8 @@ function parseCohortGroupActivityDate(
     return null
   }
 
-  let monthText = ''
-  let dayText = ''
+  let monthText: string
+  let dayText: string
   let yearText: string | undefined
 
   switch (trimmedValue.length) {
@@ -32544,23 +32565,17 @@ function CohortGroupAssignmentsPage({
         cloudGroupAssignmentRecord,
       )
 
-    setGroupAssignmentState(
-      cloudState,
-    )
-
-    setActivityDateInput(
-      formatCohortGroupActivityDate(
-        cloudState.activityDate,
-      ),
-    )
-
-    setGroupCountInput(
-      cloudState.groups.length > 0
-        ? String(
-          cloudState.groups.length,
-        )
-        : '4',
-    )
+    return scheduleStateSynchronization(() => {
+      setGroupAssignmentState(cloudState)
+      setActivityDateInput(
+        formatCohortGroupActivityDate(cloudState.activityDate),
+      )
+      setGroupCountInput(
+        cloudState.groups.length > 0
+          ? String(cloudState.groups.length)
+          : '4',
+      )
+    })
   }, [
     cloudGroupAssignmentRecord,
   ])
@@ -32638,8 +32653,9 @@ function CohortGroupAssignmentsPage({
             .split('\u001f'),
       )
 
-    setGroupAssignmentState(
-      (currentState) => {
+    return scheduleStateSynchronization(() => {
+      setGroupAssignmentState(
+        (currentState) => {
         if (
           currentState.groups.length ===
           0 &&
@@ -32761,7 +32777,8 @@ function CohortGroupAssignmentsPage({
             ),
         }
       },
-    )
+      )
+    })
   }, [
     activeStudentIdSignature,
     activeStudents.length,
@@ -33920,6 +33937,7 @@ function PlaceholderPage({
 }
 
 function CoursePage({
+  isCloudAccessReady,
   academicPlan,
   meetings,
   contacts,
@@ -34313,21 +34331,12 @@ function CoursePage({
       return
     }
 
-    setIsAssignmentDeleteMode(
-      false,
-    )
-
-    setSelectedAssignmentIds(
-      [],
-    )
-
-    setIsWebinarDeleteMode(
-      false,
-    )
-
-    setSelectedWebinarIds(
-      [],
-    )
+    return scheduleStateSynchronization(() => {
+      setIsAssignmentDeleteMode(false)
+      setSelectedAssignmentIds([])
+      setIsWebinarDeleteMode(false)
+      setSelectedWebinarIds([])
+    })
   }, [
     isTableEditMode,
   ])
@@ -34432,38 +34441,27 @@ function CoursePage({
 
   useEffect(() => {
     if (
-      cloudCourseWorkspaces ===
-      undefined ||
-      cloudCourseWorkspaces.length ===
-      0
+      !isCloudAccessReady ||
+      cloudCourseWorkspaces === undefined
     ) {
       return
     }
 
-    setCourseWorkspaces(
-      (currentWorkspaces) => {
-        const nextWorkspaces:
-          CourseWorkspaceState = {
-          ...currentWorkspaces,
-        }
+    // After the first successful pull, the shared course list is
+    // authoritative. Do not show stale browser-only courses as shared.
+    const nextWorkspaces: CourseWorkspaceState = {}
 
-        for (
-          const cloudWorkspace
-          of cloudCourseWorkspaces
-        ) {
-          nextWorkspaces[
-            cloudWorkspace.courseSlug
-          ] =
-            createLocalCourseWorkspaceRecord(
-              cloudWorkspace,
-            )
-        }
+    for (const cloudWorkspace of cloudCourseWorkspaces) {
+      nextWorkspaces[cloudWorkspace.courseSlug] =
+        createLocalCourseWorkspaceRecord(cloudWorkspace)
+    }
 
-        return nextWorkspaces
-      },
-    )
+    return scheduleStateSynchronization(() => {
+      setCourseWorkspaces(nextWorkspaces)
+    })
   }, [
     cloudCourseWorkspaces,
+    isCloudAccessReady,
   ])
 
   useEffect(() => {
@@ -34734,6 +34732,10 @@ function CoursePage({
   }, [courseTableLayouts])
 
   useEffect(() => {
+    const progressTableFrameForCleanup =
+      courseProgressTableFrameRef.current
+
+    const resetFrame = window.requestAnimationFrame(() => {
     window.scrollTo({
       top: 0,
       left: 0,
@@ -34859,22 +34861,21 @@ function CoursePage({
 
     professorNameBeforeEditRef.current =
       ''
+    })
 
     return () => {
+      window.cancelAnimationFrame(resetFrame)
       window.scrollTo({
         top: 0,
         left: 0,
         behavior: 'auto',
       })
 
-      const currentProgressTableFrame =
-        courseProgressTableFrameRef.current
-
       if (
-        currentProgressTableFrame !==
+        progressTableFrameForCleanup !==
         null
       ) {
-        currentProgressTableFrame.scrollTo({
+        progressTableFrameForCleanup.scrollTo({
           top: 0,
           left: 0,
           behavior: 'auto',
@@ -35682,7 +35683,7 @@ function CoursePage({
       }
 
       const uploadBaseTime =
-        Date.now()
+        new Date().getTime()
 
       const resourceRecords:
         CloudCourseResourceRecord[] =
@@ -38563,6 +38564,9 @@ function CoursePage({
         console.error(
           'Unable to update the Course Workspace.',
           error,
+        )
+        window.alert(
+          'The Course Workspace change was not synchronized. Please check your connection and retry.',
         )
       })
   }
@@ -43227,7 +43231,12 @@ function CoursePage({
           role="region"
           aria-label="Cohort assignment progress table"
         >
-          <table className="course-progress-compact-table">
+          <table
+            className="course-progress-compact-table"
+            style={{
+              minWidth: `${470 + orderedProgressContacts.length * 108}px`,
+            }}
+          >
             <colgroup>
               <col className="course-progress-code-col" />
               <col className="course-progress-title-col" />
@@ -43340,6 +43349,17 @@ function CoursePage({
           </table>
         </div>
 
+        {isCloudAccessReady &&
+          !isCourseProgressAdmin &&
+          currentCourseProgressContactId === null &&
+          courseProgressContacts.length > 0 && (
+            <p className="course-progress-account-warning" role="status">
+              Your signed-in account ({currentCourseProgressUserId}) is not
+              matched to an active student on this course. Progress is read-only.
+              Sign in using the email listed under Cohort Contacts, or ask the
+              cohort owner to verify your assigned email and access.
+            </p>
+          )}
         <p className="course-progress-instruction">
           {isCourseProgressAdmin
             ? "Click a status cell to cycle through Haven't Started, In Progress, Done, and Help!."
@@ -49239,6 +49259,9 @@ function App() {
     setIsCloudAccessReady,
   ] = useState(false)
 
+  const [cloudAccessError, setCloudAccessError] = useState('')
+  const [cloudRetryVersion, setCloudRetryVersion] = useState(0)
+
   useEffect(() => {
     let isCancelled = false
 
@@ -49268,6 +49291,7 @@ function App() {
         db.cloud.currentUserId
 
       setIsCloudAccessReady(true)
+      setCloudAccessError('')
 
       if (
         currentUserId !==
@@ -49499,12 +49523,19 @@ function App() {
           'Unable to authenticate or synchronize Dexie Cloud.',
           error,
         )
+
+        if (!isCancelled) {
+          setIsCloudAccessReady(false)
+          setCloudAccessError(
+            'Shared data could not be loaded. Check your internet connection and sign-in account, then retry.',
+          )
+        }
       })
 
     return () => {
       isCancelled = true
     }
-  }, [])
+  }, [cloudRetryVersion])
 
   useEffect(() => {
     let isPulling = false
@@ -49530,11 +49561,22 @@ function App() {
           purpose: 'pull',
           wait: true,
         })
+
+        if (!isCancelled) {
+          setCloudAccessError('')
+          setIsCloudAccessReady(true)
+        }
       } catch (error: unknown) {
         console.error(
           'Unable to refresh Dexie Cloud changes.',
           error,
         )
+
+        if (!isCancelled) {
+          setCloudAccessError(
+            'Could not refresh the cohort’s shared data. Changes may be out of date. Retry the connection.',
+          )
+        }
       } finally {
         isPulling = false
       }
@@ -49558,7 +49600,7 @@ function App() {
         () => {
           void pullLatestCloudChanges()
         },
-        5_000,
+        30_000,
       )
 
     window.addEventListener(
@@ -49709,13 +49751,10 @@ function App() {
   ])
 
   useEffect(() => {
-    setIsTableEditAccessTrayOpen(
-      false,
-    )
-
-    setIsTableEditMode(
-      false,
-    )
+    return scheduleStateSynchronization(() => {
+      setIsTableEditAccessTrayOpen(false)
+      setIsTableEditMode(false)
+    })
   }, [
     location.pathname,
   ])
@@ -50409,6 +50448,15 @@ function App() {
     )
   }
 
+  const applyGlobalTableLayoutsForEffect =
+    useEffectEvent(applyGlobalTableLayoutsForCurrentPage)
+
+  const handleGlobalPointerMoveForEffect =
+    useEffectEvent(handleGlobalTableEditPointerMove)
+
+  const handleGlobalPointerDownForEffect =
+    useEffectEvent(handleGlobalTableEditPointerDown)
+
   useEffect(() => {
     let animationFrameId:
       number | null = null
@@ -50429,7 +50477,7 @@ function App() {
             animationFrameId =
               null
 
-            applyGlobalTableLayoutsForCurrentPage()
+            applyGlobalTableLayoutsForEffect()
           },
         )
     }
@@ -50492,26 +50540,26 @@ function App() {
 
     document.addEventListener(
       'pointermove',
-      handleGlobalTableEditPointerMove,
+      handleGlobalPointerMoveForEffect,
       true,
     )
 
     document.addEventListener(
       'pointerdown',
-      handleGlobalTableEditPointerDown,
+      handleGlobalPointerDownForEffect,
       true,
     )
 
     return () => {
       document.removeEventListener(
         'pointermove',
-        handleGlobalTableEditPointerMove,
+        handleGlobalPointerMoveForEffect,
         true,
       )
 
       document.removeEventListener(
         'pointerdown',
-        handleGlobalTableEditPointerDown,
+        handleGlobalPointerDownForEffect,
         true,
       )
 
@@ -51051,12 +51099,6 @@ function App() {
             ),
       )
 
-  const minimumCloudContactCount =
-    initialRuntimeState
-      .contacts.length +
-    initialRuntimeState
-      .inactiveFormerContacts.length
-
   useEffect(() => {
     let isCancelled = false
 
@@ -51137,8 +51179,8 @@ function App() {
           .count()
 
       if (
-        existingCloudCount <
-        initialCloudRecords.length
+        existingCloudCount === 0 &&
+        initialCloudRecords.length > 0
       ) {
         await db.cohortContacts.bulkPut(
           initialCloudRecords,
@@ -51165,10 +51207,8 @@ function App() {
 
   useEffect(() => {
     if (
-      cloudCohortContacts ===
-      undefined ||
-      cloudCohortContacts.length <
-      minimumCloudContactCount
+      !isCloudAccessReady ||
+      cloudCohortContacts === undefined
     ) {
       return
     }
@@ -51247,24 +51287,15 @@ function App() {
           }),
         )
 
-    setContacts(
-      nextContacts,
-    )
-
-    setContactStatuses(
-      nextContactStatuses,
-    )
-
-    setContactInactiveDates(
-      nextContactInactiveDates,
-    )
-
-    setInactiveFormerContacts(
-      nextInactiveFormerContacts,
-    )
+    return scheduleStateSynchronization(() => {
+      setContacts(nextContacts)
+      setContactStatuses(nextContactStatuses)
+      setContactInactiveDates(nextContactInactiveDates)
+      setInactiveFormerContacts(nextInactiveFormerContacts)
+    })
   }, [
     cloudCohortContacts,
-    minimumCloudContactCount,
+    isCloudAccessReady,
   ])
 
   useEffect(() => {
@@ -51390,9 +51421,9 @@ function App() {
           },
         )
 
-    setCohortMeetings(
-      nextCohortMeetings,
-    )
+    return scheduleStateSynchronization(() => {
+      setCohortMeetings(nextCohortMeetings)
+    })
   }, [
     cloudCohortMeetings,
   ])
@@ -51496,12 +51527,11 @@ function App() {
       return
     }
 
-    setCohortAttendance({
-      ...initialRuntimeState
-        .cohortAttendance,
-      ...createLocalCohortAttendanceState(
-        cloudCohortAttendance,
-      ),
+    return scheduleStateSynchronization(() => {
+      setCohortAttendance({
+        ...initialRuntimeState.cohortAttendance,
+        ...createLocalCohortAttendanceState(cloudCohortAttendance),
+      })
     })
   }, [
     cloudCohortAttendance,
@@ -51656,12 +51686,12 @@ function App() {
         cloudCohortAvailability,
       )
 
-    setCohortDataSurvey(
-      (currentSurvey) => ({
+    return scheduleStateSynchronization(() => {
+      setCohortDataSurvey((currentSurvey) => ({
         ...currentSurvey,
         ...cloudSurveyState,
-      }),
-    )
+      }))
+    })
   }, [
     cloudCohortAvailability,
   ])
@@ -51752,11 +51782,11 @@ function App() {
       return
     }
 
-    setPurposeResearchRecords(
-      createLocalPurposeResearchRecords(
-        cloudPurposeResearchWorkspace,
-      ),
-    )
+    return scheduleStateSynchronization(() => {
+      setPurposeResearchRecords(
+        createLocalPurposeResearchRecords(cloudPurposeResearchWorkspace),
+      )
+    })
   }, [
     cloudPurposeResearchWorkspace,
   ])
@@ -52677,6 +52707,9 @@ function App() {
         'Unable to update Cohort Attendance in Dexie Cloud.',
         error,
       )
+      window.alert(
+        'Attendance could not be shared. Please check your connection and try again.',
+      )
     })
   }
 
@@ -52684,6 +52717,7 @@ function App() {
     participantId: string,
     _dateId: string,
   ): boolean {
+    void _dateId
     const currentUserId =
       db.cloud.currentUserId
         .trim()
@@ -52810,6 +52844,9 @@ function App() {
       console.error(
         'Unable to update Cohort Availability in Dexie Cloud.',
         error,
+      )
+      window.alert(
+        'Your availability update could not be shared. Please check your connection and sign-in account.',
       )
     })
   }
@@ -54822,6 +54859,38 @@ function App() {
 
       <div className="app-main">
         <main className="page-content">
+          {(!isCloudAccessReady || cloudAccessError.length > 0) && (
+            <div
+              className="cohort-cloud-notice"
+              role={cloudAccessError.length > 0 ? 'alert' : 'status'}
+            >
+              <span>
+                {cloudAccessError.length > 0
+                  ? cloudAccessError
+                  : 'Connecting to shared cohort data. Editing may be unavailable until synchronization completes.'}
+              </span>
+              {cloudAccessError.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCloudAccessReady(false)
+                    setCloudAccessError('')
+                    setCloudRetryVersion((current) => current + 1)
+                  }}
+                >
+                  Retry connection
+                </button>
+              )}
+            </div>
+          )}
+          {isCloudAccessReady &&
+            cloudCohortContacts !== undefined &&
+            cloudCohortContacts.length === 0 && (
+              <div className="cohort-cloud-notice" role="alert">
+                No shared cohort contacts were returned for this account.
+                Verify that your signed-in email has access to the Beta Nu shared workspace.
+              </div>
+            )}
           {db.cloud.currentUserId
             .trim()
             .toLowerCase() ===
@@ -55059,6 +55128,7 @@ function App() {
               path="/courses/:courseCode"
               element={
                 <CoursePage
+                  isCloudAccessReady={isCloudAccessReady}
                   academicPlan={
                     sidebarAcademicPlan
                   }

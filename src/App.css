@@ -27536,3 +27536,64 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
 .course-student-progress-note { margin: 12px 20px 16px; font-size: 11px; }
 .course-student-progress-close:focus-visible,
 .course-student-progress-select:focus-visible { outline: 2px solid #005eb8; outline-offset: 2px; }
+
+/* Shared cloud access feedback (all course and cohort pages). */
+.cohort-cloud-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 2px solid #9a6905;
+  border-radius: 6px;
+  background: #fff4cf;
+  color: #172b45;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.cohort-cloud-notice button {
+  flex: 0 0 auto;
+  border: 1px solid #294d72;
+  border-radius: 4px;
+  padding: 7px 12px;
+  color: #fff;
+  background: #123c5d;
+  cursor: pointer;
+  font: inherit;
+}
+.cohort-cloud-notice button:focus-visible {
+  outline: 3px solid #123c5d;
+  outline-offset: 2px;
+}
+.course-progress-account-warning {
+  margin: 8px 10px;
+  padding: 9px 12px;
+  border-left: 4px solid #996400;
+  color: #11213a;
+  background: #fff4cf;
+  font-size: 12px;
+  font-weight: 700;
+}
+/* Preserve readable student columns on PCs and laptops.
+   The table itself grows; its existing frame scrolls horizontally. */
+.course-progress-compact-frame {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.course-progress-compact-table {
+  width: 100%;
+}
+.course-progress-compact-table .course-progress-code-col {
+  width: 60px;
+}
+.course-progress-compact-table .course-progress-title-col {
+  width: 290px;
+}
+.course-progress-compact-table .course-progress-date-col {
+  width: 120px;
+}
+.course-progress-compact-table .course-progress-compact-status .course-progress-status-button {
+  font-size: 11px;
+}
