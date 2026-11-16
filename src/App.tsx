@@ -3576,23 +3576,43 @@ function createLocalCourseProgressState(
   return nextProgress
 }
 
+// Keep existing cloud values compatible with already-saved student progress.
+// The new course-specific labels are presentation-only, not a data migration.
+function getCourseProgressDisplayStatus(
+  status: CourseProgressStatus,
+  isSixteenWeekCourse: boolean,
+): 'Pending' | 'In Progress' | 'Chair Review' | 'Done' {
+  switch (status) {
+    case "Haven't Started":
+      return 'Pending'
+    case 'In Progress':
+      return 'In Progress'
+    case 'Done':
+      return 'Done'
+    case 'Help!':
+      return isSixteenWeekCourse ? 'Chair Review' : 'Pending'
+  }
+}
+
 function getNextCourseProgressStatus(
   status: CourseProgressStatus,
+  isSixteenWeekCourse: boolean,
 ): CourseProgressStatus {
   switch (status) {
     case "Haven't Started":
       return 'In Progress'
     case 'In Progress':
-      return 'Done'
-    case 'Done':
-      return 'Help!'
+      return isSixteenWeekCourse ? 'Help!' : 'Done'
     case 'Help!':
+      return isSixteenWeekCourse ? 'Done' : 'In Progress'
+    case 'Done':
       return "Haven't Started"
   }
 }
 
 function getCourseProgressStatusClassName(
   status: CourseProgressStatus,
+  isSixteenWeekCourse: boolean,
 ): string {
   switch (status) {
     case "Haven't Started":
@@ -3602,7 +3622,9 @@ function getCourseProgressStatusClassName(
     case 'Done':
       return 'course-progress-status-done'
     case 'Help!':
-      return 'course-progress-status-help'
+      return isSixteenWeekCourse
+        ? 'course-progress-status-help'
+        : 'course-progress-status-not-started'
   }
 }
 
@@ -43205,19 +43227,21 @@ function CoursePage({
           <div className="course-progress-header-actions">
             <div className="course-progress-key">
               <span className="course-progress-key-not-started">
-                Haven&apos;t Started
+                Pending
               </span>
 
               <span className="course-progress-key-progress">
                 In Progress
               </span>
 
+              {isSixteenWeekCourse ? (
+                <span className="course-progress-key-help">
+                  Chair Review
+                </span>
+              ) : null}
+
               <span className="course-progress-key-done">
                 Done
-              </span>
-
-              <span className="course-progress-key-help">
-                Help!
               </span>
             </div>
 
@@ -43293,13 +43317,17 @@ function CoursePage({
                       assignment.id,
                     )
                     const status = courseProgress[progressKey] ?? "Haven't Started"
+                    const displayStatus = getCourseProgressDisplayStatus(
+                      status,
+                      isSixteenWeekCourse,
+                    )
                     const canEditProgress = canEditCourseProgress(contact, progressKey)
 
                     return (
                       <td className="course-progress-compact-status" key={contact.id}>
                         <button
                           type="button"
-                          className={`course-progress-status-button ${getCourseProgressStatusClassName(status)}`}
+                          className={`course-progress-status-button ${getCourseProgressStatusClassName(status, isSixteenWeekCourse)}`}
                           disabled={!canEditProgress}
                           onClick={() => {
                             updateCourseProgress(
@@ -43309,15 +43337,16 @@ function CoursePage({
                                 pendingCourseProgressRef.current.get(
                                   progressKey,
                                 ) ?? status,
+                                isSixteenWeekCourse,
                               ),
                             )
                           }}
                           title={canEditProgress
                             ? 'Click to change progress status'
                             : 'Read-only. You can only change your own assignment progress.'}
-                          aria-label={`${contact.name}, ${assignment.asn}, ${assignment.name}: ${status}. ${canEditProgress ? 'Click to change status.' : 'Read-only.'}`}
+                          aria-label={`${contact.name}, ${assignment.asn}, ${assignment.name}: ${displayStatus}. ${canEditProgress ? 'Click to change status.' : 'Read-only.'}`}
                         >
-                          {status}
+                          {displayStatus}
                         </button>
                       </td>
                     )
@@ -43362,7 +43391,9 @@ function CoursePage({
           )}
         <p className="course-progress-instruction">
           {isCourseProgressAdmin
-            ? "Click a status cell to cycle through Haven't Started, In Progress, Done, and Help!."
+            ? isSixteenWeekCourse
+              ? 'Click a status cell to cycle through Pending, In Progress, Chair Review, and Done.'
+              : 'Click a status cell to cycle through Pending, In Progress, and Done.'
             : currentCourseProgressContactId !== null
               ? 'Click your assignment cells to update your progress. Other students are read-only.'
               : 'Assignment progress is read-only for this account.'}
@@ -43446,8 +43477,8 @@ function CoursePage({
                           <td>{formatCourseAssignmentDate(assignment.dueDate)}</td>
                           <td>
                             <select
-                              className={`course-student-progress-select ${getCourseProgressStatusClassName(status)}`}
-                              value={status}
+                              className={`course-student-progress-select ${getCourseProgressStatusClassName(status, isSixteenWeekCourse)}`}
+                              value={!isSixteenWeekCourse && status === 'Help!' ? "Haven't Started" : status}
                               disabled={!canEditProgress}
                               aria-label={`${assignment.asn}, ${assignment.name}: assignment status`}
                               onChange={(event) => {
@@ -43461,10 +43492,12 @@ function CoursePage({
                                 }
                               }}
                             >
-                              <option value="Haven't Started">Haven&apos;t Started</option>
+                              <option value="Haven't Started">Pending</option>
                               <option value="In Progress">In Progress</option>
+                              {isSixteenWeekCourse ? (
+                                <option value="Help!">Chair Review</option>
+                              ) : null}
                               <option value="Done">Done</option>
-                              <option value="Help!">Help!</option>
                             </select>
                           </td>
                         </tr>
