@@ -1894,8 +1894,18 @@ function createCohortMemberPermissions() {
       'courseResources',
       'cohortBooks',
       'cohortPresence',
+      'courseProgress',
     ],
     update: {
+      courseWorkspaces: [
+        'assignmentsPageUrl',
+        'professorName',
+        'professorEmail',
+        'professorPhoneDigits',
+        'professorOfficeHours',
+        'webinarZoomUrl',
+        'webinars',
+      ],
       cohortContacts: [
         ...COHORT_CONTACT_EDIT_FIELDS,
       ],
@@ -4648,7 +4658,7 @@ function createCloudCohortSharedUrlRecord(
     realmId:
       BETA_NU_SHARED_REALM_ID,
     owner:
-      BETA_NU_OWNER_USER_ID,
+      db.cloud.currentUserId,
     websiteName:
       sharedUrl.websiteName,
     url:
@@ -19836,7 +19846,7 @@ function CohortDataSurveyPage({
 
           <strong>
             Cohort meetings are Sundays,
-            1:30 - 5:30 PM Pacific Time.
+            1:30 - 4:30 PM Pacific Time.
           </strong>
 
           <span className="data-survey-instruction-secondary">
@@ -20624,6 +20634,16 @@ function CohortPurposeResearchPage({
   onUpdateRecord,
 }: CohortPurposeResearchPageProps) {
   const [nameSearch, setNameSearch] = useState('')
+
+  const currentResearchUserId = db.cloud.currentUserId.trim().toLowerCase()
+  const isResearchOwner = currentResearchUserId === BETA_NU_OWNER_USER_ID.toLowerCase()
+  const signedInResearchContact = contacts.find((contact) =>
+    !contact.isMentor && contact.email.trim().toLowerCase() === currentResearchUserId,
+  )
+  const canEditResearchRow = (record: CohortPurposeResearchRecord): boolean =>
+    isEditable && (isResearchOwner ||
+      (signedInResearchContact !== undefined &&
+        record.memberName === signedInResearchContact.name))
 
   const [
     isDevelopmentWorkspaceExpanded,
@@ -22318,7 +22338,7 @@ function CohortPurposeResearchPage({
                 backgroundColor: 'transparent',
               }}
               value={record.memberName}
-              disabled={!isEditable}
+              disabled={!canEditResearchRow(record)}
               aria-label="Cohort member name"
               onFocus={() =>
                 setSelectedCell({
@@ -22395,7 +22415,7 @@ function CohortPurposeResearchPage({
             height: `${rowHeight}px`,
           }}
           value={record[field]}
-          readOnly={!isEditable}
+          readOnly={!canEditResearchRow(record)}
           aria-label={`${record.memberName || 'Unassigned record'} ${column.label}`}
           onFocus={() =>
             setSelectedCell({
@@ -24881,6 +24901,17 @@ function CohortSharedFilesPage() {
     BETA_NU_OWNER_USER_ID
       .toLowerCase()
 
+  const cloudSharedContactRecords = useLiveQuery(() =>
+    db.cohortContacts.where('realmId').equals(BETA_NU_SHARED_REALM_ID).toArray(),
+    [],
+  )
+  const currentSharedFileUserId = db.cloud.currentUserId.trim().toLowerCase()
+  const isActiveSharedFilesMember = (cloudSharedContactRecords ?? []).some(
+    (contact) => !contact.isFormer && contact.status === 'Active' &&
+      contact.email.trim().toLowerCase() === currentSharedFileUserId,
+  )
+  const canAddSharedResources = isSharedUrlOwner || isActiveSharedFilesMember
+
   const cloudSharedDocuments =
     useLiveQuery(
       () =>
@@ -25488,9 +25519,7 @@ function CohortSharedFilesPage() {
             true,
           )
 
-          window.alert(
-            'Unable to load persisted Shared Files from browser storage.',
-          )
+          console.warn('Local Shared Files cache is unavailable. Cloud records will still be loaded.')
         }
       }
     }
@@ -25630,14 +25659,8 @@ function CohortSharedFilesPage() {
 
     async function hydrateSharedDocumentsFromCloud():
       Promise<void> {
-      if (
-        cloudSharedDocuments ===
-        undefined ||
-        cloudSharedDocumentState ===
-        undefined ||
-        !cloudSharedDocumentState
-          .migrationComplete
-      ) {
+      if (cloudSharedDocuments === undefined ||
+        (!cloudSharedDocumentState?.migrationComplete && cloudSharedDocuments.length === 0)) {
         return
       }
 
@@ -25646,8 +25669,13 @@ function CohortSharedFilesPage() {
           createStoredCohortSharedDocumentRecord,
         )
 
-      const cachedRecords =
-        await readStoredCohortSharedFiles()
+      // A corrupted or blocked local cache must not hide shared cloud files.
+      const cachedRecords = await readStoredCohortSharedFiles().catch(
+        (error: unknown): readonly CohortSharedFileStoredRecord[] => {
+          console.warn('Unable to read Shared Files local cache.', error)
+          return []
+        },
+      )
 
       const cloudDocumentIds =
         new Set(
@@ -25670,22 +25698,16 @@ function CohortSharedFilesPage() {
               record.id,
           )
 
-      if (
-        staleCachedIds.length >
-        0
-      ) {
-        await deleteStoredCohortSharedFiles(
-          staleCachedIds,
-        )
+      // Do not delete local-only migration records before migration completes.
+      if (cloudSharedDocumentState?.migrationComplete && staleCachedIds.length > 0) {
+        await deleteStoredCohortSharedFiles(staleCachedIds).catch((error: unknown) => {
+          console.warn('Unable to refresh Shared Files local cache.', error)
+        })
       }
-
-      if (
-        storedCloudRecords.length >
-        0
-      ) {
-        await putStoredCohortSharedFiles(
-          storedCloudRecords,
-        )
+      if (storedCloudRecords.length > 0) {
+        await putStoredCohortSharedFiles(storedCloudRecords).catch((error: unknown) => {
+          console.warn('Unable to cache shared cloud documents locally.', error)
+        })
       }
 
       if (isCancelled) {
@@ -26194,7 +26216,7 @@ function CohortSharedFilesPage() {
   }
 
   function openAddDocument(): void {
-    if (!isSharedDocumentOwner) {
+    if (!canAddSharedResources) {
       return
     }
 
@@ -26325,10 +26347,8 @@ function CohortSharedFilesPage() {
 
   async function saveMassUpload():
     Promise<void> {
-    if (!isSharedDocumentOwner) {
-      window.alert(
-        'Only the site owner can add shared documents.',
-      )
+    if (!canAddSharedResources) {
+      window.alert('Sign in with your active cohort account to add documents.')
       return
     }
 
@@ -26558,14 +26578,9 @@ function CohortSharedFilesPage() {
     }
 
     try {
-      await putStoredCohortSharedFiles(
-        storedFiles,
-      )
-    } catch {
-      window.alert(
-        'The Mass Upload could not be saved to persistent browser storage. No new rows were added.',
-      )
-      return
+      await putStoredCohortSharedFiles(storedFiles)
+    } catch (error: unknown) {
+      console.warn('Local document cache unavailable; attempting cloud upload.', error)
     }
 
     try {
@@ -26688,10 +26703,8 @@ function CohortSharedFilesPage() {
 
   async function saveAddedDocument():
     Promise<void> {
-    if (!isSharedDocumentOwner) {
-      window.alert(
-        'Only the site owner can add shared documents.',
-      )
+    if (!canAddSharedResources) {
+      window.alert('Sign in with your active cohort account to add documents.')
       return
     }
 
@@ -26783,14 +26796,9 @@ function CohortSharedFilesPage() {
     }
 
     try {
-      await putStoredCohortSharedFiles([
-        storedFile,
-      ])
-    } catch {
-      window.alert(
-        'The document could not be saved to persistent browser storage.',
-      )
-      return
+      await putStoredCohortSharedFiles([storedFile])
+    } catch (error: unknown) {
+      console.warn('Local document cache unavailable; attempting cloud upload.', error)
     }
 
     try {
@@ -26928,10 +26936,8 @@ function CohortSharedFilesPage() {
   }
 
   function saveSingleUrl(): void {
-    if (!isSharedUrlOwner) {
-      window.alert(
-        'Only the site owner can add shared URL links.',
-      )
+    if (!canAddSharedResources) {
+      window.alert('Sign in with your active cohort account to add shared URL links.')
       return
     }
 
@@ -27016,10 +27022,8 @@ function CohortSharedFilesPage() {
   }
 
   function saveMultipleUrls(): void {
-    if (!isSharedUrlOwner) {
-      window.alert(
-        'Only the site owner can add shared URL links.',
-      )
+    if (!canAddSharedResources) {
+      window.alert('Sign in with your active cohort account to add shared URL links.')
       return
     }
 
@@ -28265,9 +28269,7 @@ function CohortSharedFilesPage() {
                 <button
                   type="button"
                   className="shared-files-quick-document-button"
-                  disabled={
-                    !isSharedDocumentOwner
-                  }
+                  disabled={!canAddSharedResources}
                   onClick={openAddDocument}
                 >
                   <span aria-hidden="true">
@@ -28299,9 +28301,7 @@ function CohortSharedFilesPage() {
                 <button
                   type="button"
                   className="shared-files-panel-action-button"
-                  disabled={
-                    !isSharedDocumentOwner
-                  }
+                  disabled={!canAddSharedResources}
                   onClick={openAddDocument}
                 >
                   <svg
@@ -28670,7 +28670,7 @@ function CohortSharedFilesPage() {
                 <button
                   type="button"
                   className="shared-files-panel-action-button"
-                  disabled={!isSharedUrlOwner}
+                  disabled={!canAddSharedResources}
                   onClick={openAddUrl}
                 >
                   <svg
@@ -31104,8 +31104,12 @@ function CohortCourseWaiversPage({
     )
 
   const isCourseWaiversOwner =
-    db.cloud.currentUserId ===
-    BETA_NU_OWNER_USER_ID
+    db.cloud.currentUserId.trim().toLowerCase() ===
+    BETA_NU_OWNER_USER_ID.toLowerCase()
+  const courseWaiverUserId = db.cloud.currentUserId.trim().toLowerCase()
+  const canEditOwnWaivers = (student: CohortContactRecord): boolean =>
+    student.email.trim().toLowerCase() === courseWaiverUserId &&
+    contactStatuses[student.id] !== 'Inactive'
 
   const [nameSearch, setNameSearch] =
     useState('')
@@ -31295,15 +31299,12 @@ function CohortCourseWaiversPage({
     rawValue: string,
   ): void {
 
-    const normalizedValue =
-      rawValue.trim().toUpperCase()
+    const student = contacts.find((contact) => contact.id === contactId)
+    if (student === undefined ||
+      (!isCourseWaiversOwner && !canEditOwnWaivers(student))) return
 
-    if (
-      normalizedValue !== '' &&
-      normalizedValue !== 'W'
-    ) {
-      return
-    }
+    const normalizedValue = rawValue.trim().toUpperCase()
+    if (normalizedValue !== '' && normalizedValue !== 'W') return
 
     const waiverKey =
       getCohortCourseWaiverKey(
@@ -31341,10 +31342,8 @@ function CohortCourseWaiversPage({
 
       await db.cloud.sync()
     })().catch((error: unknown) => {
-      console.error(
-        'Unable to update Course Waivers in Dexie Cloud.',
-        error,
-      )
+      console.error('Unable to update Course Waivers in Dexie Cloud.', error)
+      window.alert('The course waiver could not be saved. Check your account and connection.')
     })
   }
 
@@ -31510,7 +31509,7 @@ function CohortCourseWaiversPage({
           id="course-waiver-entry-help"
           className="course-waivers-entry-help"
         >
-          {isCourseWaiversOwner ? (
+          {isCourseWaiversOwner || activeStudents.some(canEditOwnWaivers) ? (
             <>
               Click a course cell and enter
               <strong> W </strong>
@@ -31628,7 +31627,7 @@ function CohortCourseWaiversPage({
                                   waiverKey
                                   ] ?? ''
                                 }
-                                readOnly={false}
+                                readOnly={!isCourseWaiversOwner && !canEditOwnWaivers(student)}
                                 maxLength={1}
                                 autoComplete="off"
                                 aria-label={
@@ -31687,7 +31686,7 @@ function CohortCourseWaiversPage({
                                 }}
                               />
 
-                              {isCourseWaiversOwner &&
+                              {(isCourseWaiversOwner || canEditOwnWaivers(student)) &&
                                 focusedWaiverKey ===
                                 waiverKey ? (
                                 <span
@@ -37526,11 +37525,12 @@ function CoursePage({
       )
 
     return (
-      progressRecord !== undefined &&
-      progressRecord.owner
-        .trim()
-        .toLowerCase() ===
-      currentCourseProgressUserId
+      cloudCourseProgress !== undefined &&
+      (
+        progressRecord === undefined ||
+        progressRecord.owner.trim().toLowerCase() ===
+          currentCourseProgressUserId
+      )
     )
   }
 
@@ -38353,17 +38353,16 @@ function CoursePage({
         progressKey,
       )
 
+    // A missing row can be created by its student. A row already owned
+    // by another identity is never reassigned automatically.
     if (
       !isAdmin &&
-      (
-        existingCloudRecord ===
-        undefined ||
-        existingCloudRecord.owner
-          .trim()
-          .toLowerCase() !==
-        currentUserId
-      )
+      existingCloudRecord !== undefined &&
+      existingCloudRecord.owner.trim().toLowerCase() !== currentUserId
     ) {
+      window.alert(
+        'This progress row is assigned to another account. Ask the cohort owner to check its ownership.',
+      )
       return
     }
 
@@ -38407,12 +38406,12 @@ function CoursePage({
           )
 
         if (updatedRecordCount === 0) {
-          if (!isAdmin) {
-            throw new Error(
-              'Course progress record was not found.',
-            )
+          // The student creates only their own missing progress row.
+          // Existing records owned by another identity are not replaced.
+          const freshRecord = await db.courseProgress.get(progressKey)
+          if (freshRecord !== undefined) {
+            throw new Error('Course progress is already assigned to an account.')
           }
-
           await db.courseProgress.put(
             createCloudCourseProgressRecord(
               courseSlug,
@@ -38551,10 +38550,19 @@ function CoursePage({
     updates:
       Partial<CourseWorkspaceRecord>,
   ): void {
-    if (
-      db.cloud.currentUserId !==
-      BETA_NU_OWNER_USER_ID
-    ) {
+    const currentUserId = db.cloud.currentUserId.trim().toLowerCase()
+    const isOwner = currentUserId === BETA_NU_OWNER_USER_ID.toLowerCase()
+    const isActiveMember = canUserEditCohortMeetingRoles(
+      currentUserId, contacts, contactStatuses,
+    )
+    const memberEditableFields: readonly string[] = [
+      'assignmentsPageUrl', 'professorName', 'professorEmail',
+      'professorPhoneDigits', 'professorOfficeHours',
+      'webinarZoomUrl', 'webinars',
+    ]
+    if (!isOwner && (!isActiveMember ||
+      !Object.keys(updates).every((field) =>
+        memberEditableFields.includes(field)))) {
       return
     }
 
@@ -38572,16 +38580,15 @@ function CoursePage({
       }),
     )
 
-    void db.courseWorkspaces
-      .put(
-        createCloudCourseWorkspaceRecord(
-          courseSlug,
-          nextWorkspace,
-        ),
-      )
-      .then(() =>
-        db.cloud.sync(),
-      )
+    void (isOwner
+      ? db.courseWorkspaces.put(
+        createCloudCourseWorkspaceRecord(courseSlug, nextWorkspace),
+      ).then(() => undefined)
+      : db.courseWorkspaces.update(courseSlug, updates).then((count) => {
+        if (count === 0) throw new Error('Course workspace record not found.')
+      })
+    )
+      .then(() => db.cloud.sync())
       .catch((error: unknown) => {
         console.error(
           'Unable to update the Course Workspace.',
@@ -43387,6 +43394,25 @@ function CoursePage({
               matched to an active student on this course. Progress is read-only.
               Sign in using the email listed under Cohort Contacts, or ask the
               cohort owner to verify your assigned email and access.
+            </p>
+          )}
+        {isCloudAccessReady && !isCourseProgressAdmin &&
+          currentCourseProgressContactId !== null &&
+          cloudCourseProgress !== undefined &&
+          courseProgressContacts.some((contact) =>
+            contact.id === currentCourseProgressContactId
+          ) &&
+          workspace.assignments.some((assignment) => {
+            const record = cloudCourseProgressById.get(
+              getCourseProgressKey(courseSlug, currentCourseProgressContactId, assignment.id),
+            )
+            return record !== undefined &&
+              record.owner.trim().toLowerCase() !== currentCourseProgressUserId
+          }) && (
+            <p className="course-progress-account-warning" role="status">
+              Your account matches Cohort Contacts, but some progress records
+              belong to another sign-in identity. Those cells are read-only.
+              Ask the cohort owner to verify record ownership.
             </p>
           )}
         <p className="course-progress-instruction">
@@ -49281,6 +49307,10 @@ function AdminPage({
 }
 
 function App() {
+  const cohortRoleWriteQueuesRef = useRef(new Map<string, Promise<void>>())
+  const pendingCohortRoleEditsRef = useRef(
+    new Map<string, { meetingId: string; field: CohortMeetingRoleField; value: string }>(),
+  )
   const navigate =
     useNavigate()
 
@@ -51364,26 +51394,11 @@ function App() {
           )
           .toArray()
 
-      const existingMeetingIds =
-        new Set(
-          existingCloudMeetings.map(
-            (meeting) =>
-              meeting.id,
-          ),
-        )
-
-      const missingCloudMeetings =
-        initialRuntimeState
-          .cohortMeetings
-          .filter(
-            (meeting) =>
-              !existingMeetingIds.has(
-                meeting.id,
-              ),
-          )
-          .map(
-            createCloudCohortMeetingRecord,
-          )
+      // Seed only an entirely new cloud workspace. Re-inserting missing
+      // seed rows later could restore meetings intentionally removed.
+      const missingCloudMeetings = existingCloudMeetings.length === 0
+        ? initialRuntimeState.cohortMeetings.map(createCloudCohortMeetingRecord)
+        : []
 
       if (
         missingCloudMeetings.length >
@@ -51454,8 +51469,17 @@ function App() {
           },
         )
 
+    const pendingRoleEdits = Array.from(pendingCohortRoleEditsRef.current.values())
     return scheduleStateSynchronization(() => {
-      setCohortMeetings(nextCohortMeetings)
+      setCohortMeetings(nextCohortMeetings.map((meeting) => {
+        let updatedMeeting = meeting
+        for (const edit of pendingRoleEdits) {
+          if (edit.meetingId === meeting.id) {
+            updatedMeeting = { ...updatedMeeting, [edit.field]: edit.value }
+          }
+        }
+        return updatedMeeting
+      }))
     })
   }, [
     cloudCohortMeetings,
@@ -52464,22 +52488,23 @@ function App() {
     contactId: string,
     updates: CohortContactUpdate,
   ): void {
-    if (
-      db.cloud.currentUserId !==
-      BETA_NU_OWNER_USER_ID
-    ) {
+    const existingContact = contacts.find(
+      (contact) => contact.id === contactId,
+    )
+
+    if (existingContact === undefined) {
       return
     }
 
-    const existingContact =
-      contacts.find(
-        (contact) =>
-          contact.id === contactId,
-      )
+    const currentUserId = db.cloud.currentUserId.trim().toLowerCase()
+    const isOwner = currentUserId === BETA_NU_OWNER_USER_ID.toLowerCase()
+    const isOwnActiveContact =
+      !existingContact.isMentor &&
+      contactStatuses[contactId] !== 'Inactive' &&
+      existingContact.email.trim().toLowerCase() === currentUserId
 
-    if (
-      existingContact === undefined
-    ) {
+    if (!isOwner && !isOwnActiveContact) {
+      window.alert('You can only edit your own Cohort Contacts information.')
       return
     }
 
@@ -52507,70 +52532,30 @@ function App() {
           nextName !== undefined &&
           nextName !== previousName
         ) {
-          const updatedMeetings =
-            cohortMeetings
-              .filter(
-                (meeting) =>
-                  meeting.facilitator ===
-                  previousName ||
-                  meeting.communityBuilder ===
-                  previousName ||
-                  meeting.recorder ===
-                  previousName ||
-                  meeting.timeKeeper ===
-                  previousName ||
-                  meeting.processObserver ===
-                  previousName,
-              )
-              .map(
-                (meeting) =>
-                  createCloudCohortMeetingRecord({
-                    ...meeting,
-                    facilitator:
-                      meeting.facilitator ===
-                        previousName
-                        ? nextName
-                        : meeting.facilitator,
-                    communityBuilder:
-                      meeting.communityBuilder ===
-                        previousName
-                        ? nextName
-                        : meeting.communityBuilder,
-                    recorder:
-                      meeting.recorder ===
-                        previousName
-                        ? nextName
-                        : meeting.recorder,
-                    timeKeeper:
-                      meeting.timeKeeper ===
-                        previousName
-                        ? nextName
-                        : meeting.timeKeeper,
-                    processObserver:
-                      meeting.processObserver ===
-                        previousName
-                        ? nextName
-                        : meeting.processObserver,
-                  }),
-              )
-
-          if (
-            updatedMeetings.length >
-            0
-          ) {
-            await db.cohortMeetings.bulkPut(
-              updatedMeetings,
+          // Change only the field matching the renamed person. Rewriting
+          // entire meeting records could restore stale role assignments.
+          const roleFields: readonly CohortMeetingRoleField[] = [
+            'facilitator', 'communityBuilder', 'recorder',
+            'timeKeeper', 'processObserver',
+          ]
+          for (const meeting of cohortMeetings) {
+            const changedFields: Partial<CloudCohortMeetingRecord> = {}
+            const matches = roleFields.filter((field) =>
+              meeting[field] === previousName,
             )
-
-            await db.cloud.sync()
+            for (const field of matches) {
+              Object.assign(changedFields, { [field]: nextName })
+            }
+            if (matches.length > 0) {
+              await db.cohortMeetings.update(meeting.id, changedFields)
+            }
           }
+          await db.cloud.sync()
         }
       })
       .catch((error: unknown) => {
-        console.error(
-          'Unable to update the Cohort Contact.',
-          error,
-        )
+        console.error('Unable to update the Cohort Contact.', error)
+        window.alert('Contact change could not be saved to the cohort. Check your account and connection.')
       })
   }
 
@@ -52884,10 +52869,28 @@ function App() {
     })
   }
 
+  function getSignedInResearchContact(): CohortContactRecord | undefined {
+    const userId = db.cloud.currentUserId.trim().toLowerCase()
+    return contacts.find((contact) =>
+      !contact.isMentor && contactStatuses[contact.id] !== 'Inactive' &&
+      contact.email.trim().toLowerCase() === userId,
+    )
+  }
+
+  function canEditResearchRecord(record: CohortPurposeResearchRecord): boolean {
+    return db.cloud.currentUserId.trim().toLowerCase() ===
+      BETA_NU_OWNER_USER_ID.toLowerCase() ||
+      getSignedInResearchContact()?.name === record.memberName
+  }
+
   function addPurposeResearchRecord(): void {
+    const member = getSignedInResearchContact()
+    const isOwner = db.cloud.currentUserId.trim().toLowerCase() ===
+      BETA_NU_OWNER_USER_ID.toLowerCase()
+    if (!isOwner && member === undefined) return
     setPurposeResearchRecords((currentRecords) => [
       ...currentRecords,
-      createEmptyPurposeResearchRecord(),
+      { ...createEmptyPurposeResearchRecord(), memberName: member?.name ?? '' },
     ])
   }
 
@@ -52900,8 +52903,14 @@ function App() {
           (record) => record.id === recordId,
         )
 
-      const newRecord =
-        createEmptyPurposeResearchRecord()
+      const member = getSignedInResearchContact()
+      const isOwner = db.cloud.currentUserId.trim().toLowerCase() ===
+        BETA_NU_OWNER_USER_ID.toLowerCase()
+      if (!isOwner && member === undefined) return currentRecords
+      const newRecord = {
+        ...createEmptyPurposeResearchRecord(),
+        memberName: member?.name ?? '',
+      }
 
       if (recordIndex < 0) {
         return [
@@ -52927,8 +52936,8 @@ function App() {
     recordId: string,
   ): void {
     setPurposeResearchRecords((currentRecords) =>
-      currentRecords.filter(
-        (record) => record.id !== recordId,
+      currentRecords.filter((record) =>
+        record.id !== recordId || !canEditResearchRecord(record),
       ),
     )
   }
@@ -52940,11 +52949,11 @@ function App() {
   ): void {
     setPurposeResearchRecords((currentRecords) =>
       currentRecords.map((record) =>
-        record.id === recordId
-          ? {
-            ...record,
-            [field]: value,
-          }
+        record.id === recordId && canEditResearchRecord(record) &&
+          (field !== 'memberName' ||
+           db.cloud.currentUserId.trim().toLowerCase() ===
+             BETA_NU_OWNER_USER_ID.toLowerCase())
+          ? { ...record, [field]: value }
           : record,
       ),
     )
@@ -53074,32 +53083,34 @@ function App() {
         ),
     )
 
-    void db.cohortMeetings
-      .update(
-        meetingId,
-        cloudUpdate,
-      )
-      .then(
-        async (
-          updatedCount,
-        ) => {
-          if (
-            updatedCount === 0
-          ) {
-            throw new Error(
-              'The Cohort Meeting could not be found in Dexie Cloud.',
-            )
-          }
-
-          await db.cloud.sync()
-        },
-      )
-      .catch((error: unknown) => {
-        console.error(
-          'Unable to update the Cohort Meeting role.',
-          error,
-        )
-      })
+    const editKey = `${meetingId}::${roleField}`
+    pendingCohortRoleEditsRef.current.set(editKey, {
+      meetingId, field: roleField, value,
+    })
+    const previousWrite = cohortRoleWriteQueuesRef.current.get(editKey) ??
+      Promise.resolve()
+    const nextWrite = previousWrite.catch(() => undefined).then(async () => {
+      const updatedCount = await db.cohortMeetings.update(meetingId, cloudUpdate)
+      if (updatedCount === 0) {
+        throw new Error('The Cohort Meeting could not be found in Dexie Cloud.')
+      }
+    })
+    cohortRoleWriteQueuesRef.current.set(editKey, nextWrite)
+    void nextWrite.then(async () => {
+      if (cohortRoleWriteQueuesRef.current.get(editKey) !== nextWrite) return
+      await db.cloud.sync()
+      if (cohortRoleWriteQueuesRef.current.get(editKey) === nextWrite) {
+        cohortRoleWriteQueuesRef.current.delete(editKey)
+        pendingCohortRoleEditsRef.current.delete(editKey)
+      }
+    }).catch((error: unknown) => {
+      console.error('Unable to save the Cohort Meeting role.', error)
+      if (cohortRoleWriteQueuesRef.current.get(editKey) === nextWrite) {
+        cohortRoleWriteQueuesRef.current.delete(editKey)
+        pendingCohortRoleEditsRef.current.delete(editKey)
+      }
+      window.alert('The meeting role change was not synchronized. Please retry the edit.')
+    })
   }
 
   const activeSidebarCourses =

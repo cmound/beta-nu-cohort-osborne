@@ -25261,6 +25261,19 @@ button.facilitator-planner-cohort-facilitator-box:focus-visible {
   align-items: center;
 }
 
+/* Give Reset the same visible button footprint as the other agenda actions. */
+.facilitator-planner-reset-control .agenda-image-button {
+  width: 116px;
+  height: 58px;
+}
+
+.facilitator-planner-reset-control .agenda-action-image {
+  display: block;
+  width: 116px;
+  height: 58px;
+  object-fit: fill;
+}
+
 .facilitator-planner-reset-confirmation {
   position: absolute;
   z-index: 60;
